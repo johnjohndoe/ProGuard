@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -150,9 +150,11 @@ implements   ClassVisitor
         if (className != null                            &&
             !containsWildCards(className)                &&
             programClassPool.getClass(className) == null &&
-            libraryClassPool.getClass(className) == null)
+            libraryClassPool.getClass(className) == null &&
+            notePrinter.accepts(className))
         {
-            notePrinter.print("Note: the configuration refers to the unknown class '" +
+            notePrinter.print(className,
+                              "Note: the configuration refers to the unknown class '" +
                               ClassUtil.externalClassName(className) + "'");
 
             String fullyQualifiedClassName =

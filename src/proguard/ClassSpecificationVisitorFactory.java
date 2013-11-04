@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -38,15 +38,15 @@ public class ClassSpecificationVisitorFactory
      * Constructs a ClassPoolVisitor to efficiently travel to the specified
      * classes and class members.
      *
-     * @param keepSpecifications the list of KeepSpecification instances,
-     *                           defining of the classes and class members to
-     *                           visit.
-     * @param classVisitor       the ClassVisitor to be applied to matching
-     *                           classes.
-     * @param memberVisitor      the MemberVisitor to be applied to matching
-     *                           class members.
+     * @param keepClassSpecifications the list of KeepClassSpecification
+     *                                instances, defining of the classes and
+     *                                class members to visit.
+     * @param classVisitor            the ClassVisitor to be applied to matching
+     *                                classes.
+     * @param memberVisitor           the MemberVisitor to be applied to matching
+     *                                class members.
      */
-    public static ClassPoolVisitor createClassPoolVisitor(List          keepSpecifications,
+    public static ClassPoolVisitor createClassPoolVisitor(List          keepClassSpecifications,
                                                           ClassVisitor  classVisitor,
                                                           MemberVisitor memberVisitor,
                                                           boolean       shrinking,
@@ -55,19 +55,19 @@ public class ClassSpecificationVisitorFactory
     {
         MultiClassPoolVisitor multiClassPoolVisitor = new MultiClassPoolVisitor();
 
-        if (keepSpecifications != null)
+        if (keepClassSpecifications != null)
         {
-            for (int index = 0; index < keepSpecifications.size(); index++)
+            for (int index = 0; index < keepClassSpecifications.size(); index++)
             {
-                KeepSpecification keepSpecification =
-                    (KeepSpecification)keepSpecifications.get(index);
+                KeepClassSpecification keepClassSpecification =
+                    (KeepClassSpecification)keepClassSpecifications.get(index);
 
-                if ((shrinking   && !keepSpecification.allowShrinking)    ||
-                    (optimizing  && !keepSpecification.allowOptimization) ||
-                    (obfuscating && !keepSpecification.allowObfuscation))
+                if ((shrinking   && !keepClassSpecification.allowShrinking)    ||
+                    (optimizing  && !keepClassSpecification.allowOptimization) ||
+                    (obfuscating && !keepClassSpecification.allowObfuscation))
                 {
                     multiClassPoolVisitor.addClassPoolVisitor(
-                        createClassPoolVisitor(keepSpecification,
+                        createClassPoolVisitor(keepClassSpecification,
                                                classVisitor,
                                                memberVisitor));
                 }
@@ -118,44 +118,44 @@ public class ClassSpecificationVisitorFactory
      * Constructs a ClassPoolVisitor to efficiently travel to the specified
      * classes and class members.
      *
-     * @param keepSpecification the specifications of the class(es) and class
+     * @param keepClassSpecification the specifications of the class(es) and class
      *                          members to visit.
      * @param classVisitor      the ClassVisitor to be applied to matching
      *                          classes.
      * @param memberVisitor     the MemberVisitor to be applied to matching
      *                          class members.
      */
-    private static ClassPoolVisitor createClassPoolVisitor(KeepSpecification keepSpecification,
+    private static ClassPoolVisitor createClassPoolVisitor(KeepClassSpecification keepClassSpecification,
                                                            ClassVisitor      classVisitor,
                                                            MemberVisitor     memberVisitor)
     {
         // Don't  visit the classes if not specified.
-        if (!keepSpecification.markClasses &&
-            !keepSpecification.markConditionally)
+        if (!keepClassSpecification.markClasses &&
+            !keepClassSpecification.markConditionally)
         {
             classVisitor = null;
         }
 
         // If specified, let the marker visit the class and its class
         // members conditionally.
-        if (keepSpecification.markConditionally)
+        if (keepClassSpecification.markConditionally)
         {
             // Combine both visitors.
             ClassVisitor composedClassVisitor =
-                createCombinedClassVisitor(keepSpecification,
+                createCombinedClassVisitor(keepClassSpecification,
                                            classVisitor,
                                            memberVisitor);
 
             // Replace the class visitor.
             classVisitor =
-                createClassMemberTester(keepSpecification,
+                createClassMemberTester(keepClassSpecification,
                                         composedClassVisitor);
 
             // Discard the member visitor, because it has already been included.
             memberVisitor = null;
         }
 
-        return createClassPoolVisitor((ClassSpecification)keepSpecification,
+        return createClassPoolVisitor((ClassSpecification)keepClassSpecification,
                                       classVisitor,
                                       memberVisitor);
     }
@@ -192,7 +192,7 @@ public class ClassSpecificationVisitorFactory
         // If wildcarded, only visit classes with matching names.
         if (className != null &&
             (extendsAnnotationType != null ||
-             extendsClassName           != null ||
+             extendsClassName      != null ||
              containsWildCards(className)))
         {
             composedClassVisitor =

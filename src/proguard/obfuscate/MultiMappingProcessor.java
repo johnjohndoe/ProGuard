@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -78,7 +78,8 @@ public class MultiMappingProcessor implements MappingProcessor
                                      int    firstLineNumber,
                                      int    lastLineNumber,
                                      String methodReturnType,
-                                     String methodNameAndArguments,
+                                     String methodName,
+                                     String methodArguments,
                                      String newMethodName)
     {
         for (int index = 0; index < mappingProcessors.length; index++)
@@ -87,7 +88,8 @@ public class MultiMappingProcessor implements MappingProcessor
                                                           firstLineNumber,
                                                           lastLineNumber,
                                                           methodReturnType,
-                                                          methodNameAndArguments,
+                                                          methodName,
+                                                          methodArguments,
                                                           newMethodName);
         }
     }

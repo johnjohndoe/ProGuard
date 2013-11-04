@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -348,7 +348,7 @@ implements   AttributeVisitor,
                 // Start marking the variable before the load instruction.
                 alive |= livenessMask;
             }
-            else if (variableInstruction.opcode != InstructionConstants.OP_IINC)
+            else
             {
                 // Stop marking the variable before the store instruction.
                 alive &= ~livenessMask;
@@ -429,6 +429,10 @@ implements   AttributeVisitor,
     }
 
 
+    /**
+     * Returns the combined liveness mask of the variables right before the
+     * specified instruction offsets.
+     */
     private long combinedLiveness(InstructionOffsetValue instructionOffsetValue)
     {
         long alive = 0L;

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -31,10 +31,9 @@ import java.io.*;
  *
  * @author Eric Lafortune
  */
-public class DataEntryRewriter implements DataEntryReader
+public class DataEntryRewriter extends DataEntryCopier
 {
-    private final ClassPool       classPool;
-    private final DataEntryWriter dataEntryWriter;
+    private final ClassPool classPool;
 
 
     /**
@@ -43,50 +42,36 @@ public class DataEntryRewriter implements DataEntryReader
     public DataEntryRewriter(ClassPool       classPool,
                              DataEntryWriter dataEntryWriter)
     {
-        this.classPool       = classPool;
-        this.dataEntryWriter = dataEntryWriter;
+        super(dataEntryWriter);
+
+        this.classPool = classPool;
     }
 
 
-    // Implementations for DataEntryReader.
+    // Implementations for DataEntryCopier.
 
-    public void read(DataEntry dataEntry) throws IOException
-    {
-        try
-        {
-            // Get the output entry corresponding to this input entry.
-            OutputStream outputStream = dataEntryWriter.getOutputStream(dataEntry);
-            if (outputStream != null)
-            {
-                InputStream inputStream = dataEntry.getInputStream();
-
-                // Copy the data from the input entry to the output entry.
-                copyData(inputStream, outputStream);
-
-                // Close the data entries.
-                dataEntry.closeInputStream();
-            }
-        }
-        catch (IOException ex)
-        {
-            System.err.println("Warning: can't write resource [" + dataEntry.getName() + "] (" + ex.getMessage() + ")");
-        }
-    }
-
-
-    // Small utility methods.
-
-    /**
-     * Copies all data that it can read from the given input stream to the
-     * given output stream.
-     */
-    private void copyData(InputStream  inputStream,
-                          OutputStream outputStream)
+    protected void copyData(InputStream  inputStream,
+                            OutputStream outputStream)
     throws IOException
     {
         Reader reader = new BufferedReader(new InputStreamReader(inputStream));
         Writer writer = new BufferedWriter(new OutputStreamWriter(outputStream));
 
+        copyData(reader, writer);
+
+        writer.flush();
+        outputStream.flush();
+    }
+
+
+    /**
+     * Copies all data that it can read from the given reader to the given
+     * writer.
+     */
+    protected void copyData(Reader reader,
+                            Writer writer)
+    throws IOException
+    {
         StringBuffer word = new StringBuffer();
 
         while (true)
@@ -119,11 +104,10 @@ public class DataEntryRewriter implements DataEntryReader
 
         // Write out the final word.
         writeUpdatedWord(writer, word.toString());
-
-        writer.flush();
-        outputStream.flush();
     }
 
+
+    // Small utility methods.
 
     /**
      * Writes the given word to the given writer, after having adapted it,

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -63,7 +63,8 @@ implements   ClassVisitor,
 {
     private final ClassPool      programClassPool;
     private final ClassPool      libraryClassPool;
-    private final WarningPrinter missingWarningPrinter;
+    private final WarningPrinter missingClassWarningPrinter;
+    private final WarningPrinter missingMemberWarningPrinter;
     private final WarningPrinter dependencyWarningPrinter;
 
     private final MemberFinder memberFinder = new MemberFinder();
@@ -72,17 +73,19 @@ implements   ClassVisitor,
     /**
      * Creates a new ClassReferenceInitializer that initializes the references
      * of all visited class files, optionally printing warnings if some classes
-     * can't be found or if they are in the program class pool.
+     * or class members can't be found or if they are in the program class pool.
      */
     public ClassReferenceInitializer(ClassPool      programClassPool,
                                      ClassPool      libraryClassPool,
-                                     WarningPrinter missingWarningPrinter,
+                                     WarningPrinter missingClassWarningPrinter,
+                                     WarningPrinter missingMemberWarningPrinter,
                                      WarningPrinter dependencyWarningPrinter)
     {
-        this.programClassPool         = programClassPool;
-        this.libraryClassPool         = libraryClassPool;
-        this.missingWarningPrinter    = missingWarningPrinter;
-        this.dependencyWarningPrinter = dependencyWarningPrinter;
+        this.programClassPool            = programClassPool;
+        this.libraryClassPool            = libraryClassPool;
+        this.missingClassWarningPrinter  = missingClassWarningPrinter;
+        this.missingMemberWarningPrinter = missingMemberWarningPrinter;
+        this.dependencyWarningPrinter    = dependencyWarningPrinter;
     }
 
 
@@ -189,18 +192,19 @@ implements   ClassVisitor,
                                                                    isFieldRef);
             refConstant.referencedClass  = memberFinder.correspondingClass();
 
-            if (refConstant.referencedMember == null &&
-                missingWarningPrinter != null)
+            if (refConstant.referencedMember == null)
             {
                 // We've haven't found the class member anywhere in the hierarchy.
-                missingWarningPrinter.print("Warning: " +
-                                     ClassUtil.externalClassName(clazz.getName()) +
-                                     ": can't find referenced " +
-                                     (isFieldRef ?
-                                         "field '"  + ClassUtil.externalFullFieldDescription(0, name, type) :
-                                         "method '" + ClassUtil.externalFullMethodDescription(className, 0, name, type)) +
-                                     "' in class " +
-                                     ClassUtil.externalClassName(className));
+                missingMemberWarningPrinter.print(clazz.getName(),
+                                                  className,
+                                                  "Warning: " +
+                                                  ClassUtil.externalClassName(clazz.getName()) +
+                                                  ": can't find referenced " +
+                                                  (isFieldRef ?
+                                                      "field '"  + ClassUtil.externalFullFieldDescription(0, name, type) :
+                                                      "method '" + ClassUtil.externalFullMethodDescription(className, 0, name, type)) +
+                                                  "' in class " +
+                                                  ClassUtil.externalClassName(className));
             }
         }
     }
@@ -236,14 +240,12 @@ implements   ClassVisitor,
         if (referencedClass == null)
         {
             // We couldn't find the enclosing class.
-            if (missingWarningPrinter != null)
-            {
-                missingWarningPrinter.print("Warning: " +
-                                     ClassUtil.externalClassName(className) +
-                                     ": can't find enclosing class " +
-                                     ClassUtil.externalClassName(enclosingClassName));
-            }
-
+            missingClassWarningPrinter.print(className,
+                                             enclosingClassName,
+                                             "Warning: " +
+                                             ClassUtil.externalClassName(className) +
+                                             ": can't find enclosing class " +
+                                             ClassUtil.externalClassName(enclosingClassName));
             return;
         }
 
@@ -262,16 +264,14 @@ implements   ClassVisitor,
         if (referencedMethod == null)
         {
             // We couldn't find the enclosing method.
-            if (missingWarningPrinter != null)
-            {
-                missingWarningPrinter.print("Warning: " +
-                                     ClassUtil.externalClassName(className) +
-                                     ": can't find enclosing method '" +
-                                     ClassUtil.externalFullMethodDescription(enclosingClassName, 0, name, type) +
-                                     "' in class " +
-                                     ClassUtil.externalClassName(enclosingClassName));
-            }
-
+            missingMemberWarningPrinter.print(className,
+                                              enclosingClassName,
+                                              "Warning: " +
+                                              ClassUtil.externalClassName(className) +
+                                              ": can't find enclosing method '" +
+                                              ClassUtil.externalFullMethodDescription(enclosingClassName, 0, name, type) +
+                                              "' in class " +
+                                              ClassUtil.externalClassName(enclosingClassName));
             return;
         }
 
@@ -517,20 +517,24 @@ implements   ClassVisitor,
             clazz = libraryClassPool.getClass(name);
 
             if (clazz == null &&
-                missingWarningPrinter != null)
+                missingClassWarningPrinter != null)
             {
                 // We didn't find the superclass or interface. Print a warning.
-                missingWarningPrinter.print("Warning: " +
-                                            ClassUtil.externalClassName(referencingClassName) +
-                                            ": can't find referenced class " +
-                                            ClassUtil.externalClassName(name));
+                missingClassWarningPrinter.print(referencingClassName,
+                                                 name,
+                                                 "Warning: " +
+                                                 ClassUtil.externalClassName(referencingClassName) +
+                                                 ": can't find referenced class " +
+                                                 ClassUtil.externalClassName(name));
             }
         }
         else if (dependencyWarningPrinter != null)
         {
             // The superclass or interface was found in the program class pool.
             // Print a warning.
-            dependencyWarningPrinter.print("Warning: library class " +
+            dependencyWarningPrinter.print(referencingClassName,
+                                           name,
+                                           "Warning: library class " +
                                            ClassUtil.externalClassName(referencingClassName) +
                                            " depends on program class " +
                                            ClassUtil.externalClassName(name));

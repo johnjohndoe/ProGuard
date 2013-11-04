@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -29,7 +29,7 @@ import proguard.optimize.evaluation.StoringInvocationUnit;
 /**
  * This <code>MemberVisitor</code> delegates its visits to program class members
  * to another given <code>MemberVisitor</code>, but only when the visited
- * field has been marked as a constant.
+ * class member has been marked as a constant.
  *
  * @see StoringInvocationUnit
  * @author Eric Lafortune

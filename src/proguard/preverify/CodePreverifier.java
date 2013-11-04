@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -301,6 +301,7 @@ implements   MemberVisitor,
                                                      programMethod,
                                                      codeAttribute,
                                                      offset,
+                                                     index == 0,
                                                      value,
                                                      producerValue);
 
@@ -368,6 +369,7 @@ implements   MemberVisitor,
                                               programMethod,
                                               codeAttribute,
                                               offset,
+                                              false,
                                               value,
                                               producerValue);
 
@@ -391,6 +393,7 @@ implements   MemberVisitor,
                                                            ProgramMethod programMethod,
                                                            CodeAttribute codeAttribute,
                                                            int           offset,
+                                                           boolean       isVariable0,
                                                            Value         value,
                                                            Value         producerValue)
     {
@@ -433,32 +436,25 @@ implements   MemberVisitor,
                             producerOffset = producers.instructionOffset(0);
                         }
 
-                        // Special case: in an instance initialization method,
-                        // before the super initialization, loading "this"
-                        // produces an uninitialized stack entry.
+                        // Are we in an instance initialization method,
+                        // before the super initialization, loading "this"?
                         if (partialEvaluator.isInitializer()                       &&
                             offset <= partialEvaluator.superInitializationOffset() &&
-                            producerOffset > PartialEvaluator.AT_METHOD_ENTRY      &&
-                            codeAttribute.code[producerOffset] == InstructionConstants.OP_ALOAD_0)
+                            (isVariable0 ||
+                             producerOffset > PartialEvaluator.AT_METHOD_ENTRY &&
+                             codeAttribute.code[producerOffset] == InstructionConstants.OP_ALOAD_0))
                         {
-                            producerOffset = PartialEvaluator.AT_METHOD_ENTRY;
+                            // It's an UninitializedThis type.
+                            return VerificationTypeFactory.createUninitializedThisType();
                         }
 
-                        // Is the reference type newly created?
-                        int initializationOffset = producerOffset == PartialEvaluator.AT_METHOD_ENTRY ?
-                            partialEvaluator.superInitializationOffset() :
-                            partialEvaluator.initializationOffset(producerOffset);
-
-                        if (initializationOffset != PartialEvaluator.NONE)
+                        // Is the reference type newly created and still
+                        // uninitialized?
+                        if (producerOffset > PartialEvaluator.AT_METHOD_ENTRY &&
+                            offset <= partialEvaluator.initializationOffset(producerOffset))
                         {
-                            // Is the reference type still uninitialized?
-                            if (offset <= initializationOffset)
-                            {
-                                // It's an UninitializedThis or Uninitialized type.
-                                return producerOffset == PartialEvaluator.AT_METHOD_ENTRY ?
-                                    (VerificationType)VerificationTypeFactory.createUninitializedThisType() :
-                                    (VerificationType)VerificationTypeFactory.createUninitializedType(producerOffset);
-                            }
+                            // It's an Uninitialized type.
+                            return VerificationTypeFactory.createUninitializedType(producerOffset);
                         }
                     }
                 }

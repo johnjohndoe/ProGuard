@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -75,7 +75,7 @@ final class MemberSpecificationDialog extends JDialog
 
     public MemberSpecificationDialog(JDialog owner, boolean isField)
     {
-        super(owner, true);
+        super(owner, msg(isField ? "specifyFields" : "specifyMethods"), true);
         setResizable(true);
 
         // Create some constraints that can be reused.
@@ -439,8 +439,8 @@ final class MemberSpecificationDialog extends JDialog
      * flags of the given keep option.
      */
     private void setMemberSpecificationRadioButtons(MemberSpecification memberSpecification,
-                                                         int            flag,
-                                                         JRadioButton[] radioButtons)
+                                                    int                 flag,
+                                                    JRadioButton[]      radioButtons)
     {
         if (radioButtons != null)
         {

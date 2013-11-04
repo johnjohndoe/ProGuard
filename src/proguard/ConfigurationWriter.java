@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -107,6 +107,7 @@ public class ConfigurationWriter
         // Write the other options.
         writeOption(ConfigurationConstants.DONT_SKIP_NON_PUBLIC_LIBRARY_CLASSES_OPTION,       !configuration.skipNonPublicLibraryClasses);
         writeOption(ConfigurationConstants.DONT_SKIP_NON_PUBLIC_LIBRARY_CLASS_MEMBERS_OPTION, !configuration.skipNonPublicLibraryClassMembers);
+        writeOption(ConfigurationConstants.KEEP_DIRECTORIES_OPTION,                           configuration.keepDirectories);
         writeOption(ConfigurationConstants.TARGET_OPTION,                                     ClassUtil.externalClassVersion(configuration.targetClassVersion));
         writeOption(ConfigurationConstants.FORCE_PROCESSING_OPTION,                           configuration.lastModified == Long.MAX_VALUE);
 
@@ -114,6 +115,7 @@ public class ConfigurationWriter
         writeOption(ConfigurationConstants.PRINT_USAGE_OPTION, configuration.printUsage);
 
         writeOption(ConfigurationConstants.DONT_OPTIMIZE_OPTION,                 !configuration.optimize);
+        writeOption(ConfigurationConstants.OPTIMIZATIONS,                        configuration.optimize ? ListUtil.commaSeparatedString(configuration.optimizations) : null);
         writeOption(ConfigurationConstants.OPTIMIZATION_PASSES,                  configuration.optimizationPasses);
         writeOption(ConfigurationConstants.ALLOW_ACCESS_MODIFICATION_OPTION,     configuration.allowAccessModification);
         writeOption(ConfigurationConstants.MERGE_INTERFACES_AGGRESSIVELY_OPTION, configuration.mergeInterfacesAggressively);
@@ -127,19 +129,21 @@ public class ConfigurationWriter
         writeOption(ConfigurationConstants.OVERLOAD_AGGRESSIVELY_OPTION,           configuration.overloadAggressively);
         writeOption(ConfigurationConstants.USE_UNIQUE_CLASS_MEMBER_NAMES_OPTION,   configuration.useUniqueClassMemberNames);
         writeOption(ConfigurationConstants.DONT_USE_MIXED_CASE_CLASS_NAMES_OPTION, !configuration.useMixedCaseClassNames);
-        writeOption(ConfigurationConstants.FLATTEN_PACKAGE_HIERARCHY_OPTION,       configuration.flattenPackageHierarchy == null ? null : ClassUtil.externalClassName(configuration.flattenPackageHierarchy));
-        writeOption(ConfigurationConstants.REPACKAGE_CLASSES_OPTION,               configuration.repackageClasses        == null ? null : ClassUtil.externalClassName(configuration.repackageClasses));
-        writeOption(ConfigurationConstants.KEEP_ATTRIBUTES_OPTION,                 ListUtil.commaSeparatedString(configuration.keepAttributes));
+        writeOption(ConfigurationConstants.KEEP_PACKAGE_NAMES_OPTION,              configuration.keepPackageNames, true);
+        writeOption(ConfigurationConstants.FLATTEN_PACKAGE_HIERARCHY_OPTION,       configuration.flattenPackageHierarchy, true);
+        writeOption(ConfigurationConstants.REPACKAGE_CLASSES_OPTION,               configuration.repackageClasses, true);
+        writeOption(ConfigurationConstants.KEEP_ATTRIBUTES_OPTION,                 configuration.keepAttributes);
         writeOption(ConfigurationConstants.RENAME_SOURCE_FILE_ATTRIBUTE_OPTION,    configuration.newSourceFileAttribute);
-        writeOption(ConfigurationConstants.ADAPT_RESOURCE_FILE_NAMES_OPTION,       ListUtil.commaSeparatedString(configuration.adaptResourceFileNames));
-        writeOption(ConfigurationConstants.ADAPT_RESOURCE_FILE_CONTENTS_OPTION,    ListUtil.commaSeparatedString(configuration.adaptResourceFileContents));
+        writeOption(ConfigurationConstants.ADAPT_CLASS_STRINGS_OPTION,             configuration.adaptClassStrings, true);
+        writeOption(ConfigurationConstants.ADAPT_RESOURCE_FILE_NAMES_OPTION,       configuration.adaptResourceFileNames);
+        writeOption(ConfigurationConstants.ADAPT_RESOURCE_FILE_CONTENTS_OPTION,    configuration.adaptResourceFileContents);
 
         writeOption(ConfigurationConstants.DONT_PREVERIFY_OPTION, !configuration.preverify);
         writeOption(ConfigurationConstants.MICRO_EDITION_OPTION,  configuration.microEdition);
 
         writeOption(ConfigurationConstants.VERBOSE_OPTION,             configuration.verbose);
-        writeOption(ConfigurationConstants.DONT_NOTE_OPTION,           !configuration.note);
-        writeOption(ConfigurationConstants.DONT_WARN_OPTION,           !configuration.warn);
+        writeOption(ConfigurationConstants.DONT_NOTE_OPTION,           configuration.note, true);
+        writeOption(ConfigurationConstants.DONT_WARN_OPTION,           configuration.warn, true);
         writeOption(ConfigurationConstants.IGNORE_WARNINGS_OPTION,     configuration.ignoreWarnings);
         writeOption(ConfigurationConstants.PRINT_CONFIGURATION_OPTION, configuration.printConfiguration);
         writeOption(ConfigurationConstants.DUMP_OPTION,                configuration.dump);
@@ -200,7 +204,7 @@ public class ConfigurationWriter
     }
 
 
-    private boolean writeFilter(boolean filtered, String filter)
+    private boolean writeFilter(boolean filtered, List filter)
     {
         if (filtered)
         {
@@ -214,7 +218,15 @@ public class ConfigurationWriter
                 writer.print(ConfigurationConstants.OPEN_ARGUMENTS_KEYWORD);
             }
 
-            writer.print(quotedString(filter));
+            for (int index = 0; index < filter.size(); index++)
+            {
+                if (index > 0)
+                {
+                    writer.print(ConfigurationConstants.ARGUMENT_SEPARATOR_KEYWORD);
+                }
+
+                writer.print(quotedString((String)filter.get(index)));
+            }
 
             filtered = true;
         }
@@ -243,10 +255,56 @@ public class ConfigurationWriter
     }
 
 
-    private void writeOption(String optionName, String arguments)
+    private void writeOption(String optionName, List arguments)
+    {
+        writeOption(optionName, arguments, false);
+    }
+
+
+    private void writeOption(String  optionName,
+                             List    arguments,
+                             boolean replaceInternalClassNames)
     {
         if (arguments != null)
         {
+            if (arguments.isEmpty())
+            {
+                writer.println(optionName);
+            }
+            else
+            {
+                String argumentString = ListUtil.commaSeparatedString(arguments);
+
+                if (replaceInternalClassNames)
+                {
+                    argumentString = ClassUtil.externalClassName(argumentString);
+                }
+
+                writer.print(optionName);
+                writer.print(' ');
+                writer.println(quotedString(argumentString));
+            }
+        }
+    }
+
+
+    private void writeOption(String optionName, String arguments)
+    {
+        writeOption(optionName, arguments, false);
+    }
+
+
+    private void writeOption(String  optionName,
+                             String  arguments,
+                             boolean replaceInternalClassNames)
+    {
+        if (arguments != null)
+        {
+            if (replaceInternalClassNames)
+            {
+                arguments = ClassUtil.externalClassName(arguments);
+            }
+
             writer.print(optionName);
             writer.print(' ');
             writer.println(quotedString(arguments));
@@ -273,46 +331,46 @@ public class ConfigurationWriter
 
 
     private void writeOptions(String[] optionNames,
-                              List     keepSpecifications)
+                              List     keepClassSpecifications)
     {
-        if (keepSpecifications != null)
+        if (keepClassSpecifications != null)
         {
-            for (int index = 0; index < keepSpecifications.size(); index++)
+            for (int index = 0; index < keepClassSpecifications.size(); index++)
             {
-                writeOption(optionNames, (KeepSpecification)keepSpecifications.get(index));
+                writeOption(optionNames, (KeepClassSpecification)keepClassSpecifications.get(index));
             }
         }
     }
 
 
-    private void writeOption(String[]          optionNames,
-                             KeepSpecification keepSpecification)
+    private void writeOption(String[]               optionNames,
+                             KeepClassSpecification keepClassSpecification)
     {
         // Compose the option name.
-        String optionName = optionNames[keepSpecification.markConditionally ? 2 :
-                                        keepSpecification.markClasses       ? 0 :
+        String optionName = optionNames[keepClassSpecification.markConditionally ? 2 :
+                                        keepClassSpecification.markClasses       ? 0 :
                                                                               1];
 
-        if (keepSpecification.allowShrinking)
+        if (keepClassSpecification.allowShrinking)
         {
             optionName += ConfigurationConstants.ARGUMENT_SEPARATOR_KEYWORD +
                           ConfigurationConstants.ALLOW_SHRINKING_SUBOPTION;
         }
 
-        if (keepSpecification.allowOptimization)
+        if (keepClassSpecification.allowOptimization)
         {
             optionName += ConfigurationConstants.ARGUMENT_SEPARATOR_KEYWORD +
                           ConfigurationConstants.ALLOW_OPTIMIZATION_SUBOPTION;
         }
 
-        if (keepSpecification.allowObfuscation)
+        if (keepClassSpecification.allowObfuscation)
         {
             optionName += ConfigurationConstants.ARGUMENT_SEPARATOR_KEYWORD +
                           ConfigurationConstants.ALLOW_OBFUSCATION_SUBOPTION;
         }
 
         // Write out the option with the proper class specification.
-        writeOption(optionName, keepSpecification);
+        writeOption(optionName, keepClassSpecification);
     }
 
 
@@ -561,7 +619,8 @@ public class ConfigurationWriter
                string.indexOf('(') >= 0 ||
                string.indexOf(')') >= 0 ||
                string.indexOf(':') >= 0 ||
-               string.indexOf(';') >= 0  ? ("'" + string + "'") :
+               string.indexOf(';') >= 0 ||
+               string.indexOf(',') >= 0  ? ("'" + string + "'") :
                                            (      string      );
     }
 

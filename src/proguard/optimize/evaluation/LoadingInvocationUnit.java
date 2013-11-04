@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -35,12 +35,34 @@ import proguard.evaluation.value.*;
 public class LoadingInvocationUnit
 extends      BasicInvocationUnit
 {
+    private boolean loadFieldValues;
+    private boolean loadMethodParameterValues;
+    private boolean loadMethodReturnValues;
+
+
     /**
      * Creates a new LoadingInvocationUnit with the given value factory.
      */
     public LoadingInvocationUnit(ValueFactory valueFactory)
     {
+        this(valueFactory, false, false, false);
+    }
+
+
+    /**
+     * Creates a new LoadingInvocationUnit with the given value factory, for
+     * loading the specified values.
+     */
+    public LoadingInvocationUnit(ValueFactory valueFactory,
+                                 boolean      loadFieldValues,
+                                 boolean      loadMethodParameterValues,
+                                 boolean      loadMethodReturnValues)
+    {
         super(valueFactory);
+
+        this.loadFieldValues           = loadFieldValues;
+        this.loadMethodParameterValues = loadMethodParameterValues;
+        this.loadMethodReturnValues    = loadMethodReturnValues;
     }
 
 
@@ -50,18 +72,21 @@ extends      BasicInvocationUnit
                                        RefConstant refConstant,
                                        String      type)
     {
-        // Do we know this field?
-        Member referencedMember = refConstant.referencedMember;
-        if (referencedMember != null)
+        if (loadFieldValues)
         {
-            // Retrieve the stored field class value.
-            ReferenceValue value = StoringInvocationUnit.getFieldClassValue((Field)referencedMember);
-            if (value != null &&
-                value.isParticular())
+            // Do we know this field?
+            Member referencedMember = refConstant.referencedMember;
+            if (referencedMember != null)
             {
-                return value;
+                // Retrieve the stored field class value.
+                ReferenceValue value = StoringInvocationUnit.getFieldClassValue((Field)referencedMember);
+                if (value != null &&
+                    value.isParticular())
+                {
+                    return value;
 //                // Make sure the value is refreshed.
 //                return refresh(value);
+                }
             }
         }
 
@@ -73,18 +98,21 @@ extends      BasicInvocationUnit
                                   RefConstant refConstant,
                                   String      type)
     {
-        // Do we know this field?
-        Member referencedMember = refConstant.referencedMember;
-        if (referencedMember != null)
+        if (loadFieldValues)
         {
-            // Retrieve the stored field value.
-            Value value = StoringInvocationUnit.getFieldValue((Field)referencedMember);
-            if (value != null &&
-                value.isParticular())
+            // Do we know this field?
+            Member referencedMember = refConstant.referencedMember;
+            if (referencedMember != null)
             {
-                return value;
+                // Retrieve the stored field value.
+                Value value = StoringInvocationUnit.getFieldValue((Field)referencedMember);
+                if (value != null &&
+                    value.isParticular())
+                {
+                    return value;
 //                // Make sure the value is refreshed.
 //                return refresh(value);
+                }
             }
         }
 
@@ -98,14 +126,17 @@ extends      BasicInvocationUnit
                                             String type,
                                             Clazz  referencedClass)
     {
-        // Retrieve the stored method parameter value.
-        Value value = StoringInvocationUnit.getMethodParameterValue(method, parameterIndex);
+        if (loadMethodParameterValues)
+        {
+            // Retrieve the stored method parameter value.
+            Value value = StoringInvocationUnit.getMethodParameterValue(method, parameterIndex);
             if (value != null &&
                 value.isParticular())
             {
                 return value;
 //            // Make sure the value is refreshed.
 //            return refresh(value);
+            }
         }
 
         return super.getMethodParameterValue(clazz,
@@ -120,18 +151,21 @@ extends      BasicInvocationUnit
                                          RefConstant refConstant,
                                          String      type)
     {
-        // Do we know this method?
-        Member referencedMember = refConstant.referencedMember;
-        if (referencedMember != null)
+        if (loadMethodReturnValues)
         {
-            // Retrieve the stored method return value.
-            Value value = StoringInvocationUnit.getMethodReturnValue((Method)referencedMember);
-            if (value != null &&
-                value.isParticular())
+            // Do we know this method?
+            Member referencedMember = refConstant.referencedMember;
+            if (referencedMember != null)
             {
-                return value;
+                // Retrieve the stored method return value.
+                Value value = StoringInvocationUnit.getMethodReturnValue((Method)referencedMember);
+                if (value != null &&
+                    value.isParticular())
+                {
+                    return value;
 //                // Make sure the value is refreshed.
 //                return refresh(value);
+                }
             }
         }
 

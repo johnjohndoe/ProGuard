@@ -55,6 +55,7 @@
 
     <!-- If we have ant.jar, we can properly process the Ant task. -->
 
+    <keeppackagename name="proguard.ant" />
     <keep name="proguard.ant.*" allowobfuscation="true" />
     <keepclassmembers access="public" name="proguard.ant.*">
       <constructor parameters="org.apache.tools.ant.Project" />

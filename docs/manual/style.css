@@ -19,6 +19,12 @@ dt {
   padding: 6px;
 }
 
+dt div 
+{
+  color: grey;
+  float: right;
+}
+
 dd {
   padding: 6px;
 }

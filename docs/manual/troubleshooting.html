@@ -22,6 +22,7 @@ few problems. The following sections discuss some common issues and solutions:
 <li><a href="#duplicateclass">Note: duplicate definition of program/library class</a></li>
 <li><a href="#duplicatezipentry">Warning: can't write resource ... Duplicate zip entry</a></li>
 <li><a href="#unresolvedclass">Warning: can't find superclass or interface</a></li>
+<li><a href="#unresolvedclass">Warning: can't find referenced class</a></li>
 <li><a href="#unresolvedclassmember">Warning: can't find referenced field/method</a></li>
 <li><a href="#unresolvedenclosingmethod">Warning: can't find enclosing class/method</a></li>
 <li><a href="#dependency">Warning: library class ... depends on program class ...</a></li>
@@ -143,28 +144,30 @@ ProGuard may terminate when it encounters parsing errors or I/O errors, or
 some more serious warnings:
 
 <dl>
-<dt><a name="unresolvedclass"><b>Warning: can't find superclass or interface</b></a></dt>
+<dt><a name="unresolvedclass"><b>Warning: can't find superclass or interface</b><br/><b>Warning: can't find referenced class</b></a></dt>
 
-<dd>If there are unresolved references to superclasses or interfaces, you most
-    likely forgot to specify an essential library. All libraries that are
-    referenced by your code should be specified, including the Java run-time
-    library. For specifying libraries, use the <a
-    href="usage.html#libraryjars"><code>-libraryjars</code></a> option.
+<dd>If there are unresolved references to classes or interfaces, you most
+    likely forgot to specify an essential library. For proper processing, all
+    libraries that are referenced by your code must be specified, including
+    the Java run-time library. For specifying libraries, use
+    the <a href="usage.html#libraryjars"><code>-libraryjars</code></a> option.
     <p>
     If the class that is reported as missing is a non-public library class,
     you should specify the <a
     href="usage.html#dontskipnonpubliclibraryclasses"><code>-dontskipnonpubliclibraryclasses</code></a>
-    option. A common example is the class
-    <code>java.util.zip.ZipConstants</code>, which is used as an interface
-    class in some public classes, even though it is only package visible (in
-    this case, the warning could also be ignored, because the class is not a
-    fundamental part of the class hierarchy).
+    option. Common examples are the classes
+    <code>javax.swing.TransferHandler$HasGetTransferHandler</code> and
+    <code>java.util.zip.ZipConstants</code>, which are used as interfaces in
+    some public classes, even though they are only package visible. This
+    option is not set by default for reasons of efficiency. Setting it increases
+    the processing time a bit, but it won't hurt the output in any way.
     <p>
     If you're missing a library and you're absolutely sure it isn't used
     anyway, you can try your luck with the <a
     href="usage.html#ignorewarnings"><code>-ignorewarnings</code></a> option,
     or even the <a href="usage.html#dontwarn"><code>-dontwarn</code></a>
-    option.</dd>
+    option. Only use these options if you really know what you're doing
+    though.</dd>
 
 <dt><a name="unresolvedclassmember"><b>Warning: can't find referenced field/method</b></a></dt>
 
@@ -455,9 +458,9 @@ might be several reasons:
     and/or <a
     href="usage.html#adaptresourcefilecontents"><code>-adaptresourcefilecontents</code></a>.
     <p>
-    Note that directory entries in jar files aren't copied at all. If you
-    refer to any directories from your code, you should add them
-    manually.</dd>
+    Furthermore, directory entries in jar files aren't copied, unless you
+    specify the option <a
+    href="usage.html#keepdirectories"><code>-keepdirectories</code></a>.</dd>
 
 <dt><a name="invalidjarfile"><b>Invalid or corrupt jarfile</b></a></dt>
 
@@ -582,7 +585,7 @@ might be several reasons:
 
 <hr>
 <address>
-Copyright &copy; 2002-2008
+Copyright &copy; 2002-2009
 <a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>

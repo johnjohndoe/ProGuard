@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -33,6 +33,7 @@ import java.io.*;
 import java.net.URL;
 import java.util.*;
 import java.util.List;
+import java.lang.reflect.InvocationTargetException;
 
 
 /**
@@ -44,10 +45,11 @@ public class ProGuardGUI extends JFrame
 {
     private static final String NO_SPLASH_OPTION = "-nosplash";
 
-    private static final String TITLE_IMAGE_FILE          = "vtitle.gif";
+    private static final String TITLE_IMAGE_FILE          = "vtitle.png";
     private static final String BOILERPLATE_CONFIGURATION = "boilerplate.pro";
     private static final String DEFAULT_CONFIGURATION     = "default.pro";
 
+    private static final String OPTIMIZATIONS_DEFAULT                = "*";
     private static final String KEEP_ATTRIBUTE_DEFAULT               = "Exceptions,InnerClasses,Signature,Deprecated,SourceFile,LineNumberTable,LocalVariable*Table,*Annotation*,Synthetic,EnclosingMethod";
     private static final String SOURCE_FILE_ATTRIBUTE_DEFAULT        = "SourceFile";
     private static final String ADAPT_RESOURCE_FILE_NAMES_DEFAULT    = "**.properties";
@@ -65,15 +67,15 @@ public class ProGuardGUI extends JFrame
     private final ClassPathPanel programPanel = new ClassPathPanel(this, true);
     private final ClassPathPanel libraryPanel = new ClassPathPanel(this, false);
 
-    private       KeepSpecification[] boilerplateKeep;
-    private final JCheckBox[]         boilerplateKeepCheckBoxes;
-    private final JTextField[]        boilerplateKeepTextFields;
+    private       KeepClassSpecification[] boilerplateKeep;
+    private final JCheckBox[]              boilerplateKeepCheckBoxes;
+    private final JTextField[]             boilerplateKeepTextFields;
 
     private final KeepSpecificationsPanel additionalKeepPanel = new KeepSpecificationsPanel(this, true, false, false, false, false);
 
-    private       KeepSpecification[] boilerplateKeepNames;
-    private final JCheckBox[]         boilerplateKeepNamesCheckBoxes;
-    private final JTextField[]        boilerplateKeepNamesTextFields;
+    private       KeepClassSpecification[] boilerplateKeepNames;
+    private final JCheckBox[]              boilerplateKeepNamesCheckBoxes;
+    private final JTextField[]             boilerplateKeepNamesTextFields;
 
     private final KeepSpecificationsPanel additionalKeepNamesPanel = new KeepSpecificationsPanel(this, true, false, true, false, false);
 
@@ -90,8 +92,10 @@ public class ProGuardGUI extends JFrame
     private final JCheckBox optimizeCheckBox                    = new JCheckBox(msg("optimize"));
     private final JCheckBox allowAccessModificationCheckBox     = new JCheckBox(msg("allowAccessModification"));
     private final JCheckBox mergeInterfacesAggressivelyCheckBox = new JCheckBox(msg("mergeInterfacesAggressively"));
+    private final JLabel    optimizationsLabel                  = new JLabel(msg("optimizations"));
     private final JLabel    optimizationPassesLabel             = new JLabel(msg("optimizationPasses"));
-    private final JSpinner  optimizationPassesSpinner           = new JSpinner(new SpinnerNumberModel(1, 1, 9, 1));
+
+    private final JSpinner optimizationPassesSpinner = new JSpinner(new SpinnerNumberModel(1, 1, 9, 1));
 
     private final JCheckBox obfuscateCheckBox                    = new JCheckBox(msg("obfuscate"));
     private final JCheckBox printMappingCheckBox                 = new JCheckBox(msg("printMapping"));
@@ -102,10 +106,12 @@ public class ProGuardGUI extends JFrame
     private final JCheckBox overloadAggressivelyCheckBox         = new JCheckBox(msg("overloadAggressively"));
     private final JCheckBox useUniqueClassMemberNamesCheckBox    = new JCheckBox(msg("useUniqueClassMemberNames"));
     private final JCheckBox useMixedCaseClassNamesCheckBox       = new JCheckBox(msg("useMixedCaseClassNames"));
+    private final JCheckBox keepPackageNamesCheckBox             = new JCheckBox(msg("keepPackageNames"));
     private final JCheckBox flattenPackageHierarchyCheckBox      = new JCheckBox(msg("flattenPackageHierarchy"));
     private final JCheckBox repackageClassesCheckBox             = new JCheckBox(msg("repackageClasses"));
     private final JCheckBox keepAttributesCheckBox               = new JCheckBox(msg("keepAttributes"));
     private final JCheckBox newSourceFileAttributeCheckBox       = new JCheckBox(msg("renameSourceFileAttribute"));
+    private final JCheckBox adaptClassStringsCheckBox            = new JCheckBox(msg("adaptClassStrings"));
     private final JCheckBox adaptResourceFileNamesCheckBox       = new JCheckBox(msg("adaptResourceFileNames"));
     private final JCheckBox adaptResourceFileContentsCheckBox    = new JCheckBox(msg("adaptResourceFileContents"));
 
@@ -113,31 +119,38 @@ public class ProGuardGUI extends JFrame
     private final JCheckBox microEditionCheckBox = new JCheckBox(msg("microEdition"));
     private final JCheckBox targetCheckBox       = new JCheckBox(msg("target"));
 
-    private final JComboBox  targetComboBox = new JComboBox(ListUtil.commaSeparatedList(msg("targets")).toArray());
+    private final JComboBox targetComboBox = new JComboBox(ListUtil.commaSeparatedList(msg("targets")).toArray());
 
     private final JCheckBox verboseCheckBox                          = new JCheckBox(msg("verbose"));
-    private final JCheckBox ignoreWarningsCheckBox                   = new JCheckBox(msg("ignoreWarnings"));
-    private final JCheckBox warnCheckBox                             = new JCheckBox(msg("warn"));
     private final JCheckBox noteCheckBox                             = new JCheckBox(msg("note"));
+    private final JCheckBox warnCheckBox                             = new JCheckBox(msg("warn"));
+    private final JCheckBox ignoreWarningsCheckBox                   = new JCheckBox(msg("ignoreWarnings"));
     private final JCheckBox skipNonPublicLibraryClassesCheckBox      = new JCheckBox(msg("skipNonPublicLibraryClasses"));
     private final JCheckBox skipNonPublicLibraryClassMembersCheckBox = new JCheckBox(msg("skipNonPublicLibraryClassMembers"));
+    private final JCheckBox keepDirectoriesCheckBox                  = new JCheckBox(msg("keepDirectories"));
     private final JCheckBox forceProcessingCheckBox                  = new JCheckBox(msg("forceProcessing"));
     private final JCheckBox printSeedsCheckBox                       = new JCheckBox(msg("printSeeds"));
     private final JCheckBox printConfigurationCheckBox               = new JCheckBox(msg("printConfiguration"));
     private final JCheckBox dumpCheckBox                             = new JCheckBox(msg("dump"));
 
     private final JTextField printUsageTextField                   = new JTextField(40);
+    private final JTextField optimizationsTextField                = new JTextField(40);
     private final JTextField printMappingTextField                 = new JTextField(40);
     private final JTextField applyMappingTextField                 = new JTextField(40);
     private final JTextField obfuscationDictionaryTextField        = new JTextField(40);
     private final JTextField classObfuscationDictionaryTextField   = new JTextField(40);
     private final JTextField packageObfuscationDictionaryTextField = new JTextField(40);
+    private final JTextField keepPackageNamesTextField             = new JTextField(40);
     private final JTextField flattenPackageHierarchyTextField      = new JTextField(40);
     private final JTextField repackageClassesTextField             = new JTextField(40);
     private final JTextField keepAttributesTextField               = new JTextField(40);
     private final JTextField newSourceFileAttributeTextField       = new JTextField(40);
+    private final JTextField adaptClassStringsTextField            = new JTextField(40);
     private final JTextField adaptResourceFileNamesTextField       = new JTextField(40);
     private final JTextField adaptResourceFileContentsTextField    = new JTextField(40);
+    private final JTextField noteTextField                         = new JTextField(40);
+    private final JTextField warnTextField                         = new JTextField(40);
+    private final JTextField keepDirectoriesTextField              = new JTextField(40);
     private final JTextField printSeedsTextField                   = new JTextField(40);
     private final JTextField printConfigurationTextField           = new JTextField(40);
     private final JTextField dumpTextField                         = new JTextField(40);
@@ -382,6 +395,8 @@ public class ProGuardGUI extends JFrame
         obfuscationOptionsPanel.add(tip(overloadAggressivelyCheckBox,            "overloadAggressivelyTip"),         constraintsLastStretch);
         obfuscationOptionsPanel.add(tip(useUniqueClassMemberNamesCheckBox,       "useUniqueClassMemberNamesTip"),    constraintsLastStretch);
         obfuscationOptionsPanel.add(tip(useMixedCaseClassNamesCheckBox,          "useMixedCaseClassNamesTip"),       constraintsLastStretch);
+        obfuscationOptionsPanel.add(tip(keepPackageNamesCheckBox,                "keepPackageNamesTip"),             constraints);
+        obfuscationOptionsPanel.add(tip(keepPackageNamesTextField,               "packageNamesTip"),                 constraintsLastStretch);
         obfuscationOptionsPanel.add(tip(flattenPackageHierarchyCheckBox,         "flattenPackageHierarchyTip"),      constraints);
         obfuscationOptionsPanel.add(tip(flattenPackageHierarchyTextField,        "packageTip"),                      constraintsLastStretch);
         obfuscationOptionsPanel.add(tip(repackageClassesCheckBox,                "repackageClassesTip"),             constraints);
@@ -390,6 +405,8 @@ public class ProGuardGUI extends JFrame
         obfuscationOptionsPanel.add(tip(keepAttributesTextField,                 "attributesTip"),                   constraintsLastStretch);
         obfuscationOptionsPanel.add(tip(newSourceFileAttributeCheckBox,          "renameSourceFileAttributeTip"),    constraints);
         obfuscationOptionsPanel.add(tip(newSourceFileAttributeTextField,         "sourceFileAttributeTip"),          constraintsLastStretch);
+        obfuscationOptionsPanel.add(tip(adaptClassStringsCheckBox,               "adaptClassStringsTip"),            constraints);
+        obfuscationOptionsPanel.add(tip(adaptClassStringsTextField,              "classNamesTip"),                   constraintsLastStretch);
         obfuscationOptionsPanel.add(tip(adaptResourceFileNamesCheckBox,          "adaptResourceFileNamesTip"),       constraints);
         obfuscationOptionsPanel.add(tip(adaptResourceFileNamesTextField,         "fileNameFilterTip"),               constraintsLastStretch);
         obfuscationOptionsPanel.add(tip(adaptResourceFileContentsCheckBox,       "adaptResourceFileContentsTip"),    constraints);
@@ -412,9 +429,15 @@ public class ProGuardGUI extends JFrame
         JPanel optimizationOptionsPanel = new JPanel(layout);
         addBorder(optimizationOptionsPanel, "options");
 
+        JButton optimizationsButton =
+            createOptimizationsButton(optimizationsTextField);
+
         optimizationOptionsPanel.add(tip(optimizeCheckBox,                    "optimizeTip"),                    constraintsLastStretch);
         optimizationOptionsPanel.add(tip(allowAccessModificationCheckBox,     "allowAccessModificationTip"),     constraintsLastStretch);
         optimizationOptionsPanel.add(tip(mergeInterfacesAggressivelyCheckBox, "mergeInterfacesAggressivelyTip"), constraintsLastStretch);
+        optimizationOptionsPanel.add(tip(optimizationsLabel,                  "optimizationsTip"),               constraints);
+        optimizationOptionsPanel.add(tip(optimizationsTextField,              "optimizationsFilterTip"),         constraintsStretch);
+        optimizationOptionsPanel.add(tip(optimizationsButton,                 "optimizationsSelectTip"),         constraintsLast);
         optimizationOptionsPanel.add(tip(optimizationPassesLabel,             "optimizationPassesTip"),          constraints);
         optimizationOptionsPanel.add(tip(optimizationPassesSpinner,           "optimizationPassesTip"),          constraintsLast);
 
@@ -454,11 +477,15 @@ public class ProGuardGUI extends JFrame
         addBorder(consistencyPanel, "consistencyAndCorrectness");
 
         consistencyPanel.add(tip(verboseCheckBox,                          "verboseTip"),                          constraintsLastStretch);
-        consistencyPanel.add(tip(noteCheckBox,                             "noteTip"),                             constraintsLastStretch);
-        consistencyPanel.add(tip(warnCheckBox,                             "warnTip"),                             constraintsLastStretch);
+        consistencyPanel.add(tip(noteCheckBox,                             "noteTip"),                             constraints);
+        consistencyPanel.add(tip(noteTextField,                            "noteFilterTip"),                             constraintsLastStretch);
+        consistencyPanel.add(tip(warnCheckBox,                             "warnTip"),                             constraints);
+        consistencyPanel.add(tip(warnTextField,                            "warnFilterTip"),                             constraintsLastStretch);
         consistencyPanel.add(tip(ignoreWarningsCheckBox,                   "ignoreWarningsTip"),                   constraintsLastStretch);
         consistencyPanel.add(tip(skipNonPublicLibraryClassesCheckBox,      "skipNonPublicLibraryClassesTip"),      constraintsLastStretch);
         consistencyPanel.add(tip(skipNonPublicLibraryClassMembersCheckBox, "skipNonPublicLibraryClassMembersTip"), constraintsLastStretch);
+        consistencyPanel.add(tip(keepDirectoriesCheckBox,                  "keepDirectoriesTip"),                  constraints);
+        consistencyPanel.add(tip(keepDirectoriesTextField,                 "directoriesTip"),                      constraintsLastStretch);
         consistencyPanel.add(tip(forceProcessingCheckBox,                  "forceProcessingTip"),                  constraintsLastStretch);
         consistencyPanel.add(tip(printSeedsCheckBox,                       "printSeedsTip"),                       constraints);
         consistencyPanel.add(tip(printSeedsTextField,                      "outputFileTip"),                       constraintsStretch);
@@ -669,40 +696,40 @@ public class ProGuardGUI extends JFrame
      * Returns an array containing the ClassSpecifications instances with
      * matching flags.
      */
-    private KeepSpecification[] extractKeepSpecifications(List    keepSpecifications,
-                                                          boolean allowShrinking,
-                                                          boolean allowObfuscation)
+    private KeepClassSpecification[] extractKeepSpecifications(List    keepSpecifications,
+                                                               boolean allowShrinking,
+                                                               boolean allowObfuscation)
     {
         List matches = new ArrayList();
 
         for (int index = 0; index < keepSpecifications.size(); index++)
         {
-            KeepSpecification keepSpecification = (KeepSpecification)keepSpecifications.get(index);
-            if (keepSpecification.allowShrinking   == allowShrinking &&
-                keepSpecification.allowObfuscation == allowObfuscation)
+            KeepClassSpecification keepClassSpecification = (KeepClassSpecification)keepSpecifications.get(index);
+            if (keepClassSpecification.allowShrinking   == allowShrinking &&
+                keepClassSpecification.allowObfuscation == allowObfuscation)
             {
-                 matches.add(keepSpecification);
+                 matches.add(keepClassSpecification);
             }
         }
 
-        KeepSpecification[] matchingKeepSpecifications = new KeepSpecification[matches.size()];
-        matches.toArray(matchingKeepSpecifications);
+        KeepClassSpecification[] matchingKeepClassSpecifications = new KeepClassSpecification[matches.size()];
+        matches.toArray(matchingKeepClassSpecifications);
 
-        return matchingKeepSpecifications;
+        return matchingKeepClassSpecifications;
     }
 
 
     /**
      * Returns an array containing the ClassSpecification instances of the
-     * given array of KeepSpecification instances.
+     * given array of KeepClassSpecification instances.
      */
-    private ClassSpecification[] extractClassSpecifications(KeepSpecification[] keepSpecifications)
+    private ClassSpecification[] extractClassSpecifications(KeepClassSpecification[] keepClassSpecifications)
     {
-        ClassSpecification[] classSpecifications = new ClassSpecification[keepSpecifications.length];
+        ClassSpecification[] classSpecifications = new ClassSpecification[keepClassSpecifications.length];
 
         for (int index = 0; index < classSpecifications.length; index++)
         {
-            classSpecifications[index] = keepSpecifications[index];
+            classSpecifications[index] = keepClassSpecifications[index];
         }
 
         return classSpecifications;
@@ -840,18 +867,45 @@ public class ProGuardGUI extends JFrame
         {
             public void actionPerformed(ActionEvent e)
             {
+                // Update the file chooser.
                 fileChooser.setDialogTitle(title);
                 fileChooser.setSelectedFile(new File(textField.getText()));
 
                 int returnVal = fileChooser.showDialog(ProGuardGUI.this, msg("ok"));
                 if (returnVal == JFileChooser.APPROVE_OPTION)
                 {
+                    // Update the text field.
                     textField.setText(fileChooser.getSelectedFile().getPath());
                 }
             }
         });
 
         return browseButton;
+    }
+
+
+    protected JButton createOptimizationsButton(final JTextField textField)
+    {
+        final OptimizationsDialog optimizationsDialog = new OptimizationsDialog(ProGuardGUI.this);
+
+        JButton optimizationsButton = new JButton(msg("select"));
+        optimizationsButton.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
+                // Update the dialog.
+                optimizationsDialog.setFilter(textField.getText());
+
+                int returnValue = optimizationsDialog.showDialog();
+                if (returnValue == OptimizationsDialog.APPROVE_OPTION)
+                {
+                    // Update the text field.
+                    textField.setText(optimizationsDialog.getFilter());
+                }
+            }
+        });
+
+        return optimizationsButton;
     }
 
 
@@ -945,12 +999,12 @@ public class ProGuardGUI extends JFrame
 
         // Set up the other options.
         shrinkCheckBox                          .setSelected(configuration.shrink);
-        printUsageCheckBox                      .setSelected(configuration.printUsage              != null);
+        printUsageCheckBox                      .setSelected(configuration.printUsage != null);
 
         optimizeCheckBox                        .setSelected(configuration.optimize);
-        optimizationPassesSpinner.getModel()    .setValue(new Integer(configuration.optimizationPasses));
         allowAccessModificationCheckBox         .setSelected(configuration.allowAccessModification);
         mergeInterfacesAggressivelyCheckBox     .setSelected(configuration.mergeInterfacesAggressively);
+        optimizationPassesSpinner.getModel()    .setValue(new Integer(configuration.optimizationPasses));
 
         obfuscateCheckBox                       .setSelected(configuration.obfuscate);
         printMappingCheckBox                    .setSelected(configuration.printMapping                 != null);
@@ -961,10 +1015,12 @@ public class ProGuardGUI extends JFrame
         overloadAggressivelyCheckBox            .setSelected(configuration.overloadAggressively);
         useUniqueClassMemberNamesCheckBox       .setSelected(configuration.useUniqueClassMemberNames);
         useMixedCaseClassNamesCheckBox          .setSelected(configuration.useMixedCaseClassNames);
+        keepPackageNamesCheckBox                .setSelected(configuration.keepPackageNames             != null);
         flattenPackageHierarchyCheckBox         .setSelected(configuration.flattenPackageHierarchy      != null);
         repackageClassesCheckBox                .setSelected(configuration.repackageClasses             != null);
         keepAttributesCheckBox                  .setSelected(configuration.keepAttributes               != null);
         newSourceFileAttributeCheckBox          .setSelected(configuration.newSourceFileAttribute       != null);
+        adaptClassStringsCheckBox               .setSelected(configuration.adaptClassStrings            != null);
         adaptResourceFileNamesCheckBox          .setSelected(configuration.adaptResourceFileNames       != null);
         adaptResourceFileContentsCheckBox       .setSelected(configuration.adaptResourceFileContents    != null);
 
@@ -973,26 +1029,33 @@ public class ProGuardGUI extends JFrame
         targetCheckBox                          .setSelected(configuration.targetClassVersion != 0);
 
         verboseCheckBox                         .setSelected(configuration.verbose);
-        noteCheckBox                            .setSelected(configuration.note);
-        warnCheckBox                            .setSelected(configuration.warn);
+        noteCheckBox                            .setSelected(configuration.note == null || !configuration.note.isEmpty());
+        warnCheckBox                            .setSelected(configuration.warn == null || !configuration.warn.isEmpty());
         ignoreWarningsCheckBox                  .setSelected(configuration.ignoreWarnings);
         skipNonPublicLibraryClassesCheckBox     .setSelected(configuration.skipNonPublicLibraryClasses);
         skipNonPublicLibraryClassMembersCheckBox.setSelected(configuration.skipNonPublicLibraryClassMembers);
+        keepDirectoriesCheckBox                 .setSelected(configuration.keepDirectories    != null);
         forceProcessingCheckBox                 .setSelected(configuration.lastModified == Long.MAX_VALUE);
-        printSeedsCheckBox                      .setSelected(configuration.printSeeds              != null);
-        printConfigurationCheckBox              .setSelected(configuration.printConfiguration      != null);
-        dumpCheckBox                            .setSelected(configuration.dump                    != null);
+        printSeedsCheckBox                      .setSelected(configuration.printSeeds         != null);
+        printConfigurationCheckBox              .setSelected(configuration.printConfiguration != null);
+        dumpCheckBox                            .setSelected(configuration.dump               != null);
 
         printUsageTextField                     .setText(fileName(configuration.printUsage));
+        optimizationsTextField                  .setText(configuration.optimizations             == null ? OPTIMIZATIONS_DEFAULT                : ListUtil.commaSeparatedString(configuration.optimizations));
         printMappingTextField                   .setText(fileName(configuration.printMapping));
         applyMappingTextField                   .setText(fileName(configuration.applyMapping));
         obfuscationDictionaryTextField          .setText(fileName(configuration.obfuscationDictionary));
+        keepPackageNamesTextField               .setText(configuration.keepPackageNames          == null ? ""                                   : ClassUtil.externalClassName(ListUtil.commaSeparatedString(configuration.keepPackageNames)));
         flattenPackageHierarchyTextField        .setText(configuration.flattenPackageHierarchy);
         repackageClassesTextField               .setText(configuration.repackageClasses);
         keepAttributesTextField                 .setText(configuration.keepAttributes            == null ? KEEP_ATTRIBUTE_DEFAULT               : ListUtil.commaSeparatedString(configuration.keepAttributes));
         newSourceFileAttributeTextField         .setText(configuration.newSourceFileAttribute    == null ? SOURCE_FILE_ATTRIBUTE_DEFAULT        : configuration.newSourceFileAttribute);
+        adaptClassStringsTextField              .setText(configuration.adaptClassStrings         == null ? ""                                   : ClassUtil.externalClassName(ListUtil.commaSeparatedString(configuration.adaptClassStrings)));
         adaptResourceFileNamesTextField         .setText(configuration.adaptResourceFileNames    == null ? ADAPT_RESOURCE_FILE_NAMES_DEFAULT    : ListUtil.commaSeparatedString(configuration.adaptResourceFileNames));
         adaptResourceFileContentsTextField      .setText(configuration.adaptResourceFileContents == null ? ADAPT_RESOURCE_FILE_CONTENTS_DEFAULT : ListUtil.commaSeparatedString(configuration.adaptResourceFileContents));
+        noteTextField                           .setText(ListUtil.commaSeparatedString(configuration.note));
+        warnTextField                           .setText(ListUtil.commaSeparatedString(configuration.warn));
+        keepDirectoriesTextField                .setText(ListUtil.commaSeparatedString(configuration.keepDirectories));
         printSeedsTextField                     .setText(fileName(configuration.printSeeds));
         printConfigurationTextField             .setText(fileName(configuration.printConfiguration));
         dumpTextField                           .setText(fileName(configuration.dump));
@@ -1098,43 +1161,47 @@ public class ProGuardGUI extends JFrame
 
         // Get the other options.
         configuration.shrink                           = shrinkCheckBox                          .isSelected();
-        configuration.printUsage                       = printUsageCheckBox                      .isSelected() ? new File(printUsageTextField                       .getText()) : null;
+        configuration.printUsage                       = printUsageCheckBox                      .isSelected() ? new File(printUsageTextField                                         .getText()) : null;
 
         configuration.optimize                         = optimizeCheckBox                        .isSelected();
-        configuration.optimizationPasses               = ((SpinnerNumberModel)optimizationPassesSpinner.getModel()).getNumber().intValue();
         configuration.allowAccessModification          = allowAccessModificationCheckBox         .isSelected();
         configuration.mergeInterfacesAggressively      = mergeInterfacesAggressivelyCheckBox     .isSelected();
+        configuration.optimizations                    = optimizationsTextField.getText().length() > 1 ?         ListUtil.commaSeparatedList(optimizationsTextField                   .getText()) : null;
+        configuration.optimizationPasses               = ((SpinnerNumberModel)optimizationPassesSpinner.getModel()).getNumber().intValue();
 
         configuration.obfuscate                        = obfuscateCheckBox                       .isSelected();
-        configuration.printMapping                     = printMappingCheckBox                    .isSelected() ? new File(printMappingTextField                                .getText()) : null;
-        configuration.applyMapping                     = applyMappingCheckBox                    .isSelected() ? new File(applyMappingTextField                                .getText()) : null;
-        configuration.obfuscationDictionary            = obfuscationDictionaryCheckBox           .isSelected() ? new File(obfuscationDictionaryTextField                       .getText()) : null;
-        configuration.classObfuscationDictionary       = classObfuscationDictionaryCheckBox      .isSelected() ? new File(classObfuscationDictionaryTextField                  .getText()) : null;
-        configuration.packageObfuscationDictionary     = packageObfuscationDictionaryCheckBox    .isSelected() ? new File(packageObfuscationDictionaryTextField                .getText()) : null;
+        configuration.printMapping                     = printMappingCheckBox                    .isSelected() ? new File(printMappingTextField                                       .getText()) : null;
+        configuration.applyMapping                     = applyMappingCheckBox                    .isSelected() ? new File(applyMappingTextField                                       .getText()) : null;
+        configuration.obfuscationDictionary            = obfuscationDictionaryCheckBox           .isSelected() ? new File(obfuscationDictionaryTextField                              .getText()) : null;
+        configuration.classObfuscationDictionary       = classObfuscationDictionaryCheckBox      .isSelected() ? new File(classObfuscationDictionaryTextField                         .getText()) : null;
+        configuration.packageObfuscationDictionary     = packageObfuscationDictionaryCheckBox    .isSelected() ? new File(packageObfuscationDictionaryTextField                       .getText()) : null;
         configuration.overloadAggressively             = overloadAggressivelyCheckBox            .isSelected();
         configuration.useUniqueClassMemberNames        = useUniqueClassMemberNamesCheckBox       .isSelected();
         configuration.useMixedCaseClassNames           = useMixedCaseClassNamesCheckBox          .isSelected();
-        configuration.flattenPackageHierarchy          = flattenPackageHierarchyCheckBox         .isSelected() ? ClassUtil.internalClassName(flattenPackageHierarchyTextField  .getText()) : null;
-        configuration.repackageClasses                 = repackageClassesCheckBox                .isSelected() ? ClassUtil.internalClassName(repackageClassesTextField         .getText()) : null;
-        configuration.keepAttributes                   = keepAttributesCheckBox                  .isSelected() ? ListUtil.commaSeparatedList(keepAttributesTextField           .getText()) : null;
-        configuration.newSourceFileAttribute           = newSourceFileAttributeCheckBox          .isSelected() ? newSourceFileAttributeTextField                               .getText()  : null;
-        configuration.adaptResourceFileNames           = adaptResourceFileNamesCheckBox          .isSelected() ? ListUtil.commaSeparatedList(adaptResourceFileNamesTextField   .getText()) : null;
-        configuration.adaptResourceFileContents        = adaptResourceFileContentsCheckBox       .isSelected() ? ListUtil.commaSeparatedList(adaptResourceFileContentsTextField.getText()) : null;
+        configuration.keepPackageNames                 = keepPackageNamesCheckBox                .isSelected() ? keepPackageNamesTextField.getText().length()  > 0 ? ListUtil.commaSeparatedList(ClassUtil.internalClassName(keepPackageNamesTextField.getText()))  : new ArrayList() : null;
+        configuration.flattenPackageHierarchy          = flattenPackageHierarchyCheckBox         .isSelected() ? ClassUtil.internalClassName(flattenPackageHierarchyTextField         .getText()) : null;
+        configuration.repackageClasses                 = repackageClassesCheckBox                .isSelected() ? ClassUtil.internalClassName(repackageClassesTextField                .getText()) : null;
+        configuration.keepAttributes                   = keepAttributesCheckBox                  .isSelected() ? ListUtil.commaSeparatedList(keepAttributesTextField                  .getText()) : null;
+        configuration.newSourceFileAttribute           = newSourceFileAttributeCheckBox          .isSelected() ? newSourceFileAttributeTextField                                      .getText()  : null;
+        configuration.adaptClassStrings                = adaptClassStringsCheckBox               .isSelected() ? adaptClassStringsTextField.getText().length() > 0 ? ListUtil.commaSeparatedList(ClassUtil.internalClassName(adaptClassStringsTextField.getText())) : new ArrayList() : null;
+        configuration.adaptResourceFileNames           = adaptResourceFileNamesCheckBox          .isSelected() ? ListUtil.commaSeparatedList(adaptResourceFileNamesTextField          .getText()) : null;
+        configuration.adaptResourceFileContents        = adaptResourceFileContentsCheckBox       .isSelected() ? ListUtil.commaSeparatedList(adaptResourceFileContentsTextField       .getText()) : null;
 
         configuration.preverify                        = preverifyCheckBox                       .isSelected();
         configuration.microEdition                     = microEditionCheckBox                    .isSelected();
         configuration.targetClassVersion               = targetCheckBox                          .isSelected() ? ClassUtil.internalClassVersion(targetComboBox.getSelectedItem().toString()) : 0;
 
         configuration.verbose                          = verboseCheckBox                         .isSelected();
-        configuration.note                             = noteCheckBox                            .isSelected();
-        configuration.warn                             = warnCheckBox                            .isSelected();
+        configuration.note                             = noteCheckBox                            .isSelected() ? noteTextField.getText().length() > 0 ? ListUtil.commaSeparatedList(ClassUtil.internalClassName(noteTextField.getText())) : null : new ArrayList();
+        configuration.warn                             = warnCheckBox                            .isSelected() ? warnTextField.getText().length() > 0 ? ListUtil.commaSeparatedList(ClassUtil.internalClassName(warnTextField.getText())) : null : new ArrayList();
         configuration.ignoreWarnings                   = ignoreWarningsCheckBox                  .isSelected();
         configuration.skipNonPublicLibraryClasses      = skipNonPublicLibraryClassesCheckBox     .isSelected();
         configuration.skipNonPublicLibraryClassMembers = skipNonPublicLibraryClassMembersCheckBox.isSelected();
+        configuration.keepDirectories                  = keepDirectoriesCheckBox                 .isSelected() ? keepDirectoriesTextField.getText().length() > 0 ? ListUtil.commaSeparatedList(ClassUtil.internalClassName(keepDirectoriesTextField.getText())) : new ArrayList() : null;
         configuration.lastModified                     = forceProcessingCheckBox                 .isSelected() ? Long.MAX_VALUE : System.currentTimeMillis();
-        configuration.printSeeds                       = printSeedsCheckBox                      .isSelected() ? new File(printSeedsTextField                                .getText()) : null;
-        configuration.printConfiguration               = printConfigurationCheckBox              .isSelected() ? new File(printConfigurationTextField                        .getText()) : null;
-        configuration.dump                             = dumpCheckBox                            .isSelected() ? new File(dumpTextField                                      .getText()) : null;
+        configuration.printSeeds                       = printSeedsCheckBox                      .isSelected() ? new File(printSeedsTextField                                         .getText()) : null;
+        configuration.printConfiguration               = printConfigurationCheckBox              .isSelected() ? new File(printConfigurationTextField                                 .getText()) : null;
+        configuration.dump                             = dumpCheckBox                            .isSelected() ? new File(dumpTextField                                               .getText()) : null;
 
         return configuration;
     }
@@ -1179,12 +1246,12 @@ public class ProGuardGUI extends JFrame
 
         for (int index = 0; index < keepSpecifications.size(); index++)
         {
-            KeepSpecification keepSpecification =
-                (KeepSpecification)keepSpecifications.get(index);
+            KeepClassSpecification keepClassSpecification =
+                (KeepClassSpecification)keepSpecifications.get(index);
 
-            if (keepSpecification.allowShrinking == allowShrinking)
+            if (keepClassSpecification.allowShrinking == allowShrinking)
             {
-                filteredKeepSpecifications.add(keepSpecification);
+                filteredKeepSpecifications.add(keepClassSpecification);
             }
         }
 
@@ -1198,7 +1265,7 @@ public class ProGuardGUI extends JFrame
      * matching keep specifications, and removes the matching keep
      * specifications as a side effect.
      */
-    private String findMatchingKeepSpecifications(KeepSpecification keepSpecificationTemplate,
+    private String findMatchingKeepSpecifications(KeepClassSpecification keepClassSpecificationTemplate,
                                                   List              keepSpecifications)
     {
         if (keepSpecifications == null)
@@ -1210,11 +1277,11 @@ public class ProGuardGUI extends JFrame
 
         for (int index = 0; index < keepSpecifications.size(); index++)
         {
-            KeepSpecification listedKeepSpecification =
-                (KeepSpecification)keepSpecifications.get(index);
-            String className = listedKeepSpecification.className;
-            keepSpecificationTemplate.className = className;
-            if (keepSpecificationTemplate.equals(listedKeepSpecification))
+            KeepClassSpecification listedKeepClassSpecification =
+                (KeepClassSpecification)keepSpecifications.get(index);
+            String className = listedKeepClassSpecification.className;
+            keepClassSpecificationTemplate.className = className;
+            if (keepClassSpecificationTemplate.equals(listedKeepClassSpecification))
             {
                 if (buffer == null)
                 {
@@ -1620,45 +1687,52 @@ public class ProGuardGUI extends JFrame
      */
     public static void main(final String[] args)
     {
-//        SwingUtil.invokeAndWait(new Runnable()
-//        {
-//            public void run()
+        try
+        {
+            SwingUtil.invokeAndWait(new Runnable()
             {
-                ProGuardGUI gui = new ProGuardGUI();
-                gui.pack();
-
-                Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-                Dimension guiSize    = gui.getSize();
-                gui.setLocation((screenSize.width - guiSize.width)   / 2,
-                                (screenSize.height - guiSize.height) / 2);
-                gui.show();
-
-                // Start the splash animation, unless specified otherwise.
-                int argIndex = 0;
-                if (argIndex < args.length &&
-                    NO_SPLASH_OPTION.startsWith(args[argIndex]))
+                public void run()
                 {
-                    gui.skipSplash();
-                    argIndex++;
-                }
-                else
-                {
-                    gui.startSplash();
-                }
+                    ProGuardGUI gui = new ProGuardGUI();
+                    gui.pack();
 
-                // Load an initial configuration, if specified.
-                if (argIndex < args.length)
-                {
-                    gui.loadConfiguration(new File(args[argIndex]));
-                    argIndex++;
-                }
+                    Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+                    Dimension guiSize    = gui.getSize();
+                    gui.setLocation((screenSize.width - guiSize.width)   / 2,
+                                    (screenSize.height - guiSize.height) / 2);
+                    gui.show();
 
-                if (argIndex < args.length)
-                {
-                    System.out.println(gui.getClass().getName() + ": ignoring extra arguments [" + args[argIndex] + "...]");
-                }
+                    // Start the splash animation, unless specified otherwise.
+                    int argIndex = 0;
+                    if (argIndex < args.length &&
+                        NO_SPLASH_OPTION.startsWith(args[argIndex]))
+                    {
+                        gui.skipSplash();
+                        argIndex++;
+                    }
+                    else
+                    {
+                        gui.startSplash();
+                    }
 
-            }
-//        });
+                    // Load an initial configuration, if specified.
+                    if (argIndex < args.length)
+                    {
+                        gui.loadConfiguration(new File(args[argIndex]));
+                        argIndex++;
+                    }
+
+                    if (argIndex < args.length)
+                    {
+                        System.out.println(gui.getClass().getName() + ": ignoring extra arguments [" + args[argIndex] + "...]");
+                    }
+
+                }
+            });
+        }
+        catch (Exception e)
+        {
+            // Nothing.
+        }
     }
 }

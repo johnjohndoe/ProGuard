@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -27,6 +27,7 @@ import proguard.classfile.constant.ClassConstant;
 import proguard.classfile.constant.visitor.ConstantVisitor;
 import proguard.classfile.util.*;
 import proguard.classfile.visitor.ClassVisitor;
+import proguard.util.*;
 
 import java.util.*;
 
@@ -49,24 +50,29 @@ implements   ClassVisitor,
     private final DictionaryNameFactory classNameFactory;
     private final DictionaryNameFactory packageNameFactory;
     private final boolean               useMixedCaseClassNames;
+    private final StringMatcher         keepPackageNamesMatcher;
     private final String                flattenPackageHierarchy;
     private final String                repackageClasses;
     private final boolean               allowAccessModification;
 
-    private final Set classNamesToAvoid                  = new HashSet();
+    private final Set classNamesToAvoid                       = new HashSet();
 
     // Map: [package prefix - new package prefix]
-    private final Map packagePrefixMap                   = new HashMap();
+    private final Map packagePrefixMap                        = new HashMap();
 
     // Map: [package prefix - package name factory]
-    private final Map packagePrefixPackageNameFactoryMap = new HashMap();
+    private final Map packagePrefixPackageNameFactoryMap      = new HashMap();
 
-    // Map: [package prefix - class name factory]
-    private final Map packagePrefixClassNameFactoryMap   = new HashMap();
+    // Map: [package prefix - numeric class name factory]
+    private final Map packagePrefixClassNameFactoryMap        = new HashMap();
 
-    // A field acting as a temporary variable and as a return value for names
-    // of outer classes.
-    private String newClassName;
+    // Map: [package prefix - numeric class name factory]
+    private final Map packagePrefixNumericClassNameFactoryMap = new HashMap();
+
+    // Field acting as temporary variables and as return values for names
+    // of outer classes and types of inner classes.
+    private String  newClassName;
+    private boolean numericClassName;
 
 
     /**
@@ -78,6 +84,8 @@ implements   ClassVisitor,
      *                                dictionary.
      * @param useMixedCaseClassNames  specifies whether obfuscated packages and
      *                                classes can get mixed-case names.
+     * @param keepPackageNames        the optional filter for which matching
+     *                                package names are kept.
      * @param flattenPackageHierarchy the base package if the obfuscated package
      *                                hierarchy is to be flattened.
      * @param repackageClasses        the base package if the obfuscated classes
@@ -89,6 +97,7 @@ implements   ClassVisitor,
                            DictionaryNameFactory classNameFactory,
                            DictionaryNameFactory packageNameFactory,
                            boolean               useMixedCaseClassNames,
+                           List                  keepPackageNames,
                            String                flattenPackageHierarchy,
                            String                repackageClasses,
                            boolean               allowAccessModification)
@@ -111,6 +120,8 @@ implements   ClassVisitor,
         }
 
         this.useMixedCaseClassNames  = useMixedCaseClassNames;
+        this.keepPackageNamesMatcher = keepPackageNames == null ? null :
+            new ListParser(new FileNameParser()).parse(keepPackageNames);
         this.flattenPackageHierarchy = flattenPackageHierarchy;
         this.repackageClasses        = repackageClasses;
         this.allowAccessModification = allowAccessModification;
@@ -137,14 +148,16 @@ implements   ClassVisitor,
             programClass.attributesAccept(this);
 
             // Figure out a package prefix. The package prefix may actually be
-            // the outer class prefix, if any, or it may be the fixed base
+            // the an outer class prefix, if any, or it may be the fixed base
             // package, if classes are to be repackaged.
             String newPackagePrefix = newClassName != null ?
                 newClassName + ClassConstants.INTERNAL_INNER_CLASS_SEPARATOR :
                 newPackagePrefix(ClassUtil.internalPackagePrefix(programClass.getName()));
 
-            // Come up with a new class name.
-            newClassName = generateUniqueClassName(newPackagePrefix);
+            // Come up with a new class name, numeric or ordinary.
+            newClassName = newClassName != null && numericClassName ?
+                generateUniqueNumericClassName(newPackagePrefix) :
+                generateUniqueClassName(newPackagePrefix);
 
             setNewClassName(programClass, newClassName);
         }
@@ -167,6 +180,12 @@ implements   ClassVisitor,
     {
         // Make sure the enclosing class has a name.
         enclosingMethodAttribute.referencedClassAccept(this);
+
+        String innerClassName = clazz.getName();
+        String outerClassName = clazz.getClassName(enclosingMethodAttribute.u2classIndex);
+
+        numericClassName = isNumericClassName(innerClassName,
+                                              outerClassName);
     }
 
 
@@ -178,11 +197,45 @@ implements   ClassVisitor,
         int innerClassIndex = innerClassesInfo.u2innerClassIndex;
         int outerClassIndex = innerClassesInfo.u2outerClassIndex;
         if (innerClassIndex != 0 &&
-            outerClassIndex != 0 &&
-            clazz.getClassName(innerClassIndex).equals(clazz.getName()))
+            outerClassIndex != 0)
         {
-            clazz.constantPoolEntryAccept(outerClassIndex, this);
+            String innerClassName = clazz.getClassName(innerClassIndex);
+            if (innerClassName.equals(clazz.getName()))
+            {
+                clazz.constantPoolEntryAccept(outerClassIndex, this);
+
+                String outerClassName = clazz.getClassName(outerClassIndex);
+
+                numericClassName = isNumericClassName(innerClassName,
+                                                      outerClassName);
+            }
         }
+    }
+
+
+    /**
+     * Returns whether the given inner class name is a numeric name.
+     */
+    private boolean isNumericClassName(String innerClassName,
+                                       String outerClassName)
+    {
+        int innerClassNameStart  = outerClassName.length() + 1;
+        int innerClassNameLength = innerClassName.length();
+
+        if (innerClassNameStart >= innerClassNameLength)
+        {
+            return false;
+        }
+
+        for (int index = innerClassNameStart; index < innerClassNameLength; index++)
+        {
+            if (!Character.isDigit(innerClassName.charAt(index)))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
 
@@ -217,7 +270,7 @@ implements   ClassVisitor,
                     String className = programClass.getName();
 
                     // Keep the package name for all other classes in the same
-                    // package. Do this resursively if we're not doing any
+                    // package. Do this recursively if we're not doing any
                     // repackaging.
                     mapPackageName(className,
                                    newClassName,
@@ -275,6 +328,15 @@ implements   ClassVisitor,
         String newPackagePrefix = (String)packagePrefixMap.get(packagePrefix);
         if (newPackagePrefix == null)
         {
+            // Are we keeping the package name?
+            if (keepPackageNamesMatcher != null &&
+                keepPackageNamesMatcher.matches(packagePrefix.length() > 0 ?
+                    packagePrefix.substring(0, packagePrefix.length()-1) :
+                    packagePrefix))
+            {
+                return packagePrefix;
+            }
+
             // Are we forcing a new package prefix?
             if (repackageClasses != null)
             {
@@ -282,7 +344,7 @@ implements   ClassVisitor,
             }
 
             // Are we forcing a new superpackage prefix?
-            // Othewrise figure out the new superpackage prefix, recursively.
+            // Otherwise figure out the new superpackage prefix, recursively.
             String newSuperPackagePrefix = flattenPackageHierarchy != null ?
                 flattenPackageHierarchy :
                 newPackagePrefix(ClassUtil.internalPackagePrefix(packagePrefix));
@@ -322,6 +384,17 @@ implements   ClassVisitor,
                                                    packageNameFactory);
         }
 
+        return generateUniquePackagePrefix(newSuperPackagePrefix, packageNameFactory);
+    }
+
+
+    /**
+     * Creates a new package prefix in the given new superpackage, with the
+     * given package name factory.
+     */
+    private String generateUniquePackagePrefix(String      newSuperPackagePrefix,
+                                               NameFactory packageNameFactory)
+    {
         // Come up with package names until we get an original one.
         String newPackagePrefix;
         do
@@ -347,8 +420,8 @@ implements   ClassVisitor,
             (NameFactory)packagePrefixClassNameFactoryMap.get(newPackagePrefix);
         if (classNameFactory == null)
         {
-            // We haven't seen classes in this package before. Create a new name
-            // factory for them.
+            // We haven't seen classes in this package before.
+            // Create a new name factory for them.
             classNameFactory = new SimpleNameFactory(useMixedCaseClassNames);
             if (this.classNameFactory != null)
             {
@@ -361,6 +434,39 @@ implements   ClassVisitor,
                                                  classNameFactory);
         }
 
+        return generateUniqueClassName(newPackagePrefix, classNameFactory);
+    }
+
+
+    /**
+     * Creates a new class name in the given new package.
+     */
+    private String generateUniqueNumericClassName(String newPackagePrefix)
+    {
+        // Find the right name factory for this package.
+        NameFactory classNameFactory =
+            (NameFactory)packagePrefixNumericClassNameFactoryMap.get(newPackagePrefix);
+        if (classNameFactory == null)
+        {
+            // We haven't seen classes in this package before.
+            // Create a new name factory for them.
+            classNameFactory = new NumericNameFactory();
+
+            packagePrefixNumericClassNameFactoryMap.put(newPackagePrefix,
+                                                        classNameFactory);
+        }
+
+        return generateUniqueClassName(newPackagePrefix, classNameFactory);
+    }
+
+
+    /**
+     * Creates a new class name in the given new package, with the given
+     * class name factory.
+     */
+    private String generateUniqueClassName(String      newPackagePrefix,
+                                           NameFactory classNameFactory)
+    {
         // Come up with class names until we get an original one.
         String newClassName;
         do
@@ -373,6 +479,7 @@ implements   ClassVisitor,
 
         return newClassName;
     }
+
 
     /**
      * Returns the given class name, unchanged if mixed-case class names are

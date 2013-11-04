@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -92,7 +92,7 @@ public class ClassSpecificationElement extends DataType
             new ClassSpecification(null,
                                    requiredAccessFlags(true,  access, type),
                                    requiredAccessFlags(false, access, type),
-                                   annotation        != null ? ClassUtil.internalType(annotation)   : null,
+                                   annotation        != null ? ClassUtil.internalType(annotation)        : null,
                                    name              != null ? ClassUtil.internalClassName(name)         : null,
                                    extendsAnnotation != null ? ClassUtil.internalType(extendsAnnotation) : null,
                                    extends_          != null ? ClassUtil.internalClassName(extends_)     : null);

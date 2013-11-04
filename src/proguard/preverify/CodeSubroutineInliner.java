@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -68,11 +68,32 @@ implements   AttributeVisitor,
 //            clazz.getName().equals("abc/Def") &&
 //            method.getName(clazz).equals("abc");
 
-        if (DEBUG)
+        // TODO: Remove this when the subroutine inliner has stabilized.
+        // Catch any unexpected exceptions from the actual visiting method.
+        try
         {
-            method.accept(clazz, new ClassPrinter());
+            // Process the code.
+            visitCodeAttribute0(clazz, method, codeAttribute);
         }
+        catch (RuntimeException ex)
+        {
+            System.err.println("Unexpected error while inlining subroutines:");
+            System.err.println("  Class       = ["+clazz.getName()+"]");
+            System.err.println("  Method      = ["+method.getName(clazz)+method.getDescriptor(clazz)+"]");
+            System.err.println("  Exception   = ["+ex.getClass().getName()+"] ("+ex.getMessage()+")");
 
+            if (DEBUG)
+            {
+                method.accept(clazz, new ClassPrinter());
+            }
+
+            throw ex;
+        }
+    }
+
+
+    public void visitCodeAttribute0(Clazz clazz, Method method, CodeAttribute codeAttribute)
+    {
         branchTargetFinder.visitCodeAttribute(clazz, method, codeAttribute);
 
         // Don't bother if there aren't any subroutines anyway.
@@ -136,11 +157,6 @@ implements   AttributeVisitor,
         // End and update the code attribute.
         codeAttributeComposer.endCodeFragment();
         codeAttributeComposer.visitCodeAttribute(clazz, method, codeAttribute);
-
-        if (DEBUG)
-        {
-            method.accept(clazz, new ClassPrinter());
-        }
     }
 
 
@@ -368,7 +384,15 @@ implements   AttributeVisitor,
 
         if (DEBUG)
         {
-            System.out.println("  Appending exception ["+startPC+" -> "+endPC+"] -> "+handlerPC);
+            if (startPC == exceptionInfo.u2startPC &&
+                endPC   == exceptionInfo.u2endPC)
+            {
+                System.out.println("  Appending exception ["+startPC+" -> "+endPC+"] -> "+handlerPC);
+            }
+            else
+            {
+                System.out.println("  Appending clipped exception ["+exceptionInfo.u2startPC+" -> "+exceptionInfo.u2endPC+"] ~> ["+startPC+" -> "+endPC+"] -> "+handlerPC);
+            }
         }
 
         // Append the exception. Note that exceptions with empty try blocks

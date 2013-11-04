@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -253,6 +253,35 @@ public class MethodOptimizationInfo
     public Value getReturnValue()
     {
         return returnValue;
+    }
+
+
+    public void merge(MethodOptimizationInfo other)
+    {
+        if (other != null)
+        {
+            this.hasNoSideEffects      &= other.hasNoSideEffects;
+            this.hasSideEffects        |= other.hasSideEffects;
+            //this.canBeMadePrivate    &= other.canBeMadePrivate;
+            this.catchesExceptions     |= other.catchesExceptions;
+            this.branchesBackward      |= other.branchesBackward;
+            this.invokesSuperMethods   |= other.invokesSuperMethods;
+            this.accessesPrivateCode   |= other.accessesPrivateCode;
+            this.accessesPackageCode   |= other.accessesPackageCode;
+            this.accessesProtectedCode |= other.accessesProtectedCode;
+        }
+        else
+        {
+            this.hasNoSideEffects      = false;
+            this.hasSideEffects        = true;
+            //this.canBeMadePrivate    = false;
+            this.catchesExceptions     = true;
+            this.branchesBackward      = true;
+            this.invokesSuperMethods   = true;
+            this.accessesPrivateCode   = true;
+            this.accessesPackageCode   = true;
+            this.accessesProtectedCode = true;
+        }
     }
 
 

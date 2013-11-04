@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -59,20 +59,21 @@ public interface MappingProcessor
     /**
      * Processes the given method name mapping.
      *
-     * @param className              the original class name.
-     * @param firstLineNumber        the first line number of the method, or
-     *                               0 if it is not known.
-     * @param lastLineNumber         the last line number of the method, or
-     *                               0 if it is not known.
-     * @param methodReturnType       the original external method return type.
-     * @param methodNameAndArguments the original external method name and
-     *                               arguments.
-     * @param newMethodName          the new method name.
+     * @param className        the original class name.
+     * @param firstLineNumber  the first line number of the method, or 0 if it
+     *                         is not known.
+     * @param lastLineNumber   the last line number of the method, or 0 if it
+     *                         is not known.
+     * @param methodReturnType the original external method return type.
+     * @param methodName       the original external method name.
+     * @param methodArguments  the original external method arguments.
+     * @param newMethodName    the new method name.
      */
     public void processMethodMapping(String className,
                                      int    firstLineNumber,
                                      int    lastLineNumber,
                                      String methodReturnType,
-                                     String methodNameAndArguments,
+                                     String methodName,
+                                     String methodArguments,
                                      String newMethodName);
 }

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -43,23 +43,47 @@ public class ConfigurationTask extends Task
     public void appendTo(Configuration configuration)
     {
         // Append all of these configuration entries to the given configuration.
-        configuration.programJars = extendClassPath(configuration.programJars,
-                                                    this.configuration.programJars);
+        configuration.programJars               = extendClassPath(configuration.programJars,
+                                                                  this.configuration.programJars);
 
-        configuration.libraryJars = extendClassPath(configuration.libraryJars,
-                                                    this.configuration.libraryJars);
+        configuration.libraryJars               = extendClassPath(configuration.libraryJars,
+                                                                  this.configuration.libraryJars);
 
-        configuration.keep = extendClassSpecifications(configuration.keep,
-                                                       this.configuration.keep);
+        configuration.keep                      = extendClassSpecifications(configuration.keep,
+                                                                            this.configuration.keep);
 
-        configuration.whyAreYouKeeping = extendClassSpecifications(configuration.whyAreYouKeeping,
-                                                                   this.configuration.whyAreYouKeeping);
+        configuration.keepDirectories           = extendList(configuration.keepDirectories,
+                                                             this.configuration.keepDirectories);
 
-        configuration.assumeNoSideEffects = extendClassSpecifications(configuration.assumeNoSideEffects,
-                                                                      this.configuration.assumeNoSideEffects);
+        configuration.whyAreYouKeeping          = extendClassSpecifications(configuration.whyAreYouKeeping,
+                                                                            this.configuration.whyAreYouKeeping);
 
-        configuration.keepAttributes = extendList(configuration.keepAttributes,
-                                                  this.configuration.keepAttributes);
+        configuration.optimizations             = extendClassSpecifications(configuration.optimizations,
+                                                                            this.configuration.optimizations);
+
+        configuration.assumeNoSideEffects       = extendClassSpecifications(configuration.assumeNoSideEffects,
+                                                                            this.configuration.assumeNoSideEffects);
+
+        configuration.keepPackageNames          = extendList(configuration.keepPackageNames,
+                                                             this.configuration.keepPackageNames);
+
+        configuration.keepAttributes            = extendList(configuration.keepAttributes,
+                                                             this.configuration.keepAttributes);
+
+        configuration.adaptClassStrings         = extendList(configuration.adaptClassStrings,
+                                                             this.configuration.adaptClassStrings);
+
+        configuration.adaptResourceFileNames    = extendList(configuration.adaptResourceFileNames,
+                                                             this.configuration.adaptResourceFileNames);
+
+        configuration.adaptResourceFileContents = extendList(configuration.adaptResourceFileContents,
+                                                             this.configuration.adaptResourceFileContents);
+
+        configuration.note                      = extendList(configuration.note,
+                                                             this.configuration.note);
+
+        configuration.warn                      = extendList(configuration.warn,
+                                                             this.configuration.warn);
     }
 
 
@@ -86,6 +110,20 @@ public class ConfigurationTask extends Task
         configuration.libraryJars = extendClassPath(configuration.libraryJars,
                                                     classPathElement,
                                                     false);
+    }
+
+
+    public void addConfiguredKeepdirectory(FilterElement filterElement)
+    {
+        configuration.keepDirectories = extendFilter(configuration.keepDirectories,
+                                                     filterElement);
+    }
+
+
+    public void addConfiguredKeepdirectories(FilterElement filterElement)
+    {
+        configuration.keepDirectories = extendFilter(configuration.keepDirectories,
+                                                     filterElement);
     }
 
 
@@ -166,10 +204,52 @@ public class ConfigurationTask extends Task
     }
 
 
-    public void addConfiguredKeepattribute(KeepAttributeElement keepAttributeElement)
+    public void addConfiguredOptimizations(FilterElement filterElement)
     {
-        configuration.keepAttributes = extendAttributes(configuration.keepAttributes,
-                                                        keepAttributeElement);
+        addConfiguredOptimization(filterElement);
+    }
+
+
+    public void addConfiguredOptimization(FilterElement filterElement)
+    {
+        configuration.optimizations = extendFilter(configuration.optimizations,
+                                                   filterElement);
+    }
+
+
+    public void addConfiguredKeeppackagename(FilterElement filterElement)
+    {
+        configuration.keepPackageNames = extendFilter(configuration.keepPackageNames,
+                                                      filterElement,
+                                                      true);
+    }
+
+
+    public void addConfiguredKeeppackagenames(FilterElement filterElement)
+    {
+        configuration.keepPackageNames = extendFilter(configuration.keepPackageNames,
+                                                      filterElement,
+                                                      true);
+    }
+
+
+    public void addConfiguredKeepattributes(FilterElement filterElement)
+    {
+        addConfiguredKeepattribute(filterElement);
+    }
+
+
+    public void addConfiguredKeepattribute(FilterElement filterElement)
+    {
+        configuration.keepAttributes = extendFilter(configuration.keepAttributes,
+                                                    filterElement);
+    }
+
+
+    public void addConfiguredAdaptclassstrings(FilterElement filterElement)
+    {
+        configuration.adaptClassStrings = extendFilter(configuration.adaptClassStrings,
+                                                       filterElement, true);
     }
 
 
@@ -184,6 +264,18 @@ public class ConfigurationTask extends Task
     {
         configuration.adaptResourceFileContents = extendFilter(configuration.adaptResourceFileContents,
                                                                filterElement);
+    }
+
+
+    public void addConfiguredDontnote(FilterElement filterElement)
+    {
+        configuration.note = extendFilter(configuration.note, filterElement, true);
+    }
+
+
+    public void addConfiguredDontwarn(FilterElement filterElement)
+    {
+        configuration.warn = extendFilter(configuration.warn, filterElement, true);
     }
 
 
@@ -308,29 +400,23 @@ public class ConfigurationTask extends Task
     }
 
 
-    private List extendAttributes(List                 attributes,
-                                  KeepAttributeElement keepAttributeElement)
+    private List extendFilter(List          filter,
+                              FilterElement filterElement)
     {
-        if (attributes == null)
-        {
-            attributes = new ArrayList();
-        }
-
-        keepAttributeElement.appendTo(attributes);
-
-        return attributes;
+        return extendFilter(filter, filterElement, false);
     }
 
 
     private List extendFilter(List          filter,
-                              FilterElement filterElement)
+                              FilterElement filterElement,
+                              boolean       internal)
     {
         if (filter == null)
         {
             filter = new ArrayList();
         }
 
-        filterElement.appendTo(filter);
+        filterElement.appendTo(filter, internal);
 
         return filter;
     }

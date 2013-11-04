@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -20,10 +20,13 @@
  */
 package proguard.gui;
 
+import proguard.util.ListUtil;
+
 import javax.swing.*;
 import javax.swing.border.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.List;
 
 /**
  * This <code>JDialog</code> allows the user to enter a String.
@@ -177,100 +180,100 @@ public class FilterDialog extends JDialog
     /**
      * Sets the filter to be represented in this dialog.
      */
-    public void setFilter(String filter)
+    public void setFilter(List filter)
     {
-        filterTextField.setText(filter != null ? filter : DEFAULT_FILTER);
+        filterTextField.setText(filter != null ? ListUtil.commaSeparatedString(filter) : DEFAULT_FILTER);
     }
 
 
     /**
      * Returns the filter currently represented in this dialog.
      */
-    public String getFilter()
+    public List getFilter()
     {
         String filter = filterTextField.getText();
 
-        return filter.equals(DEFAULT_FILTER) ? null : filter;
+        return filter.equals(DEFAULT_FILTER) ? null : ListUtil.commaSeparatedList(filter);
     }
 
 
     /**
      * Sets the jar filter to be represented in this dialog.
      */
-    public void setJarFilter(String filter)
+    public void setJarFilter(List filter)
     {
-        jarFilterTextField.setText(filter != null ? filter : DEFAULT_JAR_FILTER);
+        jarFilterTextField.setText(filter != null ? ListUtil.commaSeparatedString(filter) : DEFAULT_JAR_FILTER);
     }
 
 
     /**
      * Returns the jar filter currently represented in this dialog.
      */
-    public String getJarFilter()
+    public List getJarFilter()
     {
         String filter = jarFilterTextField.getText();
 
-        return filter.equals(DEFAULT_JAR_FILTER) ? null : filter;
+        return filter.equals(DEFAULT_JAR_FILTER) ? null : ListUtil.commaSeparatedList(filter);
     }
 
 
     /**
      * Sets the war filter to be represented in this dialog.
      */
-    public void setWarFilter(String filter)
+    public void setWarFilter(List filter)
     {
-        warFilterTextField.setText(filter != null ? filter : DEFAULT_WAR_FILTER);
+        warFilterTextField.setText(filter != null ? ListUtil.commaSeparatedString(filter) : DEFAULT_WAR_FILTER);
     }
 
 
     /**
      * Returns the war filter currently represented in this dialog.
      */
-    public String getWarFilter()
+    public List getWarFilter()
     {
         String filter = warFilterTextField.getText();
 
-        return filter.equals(DEFAULT_WAR_FILTER) ? null : filter;
+        return filter.equals(DEFAULT_WAR_FILTER) ? null : ListUtil.commaSeparatedList(filter);
     }
 
 
     /**
      * Sets the ear filter to be represented in this dialog.
      */
-    public void setEarFilter(String filter)
+    public void setEarFilter(List filter)
     {
-        earFilterTextField.setText(filter != null ? filter : DEFAULT_EAR_FILTER);
+        earFilterTextField.setText(filter != null ? ListUtil.commaSeparatedString(filter) : DEFAULT_EAR_FILTER);
     }
 
 
     /**
      * Returns the ear filter currently represented in this dialog.
      */
-    public String getEarFilter()
+    public List getEarFilter()
     {
         String filter = earFilterTextField.getText();
 
-        return filter.equals(DEFAULT_EAR_FILTER) ? null : filter;
+        return filter.equals(DEFAULT_EAR_FILTER) ? null : ListUtil.commaSeparatedList(filter);
     }
 
 
     /**
      * Sets the zip filter to be represented in this dialog.
      */
-    public void setZipFilter(String filter)
+    public void setZipFilter(List filter)
     {
-        zipFilterTextField.setText(filter != null ? filter : DEFAULT_ZIP_FILTER);
+        zipFilterTextField.setText(filter != null ? ListUtil.commaSeparatedString(filter) : DEFAULT_ZIP_FILTER);
     }
 
 
     /**
      * Returns the zip filter currently represented in this dialog.
      */
-    public String getZipFilter()
+    public List getZipFilter()
     {
         String filter = zipFilterTextField.getText();
 
-        return filter.equals(DEFAULT_ZIP_FILTER) ? null : filter;
+        return filter.equals(DEFAULT_ZIP_FILTER) ? null : ListUtil.commaSeparatedList(filter);
     }
 
 

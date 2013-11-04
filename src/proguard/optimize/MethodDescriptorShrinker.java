@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -47,7 +47,7 @@ implements   MemberVisitor,
     private static final boolean DEBUG = false;
 
 
-    private final MemberVisitor extraParameterMemberVisitor;
+    private final MemberVisitor extraMemberVisitor;
 
 
     /**
@@ -61,13 +61,12 @@ implements   MemberVisitor,
 
     /**
      * Creates a new MethodDescriptorShrinker with an extra visitor.
-     * @param extraParameterMemberVisitor an optional extra visitor for all
-     *                                    methods whose parameters have been
-     *                                    simplified.
+     * @param extraMemberVisitor an optional extra visitor for all methods whose
+     *                           parameters have been simplified.
      */
-    public MethodDescriptorShrinker(MemberVisitor extraParameterMemberVisitor)
+    public MethodDescriptorShrinker(MemberVisitor extraMemberVisitor)
     {
-        this.extraParameterMemberVisitor = extraParameterMemberVisitor;
+        this.extraMemberVisitor = extraMemberVisitor;
     }
 
 
@@ -124,9 +123,9 @@ implements   MemberVisitor,
                 constantPoolEditor.addUtf8Constant(newDescriptor);
 
             // Visit the method, if required.
-            if (extraParameterMemberVisitor != null)
+            if (extraMemberVisitor != null)
             {
-                extraParameterMemberVisitor.visitProgramMethod(programClass, programMethod);
+                extraMemberVisitor.visitProgramMethod(programClass, programMethod);
             }
         }
     }

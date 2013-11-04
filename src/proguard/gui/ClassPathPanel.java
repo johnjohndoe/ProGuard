@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -20,13 +20,14 @@
  */
 package proguard.gui;
 
+import proguard.*;
+import proguard.util.ListUtil;
+
+import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
-
-import javax.swing.*;
-
-import proguard.*;
+import java.util.List;
 
 /**
  * This <code>ListPanel</code> allows the user to add, edit, filter, move, and
@@ -417,7 +418,7 @@ class ClassPathPanel extends ListPanel
         }
 
 
-        private StringBuffer appendFilter(StringBuffer filter, String additionalFilter)
+        private StringBuffer appendFilter(StringBuffer filter, List additionalFilter)
         {
             if (filter != null)
             {
@@ -431,7 +432,7 @@ class ClassPathPanel extends ListPanel
                     filter = new StringBuffer().append('(');
                 }
 
-                filter.append(additionalFilter);
+                filter.append(ListUtil.commaSeparatedString(additionalFilter));
             }
 
             return filter;

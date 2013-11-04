@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -143,7 +143,9 @@ implements   ClassVisitor,
                 missingWarningPrinter != null)
             {
                 // We didn't find the superclass or interface. Print a warning.
-                missingWarningPrinter.print("Warning: " +
+                missingWarningPrinter.print(referencingClassName,
+                                            name,
+                                            "Warning: " +
                                             ClassUtil.externalClassName(referencingClassName) +
                                             ": can't find superclass or interface " +
                                             ClassUtil.externalClassName(name));
@@ -153,7 +155,9 @@ implements   ClassVisitor,
         {
             // The superclass or interface was found in the program class pool.
             // Print a warning.
-            dependencyWarningPrinter.print("Warning: library class " +
+            dependencyWarningPrinter.print(referencingClassName,
+                                           name,
+                                           "Warning: library class " +
                                            ClassUtil.externalClassName(referencingClassName) +
                                            " extends or implements program class " +
                                            ClassUtil.externalClassName(name));

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -37,6 +37,10 @@ public class ListParser implements StringParser
     private final StringParser stringParser;
 
 
+    /**
+     * Creates a new ListParser that parses individual elements in the
+     * comma-separated list with the given StringParser.
+     */
     public ListParser(StringParser stringParser)
     {
         this.stringParser = stringParser;
@@ -52,11 +56,11 @@ public class ListParser implements StringParser
     }
 
 
-    // Small utility methods.
-
     /**
      * Creates a StringMatcher for the given regular expression, which can
      * be a list of optionally negated simple entries.
+     * <p>
+     * An empty list results in a StringMatcher that matches any string.
      */
     public StringMatcher parse(List regularExpressions)
     {
@@ -79,9 +83,11 @@ public class ListParser implements StringParser
                     (StringMatcher)new OrMatcher(entryMatcher, listMatcher);
         }
 
-        return listMatcher;
+        return listMatcher != null ? listMatcher : new ConstantMatcher(true);
     }
 
+
+    // Small utility methods.
 
     /**
      * Creates a StringMatcher for the given regular expression, which is a

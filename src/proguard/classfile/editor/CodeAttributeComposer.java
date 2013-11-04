@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -69,9 +69,9 @@ implements   AttributeVisitor,
 
     private final int[]   codeFragmentOffsets  = new int[MAXIMUM_LEVELS];
     private final int[]   codeFragmentLengths  = new int[MAXIMUM_LEVELS];
-    private final int[][] instructionOffsetMap = new int[MAXIMUM_LEVELS][ClassConstants.TYPICAL_CODE_LENGTH];
+    private final int[][] instructionOffsetMap = new int[MAXIMUM_LEVELS][ClassConstants.TYPICAL_CODE_LENGTH + 1];
 
-    private ExceptionInfo[] exceptionTable   =  new ExceptionInfo[ClassConstants.TYPICAL_EXCEPTION_TABLE_LENGTH];
+    private ExceptionInfo[] exceptionTable = new ExceptionInfo[ClassConstants.TYPICAL_EXCEPTION_TABLE_LENGTH];
 
     private int expectedStackMapFrameOffset;
 
@@ -136,16 +136,8 @@ implements   AttributeVisitor,
 
         // Make sure there is sufficient space for adding the code fragment.
         maximumCodeLength += maximumCodeFragmentLength;
-        if (code.length < maximumCodeLength)
-        {
-            byte[] newCode = new byte[maximumCodeLength];
-            System.arraycopy(code, 0, newCode, 0, codeLength);
-            code = newCode;
 
-            int[] newOldInstructionOffsets = new int[maximumCodeLength];
-            System.arraycopy(oldInstructionOffsets, 0, newOldInstructionOffsets, 0, codeLength);
-            oldInstructionOffsets = newOldInstructionOffsets;
-        }
+        ensureCodeLength(maximumCodeLength);
 
         // Try to reuse the previous array for this code fragment.
         if (instructionOffsetMap[level].length <= maximumCodeFragmentLength)
@@ -180,6 +172,11 @@ implements   AttributeVisitor,
             println("["+codeLength+"] <- ", instruction.toString(oldInstructionOffset));
         }
 
+        // Make sure the code array is large enough.
+        int newCodeLength = codeLength + instruction.length(codeLength);
+
+        ensureCodeLength(newCodeLength);
+
         // Remember the old offset of the appended instruction.
         oldInstructionOffsets[codeLength] = oldInstructionOffset;
 
@@ -195,7 +192,7 @@ implements   AttributeVisitor,
         instructionOffsetMap[level][oldInstructionOffset] = codeLength;
 
         // Continue appending at the next instruction offset.
-        codeLength += instruction.length(codeLength);
+        codeLength = newCodeLength;
     }
 
 
@@ -316,7 +313,7 @@ implements   AttributeVisitor,
                 int handlerPC = -exceptionInfo.u2handlerPC;
                 if (handlerPC > 0)
                 {
-                    if (instructionOffsetMap[level][handlerPC] < codeLength)
+                    if (remappableInstructionOffset(handlerPC))
                     {
                         exceptionInfo.u2handlerPC = remapInstructionOffset(handlerPC);
                     }
@@ -492,10 +489,10 @@ implements   AttributeVisitor,
         // handlers are negated, in order to mark them as external.
         int handlerPC = exceptionInfo.u2handlerPC;
         exceptionInfo.u2handlerPC =
-            allowExternalExceptionHandlers &&
-            instructionOffsetMap[level][handlerPC] >= codeLength ?
-                -handlerPC :
-                remapInstructionOffset(handlerPC);
+            !allowExternalExceptionHandlers ||
+            remappableInstructionOffset(handlerPC) ?
+                remapInstructionOffset(handlerPC) :
+                -handlerPC;
     }
 
 
@@ -603,6 +600,27 @@ implements   AttributeVisitor,
     // Small utility methods.
 
     /**
+     * Make sure the code arrays have at least the given size.
+     */
+    private void ensureCodeLength(int newCodeLength)
+    {
+        if (code.length < newCodeLength)
+        {
+            // Add 20% to avoid extending the arrays too often.
+            newCodeLength = newCodeLength * 6 / 5;
+
+            byte[] newCode = new byte[newCodeLength];
+            System.arraycopy(code, 0, newCode, 0, codeLength);
+            code = newCode;
+
+            int[] newOldInstructionOffsets = new int[newCodeLength];
+            System.arraycopy(oldInstructionOffsets, 0, newOldInstructionOffsets, 0, codeLength);
+            oldInstructionOffsets = newOldInstructionOffsets;
+        }
+    }
+
+
+    /**
      * Adjusts the given jump offsets for the instruction at the given offset.
      */
     private void remapJumpOffsets(int offset, int[] jumpOffsets)
@@ -652,6 +670,17 @@ implements   AttributeVisitor,
         }
 
         return newInstructionOffset;
+    }
+
+
+    /**
+     * Returns whether the given old instruction offset can be remapped at the
+     */
+    private boolean remappableInstructionOffset(int oldInstructionOffset)
+    {
+        return
+            oldInstructionOffset <= codeFragmentLengths[level] &&
+            instructionOffsetMap[level][oldInstructionOffset] > INVALID;
     }
 
 
@@ -798,12 +827,12 @@ implements   AttributeVisitor,
     {
         CodeAttributeComposer composer = new CodeAttributeComposer();
 
-        composer.beginCodeFragment(10);
+        composer.beginCodeFragment(4);
         composer.appendInstruction(0, new SimpleInstruction(InstructionConstants.OP_ICONST_0));
         composer.appendInstruction(1, new VariableInstruction(InstructionConstants.OP_ISTORE, 0));
         composer.appendInstruction(2, new BranchInstruction(InstructionConstants.OP_GOTO, 1));
 
-        composer.beginCodeFragment(10);
+        composer.beginCodeFragment(4);
         composer.appendInstruction(0, new VariableInstruction(InstructionConstants.OP_IINC, 0, 1));
         composer.appendInstruction(1, new VariableInstruction(InstructionConstants.OP_ILOAD, 0));
         composer.appendInstruction(2, new SimpleInstruction(InstructionConstants.OP_ICONST_5));

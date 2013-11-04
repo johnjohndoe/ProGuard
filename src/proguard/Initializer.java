@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -22,6 +22,7 @@ package proguard;
 
 import proguard.classfile.ClassPool;
 import proguard.classfile.attribute.visitor.AllAttributeVisitor;
+import proguard.classfile.constant.visitor.*;
 import proguard.classfile.instruction.visitor.AllInstructionVisitor;
 import proguard.classfile.util.*;
 import proguard.classfile.visitor.*;
@@ -66,13 +67,8 @@ public class Initializer
         ClassPool reducedLibraryClassPool = configuration.useUniqueClassMemberNames ?
             null : new ClassPool();
 
-        WarningPrinter classReferenceWarningPrinter = configuration.warn ?
-            new WarningPrinter(System.err) :
-            null;
-
-        WarningPrinter dependencyWarningPrinter = configuration.warn ?
-            new WarningPrinter(System.err) :
-            null;
+        WarningPrinter classReferenceWarningPrinter = new WarningPrinter(System.err, configuration.warn);
+        WarningPrinter dependencyWarningPrinter     = new WarningPrinter(System.err, configuration.warn);
 
         // Initialize the superclass hierarchies for program classes.
         programClassPool.classesAccept(
@@ -81,25 +77,7 @@ public class Initializer
                                                classReferenceWarningPrinter,
                                                null));
 
-        if (reducedLibraryClassPool != null)
-        {
-            // Collect the library classes that are referenced by program
-            // classes.
-            programClassPool.classesAccept(
-                new ReferencedClassVisitor(
-                new LibraryClassFilter(
-                new ClassPoolFiller(reducedLibraryClassPool))));
-
-            // Initialize the superclass hierarchy for referenced library
-            // classes, with warnings.
-            reducedLibraryClassPool.classesAccept(
-                new ClassSuperHierarchyInitializer(programClassPool,
-                                                   libraryClassPool,
-                                                   classReferenceWarningPrinter,
-                                                   dependencyWarningPrinter));
-        }
-
-        // Initialize the superclass hierarchy for library classes, without
+        // Initialize the superclass hierarchy of all library classes, without
         // warnings.
         libraryClassPool.classesAccept(
             new ClassSuperHierarchyInitializer(programClassPool,
@@ -107,13 +85,39 @@ public class Initializer
                                                null,
                                                dependencyWarningPrinter));
 
-        WarningPrinter dynamicClassReferenceNotePrinter = configuration.warn ?
-            new WarningPrinter(System.err) :
-            null;
+        // Initialize the class references of program class members and
+        // attributes. Note that all superclass hierarchies have to be
+        // initialized for this purpose.
+        WarningPrinter memberReferenceWarningPrinter = new WarningPrinter(System.err, configuration.warn);
 
-        WarningPrinter classForNameNotePrinter = configuration.note ?
-            new WarningPrinter(System.out) :
-            null;
+        programClassPool.classesAccept(
+            new ClassReferenceInitializer(programClassPool,
+                                          libraryClassPool,
+                                          classReferenceWarningPrinter,
+                                          memberReferenceWarningPrinter,
+                                          null));
+
+        if (reducedLibraryClassPool != null)
+        {
+            // Collect the library classes that are directly referenced by
+            // program classes, without introspection.
+            programClassPool.classesAccept(
+                new ReferencedClassVisitor(
+                new LibraryClassFilter(
+                new ClassPoolFiller(reducedLibraryClassPool))));
+
+            // Reinitialize the superclass hierarchies of referenced library
+            // classes, this time with warnings.
+            reducedLibraryClassPool.classesAccept(
+                new ClassSuperHierarchyInitializer(programClassPool,
+                                                   libraryClassPool,
+                                                   classReferenceWarningPrinter,
+                                                   null));
+        }
+
+        // Initialize the Class.forName references.
+        WarningPrinter dynamicClassReferenceNotePrinter = new WarningPrinter(System.out, configuration.note);
+        WarningPrinter classForNameNotePrinter          = new WarningPrinter(System.out, configuration.note);
 
         programClassPool.classesAccept(
             new AllMethodVisitor(
@@ -126,21 +130,8 @@ public class Initializer
                                                  classForNameNotePrinter,
                                                  createClassNoteExceptionMatcher(configuration.keep))))));
 
-        // Initialize the class references of program class members and attributes.
-        WarningPrinter memberReferenceWarningPrinter = configuration.warn ?
-            new WarningPrinter(System.err) :
-            null;
-
-        programClassPool.classesAccept(
-            new ClassReferenceInitializer(programClassPool,
-                                          libraryClassPool,
-                                          memberReferenceWarningPrinter,
-                                          null));
-
         // Initialize the Class.get[Declared]{Field,Method} references.
-        WarningPrinter getMemberNotePrinter = configuration.note ?
-            new WarningPrinter(System.out) :
-            null;
+        WarningPrinter getMemberNotePrinter = new WarningPrinter(System.out, configuration.note);
 
         programClassPool.classesAccept(
             new AllMethodVisitor(
@@ -152,34 +143,33 @@ public class Initializer
                                                   createClassMemberNoteExceptionMatcher(configuration.keep, true),
                                                   createClassMemberNoteExceptionMatcher(configuration.keep, false))))));
 
+        // Initialize other string constant references, if requested.
+        if (configuration.adaptClassStrings != null)
+        {
+            programClassPool.classesAccept(
+                new ClassNameFilter(configuration.adaptClassStrings,
+                new AllConstantVisitor(
+                new StringReferenceInitializer(programClassPool,
+                                               libraryClassPool))));
+        }
+
         // Print various notes, if specified.
-        WarningPrinter fullyQualifiedClassNameNotePrinter = configuration.note ?
-            new WarningPrinter(System.out) :
-            null;
+        WarningPrinter fullyQualifiedClassNameNotePrinter = new WarningPrinter(System.out, configuration.note);
+        WarningPrinter descriptorKeepNotePrinter          = new WarningPrinter(System.out, configuration.note);
 
-        WarningPrinter descriptorKeepNotePrinter = configuration.note ?
-            new WarningPrinter(System.out) :
-            null;
+        new FullyQualifiedClassNameChecker(programClassPool,
+                                           libraryClassPool,
+                                           fullyQualifiedClassNameNotePrinter).checkClassSpecifications(configuration.keep);
 
-        if (fullyQualifiedClassNameNotePrinter != null)
-        {
-            new FullyQualifiedClassNameChecker(programClassPool,
-                                               libraryClassPool,
-                                               fullyQualifiedClassNameNotePrinter).checkClassSpecifications(configuration.keep);
-        }
-
-        if (descriptorKeepNotePrinter != null)
-        {
-            new DescriptorKeepChecker(programClassPool,
-                                      libraryClassPool,
-                                      descriptorKeepNotePrinter).checkClassSpecifications(configuration.keep);
-        }
+        new DescriptorKeepChecker(programClassPool,
+                                  libraryClassPool,
+                                  descriptorKeepNotePrinter).checkClassSpecifications(configuration.keep);
 
         // Initialize the class references of library class members.
         if (reducedLibraryClassPool != null)
         {
             // Collect the library classes that are referenced by program
-            // classes.
+            // classes, directly or indirectly, with or without introspection.
             programClassPool.classesAccept(
                 new ReferencedClassVisitor(
                 new LibraryClassFilter(
@@ -187,10 +177,12 @@ public class Initializer
                 new LibraryClassFilter(
                 new ClassPoolFiller(reducedLibraryClassPool))))));
 
-            // Initialize the class references of library class members.
+            // Initialize the class references of referenced library
+            // classes, without warnings.
             reducedLibraryClassPool.classesAccept(
                 new ClassReferenceInitializer(programClassPool,
                                               libraryClassPool,
+                                              null,
                                               null,
                                               dependencyWarningPrinter));
 
@@ -221,6 +213,7 @@ public class Initializer
                 new ClassReferenceInitializer(programClassPool,
                                               libraryClassPool,
                                               null,
+                                              null,
                                               dependencyWarningPrinter));
         }
 
@@ -233,106 +226,95 @@ public class Initializer
         libraryClassPool.classesAccept(new StringSharer());
 
         // Print out a summary of the notes, if necessary.
-        if (fullyQualifiedClassNameNotePrinter != null)
+        int fullyQualifiedNoteCount = fullyQualifiedClassNameNotePrinter.getWarningCount();
+        if (fullyQualifiedNoteCount > 0)
         {
-            int fullyQualifiedNoteCount = fullyQualifiedClassNameNotePrinter.getWarningCount();
-            if (fullyQualifiedNoteCount > 0)
-            {
-                System.out.println("Note: there were " + fullyQualifiedNoteCount +
-                                   " references to unknown classes.");
-                System.out.println("      You should check your configuration for typos.");
-            }
+            System.out.println("Note: there were " + fullyQualifiedNoteCount +
+                               " references to unknown classes.");
+            System.out.println("      You should check your configuration for typos.");
         }
 
-        if (descriptorKeepNotePrinter != null)
+        int descriptorNoteCount = descriptorKeepNotePrinter.getWarningCount();
+        if (descriptorNoteCount > 0)
         {
-            int descriptorNoteCount = descriptorKeepNotePrinter.getWarningCount();
-            if (descriptorNoteCount > 0)
-            {
-                System.out.println("Note: there were " + descriptorNoteCount +
-                                   " unkept descriptor classes in kept class members.");
-                System.out.println("      You should consider explicitly keeping the mentioned classes");
-                System.out.println("      (using '-keep').");
-            }
+            System.out.println("Note: there were " + descriptorNoteCount +
+                               " unkept descriptor classes in kept class members.");
+            System.out.println("      You should consider explicitly keeping the mentioned classes");
+            System.out.println("      (using '-keep').");
         }
 
-        if (dynamicClassReferenceNotePrinter != null)
+        int dynamicClassReferenceNoteCount = dynamicClassReferenceNotePrinter.getWarningCount();
+        if (dynamicClassReferenceNoteCount > 0)
         {
-            int dynamicClassReferenceNoteCount = dynamicClassReferenceNotePrinter.getWarningCount();
-            if (dynamicClassReferenceNoteCount > 0)
-            {
-                System.out.println("Note: there were " + dynamicClassReferenceNoteCount +
-                                   " unresolved dynamic references to classes or interfaces.");
-                System.err.println("      You should check if you need to specify additional program jars.");
-            }
+            System.out.println("Note: there were " + dynamicClassReferenceNoteCount +
+                               " unresolved dynamic references to classes or interfaces.");
+            System.err.println("      You should check if you need to specify additional program jars.");
         }
 
-        if (classForNameNotePrinter != null)
+        int classForNameNoteCount = classForNameNotePrinter.getWarningCount();
+        if (classForNameNoteCount > 0)
         {
-            int classForNameNoteCount = classForNameNotePrinter.getWarningCount();
-            if (classForNameNoteCount > 0)
-            {
-                System.out.println("Note: there were " + classForNameNoteCount +
-                                   " class casts of dynamically created class instances.");
-                System.out.println("      You might consider explicitly keeping the mentioned classes and/or");
-                System.out.println("      their implementations (using '-keep').");
-            }
+            System.out.println("Note: there were " + classForNameNoteCount +
+                               " class casts of dynamically created class instances.");
+            System.out.println("      You might consider explicitly keeping the mentioned classes and/or");
+            System.out.println("      their implementations (using '-keep').");
         }
 
-        if (getMemberNotePrinter != null)
+        int getmemberNoteCount = getMemberNotePrinter.getWarningCount();
+        if (getmemberNoteCount > 0)
         {
-            int getmemberNoteCount = getMemberNotePrinter.getWarningCount();
-            if (getmemberNoteCount > 0)
-            {
-                System.out.println("Note: there were " + getmemberNoteCount +
-                                   " accesses to class members by means of introspection.");
-                System.out.println("      You should consider explicitly keeping the mentioned class members");
-                System.out.println("      (using '-keep' or '-keepclassmembers').");
-            }
+            System.out.println("Note: there were " + getmemberNoteCount +
+                               " accesses to class members by means of introspection.");
+            System.out.println("      You should consider explicitly keeping the mentioned class members");
+            System.out.println("      (using '-keep' or '-keepclassmembers').");
         }
 
         // Print out a summary of the warnings, if necessary.
-        if (classReferenceWarningPrinter  != null &&
-            dependencyWarningPrinter      != null &&
-            memberReferenceWarningPrinter != null   )
+        int classReferenceWarningCount = classReferenceWarningPrinter.getWarningCount();
+        if (classReferenceWarningCount > 0)
         {
-            int classReferenceWarningCount = classReferenceWarningPrinter.getWarningCount();
-            if (classReferenceWarningCount > 0)
-            {
-                System.err.println("Warning: there were " + classReferenceWarningCount +
-                                   " unresolved references to classes or interfaces.");
-                System.err.println("         You may need to specify additional library jars (using '-libraryjars'),");
-                System.err.println("         or perhaps the '-dontskipnonpubliclibraryclasses' option.");
-            }
+            System.err.println("Warning: there were " + classReferenceWarningCount +
+                               " unresolved references to classes or interfaces.");
+            System.err.println("         You may need to specify additional library jars (using '-libraryjars'),");
+            System.err.println("         or perhaps the '-dontskipnonpubliclibraryclasses' option.");
+        }
 
-            int dependencyWarningCount = dependencyWarningPrinter.getWarningCount();
-            if (dependencyWarningCount > 0)
-            {
-                System.err.println("Warning: there were " + dependencyWarningCount +
-                                   " instances of library classes depending on program classes.");
-                System.err.println("         You must avoid such dependencies, since the program classes will");
-                System.err.println("         be processed, while the library classes will remain unchanged.");
-            }
+        int dependencyWarningCount = dependencyWarningPrinter.getWarningCount();
+        if (dependencyWarningCount > 0)
+        {
+            System.err.println("Warning: there were " + dependencyWarningCount +
+                               " instances of library classes depending on program classes.");
+            System.err.println("         You must avoid such dependencies, since the program classes will");
+            System.err.println("         be processed, while the library classes will remain unchanged.");
+        }
 
-            int memberReferenceWarningCount = memberReferenceWarningPrinter.getWarningCount();
-            if (memberReferenceWarningCount > 0)
-            {
-                System.err.println("Warning: there were " + memberReferenceWarningCount +
-                                   " unresolved references to program class members.");
-                System.err.println("         Your input classes appear to be inconsistent.");
-                System.err.println("         You may need to recompile them and try again.");
-                System.err.println("         Alternatively, you may have to specify the options ");
-                System.err.println("         '-dontskipnonpubliclibraryclasses' and/or");
-                System.err.println("         '-dontskipnonpubliclibraryclassmembers'.");
-            }
+        int memberReferenceWarningCount = memberReferenceWarningPrinter.getWarningCount();
+        if (memberReferenceWarningCount > 0)
+        {
+            System.err.println("Warning: there were " + memberReferenceWarningCount +
+                               " unresolved references to program class members.");
+            System.err.println("         Your input classes appear to be inconsistent.");
+            System.err.println("         You may need to recompile them and try again.");
+            System.err.println("         Alternatively, you may have to specify the options ");
+            System.err.println("         '-dontskipnonpubliclibraryclasses' and/or");
+            System.err.println("         '-dontskipnonpubliclibraryclassmembers'.");
+        }
 
-            if ((classReferenceWarningCount   > 0 ||
-                 dependencyWarningCount       > 0 ||
-                 memberReferenceWarningCount  > 0) &&
-                !configuration.ignoreWarnings)
-            {
-                throw new IOException("Please correct the above warnings first.");
-            }
+        if ((classReferenceWarningCount   > 0 ||
+             dependencyWarningCount       > 0 ||
+             memberReferenceWarningCount  > 0) &&
+            !configuration.ignoreWarnings)
+        {
+            throw new IOException("Please correct the above warnings first.");
+        }
+
+        if ((configuration.note == null ||
+             !configuration.note.isEmpty()) &&
+            (configuration.warn != null &&
+             configuration.warn.isEmpty() ||
+             configuration.ignoreWarnings))
+        {
+            System.out.println("Note: You're ignoring all warnings!");
         }
 
         // Discard unused library classes.
@@ -356,18 +338,18 @@ public class Initializer
             List noteExceptionNames = new ArrayList(noteExceptions.size());
             for (int index = 0; index < noteExceptions.size(); index++)
             {
-                KeepSpecification keepSpecification = (KeepSpecification)noteExceptions.get(index);
-                if (keepSpecification.markClasses)
+                KeepClassSpecification keepClassSpecification = (KeepClassSpecification)noteExceptions.get(index);
+                if (keepClassSpecification.markClasses)
                 {
                     // If the class itself is being kept, it's ok.
-                    String className = keepSpecification.className;
+                    String className = keepClassSpecification.className;
                     if (className != null)
                     {
                         noteExceptionNames.add(className);
                     }
 
                     // If all of its extensions are being kept, it's ok too.
-                    String extendsClassName = keepSpecification.extendsClassName;
+                    String extendsClassName = keepClassSpecification.extendsClassName;
                     if (extendsClassName != null)
                     {
                         noteExceptionNames.add(extendsClassName);
@@ -397,10 +379,10 @@ public class Initializer
             List noteExceptionNames = new ArrayList();
             for (int index = 0; index < noteExceptions.size(); index++)
             {
-                KeepSpecification keepSpecification = (KeepSpecification)noteExceptions.get(index);
+                KeepClassSpecification keepClassSpecification = (KeepClassSpecification)noteExceptions.get(index);
                 List memberSpecifications = isField ?
-                    keepSpecification.fieldSpecifications :
-                    keepSpecification.methodSpecifications;
+                    keepClassSpecification.fieldSpecifications :
+                    keepClassSpecification.methodSpecifications;
 
                 if (memberSpecifications != null)
                 {

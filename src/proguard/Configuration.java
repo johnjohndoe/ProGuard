@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -59,6 +59,15 @@ public class Configuration
     public boolean   skipNonPublicLibraryClassMembers = true;
 
     /**
+     * A list of <code>String</code>s specifying directories to be kept in
+     * the output directories or the output jars. A <code>null</code> list
+     * means no directories. An empty list means all directories. The directory
+     * names may contain "**", "*", or "?" wildcards, and they may be preceded
+     * by the "!" negator.
+     */
+    public List      keepDirectories;
+
+    /**
      * Specifies the version number of the output classes, or 0 if the version
      * number can be left unchanged.
      */
@@ -78,7 +87,7 @@ public class Configuration
     ///////////////////////////////////////////////////////////////////////////
 
     /**
-     * A list of {@link KeepSpecification} instances, whose class names and
+     * A list of {@link KeepClassSpecification} instances, whose class names and
      * class member names are to be kept from shrinking, optimization, and/or
      * obfuscation.
      */
@@ -119,6 +128,14 @@ public class Configuration
      * Specifies whether the code should be optimized.
      */
     public boolean   optimize                         = true;
+
+    /**
+     * A list of <code>String</code>s specifying the optimizations to be
+     * performed. A <code>null</code> list means all optimizations. The
+     * optimization names may contain "*" or "?" wildcards, and they may
+     * be preceded by the "!" negator.
+     */
+    public List      optimizations;
 
     /**
      * Specifies the number of optimization passes.
@@ -192,6 +209,14 @@ public class Configuration
     public boolean   useMixedCaseClassNames           = true;
 
     /**
+     * A list of <code>String</code>s specifying package names to be kept.
+     * A <code>null</code> list means no names. An empty list means all
+     * names. The package names may contain "**", "*", or "?" wildcards, and
+     * they may be preceded by the "!" negator.
+     */
+    public List      keepPackageNames;
+
+    /**
      * An optional base package if the obfuscated package hierarchy is to be
      * flattened, <code>null</code> otherwise.
      */
@@ -215,6 +240,13 @@ public class Configuration
      * An optional replacement for all SourceFile attributes.
      */
     public String    newSourceFileAttribute;
+
+    /**
+     * A list of <code>String</code>s specifying a filter for clases whose
+     * string constants are to be adapted, based on corresponding obfuscated
+     * class names.
+     */
+    public List      adaptClassStrings;
 
     /**
      * A list of <code>String</code>s specifying a filter for files whose
@@ -254,14 +286,20 @@ public class Configuration
     public boolean   verbose                          = false;
 
     /**
-     * Specifies whether to print any notes.
+     * A list of <code>String</code>s specifying a filter for the classes for
+     * which not to print notes, if there are noteworthy potential problems.
+     * A <code>null</code> list means all classes. The class names may contain
+     * "**", "*", or "?" wildcards, and they may be preceded by the "!" negator.
      */
-    public boolean   note                             = true;
+    public List      note                             = null;
 
     /**
-     * Specifies whether to print any warnings.
+     * A list of <code>String</code>s specifying a filter for the classes for
+     * which not to print warnings, if there are any problems.
+     * A <code>null</code> list means all classes. The class names may contain
+     * "**", "*", or "?" wildcards, and they may be preceded by the "!" negator.
      */
-    public boolean   warn                             = true;
+    public List      warn                             = null;
 
     /**
      * Specifies whether to ignore any warnings.

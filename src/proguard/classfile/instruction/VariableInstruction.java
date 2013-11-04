@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -137,16 +137,29 @@ public class VariableInstruction extends Instruction
 
 
     /**
+     * Returns whether this instruction stores the value of a variable.
+     * The value is false for the ret instruction, but true for the iinc
+     * instruction.
+     */
+    public boolean isStore()
+    {
+        // A store instruction can be recognized as follows. Note that this
+        // excludes the ret instruction, which has a negative opcode.
+        return opcode >= InstructionConstants.OP_ISTORE ||
+               opcode == InstructionConstants.OP_IINC;
+    }
+
+
+    /**
      * Returns whether this instruction loads the value of a variable.
-     * The value is true for the ret instruction, but false for the iinc
+     * The value is true for the ret instruction and for the iinc
      * instruction.
      */
     public boolean isLoad()
     {
         // A load instruction can be recognized as follows. Note that this
         // includes the ret instruction, which has a negative opcode.
-        return opcode <  InstructionConstants.OP_ISTORE &&
-               opcode != InstructionConstants.OP_IINC;
+        return opcode < InstructionConstants.OP_ISTORE;
     }
 
 

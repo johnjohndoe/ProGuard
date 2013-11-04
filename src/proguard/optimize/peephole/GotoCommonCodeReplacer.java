@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -123,9 +123,9 @@ implements   AttributeVisitor,
                     int deleteOffset = offset - delta;
                     if (branchTargetFinder.isInstruction(deleteOffset))
                     {
-                        codeAttributeEditor.replaceInstruction(     deleteOffset, null);
-                        codeAttributeEditor.insertBeforeInstruction(deleteOffset, null);
-                        codeAttributeEditor.insertAfterInstruction( deleteOffset, null);
+                        codeAttributeEditor.replaceInstruction(     deleteOffset, (Instruction)null);
+                        codeAttributeEditor.insertBeforeInstruction(deleteOffset, (Instruction)null);
+                        codeAttributeEditor.insertAfterInstruction( deleteOffset, (Instruction)null);
 
                         codeAttributeEditor.deleteInstruction(deleteOffset);
                     }

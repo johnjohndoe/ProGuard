@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -22,6 +22,7 @@ package proguard.obfuscate;
 
 import proguard.classfile.*;
 import proguard.classfile.util.*;
+import proguard.util.ListUtil;
 
 
 /**
@@ -75,7 +76,9 @@ public class MappingKeeper implements MappingProcessor
                 if (currentNewName != null &&
                     !currentNewName.equals(newName))
                 {
-                    warningPrinter.print("Warning: " +
+                    warningPrinter.print(name,
+                                         currentNewName,
+                                         "Warning: " +
                                          className +
                                          " is not being kept as '" +
                                          ClassUtil.externalClassName(currentNewName) +
@@ -116,7 +119,8 @@ public class MappingKeeper implements MappingProcessor
                     if (currentNewName != null &&
                         !currentNewName.equals(newFieldName))
                     {
-                        warningPrinter.print("Warning: " +
+                        warningPrinter.print(ClassUtil.internalClassName(className),
+                                             "Warning: " +
                                              className +
                                              ": field '" + fieldType + " " + fieldName +
                                              "' is not being kept as '" + currentNewName +
@@ -135,17 +139,17 @@ public class MappingKeeper implements MappingProcessor
                                      int    firstLineNumber,
                                      int    lastLineNumber,
                                      String methodReturnType,
-                                     String methodNameAndArguments,
+                                     String methodName,
+                                     String methodArguments,
                                      String newMethodName)
     {
         if (clazz != null)
         {
             // Find the method.
-            String name       = ClassUtil.externalMethodName(methodNameAndArguments);
             String descriptor = ClassUtil.internalMethodDescriptor(methodReturnType,
-                                                                   methodNameAndArguments);
+                                                                   ListUtil.commaSeparatedList(methodArguments));
 
-            Method method = clazz.findMethod(name, descriptor);
+            Method method = clazz.findMethod(methodName, descriptor);
             if (method != null)
             {
                 // Print out a warning if the mapping conflicts with a name that
@@ -156,9 +160,10 @@ public class MappingKeeper implements MappingProcessor
                     if (currentNewName != null &&
                         !currentNewName.equals(newMethodName))
                     {
-                        warningPrinter.print("Warning: " +
+                        warningPrinter.print(ClassUtil.internalClassName(className),
+                                             "Warning: " +
                                              className +
-                                             ": method '" + methodReturnType + " " + methodNameAndArguments +
+                                             ": method '" + methodReturnType + " " + methodName + ClassConstants.EXTERNAL_METHOD_ARGUMENTS_OPEN + methodArguments + ClassConstants.EXTERNAL_METHOD_ARGUMENTS_CLOSE +
                                              "' is not being kept as '" + currentNewName +
                                              "', but remapped to '" + newMethodName + "'");
                     }

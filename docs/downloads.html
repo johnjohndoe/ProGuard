@@ -15,7 +15,8 @@
 License. Please consult the <a href="license.html">license page</a> for more
 details.
 <p>
-<b>ProGuard</b> is written in Java. It requires a Java 2 runtime environment.
+<b>ProGuard</b> is written in Java, so it requires a Java Runtime Environment
+   (JRE 1.4 or higher).
 <p>
 You can download the latest release (containing the program jar, the
 documentation you're reading now, examples, and the source code) from this
@@ -43,12 +44,52 @@ interest too, because they typically contain any less urgent bug fixes
 collected since the previous release.
 <p>
 
+<h3><div>Jul 2009</div> Version 4.4</h3>
+<ul>
+<li>Added new peephole optimizations.
+<li>Added option <code>-optimizations</code> for fine-grained configuration of
+    optimizations.
+<li>Added option <code>-adaptclassstrings</code> for adapting string constants
+    that correspond to obfuscated classes.
+<li>Added option <code>-keeppackagenames</code> for keeping specified package
+    names from being obfuscated.
+<li>Added option <code>-keepdirectories</code> for keeping specified directory
+    entries in output jars.
+<li>Extended options <code>-dontnote</code> and <code>-dontwarn</code> for
+    fine-grained configuration of notes and warnings. 
+<li>Added option <code>-regex</code> in ReTrace, for specifying alternative
+    regular expressions to parse stack traces.
+<li>Extended renaming of resource files based on obfuscation.
+<li>Improved inlining of constant parameters and removal of unused parameters.
+<li>Avoiding bug in IBM's JVM for JSE, in optimization step.
+<li>Avoiding ArrayIndexOutOfBoundsException in optimization step.
+<li>Fixed configuration with annotations that are not preserved themselves.
+<li>Fixed preverification of invocations of super constructors with arguments
+    containing ternary operators.
+<li>Fixed processing of unreachable exception handlers.
+<li>Fixed merging of exception classes.
+<li>Fixed repeated method inlining.
+<li>Fixed inlining of finally blocks surrounded by large try blocks, compiled
+    with JDK 1.4 or earlier.
+<li>Fixed optimization of complex finally blocks, compiled with JDK 1.4 or
+    earlier.
+<li>Fixed obfuscation of anonymous class names, if <code>EnclosingMethod</code>
+    attributes are being kept.
+<li>Fixed obfuscation of inner class names in generic types.
+<li>Fixed decoding of UTF-8 strings containing special characters.
+<li>Fixed copying of debug information and annotations when merging classes.
+<li>Fixed writing out of unknown attributes.
+<li>Fixed updating manifest files with split lines.
+<li>Updated documentation and examples.
+</ul>
+
 <h3><div>Dec 2008</div> Version 4.3</h3>
 <ul>
 <li>Added class merging.
 <li>Added static single assignment analysis.
 <li>Added support for annotation and enumeration class types in configuration.
-<li>Refined shrinking of fields in case of unusual -keepclassmembers options.
+<li>Refined shrinking of fields in case of unusual
+    <code>-keepclassmembers</code> options.
 <li>Added simplification of tail recursion calls.
 <li>Added new peephole optimizations.
 <li>Fixed optimization of unused variable initializations causing negative
@@ -472,7 +513,7 @@ Upgrade considerations:
 
 <hr>
 <address>
-Copyright &copy; 2002-2008
+Copyright &copy; 2002-2009
 <a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 

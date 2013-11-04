@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -70,25 +70,6 @@ public class Obfuscator
         programClassPool.classesAccept(new ClassCleaner());
         libraryClassPool.classesAccept(new ClassCleaner());
 
-        // Mark attributes that have to be kept.
-        AttributeUsageMarker requiredAttributeUsageMarker =
-            new AttributeUsageMarker();
-
-        AttributeVisitor optionalAttributeUsageMarker =
-            configuration.keepAttributes == null     ? null :
-            configuration.keepAttributes.size() == 0 ?
-                (AttributeVisitor)requiredAttributeUsageMarker :
-                (AttributeVisitor)new AttributeNameFilter(new ListParser(new NameParser()).parse(configuration.keepAttributes),
-                                                          requiredAttributeUsageMarker);
-
-        programClassPool.classesAccept(
-            new AllAttributeVisitor(true,
-            new RequiredAttributeFilter(requiredAttributeUsageMarker,
-                                        optionalAttributeUsageMarker)));
-
-        // Remove the attributes that can be discarded.
-        programClassPool.classesAccept(new AttributeShrinker());
-
         // If the class member names have to correspond globally,
         // link all class members in all classes, otherwise
         // link all non-private methods in all class hierarchies.
@@ -117,13 +98,30 @@ public class Obfuscator
         libraryClassPool.classesAccept(nameMarker);
         libraryClassPool.classesAccept(new AllMemberVisitor(nameMarker));
 
+        // Mark attributes that have to be kept.
+        AttributeUsageMarker requiredAttributeUsageMarker =
+            new AttributeUsageMarker();
+
+        AttributeVisitor optionalAttributeUsageMarker =
+            configuration.keepAttributes == null ? null :
+                new AttributeNameFilter(new ListParser(new NameParser()).parse(configuration.keepAttributes),
+                                        requiredAttributeUsageMarker);
+
+        programClassPool.classesAccept(
+            new AllAttributeVisitor(true,
+            new RequiredAttributeFilter(requiredAttributeUsageMarker,
+                                        optionalAttributeUsageMarker)));
+
+        // Remove the attributes that can be discarded. Note that the attributes
+        // may only be discarded after the seeds have been marked, since the
+        // configuration may rely on annotations.
+        programClassPool.classesAccept(new AttributeShrinker());
+
         // Apply the mapping, if one has been specified. The mapping can
         // override the names of library classes and of library class members.
         if (configuration.applyMapping != null)
         {
-            WarningPrinter warningPrinter = configuration.warn ?
-                new WarningPrinter(System.err) :
-                null;
+            WarningPrinter warningPrinter = new WarningPrinter(System.err, configuration.warn);
 
             MappingReader reader = new MappingReader(configuration.applyMapping);
 
@@ -136,22 +134,19 @@ public class Obfuscator
 
             reader.pump(keeper);
 
-            if (warningPrinter != null)
+            // Print out a summary of the warnings if necessary.
+            int mappingWarningCount = warningPrinter.getWarningCount();
+            if (mappingWarningCount > 0)
             {
-                // Print out a summary of the warnings if necessary.
-                int mappingWarningCount = warningPrinter.getWarningCount();
-                if (mappingWarningCount > 0)
-                {
-                    System.err.println("Warning: there were " + mappingWarningCount +
-                                       " kept classes and class members that were remapped anyway.");
-                    System.err.println("         You should adapt your configuration or edit the mapping file.");
+                System.err.println("Warning: there were " + mappingWarningCount +
+                                                            " kept classes and class members that were remapped anyway.");
+                System.err.println("         You should adapt your configuration or edit the mapping file.");
 
-                    if (!configuration.ignoreWarnings)
-                    {
-                        System.err.println("         If you are sure this remapping won't hurt,");
-                        System.err.println("         you could try your luck using the '-ignorewarnings' option.");
-                        throw new IOException("Please correct the above warnings first.");
-                    }
+                if (!configuration.ignoreWarnings)
+                {
+                    System.err.println("         If you are sure this remapping won't hurt,");
+                    System.err.println("         you could try your luck using the '-ignorewarnings' option.");
+                    throw new IOException("Please correct the above warnings first.");
                 }
             }
         }
@@ -170,6 +165,7 @@ public class Obfuscator
                                 classNameFactory,
                                 packageNameFactory,
                                 configuration.useMixedCaseClassNames,
+                                configuration.keepPackageNames,
                                 configuration.flattenPackageHierarchy,
                                 configuration.repackageClasses,
                                 configuration.allowAccessModification));
@@ -183,9 +179,7 @@ public class Obfuscator
                                                     nameFactory);
         }
 
-        WarningPrinter warningPrinter = configuration.warn ?
-            new WarningPrinter(System.err) :
-            null;
+        WarningPrinter warningPrinter = new WarningPrinter(System.err, configuration.warn);
 
         // Maintain a map of names to avoid [descriptor - new name - old name].
         Map descriptorMap = new HashMap();
@@ -356,21 +350,18 @@ public class Obfuscator
             }));
 
         // Print out any warnings about member name conflicts.
-        if (warningPrinter != null)
+        int warningCount = warningPrinter.getWarningCount();
+        if (warningCount > 0)
         {
-            int warningCount = warningPrinter.getWarningCount();
-            if (warningCount > 0)
-            {
-                System.err.println("Warning: there were " + warningCount +
-                                   " conflicting class member name mappings.");
-                System.err.println("         Your configuration may be inconsistent.");
+            System.err.println("Warning: there were " + warningCount +
+                               " conflicting class member name mappings.");
+            System.err.println("         Your configuration may be inconsistent.");
 
-                if (!configuration.ignoreWarnings)
-                {
-                    System.err.println("         If you are sure the conflicts are harmless,");
-                    System.err.println("         you could try your luck using the '-ignorewarnings' option.");
-                    throw new IOException("Please correct the above warnings first.");
-                }
+            if (!configuration.ignoreWarnings)
+            {
+                System.err.println("         If you are sure the conflicts are harmless,");
+                System.err.println("         you could try your luck using the '-ignorewarnings' option.");
+                throw new IOException("Please correct the above warnings first.");
             }
         }
 

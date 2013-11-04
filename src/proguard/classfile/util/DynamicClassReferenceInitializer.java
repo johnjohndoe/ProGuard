@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -313,11 +313,12 @@ implements   InstructionVisitor,
     public void visitClassConstant(Clazz clazz, ClassConstant classConstant)
     {
         // Print out a note about the class cast.
-        if (notePrinter != null &&
-            (noteExceptionMatcher == null ||
-             !noteExceptionMatcher.matches(classConstant.getName(clazz))))
+        if (noteExceptionMatcher == null ||
+            !noteExceptionMatcher.matches(classConstant.getName(clazz)))
         {
-            notePrinter.print("Note: " +
+            notePrinter.print(clazz.getName(),
+                              classConstant.getName(clazz),
+                              "Note: " +
                               ClassUtil.externalClassName(clazz.getName()) +
                               " calls '(" +
                               ClassUtil.externalClassName(classConstant.getName(clazz)) +
@@ -452,7 +453,9 @@ implements   InstructionVisitor,
                 missingNotePrinter != null)
             {
                 // We didn't find the superclass or interface. Print a note.
-                missingNotePrinter.print("Note: " +
+                missingNotePrinter.print(referencingClassName,
+                                         name,
+                                         "Note: " +
                                          ClassUtil.externalClassName(referencingClassName) +
                                          ": can't find dynamically referenced class " +
                                          ClassUtil.externalClassName(name));
@@ -462,7 +465,9 @@ implements   InstructionVisitor,
         {
             // The superclass or interface was found in the program class pool.
             // Print a warning.
-            dependencyWarningPrinter.print("Warning: library class " +
+            dependencyWarningPrinter.print(referencingClassName,
+                                           name,
+                                           "Warning: library class " +
                                            ClassUtil.externalClassName(referencingClassName) +
                                            " depends dynamically on program class " +
                                            ClassUtil.externalClassName(name));

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -21,6 +21,7 @@
 package proguard.optimize.evaluation;
 
 import proguard.classfile.*;
+import proguard.classfile.visitor.MemberVisitor;
 import proguard.classfile.attribute.*;
 import proguard.classfile.attribute.visitor.AttributeVisitor;
 import proguard.classfile.editor.VariableRemapper;
@@ -45,7 +46,8 @@ implements   AttributeVisitor
     private static final int MAX_VARIABLES_SIZE = 64;
 
 
-    private final boolean reuseThis;
+    private final boolean       reuseThis;
+    private final MemberVisitor extraVariableMemberVisitor;
 
     private final LivenessAnalyzer livenessAnalyzer = new LivenessAnalyzer();
     private final VariableRemapper variableRemapper = new VariableRemapper();
@@ -56,10 +58,29 @@ implements   AttributeVisitor
     /**
      * Creates a new VariableOptimizer.
      * @param reuseThis specifies whether the 'this' variable can be reused.
+     *                  Many JVMs for JME and IBM's JVMs for JSE can't handle
+     *                  such reuse.
      */
     public VariableOptimizer(boolean reuseThis)
     {
-        this.reuseThis = reuseThis;
+        this(reuseThis, null);
+    }
+
+
+    /**
+     * Creates a new VariableOptimizer with an extra visitor.
+     * @param reuseThis                  specifies whether the 'this' variable
+     *                                   can be reused. Many JVMs for JME and
+     *                                   IBM's JVMs for JSE can't handle such
+     *                                   reuse.
+     * @param extraVariableMemberVisitor an optional extra visitor for all
+     *                                   removed variables.
+     */
+    public VariableOptimizer(boolean       reuseThis,
+                             MemberVisitor extraVariableMemberVisitor)
+    {
+        this.reuseThis                  = reuseThis;
+        this.extraVariableMemberVisitor = extraVariableMemberVisitor;
     }
 
 
@@ -140,6 +161,12 @@ implements   AttributeVisitor
 
             variableRemapper.setVariableMap(variableMap);
             variableRemapper.visitCodeAttribute(clazz, method, codeAttribute);
+
+            // Visit the method, if required.
+            if (extraVariableMemberVisitor != null)
+            {
+                method.accept(clazz, extraVariableMemberVisitor);
+            }
         }
     }
 

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -48,14 +48,16 @@ public class DuplicateClassPrinter implements ClassVisitor
 
     public void visitProgramClass(ProgramClass programClass)
     {
-        notePrinter.print("Note: duplicate definition of program class [" +
+        notePrinter.print(programClass.getName(),
+                          "Note: duplicate definition of program class [" +
                           ClassUtil.externalClassName(programClass.getName()) + "]");
     }
 
 
     public void visitLibraryClass(LibraryClass libraryClass)
     {
-        notePrinter.print("Note: duplicate definition of library class [" +
+        notePrinter.print(libraryClass.getName(),
+                          "Note: duplicate definition of library class [" +
                           ClassUtil.externalClassName(libraryClass.getName()) + "]");
     }
 }

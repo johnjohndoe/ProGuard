@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -19,6 +19,8 @@
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 package proguard.io;
+
+import proguard.classfile.ClassConstants;
 
 import java.io.*;
 import java.util.*;
@@ -71,6 +73,39 @@ public class JarWriter implements DataEntryWriter, Finisher
 
     // Implementations for DataEntryWriter.
 
+    public boolean createDirectory(DataEntry dataEntry) throws IOException
+    {
+        //Make sure we can start with a new entry.
+        if (!prepareEntry(dataEntry))
+        {
+            return false;
+        }
+
+        // Close the previous ZIP entry, if any.
+        closeEntry();
+
+        // Get the directory entry name.
+        String name = dataEntry.getName() + ClassConstants.INTERNAL_PACKAGE_SEPARATOR;
+
+        // We have to check if the name is already used, because
+        // ZipOutputStream doesn't handle this case properly (it throws
+        // an exception which can be caught, but the ZipDataEntry is
+        // remembered anyway).
+        if (jarEntryNames.add(name))
+        {
+            // Create a new directory entry.
+            currentJarOutputStream.putNextEntry(new ZipEntry(name));
+            currentJarOutputStream.closeEntry();
+        }
+
+        // Clear the finisher.
+        currentFinisher  = null;
+        currentDataEntry = null;
+
+        return true;
+    }
+
+
     public OutputStream getOutputStream(DataEntry dataEntry) throws IOException
     {
         return getOutputStream(dataEntry,  null);
@@ -80,32 +115,10 @@ public class JarWriter implements DataEntryWriter, Finisher
     public OutputStream getOutputStream(DataEntry dataEntry,
                                         Finisher  finisher) throws IOException
     {
-        // Get the parent stream, new or exisiting.
-        // This may finish our own jar output stream.
-        OutputStream parentOutputStream =
-            dataEntryWriter.getOutputStream(dataEntry.getParent(), this);
-
-        // Did we get a stream?
-        if (parentOutputStream == null)
+        //Make sure we can start with a new entry.
+        if (!prepareEntry(dataEntry))
         {
             return null;
-        }
-
-        // Do we need a new stream?
-        if (currentParentOutputStream == null)
-        {
-            currentParentOutputStream = parentOutputStream;
-
-            // Create a new jar stream, with a manifest, if set.
-            currentJarOutputStream = manifest != null ?
-                new JarOutputStream(parentOutputStream, manifest) :
-                new ZipOutputStream(parentOutputStream);
-
-            // Add a comment, if set.
-            if (comment != null)
-            {
-                currentJarOutputStream.setComment(comment);
-            }
         }
 
         // Do we need a new entry?
@@ -117,9 +130,10 @@ public class JarWriter implements DataEntryWriter, Finisher
             // Get the entry name.
             String name = dataEntry.getName();
 
-            // We have to check if the name is already used, because ZipOutputStream
-            // doesn't handle this case properly (it throws an exception which can
-            // be caught, but the ZipDataEntry is remembered anyway).
+            // We have to check if the name is already used, because
+            // ZipOutputStream doesn't handle this case properly (it throws
+            // an exception which can be caught, but the ZipDataEntry is
+            // remembered anyway).
             if (!jarEntryNames.add(name))
             {
                 throw new IOException("Duplicate zip entry ["+dataEntry+"]");
@@ -128,6 +142,7 @@ public class JarWriter implements DataEntryWriter, Finisher
             // Create a new entry.
             currentJarOutputStream.putNextEntry(new ZipEntry(name));
 
+            // Set up the finisher for the entry.
             currentFinisher  = finisher;
             currentDataEntry = dataEntry;
         }
@@ -161,6 +176,43 @@ public class JarWriter implements DataEntryWriter, Finisher
 
 
     // Small utility methods.
+
+    /**
+     * Makes sure the current output stream is set up for the given entry.
+     */
+    private boolean prepareEntry(DataEntry dataEntry) throws IOException
+    {
+        // Get the parent stream, new or exisiting.
+        // This may finish our own jar output stream.
+        OutputStream parentOutputStream =
+            dataEntryWriter.getOutputStream(dataEntry.getParent(), this);
+
+        // Did we get a stream?
+        if (parentOutputStream == null)
+        {
+            return false;
+        }
+
+        // Do we need a new stream?
+        if (currentParentOutputStream == null)
+        {
+            currentParentOutputStream = parentOutputStream;
+
+            // Create a new jar stream, with a manifest, if set.
+            currentJarOutputStream = manifest != null ?
+                new JarOutputStream(parentOutputStream, manifest) :
+                new ZipOutputStream(parentOutputStream);
+
+            // Add a comment, if set.
+            if (comment != null)
+            {
+                currentJarOutputStream.setComment(comment);
+            }
+        }
+
+        return true;
+    }
+
 
     /**
      * Closes the previous ZIP entry, if any.

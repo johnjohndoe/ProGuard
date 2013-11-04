@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -23,7 +23,7 @@ package proguard.optimize;
 import proguard.classfile.*;
 import proguard.classfile.attribute.*;
 import proguard.classfile.attribute.visitor.AttributeVisitor;
-import proguard.classfile.editor.VariableEditor;
+import proguard.classfile.editor.*;
 import proguard.classfile.util.*;
 import proguard.classfile.visitor.MemberVisitor;
 import proguard.optimize.info.ParameterUsageMarker;
@@ -46,7 +46,7 @@ implements   AttributeVisitor
 
     private final MemberVisitor extraVariableMemberVisitor;
 
-    private final VariableEditor variableEditor = new VariableEditor();
+    private final VariableRemapper variableRemapper = new VariableRemapper();
 
 
     /**
@@ -97,21 +97,30 @@ implements   AttributeVisitor
                 System.out.println("  Max locals         = " + maxLocals);
             }
 
-            // Delete unused variables from the local variable frame.
-            variableEditor.reset(maxLocals);
+            // Create a variable map.
+            int[] variableMap = new int[maxLocals];
 
+            // Move unused parameters right after the parameter block.
+            int usedParameterIndex   = 0;
+            int unusedParameterIndex = newParameterSize;
             for (int parameterIndex = 0; parameterIndex < oldParameterSize; parameterIndex++)
             {
-                // Is the variable not required as a parameter?
-                if (!ParameterUsageMarker.isParameterUsed(method, parameterIndex))
+                // Is the variable required as a parameter?
+                if (ParameterUsageMarker.isParameterUsed(method, parameterIndex))
+                {
+                    // Keep the variable as a parameter.
+                    variableMap[parameterIndex] = usedParameterIndex++;
+                }
+                else
                 {
                     if (DEBUG)
                     {
                         System.out.println("  Deleting parameter #"+parameterIndex);
                     }
 
-                    // Delete the unused variable.
-                    variableEditor.deleteVariable(parameterIndex);
+                    // Shift the variable to the unused parameter block,
+                    // in case it is still used as a variable.
+                    variableMap[parameterIndex] = unusedParameterIndex++;
 
                     // Visit the method, if required.
                     if (extraVariableMemberVisitor != null)
@@ -121,8 +130,17 @@ implements   AttributeVisitor
                 }
             }
 
-            // Shift all remaining parameters and variables in the byte code.
-            variableEditor.visitCodeAttribute(clazz, method, codeAttribute);
+            // Fill out the remainder of the map.
+            for (int variableIndex = oldParameterSize; variableIndex < maxLocals; variableIndex++)
+            {
+                variableMap[variableIndex] = variableIndex;
+            }
+
+            // Set the map.
+            variableRemapper.setVariableMap(variableMap);
+
+            // Remap the variables.
+            variableRemapper.visitCodeAttribute(clazz, method, codeAttribute);
         }
     }
 }

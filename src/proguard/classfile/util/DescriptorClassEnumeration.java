@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -22,6 +22,8 @@ package proguard.classfile.util;
 
 import proguard.classfile.ClassConstants;
 
+import java.util.Stack;
+
 /**
  * A <code>DescriptorClassEnumeration</code> provides an enumeration of all
  * classes mentioned in a given descriptor or signature.
@@ -36,6 +38,7 @@ public class DescriptorClassEnumeration
     private int     nestingLevel;
     private boolean isInnerClassName;
     private String  accumulatedClassName;
+    private Stack   accumulatedClassNames;
 
 
     /**
@@ -95,11 +98,26 @@ public class DescriptorClassEnumeration
                 case ClassConstants.INTERNAL_TYPE_GENERIC_START:
                 {
                     nestingLevel++;
+
+                    // Make sure we have a stack.
+                    if (accumulatedClassNames == null)
+                    {
+                        accumulatedClassNames = new Stack();
+                    }
+
+                    // Remember the accumulated class name.
+                    accumulatedClassNames.push(accumulatedClassName);
+
                     break;
                 }
                 case ClassConstants.INTERNAL_TYPE_GENERIC_END:
                 {
                     nestingLevel--;
+
+                    // Return to the accumulated class name outside the
+                    // generic block.
+                    accumulatedClassName = (String)accumulatedClassNames.pop();
+
                     continue loop;
                 }
                 case ClassConstants.INTERNAL_TYPE_GENERIC_BOUND:

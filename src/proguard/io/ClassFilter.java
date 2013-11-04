@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -32,11 +32,8 @@ import java.io.IOException;
  *
  * @author Eric Lafortune
  */
-public class ClassFilter implements DataEntryReader
+public class ClassFilter extends FilteredDataEntryReader
 {
-    private final FilteredDataEntryReader filteredDataEntryReader;
-
-
     /**
      * Creates a new ClassFilter that delegates reading classes to the
      * given reader.
@@ -54,19 +51,9 @@ public class ClassFilter implements DataEntryReader
     public ClassFilter(DataEntryReader classReader,
                        DataEntryReader dataEntryReader)
     {
-        filteredDataEntryReader =
-            new FilteredDataEntryReader(
-            new DataEntryNameFilter(
-            new ExtensionMatcher(ClassConstants.CLASS_FILE_EXTENSION)),
-            classReader,
-            dataEntryReader);
-    }
-
-
-    // Implementations for DataEntryReader.
-
-    public void read(DataEntry dataEntry) throws IOException
-    {
-        filteredDataEntryReader.read(dataEntry);
+        super(new DataEntryNameFilter(
+              new ExtensionMatcher(ClassConstants.CLASS_FILE_EXTENSION)),
+              classReader,
+              dataEntryReader);
     }
 }

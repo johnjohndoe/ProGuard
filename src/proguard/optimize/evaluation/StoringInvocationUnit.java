@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -36,12 +36,34 @@ import proguard.optimize.info.*;
 public class StoringInvocationUnit
 extends      BasicInvocationUnit
 {
+    private boolean storeFieldValues;
+    private boolean storeMethodParameterValues;
+    private boolean storeMethodReturnValues;
+
+
     /**
      * Creates a new StoringInvocationUnit with the given value factory.
      */
     public StoringInvocationUnit(ValueFactory valueFactory)
     {
+        this(valueFactory, true, true, true);
+    }
+
+
+    /**
+     * Creates a new StoringInvocationUnit with the given value factory, for
+     * storing the specified values.
+     */
+    public StoringInvocationUnit(ValueFactory valueFactory,
+                                 boolean      storeFieldValues,
+                                 boolean      storeMethodParameterValues,
+                                 boolean      storeMethodReturnValues)
+    {
         super(valueFactory);
+
+        this.storeFieldValues           = storeFieldValues;
+        this.storeMethodParameterValues = storeMethodParameterValues;
+        this.storeMethodReturnValues    = storeMethodReturnValues;
     }
 
 
@@ -51,10 +73,13 @@ extends      BasicInvocationUnit
                                       RefConstant    refConstant,
                                       ReferenceValue value)
     {
-        Member referencedMember = refConstant.referencedMember;
-        if (referencedMember != null)
+        if (storeFieldValues)
         {
-            generalizeFieldClassValue((Field)referencedMember, value);
+            Member referencedMember = refConstant.referencedMember;
+            if (referencedMember != null)
+            {
+                generalizeFieldClassValue((Field)referencedMember, value);
+            }
         }
     }
 
@@ -63,10 +88,13 @@ extends      BasicInvocationUnit
                                  RefConstant refConstant,
                                  Value       value)
     {
-        Member referencedMember = refConstant.referencedMember;
-        if (referencedMember != null)
+        if (storeFieldValues)
         {
-            generalizeFieldValue((Field)referencedMember, value);
+            Member referencedMember = refConstant.referencedMember;
+            if (referencedMember != null)
+            {
+                generalizeFieldValue((Field)referencedMember, value);
+            }
         }
     }
 
@@ -76,12 +104,15 @@ extends      BasicInvocationUnit
                                            int         parameterIndex,
                                            Value       value)
     {
-        Member referencedMember = refConstant.referencedMember;
-        if (referencedMember != null)
+        if (storeMethodParameterValues)
         {
-            generalizeMethodParameterValue((Method)referencedMember,
-                                           parameterIndex,
-                                           value);
+            Member referencedMember = refConstant.referencedMember;
+            if (referencedMember != null)
+            {
+                generalizeMethodParameterValue((Method)referencedMember,
+                                               parameterIndex,
+                                               value);
+            }
         }
     }
 
@@ -90,9 +121,12 @@ extends      BasicInvocationUnit
                                         Method method,
                                         Value  value)
     {
-        generalizeMethodReturnValue(method, value);
+        if (storeMethodReturnValues)
+        {
+            generalizeMethodReturnValue(method, value);
+        }
     }
-
+    
 
     // Small utility methods.
 

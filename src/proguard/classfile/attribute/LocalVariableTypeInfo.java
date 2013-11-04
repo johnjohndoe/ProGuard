@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -44,6 +44,31 @@ public class LocalVariableTypeInfo
      * References to primitive types are ignored.
      */
     public Clazz[] referencedClasses;
+
+
+    /**
+     * Creates an uninitialized LocalVariableTypeInfo.
+     */
+    public LocalVariableTypeInfo()
+    {
+    }
+
+
+    /**
+     * Creates an initialized LocalVariableTypeInfo.
+     */
+    public LocalVariableTypeInfo(int   u2startPC,
+                                 int   u2length,
+                                 int   u2nameIndex,
+                                 int   u2signatureIndex,
+                                 int   u2index)
+    {
+        this.u2startPC        = u2startPC;
+        this.u2length         = u2length;
+        this.u2nameIndex      = u2nameIndex;
+        this.u2signatureIndex = u2signatureIndex;
+        this.u2index          = u2index;
+    }
 
 
     /**

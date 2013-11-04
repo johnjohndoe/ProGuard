@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -21,6 +21,7 @@
 package proguard.ant;
 
 import org.apache.tools.ant.types.DataType;
+import proguard.classfile.util.ClassUtil;
 import proguard.util.ListUtil;
 
 import java.util.List;
@@ -37,9 +38,11 @@ public class FilterElement extends DataType
 
     /**
      * Adds the contents of this element to the given name filter.
-     * @param filter the list of attributes to be extended.
+     * @param filter   the list of attributes to be extended.
+     * @param internal specifies whether the filter string should be converted
+     *                 to internal types.
      */
-    public void appendTo(List filter)
+    public void appendTo(List filter, boolean internal)
     {
         // Get the referenced element, or else this one.
         FilterElement filterElement = isReference() ?
@@ -56,6 +59,11 @@ public class FilterElement extends DataType
         }
         else
         {
+            if (internal)
+            {
+                filterString = ClassUtil.internalClassName(filterString);
+            }
+
             // Append the filter.
             filter.addAll(ListUtil.commaSeparatedList(filterString));
         }
@@ -63,6 +71,12 @@ public class FilterElement extends DataType
 
 
     // Ant task attributes.
+
+    public void setName(String name)
+    {
+        this.filter = name;
+    }
+
 
     public void setFilter(String filter)
     {

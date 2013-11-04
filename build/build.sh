@@ -2,6 +2,10 @@
 #
 # GNU/Linux build script for ProGuard.
 
+#
+# Configuration.
+#
+
 ANT_HOME=${ANT_HOME:-/usr/local/java/ant}
 WTK_HOME=${WTK_HOME:-/usr/local/java/wtk}
 
@@ -23,11 +27,15 @@ ANT_TASK=proguard/ant/ProGuardTask
 WTK_PLUGIN=proguard/wtk/ProGuardObfuscator
 
 ANT_JAR=$ANT_HOME/lib/ant.jar
-WTK_JAR=$WTK_HOME/wtklib/kenv.jar
+WTK_JAR=$WTK_HOME/wtklib/kenv.zip
 
 PROGUARD_JAR=$LIB/proguard.jar
 PROGUARD_GUI_JAR=$LIB/proguardgui.jar
 RETRACE_JAR=$LIB/retrace.jar
+
+#
+# Function definitions.
+#
 
 function compile {
   # Compile java source files.
@@ -38,7 +46,7 @@ function compile {
 
   # Copy resource files.
   (cd "$SRC"; find $(dirname $1) -maxdepth 1 \
-     \( -name \*.properties -o -name \*.gif -o -name \*.pro \) \
+     \( -name \*.properties -o -name \*.png -o -name \*.gif -o -name \*.pro \) \
      -exec cp --parents {} "../$CLASSES" \; )
 }
 
@@ -51,6 +59,12 @@ function updatejar {
   echo "Updating $PROGUARD_JAR..."
   jar -uf "$PROGUARD_JAR" -C "$CLASSES" $(dirname $1)
 }
+
+#
+# Main script body.
+#
+
+mkdir -p "$CLASSES"
 
 compile   $PROGUARD
 createjar $PROGUARD "$PROGUARD_JAR"

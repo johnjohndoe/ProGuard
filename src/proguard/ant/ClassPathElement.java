@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -23,6 +23,7 @@ package proguard.ant;
 import org.apache.tools.ant.*;
 import org.apache.tools.ant.types.*;
 import proguard.*;
+import proguard.util.ListUtil;
 
 import java.io.File;
 
@@ -118,11 +119,11 @@ public class ClassPathElement extends Path
             ClassPathEntry entry =
                 new ClassPathEntry(file.isAbsolute() ? file : new File(baseDir, fileName),
                                    output);
-            entry.setFilter(filter);
-            entry.setJarFilter(jarFilter);
-            entry.setWarFilter(warFilter);
-            entry.setEarFilter(earFilter);
-            entry.setZipFilter(zipFilter);
+            entry.setFilter(ListUtil.commaSeparatedList(filter));
+            entry.setJarFilter(ListUtil.commaSeparatedList(jarFilter));
+            entry.setWarFilter(ListUtil.commaSeparatedList(warFilter));
+            entry.setEarFilter(ListUtil.commaSeparatedList(earFilter));
+            entry.setZipFilter(ListUtil.commaSeparatedList(zipFilter));
 
             // Add it to the class path.
             classPath.add(entry);

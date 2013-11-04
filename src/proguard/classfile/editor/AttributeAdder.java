@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -256,13 +256,17 @@ implements   AttributeVisitor
 
         CodeAttributeComposer codeAttributeComposer = new CodeAttributeComposer();
 
-        codeAttributeComposer.beginCodeFragment(codeAttribute.u4codeLength + 32);
+        codeAttributeComposer.beginCodeFragment(codeAttribute.u4codeLength);
 
         // Add the instructions.
         codeAttribute.instructionsAccept(clazz,
                                          method,
                                          new InstructionAdder(targetClass,
                                                               codeAttributeComposer));
+
+        // Append a label just after the code.
+        codeAttributeComposer.appendLabel(codeAttribute.u4codeLength);
+
         // Add the exceptions.
         codeAttribute.exceptionsAccept(clazz,
                                        method,
@@ -303,19 +307,58 @@ implements   AttributeVisitor
 
     public void visitLineNumberTableAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, LineNumberTableAttribute lineNumberTableAttribute)
     {
-        // TODO: Implement method.
+        // Create a new line number table attribute.
+        LineNumberTableAttribute newLineNumberTableAttribute =
+            new LineNumberTableAttribute(constantAdder.addConstant(clazz, lineNumberTableAttribute.u2attributeNameIndex),
+                                         0,
+                                         new LineNumberInfo[lineNumberTableAttribute.u2lineNumberTableLength]);
+
+        // Add the line numbers.
+        lineNumberTableAttribute.lineNumbersAccept(clazz,
+                                                   method,
+                                                   codeAttribute,
+                                                   new LineNumberInfoAdder(newLineNumberTableAttribute));
+
+        // Add it to the target.
+        attributesEditor.addAttribute(newLineNumberTableAttribute);
     }
 
 
     public void visitLocalVariableTableAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableTableAttribute localVariableTableAttribute)
     {
-        // TODO: Implement method.
+        // Create a new local variable table attribute.
+        LocalVariableTableAttribute newLocalVariableTableAttribute =
+            new LocalVariableTableAttribute(constantAdder.addConstant(clazz, localVariableTableAttribute.u2attributeNameIndex),
+                                            0,
+                                            new LocalVariableInfo[localVariableTableAttribute.u2localVariableTableLength]);
+
+        // Add the local variables.
+        localVariableTableAttribute.localVariablesAccept(clazz,
+                                                         method,
+                                                         codeAttribute,
+                                                         new LocalVariableInfoAdder(targetClass, newLocalVariableTableAttribute));
+
+        // Add it to the target.
+        attributesEditor.addAttribute(newLocalVariableTableAttribute);
     }
 
 
     public void visitLocalVariableTypeTableAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableTypeTableAttribute localVariableTypeTableAttribute)
     {
-        // TODO: Implement method.
+        // Create a new local variable type table attribute.
+        LocalVariableTypeTableAttribute newLocalVariableTypeTableAttribute =
+            new LocalVariableTypeTableAttribute(constantAdder.addConstant(clazz, localVariableTypeTableAttribute.u2attributeNameIndex),
+                                            0,
+                                            new LocalVariableTypeInfo[localVariableTypeTableAttribute.u2localVariableTypeTableLength]);
+
+        // Add the local variable types.
+        localVariableTypeTableAttribute.localVariablesAccept(clazz,
+                                                             method,
+                                                             codeAttribute,
+                                                             new LocalVariableTypeInfoAdder(targetClass, newLocalVariableTypeTableAttribute));
+
+        // Add it to the target.
+        attributesEditor.addAttribute(newLocalVariableTypeTableAttribute);
     }
 
 
@@ -357,13 +400,41 @@ implements   AttributeVisitor
 
     public void visitRuntimeVisibleParameterAnnotationsAttribute(Clazz clazz, Method method, RuntimeVisibleParameterAnnotationsAttribute runtimeVisibleParameterAnnotationsAttribute)
     {
-        // TODO: Implement method.
+        // Create a new annotations attribute.
+        RuntimeVisibleParameterAnnotationsAttribute newParameterAnnotationsAttribute =
+            new RuntimeVisibleParameterAnnotationsAttribute(constantAdder.addConstant(clazz, runtimeVisibleParameterAnnotationsAttribute.u2attributeNameIndex),
+                                                            0,
+                                                            new int[runtimeVisibleParameterAnnotationsAttribute.u2parametersCount],
+                                                            new Annotation[runtimeVisibleParameterAnnotationsAttribute.u2parametersCount][]);
+
+        // Add the annotations.
+        runtimeVisibleParameterAnnotationsAttribute.annotationsAccept(clazz,
+                                                                      method,
+                                                                      new AnnotationAdder(targetClass,
+                                                                                          newParameterAnnotationsAttribute));
+
+        // Add it to the target.
+        attributesEditor.addAttribute(newParameterAnnotationsAttribute);
     }
 
 
     public void visitRuntimeInvisibleParameterAnnotationsAttribute(Clazz clazz, Method method, RuntimeInvisibleParameterAnnotationsAttribute runtimeInvisibleParameterAnnotationsAttribute)
     {
-        // TODO: Implement method.
+        // Create a new annotations attribute.
+        RuntimeInvisibleParameterAnnotationsAttribute newParameterAnnotationsAttribute =
+            new RuntimeInvisibleParameterAnnotationsAttribute(constantAdder.addConstant(clazz, runtimeInvisibleParameterAnnotationsAttribute.u2attributeNameIndex),
+                                                              0,
+                                                              new int[runtimeInvisibleParameterAnnotationsAttribute.u2parametersCount],
+                                                              new Annotation[runtimeInvisibleParameterAnnotationsAttribute.u2parametersCount][]);
+
+        // Add the annotations.
+        runtimeInvisibleParameterAnnotationsAttribute.annotationsAccept(clazz,
+                                                                        method,
+                                                                        new AnnotationAdder(targetClass,
+                                                                                            newParameterAnnotationsAttribute));
+
+        // Add it to the target.
+        attributesEditor.addAttribute(newParameterAnnotationsAttribute);
     }
 
 

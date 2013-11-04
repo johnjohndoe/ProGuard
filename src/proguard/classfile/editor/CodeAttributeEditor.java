@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -28,6 +28,7 @@ import proguard.classfile.attribute.visitor.*;
 import proguard.classfile.instruction.*;
 import proguard.classfile.instruction.visitor.InstructionVisitor;
 import proguard.classfile.util.SimplifiedVisitor;
+import proguard.classfile.visitor.ClassPrinter;
 
 /**
  * This AttributeVisitor accumulates specified changes to code, and then applies
@@ -142,6 +143,28 @@ implements   AttributeVisitor,
 
 
     /**
+     * Remembers to place the given instructions right before the instruction
+     * at the given offset.
+     * @param instructionOffset the offset of the instruction.
+     * @param instructions      the new instructions.
+     */
+    public void insertBeforeInstruction(int instructionOffset, Instruction[] instructions)
+    {
+        if (instructionOffset < 0 ||
+            instructionOffset >= codeLength)
+        {
+            throw new IllegalArgumentException("Invalid instruction offset ["+instructionOffset+"] in code with length ["+codeLength+"]");
+        }
+
+        preInsertions[instructionOffset] = new CompositeInstruction(instructions);
+
+        modified = true;
+        simple   = false;
+
+    }
+
+
+    /**
      * Remembers to replace the instruction at the given offset by the given
      * instruction.
      * @param instructionOffset the offset of the instruction to be replaced.
@@ -162,6 +185,26 @@ implements   AttributeVisitor,
 
 
     /**
+     * Remembers to replace the instruction at the given offset by the given
+     * instructions.
+     * @param instructionOffset the offset of the instruction to be replaced.
+     * @param instructions      the new instructions.
+     */
+    public void replaceInstruction(int instructionOffset, Instruction[] instructions)
+    {
+        if (instructionOffset < 0 ||
+            instructionOffset >= codeLength)
+        {
+            throw new IllegalArgumentException("Invalid instruction offset ["+instructionOffset+"] in code with length ["+codeLength+"]");
+        }
+
+        replacements[instructionOffset] = new CompositeInstruction(instructions);
+
+        modified = true;
+    }
+
+
+    /**
      * Remembers to place the given instruction right after the instruction
      * at the given offset.
      * @param instructionOffset the offset of the instruction.
@@ -176,6 +219,27 @@ implements   AttributeVisitor,
         }
 
         postInsertions[instructionOffset] = instruction;
+
+        modified = true;
+        simple   = false;
+    }
+
+
+    /**
+     * Remembers to place the given instructions right after the instruction
+     * at the given offset.
+     * @param instructionOffset the offset of the instruction.
+     * @param instructions      the new instructions.
+     */
+    public void insertAfterInstruction(int instructionOffset, Instruction[] instructions)
+    {
+        if (instructionOffset < 0 ||
+            instructionOffset >= codeLength)
+        {
+            throw new IllegalArgumentException("Invalid instruction offset ["+instructionOffset+"] in code with length ["+codeLength+"]");
+        }
+
+        postInsertions[instructionOffset] = new CompositeInstruction(instructions);
 
         modified = true;
         simple   = false;
@@ -610,15 +674,13 @@ implements   AttributeVisitor,
         Instruction preInstruction = preInsertions[oldOffset];
         if (preInstruction != null)
         {
-            // Remap the instruction.
-            preInstruction.accept(clazz, method, codeAttribute, oldOffset, this);
-
             if (DEBUG)
             {
                 System.out.println("  Pre-inserted  "+preInstruction.toString(newOffset));
             }
 
-            newOffset += preInstruction.length(newOffset);
+            // Remap the instruction.
+            preInstruction.accept(clazz, method, codeAttribute, oldOffset, this);
         }
 
         // Remap and insert the replacement instruction, or the current
@@ -626,42 +688,35 @@ implements   AttributeVisitor,
         Instruction replacementInstruction = replacements[oldOffset];
         if (replacementInstruction != null)
         {
-            // Remap the instruction.
-            replacementInstruction.accept(clazz, method, codeAttribute, oldOffset, this);
-
             if (DEBUG)
             {
                 System.out.println("  Replaced      "+replacementInstruction.toString(newOffset));
             }
-
-            newOffset += replacementInstruction.length(newOffset);
+            // Remap the instruction.
+            replacementInstruction.accept(clazz, method, codeAttribute, oldOffset, this);
         }
         else if (!deleted[oldOffset])
         {
-            // Remap the instruction.
-            instruction.accept(clazz, method, codeAttribute, oldOffset, this);
-
             if (DEBUG)
             {
                 System.out.println("  Copied        "+instruction.toString(newOffset));
             }
 
-            newOffset += instruction.length(newOffset);
+            // Remap the instruction.
+            instruction.accept(clazz, method, codeAttribute, oldOffset, this);
         }
 
         // Remap and insert the post-inserted instruction, if any.
         Instruction postInstruction = postInsertions[oldOffset];
         if (postInstruction != null)
         {
-            // Remap the instruction.
-            postInstruction.accept(clazz, method, codeAttribute, oldOffset, this);
-
             if (DEBUG)
             {
                 System.out.println("  Post-inserted "+postInstruction.toString(newOffset));
             }
 
-            newOffset += postInstruction.length(newOffset);
+            // Remap the instruction.
+            postInstruction.accept(clazz, method, codeAttribute, oldOffset, this);
         }
     }
 
@@ -676,6 +731,8 @@ implements   AttributeVisitor,
                                                  codeAttribute,
                                                  newOffset,
                                                  simpleInstruction);
+
+        newOffset += simpleInstruction.length(newOffset);
     }
 
 
@@ -687,6 +744,8 @@ implements   AttributeVisitor,
                                                    codeAttribute,
                                                    newOffset,
                                                    constantInstruction);
+
+        newOffset += constantInstruction.length(newOffset);
     }
 
 
@@ -698,6 +757,8 @@ implements   AttributeVisitor,
                                                    codeAttribute,
                                                    newOffset,
                                                    variableInstruction);
+
+        newOffset += variableInstruction.length(newOffset);
     }
 
 
@@ -713,6 +774,8 @@ implements   AttributeVisitor,
                                                  codeAttribute,
                                                  newOffset,
                                                  branchInstruction);
+
+        newOffset += branchInstruction.length(newOffset);
     }
 
 
@@ -732,6 +795,8 @@ implements   AttributeVisitor,
                                                       codeAttribute,
                                                       newOffset,
                                                       tableSwitchInstruction);
+
+        newOffset += tableSwitchInstruction.length(newOffset);
     }
 
 
@@ -751,6 +816,8 @@ implements   AttributeVisitor,
                                                        codeAttribute,
                                                        newOffset,
                                                        lookUpSwitchInstruction);
+
+        newOffset += lookUpSwitchInstruction.length(newOffset);
     }
 
 
@@ -995,5 +1062,102 @@ implements   AttributeVisitor,
         }
 
         return newIndex;
+    }
+
+
+    private class CompositeInstruction
+    extends       Instruction
+    {
+        private Instruction[] instructions;
+
+
+        private CompositeInstruction(Instruction[] instructions)
+        {
+            this.instructions = instructions;
+        }
+
+
+        // Implementations for Instruction.
+
+        public Instruction shrink()
+        {
+            for (int index = 0; index < instructions.length; index++)
+            {
+                instructions[index] = instructions[index].shrink();
+            }
+
+            return this;
+        }
+
+
+        public void write(byte[] code, int offset)
+        {
+            for (int index = 0; index < instructions.length; index++)
+            {
+                Instruction instruction = instructions[index];
+
+                instruction.write(code, offset);
+
+                offset += instruction.length(offset);
+            }
+        }
+
+
+        protected void readInfo(byte[] code, int offset)
+        {
+            throw new UnsupportedOperationException("Can't read composite instruction");
+        }
+
+
+        protected void writeInfo(byte[] code, int offset)
+        {
+            throw new UnsupportedOperationException("Can't write composite instruction");
+        }
+
+
+        public int length(int offset)
+        {
+            int newOffset = offset;
+
+            for (int index = 0; index < instructions.length; index++)
+            {
+                newOffset += instructions[index].length(newOffset);
+            }
+
+            return newOffset - offset;
+        }
+
+
+        public void accept(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, InstructionVisitor instructionVisitor)
+        {
+            if (instructionVisitor != CodeAttributeEditor.this)
+            {
+                throw new UnsupportedOperationException("Unexpected visitor ["+instructionVisitor+"]");
+            }
+
+            for (int index = 0; index < instructions.length; index++)
+            {
+                Instruction instruction = instructions[index];
+
+                instruction.accept(clazz, method, codeAttribute, offset, CodeAttributeEditor.this);
+
+                offset += instruction.length(offset);
+            }
+        }
+
+
+        // Implementations for Object.
+
+        public String toString()
+        {
+            StringBuffer stringBuffer = new StringBuffer();
+
+            for (int index = 0; index < instructions.length; index++)
+            {
+                stringBuffer.append(instructions[index].toString()).append("; ");
+            }
+
+            return stringBuffer.toString();
+        }
     }
 }

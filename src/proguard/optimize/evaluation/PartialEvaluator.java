@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -26,7 +26,7 @@ import proguard.classfile.attribute.visitor.*;
 import proguard.classfile.constant.ClassConstant;
 import proguard.classfile.instruction.*;
 import proguard.classfile.util.*;
-import proguard.classfile.visitor.ClassPrinter;
+import proguard.classfile.visitor.*;
 import proguard.evaluation.*;
 import proguard.evaluation.value.*;
 import proguard.optimize.peephole.BranchTargetFinder;
@@ -72,8 +72,10 @@ implements   AttributeVisitor,
     private boolean                  evaluateExceptions;
 
     private final BasicBranchUnit    branchUnit;
-    private final BranchTargetFinder branchTargetFinder = new BranchTargetFinder();
-//    private ClassCleaner       classCleaner       = new ClassCleaner();
+    private final BranchTargetFinder branchTargetFinder;
+
+    private final java.util.Stack callingInstructionBlockStack;
+    private final java.util.Stack instructionBlockStack = new java.util.Stack();
 
 
     /**
@@ -81,7 +83,9 @@ implements   AttributeVisitor,
      */
     public PartialEvaluator()
     {
-        this(new ValueFactory(), new BasicInvocationUnit(new ValueFactory()), true);
+        this(new ValueFactory(),
+             new BasicInvocationUnit(new ValueFactory()),
+             true);
     }
 
 
@@ -92,20 +96,68 @@ implements   AttributeVisitor,
      * @param invocationUnit  the invocation unit that will handle all
      *                        communication with other fields and methods.
      * @param evaluateAllCode a flag that specifies whether all branch targets
-     *                        and exception 'catch' blocks should be evaluated,
+     *                        and exception handlers should be evaluated,
      *                        even if they are unreachable.
      */
     public PartialEvaluator(ValueFactory   valueFactory,
                             InvocationUnit invocationUnit,
                             boolean        evaluateAllCode)
     {
-        this.valueFactory    = valueFactory;
-        this.invocationUnit  = invocationUnit;
-        this.evaluateAllCode = evaluateAllCode;
+        this(valueFactory,
+             invocationUnit,
+             evaluateAllCode,
+             evaluateAllCode ?
+                 new BasicBranchUnit() :
+                 new TracedBranchUnit(),
+             new BranchTargetFinder(),
+             null);
+    }
 
-        this.branchUnit = evaluateAllCode ?
-            new BasicBranchUnit() :
-            new TracedBranchUnit();
+
+    /**
+     * Creates a new PartialEvaluator, based on an existing one.
+     * @param partialEvaluator the subroutine calling partial evaluator.
+     */
+    private PartialEvaluator(PartialEvaluator partialEvaluator)
+    {
+        this(partialEvaluator.valueFactory,
+             partialEvaluator.invocationUnit,
+             partialEvaluator.evaluateAllCode,
+             partialEvaluator.branchUnit,
+             partialEvaluator.branchTargetFinder,
+             partialEvaluator.instructionBlockStack);
+    }
+
+
+    /**
+     * Creates a new PartialEvaluator.
+     * @param valueFactory            the value factory that will create all
+     *                                values during evaluation.
+     * @param invocationUnit          the invocation unit that will handle all
+     *                                communication with other fields and methods.
+     * @param evaluateAllCode         a flag that specifies whether all branch
+     *                                targets and exception handlers should be
+     *                                evaluated, even if they are unreachable.
+     * @param branchUnit              the branch unit that will handle all
+     *                                branches.
+     * @param branchTargetFinder      the utility class that will find all
+     *                                branches.
+     */
+    private PartialEvaluator(ValueFactory       valueFactory,
+                             InvocationUnit     invocationUnit,
+                             boolean            evaluateAllCode,
+                             BasicBranchUnit    branchUnit,
+                             BranchTargetFinder branchTargetFinder,
+                             java.util.Stack    callingInstructionBlockStack)
+    {
+        this.valueFactory       = valueFactory;
+        this.invocationUnit     = invocationUnit;
+        this.evaluateAllCode    = evaluateAllCode;
+        this.branchUnit         = branchUnit;
+        this.branchTargetFinder = branchTargetFinder;
+        this.callingInstructionBlockStack = callingInstructionBlockStack == null ?
+            this.instructionBlockStack :
+            callingInstructionBlockStack;
     }
 
 
@@ -166,24 +218,13 @@ implements   AttributeVisitor,
         codeAttribute.accept(clazz, method, branchTargetFinder);
 
         // Start executing the first instruction block.
-        evaluateInstructionBlock(clazz,
-                                 method,
-                                 codeAttribute,
-                                 variables,
-                                 stack,
-                                 0);
-
-        // Evaluate the exception catch blocks, until their entry variables
-        // have stabilized.
-        do
-        {
-            // Reset the flag to stop evaluating.
-            evaluateExceptions = false;
-
-            // Evaluate all relevant exception catch blocks once.
-            codeAttribute.exceptionsAccept(clazz, method, this);
-        }
-        while (evaluateExceptions);
+        evaluateInstructionBlockAndExceptionHandlers(clazz,
+                                                     method,
+                                                     codeAttribute,
+                                                     variables,
+                                                     stack,
+                                                     0,
+                                                     codeAttribute.u4codeLength);
 
         if (DEBUG_RESULTS)
         {
@@ -194,7 +235,7 @@ implements   AttributeVisitor,
             {
                 if (isBranchOrExceptionTarget(offset))
                 {
-                    System.out.println("Branch target:");
+                    System.out.println("Branch target from ["+branchOriginValues[offset]+"]:");
                     if (isTraced(offset))
                     {
                         System.out.println("  Vars:  "+variablesBefore[offset]);
@@ -265,6 +306,15 @@ implements   AttributeVisitor,
 
 
     /**
+     * Returns whether there is an instruction at the given offset.
+     */
+    public boolean isInstruction(int instructionOffset)
+    {
+        return branchTargetFinder.isInstruction(instructionOffset);
+    }
+
+
+    /**
      * Returns whether the instruction at the given offset is the target of a
      * branch instruction or an exception.
      */
@@ -282,6 +332,16 @@ implements   AttributeVisitor,
     public boolean isSubroutineStart(int instructionOffset)
     {
         return branchTargetFinder.isSubroutineStart(instructionOffset);
+    }
+
+
+    /**
+     * Returns whether the instruction at the given offset is a subroutine
+     * invocation.
+     */
+    public boolean isSubroutineInvocation(int instructionOffset)
+    {
+        return branchTargetFinder.isSubroutineInvocation(instructionOffset);
     }
 
 
@@ -429,98 +489,59 @@ implements   AttributeVisitor,
     }
 
 
-    // Implementations for ExceptionInfoVisitor.
-
-    public void visitExceptionInfo(Clazz clazz, Method method, CodeAttribute codeAttribute, ExceptionInfo exceptionInfo)
-    {
-        int startPC = exceptionInfo.u2startPC;
-        int endPC   = exceptionInfo.u2endPC;
-
-        // Do we have to evaluate this exception catch block?
-        if (isTraced(startPC, endPC))
-        {
-            int handlerPC = exceptionInfo.u2handlerPC;
-            int catchType = exceptionInfo.u2catchType;
-
-            if (DEBUG) System.out.println("Partial evaluation of exception ["+startPC +","+endPC +"] -> ["+handlerPC+"]:");
-
-            // Reuse the existing variables and stack objects, ensuring the
-            // right size.
-            TracedVariables variables = new TracedVariables(codeAttribute.u2maxLocals);
-            TracedStack     stack     = new TracedStack(codeAttribute.u2maxStack);
-
-            // Initialize the trace values.
-            Value storeValue = new InstructionOffsetValue(AT_CATCH_ENTRY);
-            variables.setProducerValue(storeValue);
-            stack.setProducerValue(storeValue);
-
-            // Initialize the variables by generalizing the variables of the
-            // try block. Make sure to include the results of the last
-            // instruction for preverification.
-            generalizeVariables(startPC,
-                                endPC,
-                                evaluateAllCode,
-                                variables);
-
-            // Initialize the the stack.
-            //stack.push(valueFactory.createReference((ClassConstant)((ProgramClass)clazz).getConstant(exceptionInfo.u2catchType), false));
-            String catchClassName = catchType != 0 ?
-                 clazz.getClassName(catchType) :
-                 ClassConstants.INTERNAL_NAME_JAVA_LANG_THROWABLE;
-
-            Clazz catchClass = catchType != 0 ?
-                ((ClassConstant)((ProgramClass)clazz).getConstant(catchType)).referencedClass :
-                null;
-
-            stack.push(valueFactory.createReferenceValue(catchClassName,
-                                                         catchClass,
-                                                         false));
-
-            int evaluationCount = evaluationCounts[handlerPC];
-
-            // Evaluate the instructions, starting at the entry point.
-            evaluateInstructionBlock(clazz,
-                                     method,
-                                     codeAttribute,
-                                     variables,
-                                     stack,
-                                     handlerPC);
-
-            // Remember to evaluate all exception handlers once more.
-            if (!evaluateExceptions)
-            {
-                evaluateExceptions = evaluationCount < evaluationCounts[handlerPC];
-            }
-        }
-        else if (evaluateAllCode)
-        {
-            if (DEBUG) System.out.println("No information for partial evaluation of exception ["+startPC +","+endPC +"] -> ["+exceptionInfo.u2handlerPC+"] yet");
-
-            // We don't have any information on the try block yet, but we do
-            // have to evaluate the exception handler.
-            // Remember to evaluate all exception handlers once more.
-            evaluateExceptions = true;
-        }
-        else
-        {
-            if (DEBUG) System.out.println("No information for partial evaluation of exception ["+startPC +","+endPC +"] -> ["+exceptionInfo.u2handlerPC+"]");
-        }
-    }
-
-
     // Utility methods to evaluate instruction blocks.
 
     /**
-     * Pushes block of instructions to be executed on the given stack.
+     * Pushes block of instructions to be executed in the calling partial
+     * evaluator.
+     */
+    private void pushCallingInstructionBlock(TracedVariables variables,
+                                             TracedStack     stack,
+                                             int             startOffset)
+    {
+        callingInstructionBlockStack.push(new MyInstructionBlock(variables,
+                                                                 stack,
+                                                                 startOffset));
+    }
+
+
+    /**
+     * Pushes block of instructions to be executed in this partial evaluator.
      */
     private void pushInstructionBlock(TracedVariables variables,
                                       TracedStack     stack,
-                                      int             startOffset,
-                                      java.util.Stack instructionBlocKStack)
+                                      int             startOffset)
     {
-        instructionBlocKStack.push(new MyInstructionBlock(variables,
+        instructionBlockStack.push(new MyInstructionBlock(variables,
                                                           stack,
                                                           startOffset));
+    }
+
+
+    /**
+     * Evaluates the instruction block and the exception handlers covering the
+     * given instruction range in the given code.
+     */
+    private void evaluateInstructionBlockAndExceptionHandlers(Clazz           clazz,
+                                                              Method          method,
+                                                              CodeAttribute   codeAttribute,
+                                                              TracedVariables variables,
+                                                              TracedStack     stack,
+                                                              int             startOffset,
+                                                              int             endOffset)
+    {
+        evaluateInstructionBlock(clazz,
+                                 method,
+                                 codeAttribute,
+                                 variables,
+                                 stack,
+                                 startOffset);
+
+        evaluateExceptionHandlers(clazz,
+                                  method,
+                                  codeAttribute,
+                                  startOffset,
+                                  endOffset);
     }
 
 
@@ -535,18 +556,13 @@ implements   AttributeVisitor,
                                           TracedStack     stack,
                                           int             startOffset)
     {
-        // We're now defining out own stack instead of more elegant recursion,
-        // in order to avoid stack overflow errors in the VM.
-        java.util.Stack instructionBlockStack = new java.util.Stack();
-
         // Execute the initial instruction block.
-        evaluateInstructionBlock(clazz,
-                                 method,
-                                 codeAttribute,
-                                 variables,
-                                 stack,
-                                 startOffset,
-                                 instructionBlockStack);
+        evaluateSingleInstructionBlock(clazz,
+                                       method,
+                                       codeAttribute,
+                                       variables,
+                                       stack,
+                                       startOffset);
 
         // Execute all resulting instruction blocks on the execution stack.
         while (!instructionBlockStack.empty())
@@ -556,13 +572,12 @@ implements   AttributeVisitor,
             MyInstructionBlock instructionBlock =
                 (MyInstructionBlock)instructionBlockStack.pop();
 
-            evaluateInstructionBlock(clazz,
-                                     method,
-                                     codeAttribute,
-                                     instructionBlock.variables,
-                                     instructionBlock.stack,
-                                     instructionBlock.startOffset,
-                                     instructionBlockStack);
+            evaluateSingleInstructionBlock(clazz,
+                                           method,
+                                           codeAttribute,
+                                           instructionBlock.variables,
+                                           instructionBlock.stack,
+                                           instructionBlock.startOffset);
         }
     }
 
@@ -573,13 +588,12 @@ implements   AttributeVisitor,
      * Instruction blocks that are to be evaluated as a result are pushed on
      * the given stack.
      */
-    private void evaluateInstructionBlock(Clazz            clazz,
-                                          Method           method,
-                                          CodeAttribute    codeAttribute,
-                                          TracedVariables  variables,
-                                          TracedStack      stack,
-                                          int              startOffset,
-                                          java.util.Stack  instructionBlockStack)
+    private void evaluateSingleInstructionBlock(Clazz            clazz,
+                                                Method           method,
+                                                CodeAttribute    codeAttribute,
+                                                TracedVariables  variables,
+                                                TracedStack      stack,
+                                                int              startOffset)
     {
         byte[] code = codeAttribute.code;
 
@@ -594,7 +608,11 @@ implements   AttributeVisitor,
              System.out.println("Init stack: "+stack);
         }
 
-        Processor processor = new Processor(variables, stack, valueFactory, branchUnit, invocationUnit);
+        Processor processor = new Processor(variables,
+                                            stack,
+                                            valueFactory,
+                                            branchUnit,
+                                            invocationUnit);
 
         int instructionOffset = startOffset;
 
@@ -810,8 +828,7 @@ implements   AttributeVisitor,
 
                         pushInstructionBlock(new TracedVariables(variables),
                                              new TracedStack(stack),
-                                             branchTargets.instructionOffset(index),
-                                             instructionBlockStack);
+                                             branchTargets.instructionOffset(index));
                     }
 
                     break;
@@ -823,48 +840,252 @@ implements   AttributeVisitor,
             // Just continue with the next instruction.
             instructionOffset = branchTargets.instructionOffset(0);
 
-            // Clear the context of a subroutine before entering it, in order
-            // to avoid context conflicts across different invocations.
+            // Is this a subroutine invocation?
             if (instruction.opcode == InstructionConstants.OP_JSR ||
                 instruction.opcode == InstructionConstants.OP_JSR_W)
             {
-                // A subroutine has a single entry point and a single exit point,
-                // so we can easily loop over its instructions.
-                int subroutineEnd = branchTargetFinder.subroutineEnd(instructionOffset);
+                // Evaluate the subroutine, possibly in another partial
+                // evaluator.
+                evaluateSubroutine(clazz,
+                                   method,
+                                   codeAttribute,
+                                   variables,
+                                   stack,
+                                   instructionOffset,
+                                   instructionBlockStack);
 
-                if (DEBUG) System.out.println("Clearing context of subroutine from "+instructionOffset+" to "+subroutineEnd);
-
-                for (int offset = instructionOffset; offset < subroutineEnd; offset++)
-                {
-                    if (branchTargetFinder.isInstruction(offset))
-                    {
-                        evaluationCounts[offset] = 0;
-                    }
-                }
-
-                evaluateInstructionBlock(clazz,
-                                         method,
-                                         codeAttribute,
-                                         new TracedVariables(variables),
-                                         new TracedStack(stack),
-                                         instructionOffset);
-
-                if (DEBUG) System.out.println("Evaluating exceptions of subroutine from "+instructionOffset+" to "+subroutineEnd);
-
-                // Evaluate all relevant exception catch blocks once.
-                codeAttribute.exceptionsAccept(clazz,
-                                               method,
-                                               instructionOffset,
-                                               subroutineEnd,
-                                               this);
-
-                if (DEBUG) System.out.println("Ending subroutine from "+instructionOffset+" to "+subroutineEnd);
-
+                break;
+            }
+            else if (instruction.opcode == InstructionConstants.OP_RET)
+            {
+                // Let the partial evaluator that has called the subroutine
+                // handle the evaluation after the return.
+                pushCallingInstructionBlock(new TracedVariables(variables),
+                                            new TracedStack(stack),
+                                            instructionOffset);
                 break;
             }
         }
 
         if (DEBUG) System.out.println("Ending processing of instruction block starting at ["+startOffset+"]");
+    }
+
+
+    /**
+     * Evaluates a subroutine and its exception handlers, starting at the given
+     * offset and ending at a subroutine return instruction.
+     */
+    private void evaluateSubroutine(Clazz           clazz,
+                                    Method          method,
+                                    CodeAttribute   codeAttribute,
+                                    TracedVariables variables,
+                                    TracedStack     stack,
+                                    int             subroutineStart,
+                                    java.util.Stack instructionBlockStack)
+    {
+        int subroutineEnd = branchTargetFinder.subroutineEnd(subroutineStart);
+
+        if (DEBUG) System.out.println("Evaluating subroutine from "+subroutineStart+" to "+subroutineEnd);
+
+        PartialEvaluator subroutinePartialEvaluator = this;
+
+        // Create a temporary partial evaluator if necessary.
+        if (evaluationCounts[subroutineStart] > 0)
+        {
+            if (DEBUG) System.out.println("Creating new partial evaluator for subroutine");
+
+            subroutinePartialEvaluator = new PartialEvaluator(this);
+
+            subroutinePartialEvaluator.initializeVariables(clazz,
+                                                           method,
+                                                           codeAttribute,
+                                                           variables,
+                                                           stack);
+        }
+
+        // Evaluate the subroutine.
+        subroutinePartialEvaluator.evaluateInstructionBlockAndExceptionHandlers(clazz,
+                                                                                method,
+                                                                                codeAttribute,
+                                                                                variables,
+                                                                                stack,
+                                                                                subroutineStart,
+                                                                                subroutineEnd);
+
+        // Merge back the temporary partial evaluator if necessary.
+        if (subroutinePartialEvaluator != this)
+        {
+            generalize(subroutinePartialEvaluator, 0, codeAttribute.u4codeLength);
+        }
+
+        if (DEBUG) System.out.println("Ending subroutine from "+subroutineStart+" to "+subroutineEnd);
+    }
+
+
+    /**
+     * Generalizes the results of this partial evaluator with those of another
+     * given partial evaluator, over a given range of instructions.
+     */
+    private void generalize(PartialEvaluator other,
+                            int              codeStart,
+                            int              codeEnd)
+    {
+        if (DEBUG) System.out.println("Generalizing with temporary partial evaluation");
+
+        for (int offset = codeStart; offset < codeEnd; offset++)
+        {
+            if (other.branchOriginValues[offset] != null)
+            {
+                branchOriginValues[offset] = branchOriginValues[offset] == null ?
+                    other.branchOriginValues[offset] :
+                    branchOriginValues[offset].generalize(other.branchOriginValues[offset]).instructionOffsetValue();
+            }
+
+            if (other.isTraced(offset))
+            {
+                if (other.branchTargetValues[offset] != null)
+                {
+                    branchTargetValues[offset] = branchTargetValues[offset] == null ?
+                        other.branchTargetValues[offset] :
+                        branchTargetValues[offset].generalize(other.branchTargetValues[offset]).instructionOffsetValue();
+                }
+
+                if (evaluationCounts[offset] == 0)
+                {
+                    variablesBefore[offset]      = other.variablesBefore[offset];
+                    stacksBefore[offset]         = other.stacksBefore[offset];
+                    variablesAfter[offset]       = other.variablesAfter[offset];
+                    stacksAfter[offset]          = other.stacksAfter[offset];
+                    generalizedContexts[offset]  = other.generalizedContexts[offset];
+                    evaluationCounts[offset]     = other.evaluationCounts[offset];
+                    initializedVariables[offset] = other.initializedVariables[offset];
+                }
+                else
+                {
+                    variablesBefore[offset].generalize(other.variablesBefore[offset], false);
+                    stacksBefore[offset]   .generalize(other.stacksBefore[offset]);
+                    variablesAfter[offset] .generalize(other.variablesAfter[offset], false);
+                    stacksAfter[offset]    .generalize(other.stacksAfter[offset]);
+                    //generalizedContexts[offset]
+                    evaluationCounts[offset] += other.evaluationCounts[offset];
+                    //initializedVariables[offset]
+                }
+            }
+        }
+    }
+
+
+    /**
+     * Evaluates the exception handlers covering and targeting the given
+     * instruction range in the given code.
+     */
+    private void evaluateExceptionHandlers(Clazz         clazz,
+                                           Method        method,
+                                           CodeAttribute codeAttribute,
+                                           int           startOffset,
+                                           int           endOffset)
+    {
+        if (DEBUG) System.out.println("Evaluating exceptions covering ["+startOffset+" -> "+endOffset+"]:");
+
+        ExceptionHandlerFilter exceptionEvaluator =
+            new ExceptionHandlerFilter(startOffset,
+                                       endOffset,
+                                       this);
+
+        // Evaluate the exception catch blocks, until their entry variables
+        // have stabilized.
+        do
+        {
+            // Reset the flag to stop evaluating.
+            evaluateExceptions = false;
+
+            // Evaluate all relevant exception catch blocks once.
+            codeAttribute.exceptionsAccept(clazz,
+                                           method,
+                                           startOffset,
+                                           endOffset,
+                                           exceptionEvaluator);
+        }
+        while (evaluateExceptions);
+    }
+
+
+    // Implementations for ExceptionInfoVisitor.
+
+    public void visitExceptionInfo(Clazz clazz, Method method, CodeAttribute codeAttribute, ExceptionInfo exceptionInfo)
+    {
+        int startPC = exceptionInfo.u2startPC;
+        int endPC   = exceptionInfo.u2endPC;
+
+        // Do we have to evaluate this exception catch block?
+        if (isTraced(startPC, endPC))
+        {
+            int handlerPC = exceptionInfo.u2handlerPC;
+            int catchType = exceptionInfo.u2catchType;
+
+            if (DEBUG) System.out.println("Evaluating exception ["+startPC +" -> "+endPC +": "+handlerPC+"]:");
+
+            // Reuse the existing variables and stack objects, ensuring the
+            // right size.
+            TracedVariables variables = new TracedVariables(codeAttribute.u2maxLocals);
+            TracedStack     stack     = new TracedStack(codeAttribute.u2maxStack);
+
+            // Initialize the trace values.
+            Value storeValue = new InstructionOffsetValue(AT_CATCH_ENTRY);
+            variables.setProducerValue(storeValue);
+            stack.setProducerValue(storeValue);
+
+            // Initialize the variables by generalizing the variables of the
+            // try block. Make sure to include the results of the last
+            // instruction for preverification.
+            generalizeVariables(startPC,
+                                endPC,
+                                evaluateAllCode,
+                                variables);
+
+            // Initialize the the stack.
+            //stack.push(valueFactory.createReference((ClassConstant)((ProgramClass)clazz).getConstant(exceptionInfo.u2catchType), false));
+            String catchClassName = catchType != 0 ?
+                 clazz.getClassName(catchType) :
+                 ClassConstants.INTERNAL_NAME_JAVA_LANG_THROWABLE;
+
+            Clazz catchClass = catchType != 0 ?
+                ((ClassConstant)((ProgramClass)clazz).getConstant(catchType)).referencedClass :
+                null;
+
+            stack.push(valueFactory.createReferenceValue(catchClassName,
+                                                         catchClass,
+                                                         false));
+
+            int evaluationCount = evaluationCounts[handlerPC];
+
+            // Evaluate the instructions, starting at the entry point.
+            evaluateInstructionBlock(clazz,
+                                     method,
+                                     codeAttribute,
+                                     variables,
+                                     stack,
+                                     handlerPC);
+
+            // Remember to evaluate all exception handlers once more.
+            if (!evaluateExceptions)
+            {
+                evaluateExceptions = evaluationCount < evaluationCounts[handlerPC];
+            }
+        }
+//        else if (evaluateAllCode)
+//        {
+//            if (DEBUG) System.out.println("No information for partial evaluation of exception ["+startPC +" -> "+endPC +": "+exceptionInfo.u2handlerPC+"] yet");
+//
+//            // We don't have any information on the try block yet, but we do
+//            // have to evaluate the exception handler.
+//            // Remember to evaluate all exception handlers once more.
+//            evaluateExceptions = true;
+//        }
+        else
+        {
+            if (DEBUG) System.out.println("No information for partial evaluation of exception ["+startPC +" -> "+endPC +": "+exceptionInfo.u2handlerPC+"]");
+        }
     }
 
 

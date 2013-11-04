@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -21,6 +21,7 @@
 package proguard.gui;
 
 import javax.swing.*;
+import java.lang.reflect.InvocationTargetException;
 
 
 /**
@@ -30,7 +31,7 @@ import javax.swing.*;
  * @see SwingUtilities
  * @author Eric Lafortune
  */
-class SwingUtil
+public class SwingUtil
 {
     /**
      * Invokes the given Runnable in the AWT event dispatching thread,
@@ -40,6 +41,7 @@ class SwingUtil
      * @param runnable the Runnable to be executed.
      */
     public static void invokeAndWait(Runnable runnable)
+    throws InterruptedException, InvocationTargetException
     {
         try
         {

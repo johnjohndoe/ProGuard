@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -33,15 +33,15 @@ import java.util.*;
 public class ClassSpecification implements Cloneable
 {
     public final String comments;
-    public int    requiredSetAccessFlags;
-    public int    requiredUnsetAccessFlags;
+    public       int    requiredSetAccessFlags;
+    public       int    requiredUnsetAccessFlags;
     public final String annotationType;
-    public String className;
+    public       String className;
     public final String extendsAnnotationType;
     public final String extendsClassName;
 
-    public List   fieldSpecifications;
-    public List   methodSpecifications;
+    public       List   fieldSpecifications;
+    public       List   methodSpecifications;
 
 
     /**
@@ -220,15 +220,15 @@ public class ClassSpecification implements Cloneable
 
         ClassSpecification other = (ClassSpecification)object;
         return
-//          (this.comments                 == null ? other.comments                    == null : this.comments.equals(other.comments)                                    ) &&
-            (this.requiredSetAccessFlags   == other.requiredSetAccessFlags                                                                                                ) &&
-            (this.requiredUnsetAccessFlags == other.requiredUnsetAccessFlags                                                                                              ) &&
-            (this.annotationType           == null ? other.annotationType         == null : this.annotationType.equals(other.annotationType)              ) &&
-            (this.className                == null ? other.className                  == null : this.className.equals(other.className)                                  ) &&
+//          (this.comments                 == null ? other.comments              == null : this.comments.equals(other.comments)                          ) &&
+            (this.requiredSetAccessFlags   == other.requiredSetAccessFlags                                                                               ) &&
+            (this.requiredUnsetAccessFlags == other.requiredUnsetAccessFlags                                                                             ) &&
+            (this.annotationType           == null ? other.annotationType        == null : this.annotationType.equals(other.annotationType)              ) &&
+            (this.className                == null ? other.className             == null : this.className.equals(other.className)                        ) &&
             (this.extendsAnnotationType    == null ? other.extendsAnnotationType == null : this.extendsAnnotationType.equals(other.extendsAnnotationType)) &&
-            (this.extendsClassName         == null ? other.extendsClassName           == null : this.extendsClassName.equals(other.extendsClassName)                    ) &&
-            (this.fieldSpecifications      == null ? other.fieldSpecifications        == null : this.fieldSpecifications.equals(other.fieldSpecifications)              ) &&
-            (this.methodSpecifications     == null ? other.methodSpecifications       == null : this.methodSpecifications.equals(other.methodSpecifications)            );
+            (this.extendsClassName         == null ? other.extendsClassName      == null : this.extendsClassName.equals(other.extendsClassName)          ) &&
+            (this.fieldSpecifications      == null ? other.fieldSpecifications   == null : this.fieldSpecifications.equals(other.fieldSpecifications)    ) &&
+            (this.methodSpecifications     == null ? other.methodSpecifications  == null : this.methodSpecifications.equals(other.methodSpecifications)  );
     }
 
     public int hashCode()

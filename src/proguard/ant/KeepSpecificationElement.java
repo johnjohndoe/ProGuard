@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -20,7 +20,7 @@
  */
 package proguard.ant;
 
-import proguard.KeepSpecification;
+import proguard.KeepClassSpecification;
 
 import java.util.List;
 
@@ -53,8 +53,8 @@ public class KeepSpecificationElement extends ClassSpecificationElement
                                                      this.getClass().getName()) :
             this;
 
-        KeepSpecification keepSpecification =
-            new KeepSpecification(markClasses,
+        KeepClassSpecification keepClassSpecification =
+            new KeepClassSpecification(markClasses,
                                   markConditionally,
                                   allowShrinking,
                                   allowOptimization,
@@ -62,7 +62,7 @@ public class KeepSpecificationElement extends ClassSpecificationElement
                                   createClassSpecification(keepSpecificationElement));
 
         // Add it to the list.
-        keepSpecifications.add(keepSpecification);
+        keepSpecifications.add(keepClassSpecification);
     }
 
 

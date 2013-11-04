@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -21,10 +21,11 @@
 package proguard;
 
 import proguard.classfile.ClassPool;
+import proguard.classfile.util.ClassUtil;
 import proguard.io.*;
-import proguard.util.*;
 
 import java.io.IOException;
+import java.util.*;
 
 /**
  * This class writes the output class files.
@@ -154,43 +155,58 @@ public class OutputWriter
                 new ClassRewriter(programClassPool, writer);
 
             // The writer will also be used to write resource files.
-            DataEntryReader resourceRewriter =
+            DataEntryReader resourceCopier =
                 new DataEntryCopier(writer);
+
+            DataEntryReader resourceRewriter = resourceCopier;
 
             // Wrap the resource writer with a filter and a data entry rewriter,
             // if required.
             if (configuration.adaptResourceFileContents != null)
             {
-                DataEntryReader adaptedResourceRewriter =
-                    new DataEntryRewriter(programClassPool, writer);
-
-                resourceRewriter = configuration.adaptResourceFileContents.size() > 0 ?
-                    new FilteredDataEntryReader(
-                    new DataEntryNameFilter(
-                    new ListParser(new FileNameParser()).parse(configuration.adaptResourceFileContents)),
-                        adaptedResourceRewriter, resourceRewriter) :
-                    adaptedResourceRewriter;
+                resourceRewriter =
+                    new NameFilter(configuration.adaptResourceFileContents,
+                    new NameFilter("META-INF/**",
+                        new ManifestRewriter(programClassPool, writer),
+                        new DataEntryRewriter(programClassPool, writer)),
+                    resourceRewriter);
             }
 
             // Wrap the resource writer with a filter and a data entry renamer,
             // if required.
             if (configuration.adaptResourceFileNames != null)
             {
-                DataEntryReader adaptedResourceRewriter =
-                    new DataEntryRenamer(programClassPool, resourceRewriter);
+                Map packagePrefixMap = createPackagePrefixMap(programClassPool);
 
-                resourceRewriter = configuration.adaptResourceFileNames.size() > 0 ?
-                    new FilteredDataEntryReader(
-                    new DataEntryNameFilter(
-                    new ListParser(new FileNameParser()).parse(configuration.adaptResourceFileNames)),
-                        adaptedResourceRewriter, resourceRewriter) :
-                    adaptedResourceRewriter;
+                resourceRewriter =
+                    new NameFilter(configuration.adaptResourceFileNames,
+                    new DataEntryObfuscator(programClassPool,
+                                            packagePrefixMap,
+                                            resourceRewriter),
+                    resourceRewriter);
             }
 
-            // Create the reader that can write class files and copy resource
-            // files to the above writer.
+            DataEntryReader directoryRewriter = null;
+
+            // Wrap the directory writer with a filter and a data entry renamer,
+            // if required.
+            if (configuration.keepDirectories != null)
+            {
+                Map packagePrefixMap = createPackagePrefixMap(programClassPool);
+
+                directoryRewriter =
+                    new NameFilter(configuration.keepDirectories,
+                    new DataEntryRenamer(packagePrefixMap,
+                                         resourceCopier,
+                                         resourceCopier));
+            }
+
+            // Create the reader that can write class files and copy directories
+            // and resource files to the main writer.
             DataEntryReader reader =
-                new ClassFilter(classRewriter, resourceRewriter);
+                new ClassFilter(    classRewriter,
+                new DirectoryFilter(directoryRewriter,
+                                    resourceRewriter));
 
             // Go over the specified input entries and write their processed
             // versions.
@@ -207,5 +223,34 @@ public class OutputWriter
         {
             throw new IOException("Can't write [" + classPath.get(fromOutputIndex).getName() + "] (" + ex.getMessage() + ")");
         }
+    }
+
+
+    /**
+     * Creates a map of old package prefixes to new package prefixes, based on
+     * the given class pool.
+     */
+    private static Map createPackagePrefixMap(ClassPool classPool)
+    {
+        Map PackagePrefixMap = new HashMap();
+
+        Iterator iterator = classPool.classNames();
+        while (iterator.hasNext())
+        {
+            String className     = (String)iterator.next();
+            String PackagePrefix = ClassUtil.internalPackagePrefix(className);
+
+            String mappedNewPackagePrefix = (String)PackagePrefixMap.get(PackagePrefix);
+            if (mappedNewPackagePrefix == null ||
+                !mappedNewPackagePrefix.equals(PackagePrefix))
+            {
+                String newClassName     = classPool.getClass(className).getName();
+                String newPackagePrefix = ClassUtil.internalPackagePrefix(newClassName);
+
+                PackagePrefixMap.put(PackagePrefix, newPackagePrefix);
+            }
+        }
+
+        return PackagePrefixMap;
     }
 }

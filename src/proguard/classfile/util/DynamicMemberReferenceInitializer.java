@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -457,7 +457,8 @@ implements   InstructionVisitor,
                                             boolean                    isDeclared)
     {
         // Print out a note about the dynamic invocation.
-        if (notePrinter != null)
+        if (notePrinter != null &&
+            notePrinter.accepts(clazz.getName()))
         {
             // Is the class member name in the list of exceptions?
             StringMatcher noteExceptionMatcher = isField ?
@@ -495,7 +496,8 @@ implements   InstructionVisitor,
                 }
 
                 // Print out the actual note.
-                notePrinter.print("Note: " +
+                notePrinter.print(clazz.getName(),
+                                  "Note: " +
                                   ClassUtil.externalClassName(clazz.getName()) +
                                   " accesses a " +
                                   (isDeclared ? "declared " : "") +
@@ -551,40 +553,52 @@ implements   InstructionVisitor,
 
     public void visitProgramField(ProgramClass programClass, ProgramField programField)
     {
-        System.out.println("      Maybe this is program field '" +
-                           ClassUtil.externalFullClassDescription(0, programClass.getName()) +
-                           " { " +
-                           ClassUtil.externalFullFieldDescription(0, programField.getName(programClass), programField.getDescriptor(programClass)) +
-                           "; }'");
+        if (notePrinter.accepts(programClass.getName()))
+        {
+            System.out.println("      Maybe this is program field '" +
+                               ClassUtil.externalFullClassDescription(0, programClass.getName()) +
+                               " { " +
+                               ClassUtil.externalFullFieldDescription(0, programField.getName(programClass), programField.getDescriptor(programClass)) +
+                               "; }'");
+        }
     }
 
 
     public void visitProgramMethod(ProgramClass programClass, ProgramMethod programMethod)
     {
-        System.out.println("      Maybe this is program method '" +
-                           ClassUtil.externalFullClassDescription(0, programClass.getName()) +
-                           " { " +
-                           ClassUtil.externalFullMethodDescription(null, 0, programMethod.getName(programClass), programMethod.getDescriptor(programClass)) +
-                           "; }'");
+        if (notePrinter.accepts(programClass.getName()))
+        {
+            System.out.println("      Maybe this is program method '" +
+                               ClassUtil.externalFullClassDescription(0, programClass.getName()) +
+                               " { " +
+                               ClassUtil.externalFullMethodDescription(null, 0, programMethod.getName(programClass), programMethod.getDescriptor(programClass)) +
+                               "; }'");
+        }
     }
 
 
     public void visitLibraryField(LibraryClass libraryClass, LibraryField libraryField)
     {
-        System.out.println("      Maybe this is library field '" +
-                           ClassUtil.externalFullClassDescription(0, libraryClass.getName()) +
-                           " { " +
-                           ClassUtil.externalFullFieldDescription(0, libraryField.getName(libraryClass), libraryField.getDescriptor(libraryClass)) +
-                           "; }'");
+        if (notePrinter.accepts(libraryClass.getName()))
+        {
+            System.out.println("      Maybe this is library field '" +
+                               ClassUtil.externalFullClassDescription(0, libraryClass.getName()) +
+                               " { " +
+                               ClassUtil.externalFullFieldDescription(0, libraryField.getName(libraryClass), libraryField.getDescriptor(libraryClass)) +
+                               "; }'");
+        }
     }
 
 
     public void visitLibraryMethod(LibraryClass libraryClass, LibraryMethod libraryMethod)
     {
-        System.out.println("      Maybe this is library method '" +
-                           ClassUtil.externalFullClassDescription(0, libraryClass.getName()) +
-                           " { " +
-                           ClassUtil.externalFullMethodDescription(null, 0, libraryMethod.getName(libraryClass), libraryMethod.getDescriptor(libraryClass)) +
-                           "; }'");
+        if (notePrinter.accepts(libraryClass.getName()))
+        {
+            System.out.println("      Maybe this is library method '" +
+                               ClassUtil.externalFullClassDescription(0, libraryClass.getName()) +
+                               " { " +
+                               ClassUtil.externalFullMethodDescription(null, 0, libraryMethod.getName(libraryClass), libraryMethod.getDescriptor(libraryClass)) +
+                               "; }'");
+        }
     }
 }

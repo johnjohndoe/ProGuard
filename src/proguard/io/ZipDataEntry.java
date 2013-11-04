@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -34,7 +34,7 @@ public class ZipDataEntry implements DataEntry
 {
     private final DataEntry      parent;
     private final ZipEntry       zipEntry;
-    private ZipInputStream zipInputStream;
+    private       ZipInputStream zipInputStream;
 
 
     public ZipDataEntry(DataEntry      parent,
@@ -51,9 +51,22 @@ public class ZipDataEntry implements DataEntry
 
     public String getName()
     {
-        // Chop the directory name from the file name and get the right separators.
-        return zipEntry.getName()
+        // Get the right separators.
+        String name = zipEntry.getName()
             .replace(File.separatorChar, ClassConstants.INTERNAL_PACKAGE_SEPARATOR);
+
+        // Chop the trailing directory slash, if any.
+        int length = name.length();
+        return length > 0 &&
+               name.charAt(length-1) == ClassConstants.INTERNAL_PACKAGE_SEPARATOR ?
+                   name.substring(0, length -1) :
+                   name;
+    }
+
+
+    public boolean isDirectory()
+    {
+        return zipEntry.isDirectory();
     }
 
 

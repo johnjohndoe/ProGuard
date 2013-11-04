@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -19,6 +19,8 @@
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 package proguard.gui.splash;
+
+import proguard.gui.SwingUtil;
 
 import javax.swing.*;
 import java.awt.*;
@@ -114,7 +116,7 @@ public class SplashPanel extends JPanel
         // Repaint the SplashPanel one last time.
         try
         {
-            SwingUtilities.invokeAndWait(repainter);
+            SwingUtil.invokeAndWait(repainter);
         }
         catch (InterruptedException ex)
         {
@@ -157,7 +159,7 @@ public class SplashPanel extends JPanel
                     }
 
                     // Do a repaint and time it.
-                    SwingUtilities.invokeAndWait(repainter);
+                    SwingUtil.invokeAndWait(repainter);
 
                     // Sleep for a proportional while.
                     long repaintTime = System.currentTimeMillis() - time;

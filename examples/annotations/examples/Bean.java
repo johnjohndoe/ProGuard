@@ -3,8 +3,10 @@ import proguard.annotation.*;
 /**
  * This bean illustrates the use of annotations for configuring ProGuard.
  *
- * After having been compiled, it can be processed using:
- *     java -jar proguard.jar @examples.pro
+ * You can compile it with:
+ *     javac -classpath ../lib/annotations.jar Bean.java
+ * You can then process it with:
+ *     java -jar ../../../lib/proguard.jar @ ../examples.pro
  *
  * The annotations will preserve the class and its public getters and setters.
  */

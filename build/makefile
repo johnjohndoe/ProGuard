@@ -66,7 +66,7 @@ clean:
 
 
 define RESOURCES
-  $(shell find $(SRC)/$(dir $(1)) -maxdepth 1 \( -name \*.properties -o -name \*.gif -o -name \*.pro \) -printf $(CLASSES)/$(dir $(1))%P\\n)
+  $(shell find $(SRC)/$(dir $(1)) -maxdepth 1 \( -name \*.properties -o -name \*.png -o -name \*.gif -o -name \*.pro \) -printf $(CLASSES)/$(dir $(1))%P\\n)
 endef
 
 define TARGETRULE
@@ -81,7 +81,7 @@ $(CLASSES) $(LIB):
 $(CLASSES)/%.class: $(SRC)/%.java
 	javac $(JAVAC_OPTIONS) $^
 
-$(CLASSES)/%.properties $(CLASSES)/%.gif $(CLASSES)/%.pro:
+$(CLASSES)/%.properties $(CLASSES)/%.png $(CLASSES)/%.gif $(CLASSES)/%.pro:
 	cp $(subst $(CLASSES),$(SRC),$@) $@
 
 %.jar %.zip:

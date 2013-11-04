@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -35,8 +35,11 @@ import java.util.*;
  * This ClassVisitor inlines the classes that it visits in a given target class,
  * whenever possible.
  *
+ * @see RetargetedInnerClassAttributeRemover
  * @see TargetClassChanger
  * @see ClassReferenceFixer
+ * @see MemberReferenceFixer
+ * @see AccessFixer
  * @author Eric Lafortune
  */
 public class ClassMerger
@@ -185,6 +188,10 @@ implements   ClassVisitor,
             // that are tested with 'instanceof'.
             instanceofedSuperClasses(programClass).equals(instanceofedSuperClasses(targetClass)) &&
 
+            // The two classes must have the same superclasses that are caught
+            // as exceptions.
+            caughtSuperClasses(programClass).equals(caughtSuperClasses(targetClass)) &&
+
             // The two classes must not both be part of a .class construct.
             !(DotClassMarker.isDotClassed(programClass) &&
               DotClassMarker.isDotClassed(targetClass)) &&
@@ -258,40 +265,16 @@ implements   ClassVisitor,
             programClass.fieldsAccept(memberAdder);
             programClass.methodsAccept(memberAdder);
 
-//            // Delete any inner classes and enclosing method attributes in
-//            // both classes.
-//            programClass.attributesAccept(
-//                new AttributeNameFilter(new FixedStringMatcher(ClassConstants.ATTR_InnerClasses),
-//                new ReferencedClassVisitor(
-//                new NamedAttributeDeleter())));
-//            AttributesEditor attributesEditor =
-//                new AttributesEditor(programClass, false);
-//            attributesEditor.deleteAttribute(ClassConstants.ATTR_InnerClasses);
-//            attributesEditor.deleteAttribute(ClassConstants.ATTR_EnclosingMethod);
-//
-//            attributesEditor =
-//                new AttributesEditor((ProgramClass)targetClass, false);
-//            attributesEditor.deleteAttribute(ClassConstants.ATTR_InnerClasses);
-//            attributesEditor.deleteAttribute(ClassConstants.ATTR_EnclosingMethod);
-
             // Copy over the other attributes.
             programClass.attributesAccept(
                 new AttributeAdder(targetClass, true));
 
             // Update the optimization information of the target class.
-            if (InstantiationClassMarker.isInstantiated(programClass))
+            ClassOptimizationInfo info =
+                ClassOptimizationInfo.getClassOptimizationInfo(targetClass);
+            if (info != null)
             {
-                InstantiationClassMarker.setInstantiated(targetClass);
-            }
-
-            if (InstanceofClassMarker.isInstanceofed(programClass))
-            {
-                InstanceofClassMarker.setInstanceofed(targetClass);
-            }
-
-            if (DotClassMarker.isDotClassed(programClass))
-            {
-                DotClassMarker.setDotClassed(targetClass);
+                info.merge(ClassOptimizationInfo.getClassOptimizationInfo(programClass));
             }
 
             // Remember to replace the inlined class by the target class.
@@ -381,6 +364,22 @@ implements   ClassVisitor,
 
 
     /**
+     * Returns the set of superclasses that are caught as exceptions.
+     */
+    private Set caughtSuperClasses(Clazz clazz)
+    {
+        Set set = new HashSet();
+
+        // Visit all superclasses, collecting the ones that are caught.
+        clazz.hierarchyAccept(true, true, false, false,
+                              new CaughtClassFilter(
+                              new ClassCollector(set)));
+
+        return set;
+    }
+
+
+    /**
      * Returns whether the given class would introduce any unwanted fields
      * in the target class.
      */
@@ -406,6 +405,7 @@ implements   ClassVisitor,
         MemberCounter counter = new MemberCounter();
 
         // TODO: Currently checking shared methods, not just initializers.
+        // TODO: Allow identical methods.
         // Visit all methods, counting the ones that are also present in the
         // target class.
         clazz.methodsAccept(//new MemberNameFilter(new FixedStringMatcher(ClassConstants.INTERNAL_METHOD_NAME_INIT),

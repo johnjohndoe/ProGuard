@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -232,7 +232,7 @@ implements   InvocationUnit,
 
 
     /**
-     * Sets the class thru which the specified field is accessed.
+     * Sets the class through which the specified field is accessed.
      */
     protected void setFieldClassValue(Clazz          clazz,
                                       RefConstant    refConstant,
@@ -243,7 +243,7 @@ implements   InvocationUnit,
 
 
     /**
-     * Returns the class thru which the specified field is accessed.
+     * Returns the class though which the specified field is accessed.
      */
     protected Value getFieldClassValue(Clazz       clazz,
                                        RefConstant refConstant,

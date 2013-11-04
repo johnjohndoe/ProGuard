@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -43,9 +43,6 @@ implements   AttributeVisitor,
              ConstantVisitor,
              ExceptionInfoVisitor
 {
-    private static final int MAXIMUM_CODE_EXPANSION    =   2;
-    private static final int MAXIMUM_EXTRA_CODE_LENGTH = 128;
-
     //*
     private static final boolean DEBUG = false;
     /*/
@@ -131,8 +128,7 @@ implements   AttributeVisitor,
     {
         // The code may expand, due to expanding constant and variable
         // instructions.
-        codeAttributeComposer.beginCodeFragment(codeAttribute.u4codeLength * MAXIMUM_CODE_EXPANSION +
-                                                MAXIMUM_EXTRA_CODE_LENGTH);
+        codeAttributeComposer.beginCodeFragment(codeAttribute.u4codeLength);
 
         // Copy the instructions.
         codeAttribute.instructionsAccept(clazz, method, this);
@@ -281,7 +277,7 @@ implements   AttributeVisitor,
             }
         }
 
-        codeAttributeComposer.beginCodeFragment((parameterOffset + parameterCount) * 4);
+        codeAttributeComposer.beginCodeFragment(parameterSize + 1);
 
         // Go over the parameter types backward, storing the stack entries
         // in their corresponding variables.

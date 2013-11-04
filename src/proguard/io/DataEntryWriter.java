@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -32,6 +32,14 @@ import java.io.*;
  */
 public interface DataEntryWriter
 {
+    /**
+     * Creates a directory.
+     * @param dataEntry the data entry for which the directory is to be created.
+     * @return whether the directory has been created.
+     */
+    public boolean createDirectory(DataEntry dataEntry) throws IOException;
+
+
     /**
      * Returns an output stream for writing data. The caller must not close
      * the output stream; closing the output stream is the responsibility of

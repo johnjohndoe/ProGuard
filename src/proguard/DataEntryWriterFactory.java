@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -22,6 +22,8 @@ package proguard;
 
 import proguard.io.*;
 import proguard.util.*;
+
+import java.util.List;
 
 /**
  * This class can create DataEntryWriter instances based on class paths. The
@@ -69,11 +71,11 @@ public class DataEntryWriterFactory
         boolean isEar = endsWithIgnoreCase(entryName, ".ear");
         boolean isZip = endsWithIgnoreCase(entryName, ".zip");
 
-        String filter    = classPathEntry.getFilter();
-        String jarFilter = classPathEntry.getJarFilter();
-        String warFilter = classPathEntry.getWarFilter();
-        String earFilter = classPathEntry.getEarFilter();
-        String zipFilter = classPathEntry.getZipFilter();
+        List filter    = classPathEntry.getFilter();
+        List jarFilter = classPathEntry.getJarFilter();
+        List warFilter = classPathEntry.getWarFilter();
+        List earFilter = classPathEntry.getEarFilter();
+        List zipFilter = classPathEntry.getZipFilter();
 
         System.out.println("Preparing output " +
                            (isJar ? "jar" :
@@ -120,7 +122,7 @@ public class DataEntryWriterFactory
      */
     private static DataEntryWriter wrapInJarWriter(DataEntryWriter writer,
                                                    boolean         isJar,
-                                                   String          jarFilter,
+                                                   List            jarFilter,
                                                    String          jarExtension,
                                                    boolean         dontWrap)
     {

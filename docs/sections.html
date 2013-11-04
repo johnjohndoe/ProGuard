@@ -38,6 +38,10 @@ document.write(document.location.hostname == "proguard.sourceforge.net" ?
   "http://sourceforge.net/sflogo.php?group_id=54750&amp;type=1" :
   "sflogo.png");
 document.write("\" width=\"88\" height=\"31\" alt=\"SourceForge\">");
+if (document.location.hostname == "proguard.sourceforge.net") {
+  document.write("<script type=\"text/javascript\" src=\"http://sourceforge.net/apps/piwik/proguard/piwik.js\"></scri"+"pt>");
+  document.write("<script type=\"text/javascript\">piwik_log(\"\", 1, \"http://sourceforge.net/apps/piwik/proguard/piwik.php\");</scri"+"pt>");
+}
 //-->
 </script>
 <noscript>

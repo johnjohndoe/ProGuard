@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -26,20 +26,16 @@ import proguard.classfile.visitor.*;
 import proguard.optimize.KeepMarker;
 
 /**
- * This <code>ClassVisitor</code> and <code>MemberVisitor</code>
- * makes the classes it visits, and their methods, final, if possible.
+ * This <code>ClassVisitor</code> makes the program classes that it visits
+ * final, if possible.
  *
  * @author Eric Lafortune
  */
 public class ClassFinalizer
 extends      SimplifiedVisitor
-implements   ClassVisitor,
-             MemberVisitor
+implements   ClassVisitor
 {
-    private final ClassVisitor  extraClassVisitor;
-    private final MemberVisitor extraMemberVisitor;
-
-    private final MemberFinder memberFinder = new MemberFinder();
+    private final ClassVisitor extraClassVisitor;
 
 
     /**
@@ -47,22 +43,18 @@ implements   ClassVisitor,
      */
     public ClassFinalizer()
     {
-        this(null, null);
+        this(null);
     }
 
 
     /**
      * Creates a new ClassFinalizer.
-     * @param extraClassVisitor  an optional extra visitor for all finalized
-     *                           classes.
-     * @param extraMemberVisitor an optional extra visitor for all finalized
-     *                           methods.
+     * @param extraClassVisitor an optional extra visitor for all finalized
+     *                          classes.
      */
-    public ClassFinalizer(ClassVisitor  extraClassVisitor,
-                          MemberVisitor extraMemberVisitor)
+    public ClassFinalizer(ClassVisitor  extraClassVisitor)
     {
-        this.extraClassVisitor  = extraClassVisitor;
-        this.extraMemberVisitor = extraMemberVisitor;
+        this.extraClassVisitor = extraClassVisitor;
     }
 
 
@@ -86,41 +78,6 @@ implements   ClassVisitor,
             if (extraClassVisitor != null)
             {
                 extraClassVisitor.visitProgramClass(programClass);
-            }
-        }
-
-        // Check all methods.
-        programClass.methodsAccept(this);
-    }
-
-
-    // Implementations for MemberVisitor.
-
-    public void visitProgramMethod(ProgramClass programClass, ProgramMethod programMethod)
-    {
-        String name = programMethod.getName(programClass);
-
-        // If the method is not already private/static/final/abstract,
-        // and it is not a constructor,
-        // and its class is final,
-        //     or it is not being kept and it is not overridden,
-        // then make it final.
-        if ((programMethod.u2accessFlags & (ClassConstants.INTERNAL_ACC_PRIVATE |
-                                            ClassConstants.INTERNAL_ACC_STATIC  |
-                                            ClassConstants.INTERNAL_ACC_FINAL   |
-                                            ClassConstants.INTERNAL_ACC_ABSTRACT)) == 0 &&
-            !name.equals(ClassConstants.INTERNAL_METHOD_NAME_INIT)                      &&
-            ((programClass.u2accessFlags & ClassConstants.INTERNAL_ACC_FINAL) != 0 ||
-             (!KeepMarker.isKept(programMethod) &&
-              (programClass.subClasses == null ||
-               !memberFinder.isOverriden(programClass, programMethod)))))
-        {
-            programMethod.u2accessFlags |= ClassConstants.INTERNAL_ACC_FINAL;
-
-            // Visit the method, if required.
-            if (extraMemberVisitor != null)
-            {
-                extraMemberVisitor.visitProgramMethod(programClass, programMethod);
             }
         }
     }

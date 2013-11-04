@@ -73,6 +73,13 @@
 </tr>
 
 <tr>
+<td valign="top"><a href="usage.html#keepdirectories"><code><b>-keepdirectories</b></code></a>
+                 [<a href="usage.html#filters"><i>directory_filter</i></a>]</td>
+<td>Keep the specified directories in the output jars (or wars, ears, zips, or
+    directories).</td>
+</tr>
+
+<tr>
 <td valign="top"><a href="usage.html#target"><code><b>-target</b></code></a>
                  <i>version</i></td>
 <td>Set the given version number in the processed classes.</td>
@@ -160,6 +167,12 @@
 </tr>
 
 <tr>
+<td valign="top"><a href="usage.html#optimizations"><code><b>-optimizations</b></code></a>
+                 <a href="optimizations.html"><i>optimization_filter</i></a></td>
+<td>The optimizations to be enabled and disabled.</td>
+</tr>
+
+<tr>
 <td valign="top"><a href="usage.html#optimizationpasses"><code><b>-optimizationpasses</b></code></a>
                  <i>n</i></td>
 <td>The number of optimization passes to be performed.</td>
@@ -235,6 +248,12 @@
 </tr>
 
 <tr>
+<td valign="top"><a href="usage.html#keeppackagenames"><code><b>-keeppackagenames</b></code></a>
+                 [<i><a href="usage.html#filters">package_filter</a></i>]</td>
+<td>Keep the specified package names from being obfuscated.</td>
+</tr>
+
+<tr>
 <td valign="top"><a href="usage.html#flattenpackagehierarchy"><code><b>-flattenpackagehierarchy</b></code></a>
                  [<i>package_name</i>]</td>
 <td>Repackage all packages that are renamed into the single given parent
@@ -250,7 +269,7 @@
 
 <tr>
 <td valign="top"><a href="usage.html#keepattributes"><code><b>-keepattributes</b></code></a>
-                 [<i>attribute_name<b>,</b>...</i>]</td>
+                 [<i><a href="usage.html#filters">attribute_filter</a></i>]</td>
 <td>Preserve the given optional attributes; typically
     <code>Exceptions</code>, <code>InnerClasses</code>,
     <code>Signature</code>, <code>Deprecated</code>,
@@ -269,17 +288,24 @@
 </tr>
 
 <tr>
+<td valign="top"><a href="usage.html#adaptclassstrings"><code><b>-adaptclassstrings</b></code></a>
+                 [<a href="usage.html#filters"><i>class_filter</i></a>]</td>
+<td>Adapt string constants in the specified classes, based on the obfuscated
+    names of any corresponding classes.</td>
+</tr>
+
+<tr>
 <td valign="top"><a href="usage.html#adaptresourcefilenames"><code><b>-adaptresourcefilenames</b></code></a>
-                 [<a href="#filters"><i>filter</i></a>]</td>
+                 [<a href="usage.html#filefilters"><i>file_filter</i></a>]</td>
 <td>Rename the specified resource files, based on the obfuscated names of the
     corresponding class files.</td>
 </tr>
 
 <tr>
 <td valign="top"><a href="usage.html#adaptresourcefilecontents"><code><b>-adaptresourcefilecontents</b></code></a>
-                 [<a href="#filters"><i>filter</i></a>]</td>
+                 [<a href="usage.html#filefilters"><i>file_filter</i></a>]</td>
 <td>Update the contents of the specified resource files, based on the
-    obfuscated names of the class files.</td>
+    obfuscated names of the processed classes.</td>
 </tr>
 
 <tr>
@@ -298,13 +324,15 @@
 </tr>
 
 <tr>
-<td valign="top"><a href="usage.html#dontnote"><code><b>-dontnote</b></code></a></td>
+<td valign="top"><a href="usage.html#dontnote"><code><b>-dontnote</b></code></a>
+                 [<a href="usage.html#filters"><i>class_filter</i></a>]</td>
 <td>Don't print notes about potential mistakes or omissions in the
     configuration.</td>
 </tr>
 
 <tr>
-<td valign="top"><a href="usage.html#dontwarn"><code><b>-dontwarn</b></code></a></td>
+<td valign="top"><a href="usage.html#dontwarn"><code><b>-dontwarn</b></code></a>
+                 [<a href="usage.html#filters"><i>class_filter</i></a>]</td>
 <td>Don't warn about unresolved references at all.</td>
 </tr>
 
@@ -430,7 +458,7 @@ Notes:
 
 <hr>
 <address>
-Copyright &copy; 2002-2008
+Copyright &copy; 2002-2009
 <a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>

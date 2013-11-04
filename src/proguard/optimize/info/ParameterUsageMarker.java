@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -21,8 +21,14 @@
 package proguard.optimize.info;
 
 import proguard.classfile.*;
+import proguard.classfile.instruction.*;
+import proguard.classfile.instruction.visitor.InstructionVisitor;
+import proguard.classfile.attribute.visitor.AttributeVisitor;
+import proguard.classfile.attribute.*;
 import proguard.classfile.util.*;
 import proguard.classfile.visitor.MemberVisitor;
+import proguard.optimize.evaluation.PartialEvaluator;
+import proguard.evaluation.value.*;
 
 /**
  * This MemberVisitor counts the parameters and marks the used parameters
@@ -33,12 +39,40 @@ import proguard.classfile.visitor.MemberVisitor;
  */
 public class ParameterUsageMarker
 extends      SimplifiedVisitor
-implements   MemberVisitor
+implements   MemberVisitor,
+             AttributeVisitor,
+             InstructionVisitor
 {
     private static final boolean DEBUG = false;
 
 
-    private final VariableUsageMarker variableUsageMarker = new VariableUsageMarker();
+    private final boolean          markThisParameter;
+    private final boolean          markAllParameters;
+    private final PartialEvaluator partialEvaluator = new PartialEvaluator();
+
+
+    /**
+     * Creates a new ParameterUsageMarker.
+     */
+    public ParameterUsageMarker()
+    {
+        this(false, false);
+    }
+
+
+    /**
+     * Creates a new ParameterUsageMarker that optionally marks all parameters.
+     * @param markThisParameter specifies whether all 'this' parameters should
+     *                          be marked as being used.
+     * @param markAllParameters specifies whether all other parameters should
+     *                          be marked as being used.
+     */
+    public ParameterUsageMarker(boolean markThisParameter,
+                                boolean markAllParameters)
+    {
+        this.markThisParameter = markThisParameter;
+        this.markAllParameters = markAllParameters;
+    }
 
 
     // Implementations for MemberVisitor.
@@ -51,8 +85,26 @@ implements   MemberVisitor
 
         if (parameterSize > 0)
         {
-            // Is it a native method?
             int accessFlags = programMethod.getAccessFlags();
+
+            // Must we mark the 'this' parameter?
+            if (markThisParameter &&
+                (accessFlags & ClassConstants.INTERNAL_ACC_STATIC) == 0)
+            {
+                // Mark the 'this' parameter.
+                markParameterUsed(programMethod, 0);
+            }
+
+            // Must we mark all other parameters?
+            if (markAllParameters)
+            {
+                // Mark all parameters, without the 'this' parameter.
+                markUsedParameters(programMethod,
+                                   (accessFlags & ClassConstants.INTERNAL_ACC_STATIC) != 0 ?
+                                       -1L : -2L);
+            }
+
+            // Is it a native method?
             if ((accessFlags & ClassConstants.INTERNAL_ACC_NATIVE) != 0)
             {
                 // Mark all parameters.
@@ -80,45 +132,8 @@ implements   MemberVisitor
                     markParameterUsed(programMethod, 0);
                 }
 
-                // Figure out the local variables that are used by the code.
-                programMethod.attributesAccept(programClass, variableUsageMarker);
-
                 // Mark the parameters that are used by the code.
-                for (int index = 0; index < parameterSize; index++)
-                {
-                    if (variableUsageMarker.isVariableUsed(index))
-                    {
-                        markParameterUsed(programMethod, index);
-                    }
-                }
-
-                // Mark the category 2 parameters that are half-used.
-                InternalTypeEnumeration internalTypeEnumeration =
-                    new InternalTypeEnumeration(programMethod.getDescriptor(programClass));
-
-                // All parameters of non-static methods are shifted by one in
-                // the local variable frame.
-                int index =
-                    (accessFlags & ClassConstants.INTERNAL_ACC_STATIC) != 0 ?
-                        0 : 1;
-
-                while (internalTypeEnumeration.hasMoreTypes())
-                {
-                    String type = internalTypeEnumeration.nextType();
-                    if (ClassUtil.isInternalCategory2Type(type))
-                    {
-                        if (variableUsageMarker.isVariableUsed(index) ||
-                            variableUsageMarker.isVariableUsed(index+1))
-                        {
-                            markParameterUsed(programMethod, index);
-                            markParameterUsed(programMethod, index+1);
-                        }
-
-                        index++;
-                    }
-
-                    index++;
-                }
+                programMethod.attributesAccept(programClass, this);
             }
 
             if (DEBUG)
@@ -145,10 +160,54 @@ implements   MemberVisitor
         {
             // All implementations must keep all parameters of this method,
             // including the 'this' parameter.
-            long usedParameters = -1L;
+            markUsedParameters(libraryMethod, -1L);
+        }
+    }
 
-            // Mark it.
-            markUsedParameters(libraryMethod, usedParameters);
+
+    // Implementations for AttributeVisitor.
+
+    public void visitAnyAttribute(Clazz clazz, Attribute attribute) {}
+
+
+    public void visitCodeAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute)
+    {
+        // Evaluate the code.
+        partialEvaluator.visitCodeAttribute(clazz, method, codeAttribute);
+
+        // Mark the parameters that are used by the code.
+        codeAttribute.instructionsAccept(clazz, method, this);
+    }
+
+
+    // Implementations for InstructionVisitor.
+
+    public void visitAnyInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, Instruction instruction) {}
+
+
+    public void visitVariableInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, VariableInstruction variableInstruction)
+    {
+        if (partialEvaluator.isTraced(offset) &&
+            variableInstruction.isLoad())
+        {
+            int parameterIndex = variableInstruction.variableIndex;
+            if (parameterIndex < codeAttribute.u2maxLocals)
+            {
+                Value producer =
+                    partialEvaluator.getVariablesBefore(offset).getProducerValue(parameterIndex);
+                if (producer != null &&
+                    producer.instructionOffsetValue().contains(PartialEvaluator.AT_METHOD_ENTRY))
+                {
+                    // Mark the variable.
+                    markParameterUsed(method, parameterIndex);
+
+                    // Account for Category 2 instructions, which take up two entries.
+                    if (variableInstruction.isCategory2())
+                    {
+                        markParameterUsed(method, parameterIndex + 1);
+                    }
+                }
+            }
         }
     }
 
@@ -222,26 +281,5 @@ implements   MemberVisitor
     {
         MethodOptimizationInfo info = MethodOptimizationInfo.getMethodOptimizationInfo(method);
         return info != null ? info.getUsedParameters() : -1L;
-    }
-
-
-    /**
-     * Returns a bit mask of 1-bits of the given size.
-     */
-    private int parameterMask(int parameterSize)
-    {
-        return (1 << parameterSize) - 1;
-    }
-
-
-    /**
-     * Returns the parameter size of the given method, including the 'this'
-     * parameter, if any.
-     */
-    private int parameterSize(Clazz clazz, Method method)
-    {
-
-        return ClassUtil.internalMethodParameterSize(method.getDescriptor(clazz),
-                                                     method.getAccessFlags());
     }
 }

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -397,11 +397,16 @@ implements   ClassVisitor,
     public void visitEnclosingMethodAttribute(Clazz clazz, EnclosingMethodAttribute enclosingMethodAttribute)
     {
         println(visitorInfo(enclosingMethodAttribute) +
-                " Enclosing method attribute [" +
-                clazz.getClassName(enclosingMethodAttribute.u2classIndex)  +
-                (enclosingMethodAttribute.u2nameAndTypeIndex == 0 ?  "" : "." +
-                 clazz.getName(enclosingMethodAttribute.u2nameAndTypeIndex) + " " +
-                 clazz.getType(enclosingMethodAttribute.u2nameAndTypeIndex)) + "]");
+                " Enclosing method attribute:");
+
+        indent();
+        clazz.constantPoolEntryAccept(enclosingMethodAttribute.u2classIndex, this);
+
+        if (enclosingMethodAttribute.u2nameAndTypeIndex != 0)
+        {
+            clazz.constantPoolEntryAccept(enclosingMethodAttribute.u2nameAndTypeIndex, this);
+        }
+        outdent();
     }
 
 

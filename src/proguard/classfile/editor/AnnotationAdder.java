@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -27,7 +27,8 @@ import proguard.classfile.util.SimplifiedVisitor;
 
 /**
  * This AnnotationVisitor adds all annotations that it visits to the given
- * target annotation element value or target annotation attribute.
+ * target annotation element value, target annotation attribute, or target
+ * parameter annotation attribute.
  *
  * @author Eric Lafortune
  */
@@ -38,11 +39,12 @@ implements   AnnotationVisitor
     private static final ElementValue[] EMPTY_ELEMENT_VALUES = new ElementValue[0];
 
 
-    private final ProgramClass           targetClass;
-    private final AnnotationElementValue targetAnnotationElementValue;
+    private final ProgramClass                        targetClass;
+    private final AnnotationElementValue              targetAnnotationElementValue;
+    private final AnnotationsAttributeEditor          annotationsAttributeEditor;
+    private final ParameterAnnotationsAttributeEditor parameterAnnotationsAttributeEditor;
 
-    private final ConstantAdder              constantAdder;
-    private final AnnotationsAttributeEditor annotationsAttributeEditor;
+    private final ConstantAdder constantAdder;
 
 
     /**
@@ -52,26 +54,44 @@ implements   AnnotationVisitor
     public AnnotationAdder(ProgramClass           targetClass,
                            AnnotationElementValue targetAnnotationElementValue)
     {
-        this.targetClass                  = targetClass;
-        this.targetAnnotationElementValue = targetAnnotationElementValue;
+        this.targetClass                         = targetClass;
+        this.targetAnnotationElementValue        = targetAnnotationElementValue;
+        this.annotationsAttributeEditor          = null;
+        this.parameterAnnotationsAttributeEditor = null;
 
-        constantAdder              = new ConstantAdder(targetClass);
-        annotationsAttributeEditor = null;
+        constantAdder = new ConstantAdder(targetClass);
     }
 
 
     /**
      * Creates a new AnnotationAdder that will copy annotations into the given
-     * target annotation.
+     * target annotations attribute.
      */
     public AnnotationAdder(ProgramClass         targetClass,
                            AnnotationsAttribute targetAnnotationsAttribute)
     {
-        this.targetClass                  = targetClass;
-        this.targetAnnotationElementValue = null;
+        this.targetClass                         = targetClass;
+        this.targetAnnotationElementValue        = null;
+        this.annotationsAttributeEditor          = new AnnotationsAttributeEditor(targetAnnotationsAttribute);
+        this.parameterAnnotationsAttributeEditor = null;
 
-        constantAdder              = new ConstantAdder(targetClass);
-        annotationsAttributeEditor = new AnnotationsAttributeEditor(targetAnnotationsAttribute);
+        constantAdder = new ConstantAdder(targetClass);
+    }
+
+
+    /**
+     * Creates a new AnnotationAdder that will copy annotations into the given
+     * target parameter annotations attribute.
+     */
+    public AnnotationAdder(ProgramClass                  targetClass,
+                           ParameterAnnotationsAttribute targetParameterAnnotationsAttribute)
+    {
+        this.targetClass                         = targetClass;
+        this.targetAnnotationElementValue        = null;
+        this.annotationsAttributeEditor          = null;
+        this.parameterAnnotationsAttributeEditor = new ParameterAnnotationsAttributeEditor(targetParameterAnnotationsAttribute);
+
+        constantAdder = new ConstantAdder(targetClass);
     }
 
 
@@ -111,6 +131,23 @@ implements   AnnotationVisitor
 
     public void visitAnnotation(Clazz clazz, Method method, int parameterIndex, Annotation annotation)
     {
-        // TODO: Handle parameter annotations.
+        Annotation newAnnotation =
+            new Annotation(constantAdder.addConstant(clazz, annotation.u2typeIndex),
+                           0,
+                           annotation.u2elementValuesCount > 0 ?
+                               new ElementValue[annotation.u2elementValuesCount] :
+                               EMPTY_ELEMENT_VALUES);
+
+        // TODO: Clone array.
+        newAnnotation.referencedClasses = annotation.referencedClasses;
+
+        // Add the element values.
+        annotation.elementValuesAccept(clazz,
+                                       new ElementValueAdder(targetClass,
+                                                             newAnnotation,
+                                                             false));
+
+        // Add the completed annotation.
+        parameterAnnotationsAttributeEditor.addAnnotation(parameterIndex, newAnnotation);
     }
 }

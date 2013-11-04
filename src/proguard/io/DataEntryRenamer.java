@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -20,27 +20,54 @@
  */
 package proguard.io;
 
-import proguard.classfile.*;
+import proguard.classfile.ClassConstants;
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * This DataEntryReader delegates to another DataEntryReader, renaming the
- * data entries based on the renamed classes in the given ClassPool.
+ * data entries based on the given map. Entries whose name does not appear
+ * in the map may be passed to an alternative DataEntryReader.
  *
  * @author Eric Lafortune
  */
 public class DataEntryRenamer implements DataEntryReader
 {
-    private final ClassPool       classPool;
-    private final DataEntryReader dataEntryReader;
+    private final Map             nameMap;
+    private final DataEntryReader renamedDataEntryReader;
+    private final DataEntryReader missingDataEntryReader;
 
 
-    public DataEntryRenamer(ClassPool       classPool,
-                            DataEntryReader dataEntryReader)
+    /**
+     * Creates a new DataEntryRenamer.
+     * @param nameMap                the map from old names to new names.
+     * @param renamedDataEntryReader the DataEntryReader to which renamed data
+     *                               entries will be passed.
+     */
+    public DataEntryRenamer(Map             nameMap,
+                            DataEntryReader renamedDataEntryReader)
     {
-        this.classPool       = classPool;
-        this.dataEntryReader = dataEntryReader;
+        this(nameMap, renamedDataEntryReader, null);
+    }
+
+
+    /**
+     * Creates a new DataEntryRenamer.
+     * @param nameMap                the map from old names to new names.
+     * @param renamedDataEntryReader the DataEntryReader to which renamed data
+     *                               entries will be passed.
+     * @param missingDataEntryReader the optional DataEntryReader to which data
+     *                               entries that can't be renamed will be
+     *                               passed.
+     */
+    public DataEntryRenamer(Map             nameMap,
+                            DataEntryReader renamedDataEntryReader,
+                            DataEntryReader missingDataEntryReader)
+    {
+        this.nameMap                = nameMap;
+        this.renamedDataEntryReader = renamedDataEntryReader;
+        this.missingDataEntryReader = missingDataEntryReader;
     }
 
 
@@ -48,58 +75,30 @@ public class DataEntryRenamer implements DataEntryReader
 
     public void read(DataEntry dataEntry) throws IOException
     {
-        // Delegate to the actual data entry reader.
-        dataEntryReader.read(renamedDataEntry(dataEntry));
-    }
+        String name = dataEntry.getName();
 
-
-    /**
-     * Create a renamed data entry, if possible.
-     */
-    private DataEntry renamedDataEntry(DataEntry dataEntry)
-    {
-        String dataEntryName = dataEntry.getName();
-
-        // Try to find a corresponding class name by removing increasingly
-        // long suffixes,
-        for (int suffixIndex = dataEntryName.length() - 1;
-             suffixIndex > 0;
-             suffixIndex--)
+        // Add a directory separator if necessary.
+        if (dataEntry.isDirectory() &&
+            name.length() > 0)
         {
-            char c = dataEntryName.charAt(suffixIndex);
-            if (!Character.isLetterOrDigit(c))
-            {
-                // Stop looking at the first package separator.
-                if (c == ClassConstants.INTERNAL_PACKAGE_SEPARATOR)
-                {
-                    break;
-                }
-
-                // Chop off the suffix.
-                String className = dataEntryName.substring(0, suffixIndex);
-
-                // Is there a class corresponding to the data entry?
-                Clazz clazz = classPool.getClass(className);
-                if (clazz != null)
-                {
-                    // Did the class get a new name?
-                    String newClassName = clazz.getName();
-                    if (!className.equals(newClassName))
-                    {
-                        // Return a renamed data entry.
-                        String newDataEntryName =  suffixIndex > 0 ?
-                            newClassName + dataEntryName.substring(suffixIndex) :
-                            newClassName;
-
-                        return new RenamedDataEntry(dataEntry, newDataEntryName);
-                    }
-
-                    // Otherwise stop looking.
-                    break;
-                }
-            }
+            name += ClassConstants.INTERNAL_PACKAGE_SEPARATOR;
         }
 
-        return dataEntry;
+        String newName = (String)nameMap.get(name);
+        if (newName != null)
+        {
+            // Add remove the directory separator if necessary.
+            if (dataEntry.isDirectory() &&
+                newName.length() > 0)
+            {
+                newName = newName.substring(0, newName.length() -  1);
+            }
+
+            renamedDataEntryReader.read(new RenamedDataEntry(dataEntry, newName));
+        }
+        else if (missingDataEntryReader != null)
+        {
+            missingDataEntryReader.read(dataEntry);
+        }
     }
 }

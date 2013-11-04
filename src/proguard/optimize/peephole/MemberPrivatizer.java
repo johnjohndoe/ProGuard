@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -27,9 +27,9 @@ import proguard.classfile.visitor.MemberVisitor;
 import proguard.optimize.info.NonPrivateMemberMarker;
 
 /**
- * This MemberVisitor makes all class members that it visits private, unless they
- * have been marked by a NonPrivateMemberMarker. The invocations of the
- * privatized method still have to be fixed.
+ * This MemberVisitor makes all class members that it visits private, unless
+ * they have been marked by a NonPrivateMemberMarker. The invocations of
+ * privatized methods still have to be fixed.
  *
  * @see NonPrivateMemberMarker
  * @see MethodInvocationFixer
@@ -39,8 +39,7 @@ public class MemberPrivatizer
 extends      SimplifiedVisitor
 implements   MemberVisitor
 {
-    private final MemberVisitor extraFieldVisitor;
-    private final MemberVisitor extraMethodVisitor;
+    private final MemberVisitor extraMemberVisitor;
 
 
     /**
@@ -48,22 +47,18 @@ implements   MemberVisitor
      */
     public MemberPrivatizer()
     {
-        this(null, null);
+        this(null);
     }
 
 
     /**
      * Creates a new MemberPrivatizer.
-     * @param extraFieldVisitor  an optional extra visitor for all privatized
-     *                           fields.
-     * @param extraMethodVisitor an optional extra visitor for all privatized
-     *                           methods.
+     * @param extraMemberVisitor an optional extra visitor for all privatized
+     *                           class members.
      */
-    public MemberPrivatizer(MemberVisitor extraFieldVisitor,
-                            MemberVisitor extraMethodVisitor)
+    public MemberPrivatizer(MemberVisitor extraMemberVisitor)
     {
-        this.extraFieldVisitor  = extraFieldVisitor;
-        this.extraMethodVisitor = extraMethodVisitor;
+        this.extraMemberVisitor = extraMemberVisitor;
     }
 
 
@@ -80,9 +75,9 @@ implements   MemberVisitor
                                               ClassConstants.INTERNAL_ACC_PRIVATE);
 
             // Visit the field, if required.
-            if (extraFieldVisitor != null)
+            if (extraMemberVisitor != null)
             {
-                extraFieldVisitor.visitProgramField(programClass, programField);
+                extraMemberVisitor.visitProgramField(programClass, programField);
             }
         }
     }
@@ -99,9 +94,9 @@ implements   MemberVisitor
                                               ClassConstants.INTERNAL_ACC_PRIVATE);
 
             // Visit the method, if required.
-            if (extraMethodVisitor != null)
+            if (extraMemberVisitor != null)
             {
-                extraMethodVisitor.visitProgramMethod(programClass, programMethod);
+                extraMemberVisitor.visitProgramMethod(programClass, programMethod);
             }
         }
     }

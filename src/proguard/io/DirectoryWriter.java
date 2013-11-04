@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -55,6 +55,26 @@ public class DirectoryWriter implements DataEntryWriter
 
     // Implementations for DataEntryWriter.
 
+    public boolean createDirectory(DataEntry dataEntry) throws IOException
+    {
+        // Should we close the current file?
+        if (!isFile &&
+            currentFile != null)
+        {
+            closeEntry();
+        }
+
+        File directory = getFile(dataEntry);
+        if (!directory.exists() &&
+            !directory.mkdirs())
+        {
+            throw new IOException("Can't create directory [" + directory.getPath() + "]");
+        }
+
+        return true;
+    }
+
+
     public OutputStream getOutputStream(DataEntry dataEntry) throws IOException
     {
         return getOutputStream(dataEntry,  null);
@@ -64,10 +84,12 @@ public class DirectoryWriter implements DataEntryWriter
     public OutputStream getOutputStream(DataEntry dataEntry,
                                         Finisher  finisher) throws IOException
     {
+        File file = getFile(dataEntry);
+
         // Should we close the current file?
         if (!isFile             &&
             currentFile != null &&
-            !currentFile.equals(getFile(dataEntry)))
+            !currentFile.equals(file))
         {
             closeEntry();
         }
@@ -75,8 +97,6 @@ public class DirectoryWriter implements DataEntryWriter
         // Do we need a new stream?
         if (currentOutputStream == null)
         {
-            File file = getFile(dataEntry);
-
             // Make sure the parent directories exist.
             File parentDirectory = file.getParentFile();
             if (parentDirectory != null   &&

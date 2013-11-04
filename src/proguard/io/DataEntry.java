@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -23,7 +23,8 @@ package proguard.io;
 import java.io.*;
 
 /**
- * This interface describes a data entry, e.g. a ZIP entry or a file.
+ * This interface describes a data entry, e.g. a ZIP entry, a file, or a
+ * directory.
  *
  * @author Eric Lafortune
  */
@@ -34,9 +35,15 @@ public interface DataEntry
      */
     public String getName();
 
+    /**
+     * Returns whether the data entry represents a directory.
+     */
+    public boolean isDirectory();
+
 
     /**
      * Returns an input stream for reading the content of this data entry.
+     * The data entry may not represent a directory.
      */
     public InputStream getInputStream() throws IOException;
 

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -155,14 +155,15 @@ public class TabbedPane
         imageConstraints.fill    = GridBagConstraints.BOTH;
         imageConstraints.anchor  = GridBagConstraints.SOUTHWEST;
 
-        JPanel component = new JPanel()
-        {
-            public void paintComponent(Graphics graphics)
-            {
-                graphics.drawImage(image, 0, getHeight() - image.getHeight(null), this);
-            }
-        };
-        component.setBorder(BorderFactory.createEtchedBorder());
+        JButton component = new JButton(new ImageIcon(image));
+        component.setFocusPainted(false);
+        component.setFocusable(false);
+        component.setRequestFocusEnabled(false);
+        component.setRolloverEnabled(false);
+        component.setMargin(new Insets(0, 0, 0, 0));
+        component.setHorizontalAlignment(JButton.LEFT);
+        component.setVerticalAlignment(JButton.BOTTOM);
+        component.setPreferredSize(new Dimension(0, 0));
 
         add(component, imageConstraints);
 

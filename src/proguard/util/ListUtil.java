@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -50,7 +50,7 @@ public class ListUtil
                 buffer.append(',');
             }
 
-            buffer.append(list.get(index));
+            buffer.append(quotedString((String)list.get(index)));
         }
 
         return buffer.toString();
@@ -69,19 +69,105 @@ public class ListUtil
 
         List list = new ArrayList();
         int index = 0;
-        while (index < string.length())
+        while ((index = skipWhitespace(string, index)) < string.length())
         {
-            int nextIndex = string.indexOf(',', index);
-            if (nextIndex < 0)
-            {
-                nextIndex = string.length();
-            }
+            int nextIndex;
 
-            list.add(string.substring(index, nextIndex).trim());
+            // Do we have an opening quote?
+            if (string.charAt(index) == '\'')
+            {
+                // Parse a quoted string.
+                nextIndex = string.indexOf('\'', index + 1);
+                if (nextIndex < 0)
+                {
+                    nextIndex = string.length();
+                }
+
+                list.add(string.substring(index + 1, nextIndex));
+            }
+            else
+            {
+                // Parse a non-quoted string.
+                nextIndex = string.indexOf(',', index);
+                if (nextIndex < 0)
+                {
+                    nextIndex = string.length();
+                }
+
+                String substring = string.substring(index, nextIndex).trim();
+                if (substring.length() > 0)
+                {
+                    list.add(substring);
+                }
+            }
 
             index = nextIndex + 1;
         }
 
         return list;
+    }
+
+
+    /**
+     * Skips any whitespace characters.
+     */
+    private static int skipWhitespace(String string, int index)
+    {
+        while (index < string.length() &&
+               Character.isWhitespace(string.charAt(index)))
+        {
+            index++;
+        }
+        return index;
+    }
+
+
+    /**
+     * Returns a quoted version of the given string, if necessary.
+     */
+    private static String quotedString(String string)
+    {
+        return string.length()     == 0 ||
+               string.indexOf(' ') >= 0 ||
+               string.indexOf('@') >= 0 ||
+               string.indexOf('{') >= 0 ||
+               string.indexOf('}') >= 0 ||
+               string.indexOf('(') >= 0 ||
+               string.indexOf(')') >= 0 ||
+               string.indexOf(':') >= 0 ||
+               string.indexOf(';') >= 0 ||
+               string.indexOf(',') >= 0  ? ("'" + string + "'") :
+                                           (      string      );
+    }
+
+
+    public static void main(String[] args)
+    {
+        if (args.length == 1)
+        {
+            System.out.println("Input string: ["+args[0]+"]");
+
+            List list = commaSeparatedList(args[0]);
+
+            System.out.println("Resulting list:");
+            for (int index = 0; index < list.size(); index++)
+            {
+                System.out.println("["+list.get(index)+"]");
+            }
+        }
+        else
+        {
+            List list = Arrays.asList(args);
+
+            System.out.println("Input list:");
+            for (int index = 0; index < list.size(); index++)
+            {
+                System.out.println("["+list.get(index)+"]");
+            }
+
+            String string = commaSeparatedString(list);
+
+            System.out.println("Resulting string: ["+string+"]");
+        }
     }
 }

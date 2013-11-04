@@ -102,7 +102,7 @@ If you really prefer a full-blown XML configuration, you can replace the
 ProGuard configuration options by XML configuration tags. The resulting
 configuration will be equivalent, but much more verbose and difficult to read,
 as XML goes. The remainder of this page presents the supported tags. For a
-more extensive discussion of their meaning, please refer to the traditional <a
+more extensive discussion of their meaning, please consult the traditional <a
 href="usage.html">Usage</a> section. You can find some sample configuration
 files in the <code>examples/ant</code> directory of the ProGuard distribution.
 <p>
@@ -169,7 +169,7 @@ elements:
 <dt><a href="usage.html#optimizationpasses"><code><b>optimizationpasses</b></code></a>
     = "<i>n</i>"
     (default = 1)</dt>
-<dd>The number of optimization passes to be performed.
+<dd>The number of optimization passes to be performed.</dd>
 
 <dt><a href="usage.html#allowaccessmodification"><code><b>allowaccessmodification</b></code></a>
     = "<i>boolean</i>"
@@ -267,13 +267,16 @@ elements:
 <dt><a href="usage.html#dontnote"><code><b>note</b></code></a>
     = "<i>boolean</i>"
    (default = true)</dt>
-<dd>Print notes about potential mistakes or omissions in the
-    configuration.</dd>
+<dd>Print notes about potential mistakes or omissions in the configuration.
+    Use the nested element <a href="#dontnote">dontnote</a> for more
+    fine-grained control.</dd>
 
 <dt><a href="usage.html#dontwarn"><code><b>warn</b></code></a>
     = "<i>boolean</i>"
     (default = true)</dt>
-<dd>Warn about unresolved references at all.</dd>
+<dd>Print warnings about unresolved references. Use the nested
+    element <a href="#dontwarn">dontwarn</a> for more fine-grained
+    control. <i>Only use this option if you know what you're doing!</i></dd>
 
 <dt><a href="usage.html#ignorewarnings"><code><b>ignorewarnings</b></code></a>
     = "<i>boolean</i>"
@@ -309,6 +312,13 @@ elements:
     <a href="#classpath"><i>class_path</i></a>
     <code><b>/&gt;</b></code></dt>
 <dd>Specifies the library jars (or wars, ears, zips, or directories).</dd>
+
+<dt><a href="usage.html#keepdirectories"><code><b>&lt;keepdirectory name = </b></code></a>"<i>directory_name</i>"
+    <code><b>/&gt;</b></code><br/>
+    <a href="usage.html#keepdirectories"><code><b>&lt;keepdirectories filter = </b></code></a>"<a href="usage.html#filefilters"><i>directory_filter</i></a>"
+    <code><b>/&gt;</b></code></dt>
+<dd>Keep the specified directories in the output jars (or wars, ears, zips, or
+    directories).</dd>
 
 <dt><a href="usage.html#keep"><code><b>&lt;keep</b></code></a>
     <a href="#keepmodifier"><i>modifiers</i></a>
@@ -375,22 +385,55 @@ elements:
     <a href="#classmemberspecification"><i>class_member_specifications</i></a>
     <code><b>&lt;/assumenosideeffects&gt;</b></code></dt>
 <dd>Assume that the specified methods don't have any side effects, while
-    optimizing.</dd>
+    optimizing. <i>Only use this option if you know what you're
+    doing!</i></dd>
+
+<dt><a href="usage.html#optimizations"><code><b>&lt;optimization name = </b></code></a>"<a href="optimizations.html"><i>optimization_name</i></a>"
+    <code><b>/&gt;</b></code><br/>
+    <a href="usage.html#optimizations"><code><b>&lt;optimizations filter = </b></code></a>""<a href="optimizations.html"><i>optimization_filter</i></a>"
+    <code><b>/&gt;</b></code></dt>
+<dd>Perform only the specified optimizations.</dd>
+
+<dt><a href="usage.html#keeppackagenames"><code><b>&lt;keeppackagename name = </b></code></a>"<i>package_name</i>"
+    <code><b>/&gt;</b></code><br/>
+    <a href="usage.html#keeppackagenames"><code><b>&lt;keeppackagenames filter = </b></code></a>"<a href="usage.html#filters"><i>package_filter</i></a>"
+    <code><b>/&gt;</b></code></dt>
+<dd>Keep the specified package names from being obfuscated. If no name is
+    given, all package names are preserved.</dd>
 
 <dt><a href="usage.html#keepattributes"><code><b>&lt;keepattribute name = </b></code></a>"<i>attribute_name</i>"
+    <code><b>/&gt;</b></code><br/>
+    <a href="usage.html#keepattributes"><code><b>&lt;keepattributes filter = </b></code></a>"<a href="usage.html#filters"><i>attribute_filter</i></a>"
     <code><b>/&gt;</b></code></dt>
-<dd>Preserve the given optional Java bytecode attribute, with optional
+<dd>Preserve the specified optional Java bytecode attributes, with optional
     wildcards. If no name is given, all attributes are preserved.</dd>
 
-<dt><a href="usage.html#adaptresourcefilenames"><code><b>&lt;adaptresourcefilenames filter = </b></code></a>"<a href="usage.html#filters"><i>filter</i></a>"
+<dt><a href="usage.html#adaptclassstrings"><code><b>&lt;adaptclassstrings filter = </b></code></a>"<a href="usage.html#filters"><i>class_filter</i></a>"
+    <code><b>/&gt;</b></code></dt>
+<dd>Adapt string constants in the specified classes, based on the obfuscated
+    names of any corresponding classes.</dd>
+
+<dt><a href="usage.html#adaptresourcefilenames"><code><b>&lt;adaptresourcefilenames filter = </b></code></a>"<a href="usage.html#filefilters"><i>file_filter</i></a>"
     <code><b>/&gt;</b></code></dt>
 <dd>Rename the specified resource files, based on the obfuscated names of the
     corresponding class files.</dd>
 
-<dt><a href="usage.html#adaptresourcefilecontents"><code><b>&lt;adaptresourcefilecontents filter = </b></code></a>"<a href="usage.html#filters"><i>filter</i></a>"
+<dt><a href="usage.html#adaptresourcefilecontents"><code><b>&lt;adaptresourcefilecontents filter = </b></code></a>"<a href="usage.html#filefilters"><i>file_filter</i></a>"
     <code><b>/&gt;</b></code></dt>
 <dd>Update the contents of the specified resource files, based on the
-    obfuscated names of the class files.</dd>
+    obfuscated names of the processed classes.</dd>
+
+<dt><a name="dontnote" />
+    <a href="usage.html#dontnote"><code><b>&lt;dontnote filter = </b></code></a>"<a href="usage.html#filters"><i>class_filter</i></a>"
+    <code><b>/&gt;</b></code></dt>
+<dd>Don't print notes about classes matching the specified class name
+    filter.</dd>
+
+<dt><a name="dontwarn" />
+    <a href="usage.html#dontwarn"><code><b>&lt;dontwarn filter = </b></code></a>"<a href="usage.html#filters"><i>class_filter</i></a>"
+    <code><b>/&gt;</b></code></dt>
+<dd>Don't print warnings about classes matching the specified class name
+    filter. <i>Only use this option if you know what you're doing!</i></dd>
 
 <dt><a name="configuration_element"><code><b>&lt;configuration refid = </b></code></a>"<i>ref_id</i>"
     <code><b>/&gt;</b></code></dt>
@@ -434,24 +477,24 @@ In addition, the jar tags can have ProGuard-style filter attributes:
 <dl>
 
 <dt><code><b>filter</b></code> =
-    "<a href="usage.html#filters"><i>filter</i></a>"</dt>
+    "<a href="usage.html#filefilters"><i>file_filter</i></a>"</dt>
 <dd>An optional filter for all class file names and resource file names that
     are encountered.</dd>
 
 <dt><code><b>jarfilter</b></code> =
-    "<a href="usage.html#filters"><i>filter</i></a>"</dt>
+    "<a href="usage.html#filefilters"><i>file_filter</i></a>"</dt>
 <dd>An optional filter for all jar names that are encountered.</dd>
 
 <dt><code><b>warfilter</b></code> =
-    "<a href="usage.html#filters"><i>filter</i></a>"</dt>
+    "<a href="usage.html#filefilters"><i>file_filter</i></a>"</dt>
 <dd>An optional filter for all war names that are encountered.</dd>
 
 <dt><code><b>earfilter</b></code> =
-    "<a href="usage.html#filters"><i>filter</i></a>"</dt>
+    "<a href="usage.html#filefilters"><i>file_filter</i></a>"</dt>
 <dd>An optional filter for all ear names that are encountered.</dd>
 
 <dt><code><b>zipfilter</b></code> =
-    "<a href="usage.html#filters"><i>filter</i></a>"</dt>
+    "<a href="usage.html#filefilters"><i>file_filter</i></a>"</dt>
 <dd>An optional filter for all zip names that are encountered.</dd>
 
 </dl>
@@ -560,7 +603,7 @@ attributes:
 
 <hr>
 <address>
-Copyright &copy; 2002-2008
+Copyright &copy; 2002-2009
 <a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>

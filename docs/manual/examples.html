@@ -15,11 +15,17 @@ Some typical useful configurations:
 <li><a href="#application">A typical application</a>
 <li><a href="#applet">A typical applet</a>
 <li><a href="#midlet">A typical midlet</a>
+<li><a href="#jcapplet">A typical Java Card applet</a>
+<li><a href="#xlet">A typical xlet</a>
+<li><a href="#androidapplication">A typical Android application</a>
+<li><a href="#library">A typical library</a>
 <li><a href="#applications">All possible applications in the input jars</a>
 <li><a href="#applets">All possible applets in the input jars</a>
 <li><a href="#midlets">All possible midlets in the input jars</a>
+<li><a href="#jcapplets">All possible Java Card applets in the input jars</a>
+<li><a href="#xlets">All possible xlets in the input jars</a>
+<li><a href="#androidapplications">All possible Android applications in the input jars</a>
 <li><a href="#servlets">All possible servlets in the input jars</a>
-<li><a href="#library">A typical library</a>
 <li><a href="#native">Processing native methods</a>
 <li><a href="#callback">Processing callback methods</a>
 <li><a href="#enumerations">Processing enumeration classes</a>
@@ -162,6 +168,153 @@ option.
 <p>
 If applicable, you should add options for processing <a href="#native">native
 methods</a> and <a href="#resourcefiles">resource files</a>.
+<p>
+Note that you will still have to adapt the midlet jar size in the
+corresponding jad file; ProGuard doesn't do that for you.
+
+<a name="jcapplet">&nbsp;</a>
+<h3>A typical Java Card applet</h3>
+These options shrink, optimize, and obfuscate the Java Card applet
+<code>mypackage.MyApplet</code>:
+<pre>
+-injars      in.jar
+-outjars     out.jar
+-libraryjars /usr/local/java/javacard2.2.2/lib/api.jar
+-dontwarn    java.lang.Class
+-overloadaggressively
+-repackageclasses ''
+-allowaccessmodification
+
+-keep public class mypackage.MyApplet
+</pre>
+<p>
+The configuration is very similar to the configuration for midlets, except that
+it now targets the Java Card run-time environment. This environment doesn't
+have java.lang.Class, so we're telling ProGuard not to worry about it.
+
+<a name="xlet">&nbsp;</a>
+<h3>A typical xlet</h3>
+These options shrink, optimize, and obfuscate the xlet
+<code>mypackage.MyXlet</code>:
+<pre>
+-injars      in.jar
+-outjars     out.jar
+-libraryjars /usr/local/java/jtv1.1/javatv.jar
+-libraryjars /usr/local/java/cdc1.1/lib/cdc.jar
+-libraryjars /usr/local/java/cdc1.1/lib/btclasses.zip
+-overloadaggressively
+-repackageclasses ''
+-allowaccessmodification
+
+-keep public class mypackage.MyXlet
+</pre>
+<p>
+The configuration is very similar to the configuration for midlets, except that
+it now targets the CDC run-time environment with the Java TV API.
+
+<a name="androidapplication">&nbsp;</a>
+<h3>A typical Android application</h3>
+These options shrink, optimize, and obfuscate the simple Android application
+based on a single activity <code>mypackage.MyActivity</code>:
+<pre>
+-injars      in.jar
+-outjars     out.jar
+-libraryjars /usr/local/java/android-1.5_r1/platforms/android-1.5/android.jar
+-overloadaggressively
+-repackageclasses ''
+-allowaccessmodification
+-optimizations !code/simplification/arithmetic
+
+-keep public class mypackage.MyActivity
+</pre>
+<p>
+The configuration is very similar to the configuration for midlets, except that
+it now targets the Android run-time environment.
+<p>
+The <a href="usage.html#optimizations"><code>-optimizations</code></a> option
+disables some arithmetic simplifications that Dalvik 1.0 and 1.5 can't handle.
+<p>
+If applicable, you should add options for processing <a href="#native">native
+methods</a>, <a href="#callback">callback methods</a>, and <a
+href="#resourcefiles">resource files</a>.
+
+<a name="library">&nbsp;</a>
+<h3>A typical library</h3>
+These options shrink, optimize, and obfuscate an entire library, keeping all
+public and protected classes and class members, native method names, and
+serialization code:
+<pre>
+-injars       in.jar
+-outjars      out.jar
+-libraryjars  &lt;java.home&gt;/lib/rt.jar
+-printmapping out.map
+
+-renamesourcefileattribute SourceFile
+-keepattributes Exceptions,InnerClasses,Signature,Deprecated,
+                SourceFile,LineNumberTable,*Annotation*,EnclosingMethod
+
+-keep public class * {
+    public protected *;
+}
+
+-keepclassmembernames class * {
+    java.lang.Class class$(java.lang.String);
+    java.lang.Class class$(java.lang.String, boolean);
+}
+
+-keepclasseswithmembernames class * {
+    native &lt;methods&gt;;
+}
+
+-keepclassmembers enum * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+
+-keepclassmembers class * implements java.io.Serializable {
+    static final long serialVersionUID;
+    private void writeObject(java.io.ObjectOutputStream);
+    private void readObject(java.io.ObjectInputStream);
+    java.lang.Object writeReplace();
+    java.lang.Object readResolve();
+}
+</pre>
+<p>
+This configuration should preserve everything we'll ever want to access in the
+library. Only if there are any other non-public classes or methods that are
+invoked dynamically, they should be specified using additional <a
+href="usage.html#keep"><code>-keep</code></a> options.
+<p>
+The <a
+href="usage.html#keepclassmembernames"><code>-keepclassmembernames</code></a>
+option for the <code>class$</code> methods is not strictly necessary. These
+methods are inserted by the <code>javac</code> compiler and the
+<code>jikes</code> compiler respectively, to implement the <code>.class</code>
+construct. ProGuard will automatically detect them and deal with them, even
+when their names have been obfuscated. However, older versions of ProGuard and
+other obfuscators may rely on the original method names. It may therefore be
+helpful to preserve them, in case these other obfuscators are ever used for
+further obfuscation of the library.
+<p>
+The "Exceptions" attribute has to be preserved, so the compiler knows which
+exceptions methods may throw.
+<p>
+The "InnerClasses" attribute (or more precisely, its source name part) has to
+be preserved too, for any inner classes that can be referenced from outside the
+library. The <code>javac</code> compiler would be unable to find the inner
+classes otherwise.
+<p>
+The "Signature" attribute is required to be able to access generic types when
+compiling in JDK 5.0 and higher.
+<p>
+Finally, we're keeping the "Deprecated" attribute and the attributes for
+producing <a href="#stacktrace">useful stack traces</a>.
+<p>
+We've also added some options for for processing <a href="#native">native
+methods</a>, <a href="#enumerations">enumerations</a>, <a
+href="#serializable">serializable classes</a>, and <a
+href="#annotations">annotations</a>, which are all discussed in their
+respective examples.
 
 <a name="applications">&nbsp;</a>
 <h3>All possible applications in the input jars</h3>
@@ -255,6 +408,85 @@ out which midlets exactly will be preserved.
 <p>
 If applicable, you should add options for processing <a href="#native">native
 methods</a> and <a href="#resourcefiles">resource files</a>.
+<p>
+Note that you will still have to adapt the midlet jar size in the
+corresponding jad file; ProGuard doesn't do that for you.
+
+<a name="jcapplets">&nbsp;</a>
+<h3>All possible Java Card applets in the input jars</h3>
+These options shrink, optimize, and obfuscate all public Java Card applets in
+<code>in.jar</code>:
+<pre>
+-injars      in.jar
+-outjars     out.jar
+-libraryjars /usr/local/java/javacard2.2.2/lib/api.jar
+-dontwarn    java.lang.Class
+-overloadaggressively
+-repackageclasses ''
+-allowaccessmodification
+-printseeds
+
+-keep public class * implements javacard.framework.Applet
+</pre>
+<p>
+We're simply keeping all classes that implement the <code>Applet</code>
+interface.
+<p>
+The <a href="usage.html#printseeds"><code>-printseeds</code></a> option prints
+out which applets exactly will be preserved.
+
+<a name="xlets">&nbsp;</a>
+<h3>All possible xlets in the input jars</h3>
+These options shrink, optimize, and obfuscate all public xlets in
+<code>in.jar</code>:
+<pre>
+-injars      in.jar
+-outjars     out.jar
+-libraryjars /usr/local/java/jtv1.1/javatv.jar
+-libraryjars /usr/local/java/cdc1.1/lib/cdc.jar
+-libraryjars /usr/local/java/cdc1.1/lib/btclasses.zip
+-overloadaggressively
+-repackageclasses ''
+-allowaccessmodification
+-printseeds
+
+-keep public class * implements javax.tv.xlet.Xlet
+</pre>
+<p>
+We're simply keeping all classes that implement the <code>Xlet</code> interface.
+<p>
+The <a href="usage.html#printseeds"><code>-printseeds</code></a> option prints
+out which xlets exactly will be preserved.
+
+<a name="androidapplications">&nbsp;</a>
+<h3>All possible Android applications in the input jars</h3>
+These options shrink, optimize, and obfuscate all public activities, services,
+broadcast receivers, and content providers in <code>in.jar</code>:
+<pre>
+-injars      in.jar
+-outjars     out.jar
+-libraryjars /usr/local/java/android-1.5_r1/platforms/android-1.5/android.jar
+-overloadaggressively
+-repackageclasses ''
+-allowaccessmodification
+-optimizations !code/simplification/arithmetic
+-printseeds
+
+-keep public class * extends android.app.Activity
+-keep public class * extends android.app.Service
+-keep public class * extends android.content.BroadcastReceiver
+-keep public class * extends android.content.ContentProvider
+</pre>
+<p>
+We're keeping all classes that extend the base classes that may be referenced
+by the <code>AndroidManifest.xml</code> file of the application.
+<p>
+The <a href="usage.html#printseeds"><code>-printseeds</code></a> option prints
+out which implementations exactly will be preserved.
+<p>
+If applicable, you should add options for processing <a href="#native">native
+methods</a>, <a href="#callback">callback methods</a>, and <a
+href="#resourcefiles">resource files</a>.
 
 <a name="servlets">&nbsp;</a>
 <h3>All possible servlets in the input jars</h3>
@@ -288,84 +520,6 @@ href="#enumerations">enumerations</a>, <a href="#serializable">serializable
 classes</a>, <a href="#beans">bean classes</a>, <a
 href="#annotations">annotations</a>, and <a href="#resourcefiles">resource
 files</a>.
-
-<a name="library">&nbsp;</a>
-<h3>A typical library</h3>
-These options shrink, optimize, and obfuscate an entire library, keeping all
-public and protected classes and class members, native method names, and
-serialization code:
-<pre>
--injars       in.jar
--outjars      out.jar
--libraryjars  &lt;java.home&gt;/lib/rt.jar
--printmapping out.map
-
--renamesourcefileattribute SourceFile
--keepattributes Exceptions,InnerClasses,Signature,Deprecated,
-                SourceFile,LineNumberTable,*Annotation*,EnclosingMethod
-
--keep public class * {
-    public protected *;
-}
-
--keepclassmembernames class * {
-    java.lang.Class class$(java.lang.String);
-    java.lang.Class class$(java.lang.String, boolean);
-}
-
--keepclasseswithmembernames class * {
-    native &lt;methods&gt;;
-}
-
--keepclassmembers enum * {
-    public static **[] values();
-    public static ** valueOf(java.lang.String);
-}
-
--keepclassmembers class * implements java.io.Serializable {
-    static final long serialVersionUID;
-    private void writeObject(java.io.ObjectOutputStream);
-    private void readObject(java.io.ObjectInputStream);
-    java.lang.Object writeReplace();
-    java.lang.Object readResolve();
-}
-</pre>
-<p>
-This configuration should preserve everything we'll ever want to access in the
-library. Only if there are any other non-public classes or methods that are
-invoked dynamically, they should be specified using additional <a
-href="usage.html#keep"><code>-keep</code></a> options.
-<p>
-The <a
-href="usage.html#keepclassmembernames"><code>-keepclassmembernames</code></a>
-option for the <code>class$</code> methods is not strictly necessary. These
-methods are inserted by the <code>javac</code> compiler and the
-<code>jikes</code> compiler respectively, to implement the <code>.class</code>
-construct. ProGuard will automatically detect them and deal with them, even
-when their names have been obfuscated. However, older versions of ProGuard and
-other obfuscators may rely on the original method names. It may therefore be
-helpful to preserve them, in case these other obfuscators are ever used for
-further obfuscation of the library.
-<p>
-The "Exceptions" attribute has to be preserved, so the compiler knows which
-exceptions methods may throw.
-<p>
-The "InnerClasses" attribute (or more precisely, its source name part) has to
-be preserved too, for any inner classes that can be referenced from outside the
-library. The <code>javac</code> compiler would be unable to find the inner
-classes otherwise.
-<p>
-The "Signature" attribute is required to be able to access generic types when
-compiling in JDK 5.0 and higher.
-<p>
-Finally, we're keeping the "Deprecated" attribute and the attributes for
-producing <a href="#stacktrace">useful stack traces</a>.
-<p>
-We've also added some options for for processing <a href="#native">native
-methods</a>, <a href="#enumerations">enumerations</a>, <a
-href="#serializable">serializable classes</a>, and <a
-href="#annotations">annotations</a>, which are all discussed in their
-respective examples.
 
 <a name="native">&nbsp;</a>
 <h3>Processing native methods</h3>
@@ -662,9 +816,7 @@ any). The <a
 href="usage.html#adaptresourcefilecontents">-adaptresourcefilecontents</a>
 option looks for class names in properties files and in the manifest file, and
 replaces these names by the obfuscated names (if any). You'll probably want to
-adapt the filters to suit your application. Note that package names of
-resource files that don't have corresponding class files are not updated in
-the current implementation.
+adapt the filters to suit your application.
 
 <a name="stacktrace">&nbsp;</a>
 <h3>Producing useful obfuscated stack traces</h3>
@@ -1143,7 +1295,7 @@ illustrate some of the possibilities.
 
 <hr>
 <address>
-Copyright &copy; 2002-2008
+Copyright &copy; 2002-2009
 <a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>

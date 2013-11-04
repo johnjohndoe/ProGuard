@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -97,7 +97,7 @@ public class InstructionSequenceConstants
     private static final int TYPE_D               = 42;
 
 
-    public static final Constant[] PATTERN_CONSTANTS = new Constant[]
+    public static final Constant[] CONSTANTS = new Constant[]
     {
         new IntegerConstant(32768),
         new IntegerConstant(65536),
@@ -153,12 +153,51 @@ public class InstructionSequenceConstants
     };
 
 
-    public static final Instruction[][][] INSTRUCTION_SEQUENCES =
-        new Instruction[][][]
+    public static final Instruction[][][] VARIABLE = new Instruction[][][]
     {
         {   // nop = nothing
             {
                 new SimpleInstruction(InstructionConstants.OP_NOP),
+            },{
+                // Nothing.
+            },
+        },
+        {   // iload/pop = nothing
+            {
+                new VariableInstruction(InstructionConstants.OP_ILOAD, X),
+                new SimpleInstruction(InstructionConstants.OP_POP),
+            },{
+                // Nothing.
+            },
+        },
+        {   // lload/pop2 = nothing
+            {
+                new VariableInstruction(InstructionConstants.OP_LLOAD, X),
+                new SimpleInstruction(InstructionConstants.OP_POP2),
+            },{
+                // Nothing.
+            },
+        },
+        {   // fload/pop = nothing
+            {
+                new VariableInstruction(InstructionConstants.OP_FLOAD, X),
+                new SimpleInstruction(InstructionConstants.OP_POP),
+            },{
+                // Nothing.
+            },
+        },
+        {   // dload/pop2 = nothing
+            {
+                new VariableInstruction(InstructionConstants.OP_DLOAD, X),
+                new SimpleInstruction(InstructionConstants.OP_POP2),
+            },{
+                // Nothing.
+            },
+        },
+        {   // aload/pop = nothing
+            {
+                new VariableInstruction(InstructionConstants.OP_ALOAD, X),
+                new SimpleInstruction(InstructionConstants.OP_POP),
             },{
                 // Nothing.
             },
@@ -198,7 +237,7 @@ public class InstructionSequenceConstants
         {   // a = a = nothing
             {
                 new VariableInstruction(InstructionConstants.OP_ALOAD, X),
-                new VariableInstruction(InstructionConstants.OP_ASTORE, X),
+                new SimpleInstruction(InstructionConstants.OP_POP),
             },{
                 // Nothing.
             },
@@ -293,6 +332,10 @@ public class InstructionSequenceConstants
                 new VariableInstruction(InstructionConstants.OP_ASTORE, X),
             },
         },
+    };
+
+    public static final Instruction[][][] ARITHMETIC = new Instruction[][][]
+    {
         {   // c + i = i + c
             {
                 new SimpleInstruction(InstructionConstants.OP_ICONST_0, A),
@@ -2083,6 +2126,10 @@ public class InstructionSequenceConstants
                 // Nothing.
             },
         },
+    };
+
+    public static final Instruction[][][] FIELD = new Instruction[][][]
+    {
         {   // getfield/putfield = nothing
             {
                 new VariableInstruction(InstructionConstants.OP_ALOAD, X),
@@ -2245,6 +2292,10 @@ public class InstructionSequenceConstants
                 new ConstantInstruction(InstructionConstants.OP_PUTSTATIC, X),
             },
         },
+    };
+
+    public static final Instruction[][][] CAST = new Instruction[][][]
+    {
         {   // (byte)(byte)... = (byte)...
             {
                 new SimpleInstruction(InstructionConstants.OP_I2B),
@@ -2382,6 +2433,10 @@ public class InstructionSequenceConstants
 //                new SimpleInstruction(InstructionConstants.OP_SASTORE),
 //            },
 //        },
+    };
+
+    public static final Instruction[][][] BRANCH = new Instruction[][][]
+    {
         {   // goto +3 = nothing
             {
                 new BranchInstruction(InstructionConstants.OP_GOTO, 3),
@@ -2529,7 +2584,7 @@ public class InstructionSequenceConstants
                 new BranchInstruction(InstructionConstants.OP_IFEQ, X),
             },
         },
-        {   // if (0 == i) = aload/getfield/ifeq
+        {   // if (0 == i) = getfield/ifeq
             {
                 new SimpleInstruction(InstructionConstants.OP_ICONST_0),
                 new VariableInstruction(InstructionConstants.OP_ALOAD, Y),
@@ -2559,7 +2614,7 @@ public class InstructionSequenceConstants
                 new BranchInstruction(InstructionConstants.OP_IFNE, X),
             },
         },
-        {   // if (0 != i) = iload/ifeq
+        {   // if (0 != i) = getstatic/ifeq
             {
                 new SimpleInstruction(InstructionConstants.OP_ICONST_0),
                 new ConstantInstruction(InstructionConstants.OP_GETSTATIC, Y),
@@ -2569,7 +2624,7 @@ public class InstructionSequenceConstants
                 new BranchInstruction(InstructionConstants.OP_IFNE, X),
             },
         },
-        {   // if (0 != i) = iload/ifeq
+        {   // if (0 != i) = getfield/ifeq
             {
                 new SimpleInstruction(InstructionConstants.OP_ICONST_0),
                 new VariableInstruction(InstructionConstants.OP_ALOAD, Y),
@@ -2589,6 +2644,14 @@ public class InstructionSequenceConstants
                 new BranchInstruction(InstructionConstants.OP_IFLT, X),
             },
         },
+        {   // if (... < 1) = ifle
+            {
+                new SimpleInstruction(InstructionConstants.OP_ICONST_1),
+                new BranchInstruction(InstructionConstants.OP_IFICMPLT, X),
+            },{
+                new BranchInstruction(InstructionConstants.OP_IFLE, X),
+            },
+        },
         {   // if (0 > i) = iload/iflt
             {
                 new SimpleInstruction(InstructionConstants.OP_ICONST_0),
@@ -2599,7 +2662,17 @@ public class InstructionSequenceConstants
                 new BranchInstruction(InstructionConstants.OP_IFLT, X),
             },
         },
-        {   // if (0 > i) = iload/iflt
+        {   // if (1 > i) = iload/ifle
+            {
+                new SimpleInstruction(InstructionConstants.OP_ICONST_1),
+                new VariableInstruction(InstructionConstants.OP_ILOAD, Y),
+                new BranchInstruction(InstructionConstants.OP_IFICMPGT, X),
+            },{
+                new VariableInstruction(InstructionConstants.OP_ILOAD, Y),
+                new BranchInstruction(InstructionConstants.OP_IFLE, X),
+            },
+        },
+        {   // if (0 > i) = getstatic/iflt
             {
                 new SimpleInstruction(InstructionConstants.OP_ICONST_0),
                 new ConstantInstruction(InstructionConstants.OP_GETSTATIC, Y),
@@ -2609,7 +2682,17 @@ public class InstructionSequenceConstants
                 new BranchInstruction(InstructionConstants.OP_IFLT, X),
             },
         },
-        {   // if (0 > i) = iload/iflt
+        {   // if (1 > i) = getstatic/ifle
+            {
+                new SimpleInstruction(InstructionConstants.OP_ICONST_1),
+                new ConstantInstruction(InstructionConstants.OP_GETSTATIC, Y),
+                new BranchInstruction(InstructionConstants.OP_IFICMPGT, X),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_GETSTATIC, Y),
+                new BranchInstruction(InstructionConstants.OP_IFLE, X),
+            },
+        },
+        {   // if (0 > i) = getfield/iflt
             {
                 new SimpleInstruction(InstructionConstants.OP_ICONST_0),
                 new VariableInstruction(InstructionConstants.OP_ALOAD, Y),
@@ -2619,6 +2702,18 @@ public class InstructionSequenceConstants
                 new VariableInstruction(InstructionConstants.OP_ALOAD, Y),
                 new ConstantInstruction(InstructionConstants.OP_GETFIELD, Z),
                 new BranchInstruction(InstructionConstants.OP_IFLT, X),
+            },
+        },
+        {   // if (1 > i) = getfield/ifle
+            {
+                new SimpleInstruction(InstructionConstants.OP_ICONST_1),
+                new VariableInstruction(InstructionConstants.OP_ALOAD, Y),
+                new ConstantInstruction(InstructionConstants.OP_GETFIELD, Z),
+                new BranchInstruction(InstructionConstants.OP_IFICMPGT, X),
+            },{
+                new VariableInstruction(InstructionConstants.OP_ALOAD, Y),
+                new ConstantInstruction(InstructionConstants.OP_GETFIELD, Z),
+                new BranchInstruction(InstructionConstants.OP_IFLE, X),
             },
         },
         {   // if (... >= 0) = ifge
@@ -2629,6 +2724,14 @@ public class InstructionSequenceConstants
                 new BranchInstruction(InstructionConstants.OP_IFGE, X),
             },
         },
+        {   // if (... >= 1) = ifgt
+            {
+                new SimpleInstruction(InstructionConstants.OP_ICONST_1),
+                new BranchInstruction(InstructionConstants.OP_IFICMPGE, X),
+            },{
+                new BranchInstruction(InstructionConstants.OP_IFGT, X),
+            },
+        },
         {   // if (0 <= i) = iload/ifge
             {
                 new SimpleInstruction(InstructionConstants.OP_ICONST_0),
@@ -2639,7 +2742,17 @@ public class InstructionSequenceConstants
                 new BranchInstruction(InstructionConstants.OP_IFGE, X),
             },
         },
-        {   // if (0 <= i) = iload/ifge
+        {   // if (1 <= i) = iload/ifgt
+            {
+                new SimpleInstruction(InstructionConstants.OP_ICONST_1),
+                new VariableInstruction(InstructionConstants.OP_ILOAD, Y),
+                new BranchInstruction(InstructionConstants.OP_IFICMPLE, X),
+            },{
+                new VariableInstruction(InstructionConstants.OP_ILOAD, Y),
+                new BranchInstruction(InstructionConstants.OP_IFGT, X),
+            },
+        },
+        {   // if (0 <= i) = getstatic/ifge
             {
                 new SimpleInstruction(InstructionConstants.OP_ICONST_0),
                 new ConstantInstruction(InstructionConstants.OP_GETSTATIC, Y),
@@ -2649,7 +2762,17 @@ public class InstructionSequenceConstants
                 new BranchInstruction(InstructionConstants.OP_IFGE, X),
             },
         },
-        {   // if (0 <= i) = iload/ifge
+        {   // if (1 <= i) = getstatic/ifgt
+            {
+                new SimpleInstruction(InstructionConstants.OP_ICONST_1),
+                new ConstantInstruction(InstructionConstants.OP_GETSTATIC, Y),
+                new BranchInstruction(InstructionConstants.OP_IFICMPLE, X),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_GETSTATIC, Y),
+                new BranchInstruction(InstructionConstants.OP_IFGT, X),
+            },
+        },
+        {   // if (0 <= i) = getfield/ifge
             {
                 new SimpleInstruction(InstructionConstants.OP_ICONST_0),
                 new VariableInstruction(InstructionConstants.OP_ALOAD, Y),
@@ -2659,6 +2782,18 @@ public class InstructionSequenceConstants
                 new VariableInstruction(InstructionConstants.OP_ALOAD, Y),
                 new ConstantInstruction(InstructionConstants.OP_GETFIELD, Z),
                 new BranchInstruction(InstructionConstants.OP_IFGE, X),
+            },
+        },
+        {   // if (1 <= i) = getfield/ifgt
+            {
+                new SimpleInstruction(InstructionConstants.OP_ICONST_1),
+                new VariableInstruction(InstructionConstants.OP_ALOAD, Y),
+                new ConstantInstruction(InstructionConstants.OP_GETFIELD, Z),
+                new BranchInstruction(InstructionConstants.OP_IFICMPLE, X),
+            },{
+                new VariableInstruction(InstructionConstants.OP_ALOAD, Y),
+                new ConstantInstruction(InstructionConstants.OP_GETFIELD, Z),
+                new BranchInstruction(InstructionConstants.OP_IFGT, X),
             },
         },
         {   // if (... > 0) = ifgt
@@ -2669,6 +2804,14 @@ public class InstructionSequenceConstants
                 new BranchInstruction(InstructionConstants.OP_IFGT, X),
             },
         },
+        {   // if (... > -1) = ifge
+            {
+                new SimpleInstruction(InstructionConstants.OP_ICONST_M1),
+                new BranchInstruction(InstructionConstants.OP_IFICMPGT, X),
+            },{
+                new BranchInstruction(InstructionConstants.OP_IFGE, X),
+            },
+        },
         {   // if (0 < i) = iload/ifgt
             {
                 new SimpleInstruction(InstructionConstants.OP_ICONST_0),
@@ -2679,7 +2822,17 @@ public class InstructionSequenceConstants
                 new BranchInstruction(InstructionConstants.OP_IFGT, X),
             },
         },
-        {   // if (0 < i) = iload/ifgt
+        {   // if (-1 < i) = iload/ifge
+            {
+                new SimpleInstruction(InstructionConstants.OP_ICONST_M1),
+                new VariableInstruction(InstructionConstants.OP_ILOAD, Y),
+                new BranchInstruction(InstructionConstants.OP_IFICMPLT, X),
+            },{
+                new VariableInstruction(InstructionConstants.OP_ILOAD, Y),
+                new BranchInstruction(InstructionConstants.OP_IFGE, X),
+            },
+        },
+        {   // if (0 < i) = getstatic/ifgt
             {
                 new SimpleInstruction(InstructionConstants.OP_ICONST_0),
                 new ConstantInstruction(InstructionConstants.OP_GETSTATIC, Y),
@@ -2689,7 +2842,17 @@ public class InstructionSequenceConstants
                 new BranchInstruction(InstructionConstants.OP_IFGT, X),
             },
         },
-        {   // if (0 < i) = iload/ifgt
+        {   // if (-1 < i) = getstatic/ifge
+            {
+                new SimpleInstruction(InstructionConstants.OP_ICONST_M1),
+                new ConstantInstruction(InstructionConstants.OP_GETSTATIC, Y),
+                new BranchInstruction(InstructionConstants.OP_IFICMPLT, X),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_GETSTATIC, Y),
+                new BranchInstruction(InstructionConstants.OP_IFGE, X),
+            },
+        },
+        {   // if (0 < i) = getfield/ifgt
             {
                 new SimpleInstruction(InstructionConstants.OP_ICONST_0),
                 new VariableInstruction(InstructionConstants.OP_ALOAD, Y),
@@ -2699,6 +2862,18 @@ public class InstructionSequenceConstants
                 new VariableInstruction(InstructionConstants.OP_ALOAD, Y),
                 new ConstantInstruction(InstructionConstants.OP_GETFIELD, Z),
                 new BranchInstruction(InstructionConstants.OP_IFGT, X),
+            },
+        },
+        {   // if (-1 < i) = getfield/ifge
+            {
+                new SimpleInstruction(InstructionConstants.OP_ICONST_M1),
+                new VariableInstruction(InstructionConstants.OP_ALOAD, Y),
+                new ConstantInstruction(InstructionConstants.OP_GETFIELD, Z),
+                new BranchInstruction(InstructionConstants.OP_IFICMPLT, X),
+            },{
+                new VariableInstruction(InstructionConstants.OP_ALOAD, Y),
+                new ConstantInstruction(InstructionConstants.OP_GETFIELD, Z),
+                new BranchInstruction(InstructionConstants.OP_IFGE, X),
             },
         },
         {   // if (... <= 0) = ifle
@@ -2709,6 +2884,14 @@ public class InstructionSequenceConstants
                 new BranchInstruction(InstructionConstants.OP_IFLE, X),
             },
         },
+        {   // if (... <= -1) = iflt
+            {
+                new SimpleInstruction(InstructionConstants.OP_ICONST_M1),
+                new BranchInstruction(InstructionConstants.OP_IFICMPLE, X),
+            },{
+                new BranchInstruction(InstructionConstants.OP_IFLT, X),
+            },
+        },
         {   // if (0 >= i) = iload/ifle
             {
                 new SimpleInstruction(InstructionConstants.OP_ICONST_0),
@@ -2719,7 +2902,17 @@ public class InstructionSequenceConstants
                 new BranchInstruction(InstructionConstants.OP_IFLE, X),
             },
         },
-        {   // if (0 >= i) = iload/ifle
+        {   // if (-1 >= i) = iload/iflt
+            {
+                new SimpleInstruction(InstructionConstants.OP_ICONST_M1),
+                new VariableInstruction(InstructionConstants.OP_ILOAD, Y),
+                new BranchInstruction(InstructionConstants.OP_IFICMPGE, X),
+            },{
+                new VariableInstruction(InstructionConstants.OP_ILOAD, Y),
+                new BranchInstruction(InstructionConstants.OP_IFLT, X),
+            },
+        },
+        {   // if (0 >= i) = getstatic/ifle
             {
                 new SimpleInstruction(InstructionConstants.OP_ICONST_0),
                 new ConstantInstruction(InstructionConstants.OP_GETSTATIC, Y),
@@ -2729,7 +2922,17 @@ public class InstructionSequenceConstants
                 new BranchInstruction(InstructionConstants.OP_IFLE, X),
             },
         },
-        {   // if (0 >= i) = iload/ifle
+        {   // if (-1 >= i) = getstatic/iflt
+            {
+                new SimpleInstruction(InstructionConstants.OP_ICONST_M1),
+                new ConstantInstruction(InstructionConstants.OP_GETSTATIC, Y),
+                new BranchInstruction(InstructionConstants.OP_IFICMPGE, X),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_GETSTATIC, Y),
+                new BranchInstruction(InstructionConstants.OP_IFLT, X),
+            },
+        },
+        {   // if (0 >= i) = getfield/ifle
             {
                 new SimpleInstruction(InstructionConstants.OP_ICONST_0),
                 new VariableInstruction(InstructionConstants.OP_ALOAD, Y),
@@ -2739,6 +2942,18 @@ public class InstructionSequenceConstants
                 new VariableInstruction(InstructionConstants.OP_ALOAD, Y),
                 new ConstantInstruction(InstructionConstants.OP_GETFIELD, Z),
                 new BranchInstruction(InstructionConstants.OP_IFLE, X),
+            },
+        },
+        {   // if (-1 >= i) = getfield/iflt
+            {
+                new SimpleInstruction(InstructionConstants.OP_ICONST_M1),
+                new VariableInstruction(InstructionConstants.OP_ALOAD, Y),
+                new ConstantInstruction(InstructionConstants.OP_GETFIELD, Z),
+                new BranchInstruction(InstructionConstants.OP_IFICMPGE, X),
+            },{
+                new VariableInstruction(InstructionConstants.OP_ALOAD, Y),
+                new ConstantInstruction(InstructionConstants.OP_GETFIELD, Z),
+                new BranchInstruction(InstructionConstants.OP_IFLT, X),
             },
         },
         {   // if (... == null) = ifnull
@@ -2759,7 +2974,7 @@ public class InstructionSequenceConstants
                 new BranchInstruction(InstructionConstants.OP_IFNULL, X),
             },
         },
-        {   // if (null == a) = aload/ifnull
+        {   // if (null == a) = getstatic/ifnull
             {
                 new SimpleInstruction(InstructionConstants.OP_ACONST_NULL),
                 new ConstantInstruction(InstructionConstants.OP_GETSTATIC, Y),
@@ -2769,7 +2984,7 @@ public class InstructionSequenceConstants
                 new BranchInstruction(InstructionConstants.OP_IFNULL, X),
             },
         },
-        {   // if (null == a) = aload/ifnull
+        {   // if (null == a) = getfield/ifnull
             {
                 new SimpleInstruction(InstructionConstants.OP_ACONST_NULL),
                 new VariableInstruction(InstructionConstants.OP_ALOAD, Y),
@@ -2799,7 +3014,7 @@ public class InstructionSequenceConstants
                 new BranchInstruction(InstructionConstants.OP_IFNONNULL, X),
             },
         },
-        {   // if (null != a) = aload/ifnonnull
+        {   // if (null != a) = getstatic/ifnonnull
             {
                 new SimpleInstruction(InstructionConstants.OP_ACONST_NULL),
                 new ConstantInstruction(InstructionConstants.OP_GETSTATIC, Y),
@@ -2809,7 +3024,7 @@ public class InstructionSequenceConstants
                 new BranchInstruction(InstructionConstants.OP_IFNONNULL, X),
             },
         },
-        {   // if (null != a) = aload/ifnonnull
+        {   // if (null != a) = getfield/ifnonnull
             {
                 new SimpleInstruction(InstructionConstants.OP_ACONST_NULL),
                 new VariableInstruction(InstructionConstants.OP_ALOAD, Y),

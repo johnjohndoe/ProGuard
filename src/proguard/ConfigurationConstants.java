@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -53,6 +53,7 @@ class ConfigurationConstants
     public static final String WHY_ARE_YOU_KEEPING_OPTION = "-whyareyoukeeping";
 
     public static final String DONT_OPTIMIZE_OPTION                 = "-dontoptimize";
+    public static final String OPTIMIZATIONS                        = "-optimizations";
     public static final String OPTIMIZATION_PASSES                  = "-optimizationpasses";
     public static final String ASSUME_NO_SIDE_EFFECTS_OPTION        = "-assumenosideeffects";
     public static final String ALLOW_ACCESS_MODIFICATION_OPTION     = "-allowaccessmodification";
@@ -67,11 +68,13 @@ class ConfigurationConstants
     public static final String OVERLOAD_AGGRESSIVELY_OPTION           = "-overloadaggressively";
     public static final String USE_UNIQUE_CLASS_MEMBER_NAMES_OPTION   = "-useuniqueclassmembernames";
     public static final String DONT_USE_MIXED_CASE_CLASS_NAMES_OPTION = "-dontusemixedcaseclassnames";
+    public static final String KEEP_PACKAGE_NAMES_OPTION              = "-keeppackagenames";
     public static final String FLATTEN_PACKAGE_HIERARCHY_OPTION       = "-flattenpackagehierarchy";
     public static final String REPACKAGE_CLASSES_OPTION               = "-repackageclasses";
     public static final String DEFAULT_PACKAGE_OPTION                 = "-defaultpackage";
     public static final String KEEP_ATTRIBUTES_OPTION                 = "-keepattributes";
     public static final String RENAME_SOURCE_FILE_ATTRIBUTE_OPTION    = "-renamesourcefileattribute";
+    public static final String ADAPT_CLASS_STRINGS_OPTION             = "-adaptclassstrings";
     public static final String ADAPT_RESOURCE_FILE_NAMES_OPTION       = "-adaptresourcefilenames";
     public static final String ADAPT_RESOURCE_FILE_CONTENTS_OPTION    = "-adaptresourcefilecontents";
 
@@ -87,6 +90,7 @@ class ConfigurationConstants
     public static final String DONT_SKIP_NON_PUBLIC_LIBRARY_CLASSES_OPTION       = "-dontskipnonpubliclibraryclasses";
     public static final String DONT_SKIP_NON_PUBLIC_LIBRARY_CLASS_MEMBERS_OPTION = "-dontskipnonpubliclibraryclassmembers";
     public static final String TARGET_OPTION                                     = "-target";
+    public static final String KEEP_DIRECTORIES_OPTION                           = "-keepdirectories";
     public static final String FORCE_PROCESSING_OPTION                           = "-forceprocessing";
 
     public static final String ANY_ATTRIBUTE_KEYWORD       = "*";

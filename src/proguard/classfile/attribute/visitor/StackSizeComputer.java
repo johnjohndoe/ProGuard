@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -276,7 +276,7 @@ implements   AttributeVisitor,
 
     /**
      * Evaluates a block of instructions that hasn't been handled before,
-     * starting at the given offset and ending a branch instruction, a return
+     * starting at the given offset and ending at a branch instruction, a return
      * instruction, or a throw instruction. Branch instructions are handled
      * recursively.
      */

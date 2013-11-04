@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -51,6 +51,16 @@ public class CascadingDataEntryWriter implements DataEntryWriter
 
 
     // Implementations for DataEntryWriter.
+
+
+    public boolean createDirectory(DataEntry dataEntry) throws IOException
+    {
+        // Try to create a directory with the first data entry writer, or
+        // otherwise with the second data entry writer.
+        return dataEntryWriter1.createDirectory(dataEntry) ||
+               dataEntryWriter2.createDirectory(dataEntry);
+    }
+
 
     public OutputStream getOutputStream(DataEntry dataEntry) throws IOException
     {

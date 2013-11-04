@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -60,12 +60,13 @@ implements   InstructionVisitor,
     private final Constant[]    patternConstants;
     private final Instruction[] patternInstructions;
 
-    private boolean matching;
-    private int   patternInstructionIndex;
+    private boolean     matching;
+    private boolean     matchingAnyWildCards;
+    private int         patternInstructionIndex;
     private final int[] matchedInstructionOffsets;
-    private int   matchedArgumentFlags;
+    private int         matchedArgumentFlags;
     private final int[] matchedArguments = new int[7];
-    private int   matchedConstantFlags;
+    private long        matchedConstantFlags;
     private final int[] matchedConstantIndices;
 
     // Fields acting as a parameter and a return value for visitor methods.
@@ -97,13 +98,19 @@ implements   InstructionVisitor,
     {
         patternInstructionIndex = 0;
         matchedArgumentFlags    = 0;
-        matchedConstantFlags    = 0;
+        matchedConstantFlags    = 0L;
     }
 
 
     public boolean isMatching()
     {
         return matching;
+    }
+
+
+    public boolean isMatchingAnyWildcards()
+    {
+        return matchingAnyWildCards;
     }
 
 
@@ -487,7 +494,7 @@ implements   InstructionVisitor,
             // Check the constant index.
             return matchingArguments(constantIndex1, constantIndex2);
         }
-        else if ((matchedConstantFlags & (1 << constantIndex2)) == 0)
+        else if ((matchedConstantFlags & (1L << constantIndex2)) == 0)
         {
             // Check the actual constant.
             matchingConstant = false;
@@ -501,7 +508,7 @@ implements   InstructionVisitor,
                 {
                     // Store the constant index.
                     matchedConstantIndices[constantIndex2] = constantIndex1;
-                    matchedConstantFlags |= 1 << constantIndex2;
+                    matchedConstantFlags |= 1L << constantIndex2;
                 }
             }
 
@@ -587,6 +594,9 @@ implements   InstructionVisitor,
 
             // Did we match all instructions in the sequence?
             matching = patternInstructionIndex == patternInstructions.length;
+
+            // Did we match any wildcards along the way?
+            matchingAnyWildCards = matchedArgumentFlags != 0;
 
             if (matching)
             {

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -21,6 +21,7 @@
 package proguard;
 
 import java.io.*;
+import java.util.List;
 
 
 /**
@@ -35,11 +36,11 @@ public class ClassPathEntry
 {
     private File    file;
     private boolean output;
-    private String  filter;
-    private String  jarFilter;
-    private String  warFilter;
-    private String  earFilter;
-    private String  zipFilter;
+    private List    filter;
+    private List    jarFilter;
+    private List    warFilter;
+    private List    earFilter;
+    private List    zipFilter;
 
 
     /**
@@ -92,85 +93,57 @@ public class ClassPathEntry
     }
 
 
-    public String getFilter()
+    public List getFilter()
     {
         return filter;
     }
 
-    public void setFilter(String filter)
+    public void setFilter(List filter)
     {
-        this.filter = filter == null || filter.length() == 0 ? null : filter;
+        this.filter = filter == null || filter.size() == 0 ? null : filter;
     }
 
 
-    public String getJarFilter()
+    public List getJarFilter()
     {
         return jarFilter;
     }
 
-    public void setJarFilter(String filter)
+    public void setJarFilter(List filter)
     {
-        this.jarFilter = filter == null || filter.length() == 0 ? null : filter;
+        this.jarFilter = filter == null || filter.size() == 0 ? null : filter;
     }
 
 
-    public String getWarFilter()
+    public List getWarFilter()
     {
         return warFilter;
     }
 
-    public void setWarFilter(String filter)
+    public void setWarFilter(List filter)
     {
-        this.warFilter = filter == null || filter.length() == 0 ? null : filter;
+        this.warFilter = filter == null || filter.size() == 0 ? null : filter;
     }
 
 
-    public String getEarFilter()
+    public List getEarFilter()
     {
         return earFilter;
     }
 
-    public void setEarFilter(String filter)
+    public void setEarFilter(List filter)
     {
-        this.earFilter = filter == null || filter.length() == 0 ? null : filter;
+        this.earFilter = filter == null || filter.size() == 0 ? null : filter;
     }
 
 
-    public String getZipFilter()
+    public List getZipFilter()
     {
         return zipFilter;
     }
 
-    public void setZipFilter(String filter)
+    public void setZipFilter(List filter)
     {
-        this.zipFilter = filter == null || filter.length() == 0 ? null : filter;
-    }
-
-
-    public String toString()
-    {
-        String string = getName();
-
-        if (filter    != null ||
-            jarFilter != null ||
-            warFilter != null ||
-            earFilter != null ||
-            zipFilter != null)
-        {
-            string +=
-                ConfigurationConstants.OPEN_ARGUMENTS_KEYWORD +
-                (zipFilter != null ? zipFilter : "")  +
-                ConfigurationConstants.SEPARATOR_KEYWORD +
-                (earFilter != null ? earFilter : "")  +
-                ConfigurationConstants.SEPARATOR_KEYWORD +
-                (warFilter != null ? warFilter : "")  +
-                ConfigurationConstants.SEPARATOR_KEYWORD +
-                (jarFilter != null ? jarFilter : "")  +
-                ConfigurationConstants.SEPARATOR_KEYWORD +
-                (filter    != null ? filter    : "")  +
-                ConfigurationConstants.CLOSE_ARGUMENTS_KEYWORD;
-        }
-
-        return string;
+        this.zipFilter = filter == null || filter.size() == 0 ? null : filter;
     }
 }

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -79,7 +79,7 @@ final class ClassSpecificationDialog extends JDialog
 
     public ClassSpecificationDialog(JFrame owner, boolean fullKeepOptions)
     {
-        super(owner, true);
+        super(owner, msg("specifyClasses"), true);
         setResizable(true);
 
         // Create some constraints that can be reused.
@@ -346,15 +346,15 @@ final class ClassSpecificationDialog extends JDialog
 
 
     /**
-     * Sets the KeepSpecification to be represented in this dialog.
+     * Sets the KeepClassSpecification to be represented in this dialog.
      */
-    public void setKeepSpecification(KeepSpecification keepSpecification)
+    public void setKeepSpecification(KeepClassSpecification keepClassSpecification)
     {
-        boolean markClasses       = keepSpecification.markClasses;
-        boolean markConditionally = keepSpecification.markConditionally;
-        boolean allowShrinking    = keepSpecification.allowShrinking;
-        boolean allowOptimization = keepSpecification.allowOptimization;
-        boolean allowObfuscation  = keepSpecification.allowObfuscation;
+        boolean markClasses       = keepClassSpecification.markClasses;
+        boolean markConditionally = keepClassSpecification.markConditionally;
+        boolean allowShrinking    = keepClassSpecification.allowShrinking;
+        boolean allowOptimization = keepClassSpecification.allowOptimization;
+        boolean allowObfuscation  = keepClassSpecification.allowObfuscation;
 
         // Figure out the proper keep radio button and set it.
         JRadioButton keepOptionRadioButton =
@@ -369,7 +369,7 @@ final class ClassSpecificationDialog extends JDialog
         allowOptimizationCheckBox.setSelected(allowOptimization);
         allowObfuscationCheckBox .setSelected(allowObfuscation);
 
-        setClassSpecification(keepSpecification);
+        setClassSpecification(keepClassSpecification);
     }
 
 
@@ -409,9 +409,9 @@ final class ClassSpecificationDialog extends JDialog
 
 
     /**
-     * Returns the KeepSpecification currently represented in this dialog.
+     * Returns the KeepClassSpecification currently represented in this dialog.
      */
-    public KeepSpecification getKeepSpecification()
+    public KeepClassSpecification getKeepSpecification()
     {
         boolean markClasses       = !keepClassMembersRadioButton     .isSelected();
         boolean markConditionally = keepClassesWithMembersRadioButton.isSelected();
@@ -419,7 +419,7 @@ final class ClassSpecificationDialog extends JDialog
         boolean allowOptimization = allowOptimizationCheckBox        .isSelected();
         boolean allowObfuscation  = allowObfuscationCheckBox         .isSelected();
 
-        return new KeepSpecification(markClasses,
+        return new KeepClassSpecification(markClasses,
                                      markConditionally,
                                      allowShrinking,
                                      allowOptimization,
@@ -490,8 +490,8 @@ final class ClassSpecificationDialog extends JDialog
      * flags of the given keep option.
      */
     private void setClassSpecificationRadioButtons(ClassSpecification classSpecification,
-                                                    int                 flag,
-                                                    JRadioButton[]      radioButtons)
+                                                   int                flag,
+                                                   JRadioButton[]     radioButtons)
     {
         int index = (classSpecification.requiredSetAccessFlags   & flag) != 0 ? 0 :
                     (classSpecification.requiredUnsetAccessFlags & flag) != 0 ? 1 :
@@ -505,8 +505,8 @@ final class ClassSpecificationDialog extends JDialog
      * button triplet.
      */
     private void getClassSpecificationRadioButtons(ClassSpecification classSpecification,
-                                                    int                 flag,
-                                                    JRadioButton[]      radioButtons)
+                                                   int                flag,
+                                                   JRadioButton[]     radioButtons)
     {
         if      (radioButtons[0].isSelected())
         {
