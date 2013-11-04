@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -258,6 +258,19 @@ public class Obfuscator
                     new MemberAccessFilter(0, ClassConstants.INTERNAL_ACC_PRIVATE,
                     new MemberNameCollector(configuration.overloadAggressively,
                                             descriptorMap)))),
+
+                    // Collect all member names from interfaces of abstract
+                    // classes down the hierarchy.
+                    // Due to an error in the JLS/JVMS, virtual invocations
+                    // may end up at a private method otherwise (Sun/Oracle
+                    // bugs #6691741 and #6684387, ProGuard bug #3471941,
+                    // and ProGuard test #1180).
+                    new ClassHierarchyTraveler(false, false, false, true,
+                    new ClassAccessFilter(ClassConstants.INTERNAL_ACC_ABSTRACT, 0,
+                    new ClassHierarchyTraveler(false, false, true, false,
+                    new AllMemberVisitor(
+                    new MemberNameCollector(configuration.overloadAggressively,
+                                            descriptorMap))))),
 
                     // Assign new names to all private members in this class.
                     new AllMemberVisitor(

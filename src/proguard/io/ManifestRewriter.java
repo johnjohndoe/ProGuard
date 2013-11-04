@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -55,13 +55,14 @@ public class ManifestRewriter extends DataEntryRewriter
 
 
     /**
-     * This Reader reads manifest files, joining any split lines.
+     * This Reader reads manifest files, joining any split lines. It replaces
+     * the allowed CR/LF/CR+LF alternatives by simple LF in the process.
      */
     private static class SplitLineReader extends FilterReader
     {
-        private char[] buffer      = new char[2];
-        private int    bufferIndex = 0;
-        private int    bufferSize  = 0;
+        private static final int NONE = -2;
+
+        private int bufferedCharacter = NONE;
 
 
         public SplitLineReader(Reader reader)
@@ -76,45 +77,39 @@ public class ManifestRewriter extends DataEntryRewriter
         {
             while (true)
             {
-                if (bufferIndex < bufferSize)
-                {
-                    return buffer[bufferIndex++];
-                }
+                // Get the buffered character or the first character.
+                int c1 = bufferedCharacter != NONE ?
+                    bufferedCharacter :
+                    super.read();
 
-                // Read the first character.
-                int c1 = super.read();
+                // Clear the buffered character.
+                bufferedCharacter = NONE;
+
+                // Return it if it's an ordinary character.
                 if (c1 != '\n' && c1 != '\r')
                 {
                     return c1;
                 }
 
-                bufferIndex = 0;
-                bufferSize  = 0;
-                buffer[bufferSize++] = '\n';
-
-                // Read the second character.
+                // It's a newline. Read the second character to see if it's a
+                // continuation.
                 int c2 = super.read();
-                if (c2 == ' ')
+
+                // Skip any corresponding, redundant \n or \r.
+                if ((c2 == '\n' || c2 == '\r') && c1 != c2)
                 {
-                    bufferSize = 0;
-                    continue;
+                    c2 = super.read();
                 }
 
-                if (c1 != '\r' || c2 != '\n')
+                // Isn't it a continuation after all?
+                if (c2 != ' ')
                 {
-                    buffer[bufferSize++] = (char)c2;
-                    continue;
+                   // Buffer the second character and return a newline.
+                    bufferedCharacter = c2;
+                    return '\n';
                 }
 
-                // Read the third character.
-                int c3 = super.read();
-                if (c3 == ' ')
-                {
-                    bufferSize = 0;
-                    continue;
-                }
-
-                buffer[bufferSize++] = (char)c3;
+                // Just continue after the continuation characters.
             }
         }
 
@@ -184,7 +179,7 @@ public class ManifestRewriter extends DataEntryRewriter
             }
             else if (counter == 70)
             {
-                // Insert are newline and space.
+                // Insert a newline and a space.
                 super.write('\n');
                 super.write(' ');
 

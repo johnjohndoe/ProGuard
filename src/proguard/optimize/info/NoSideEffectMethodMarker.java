@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -38,7 +38,7 @@ implements   MemberVisitor
 {
     // A visitor info flag to indicate the visitor accepter is being kept,
     // but that it doesn't have any side effects.
-    private static final Object KEPT_BUT_NO_SIDE_EFFECTS = new Object();
+    public static final Object KEPT_BUT_NO_SIDE_EFFECTS = new Object();
 
 
     // Implementations for MemberVisitor.

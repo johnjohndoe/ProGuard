@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -68,7 +68,7 @@ public class ListParser implements StringParser
 
         // Loop over all simple regular expressions, backward, creating a
         // linked list of matchers.
-        for (int index = regularExpressions.size()-1; index >=0; index--)
+        for (int index = regularExpressions.size()-1; index >= 0; index--)
         {
             String regularExpression = (String)regularExpressions.get(index);
 

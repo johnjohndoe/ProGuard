@@ -141,8 +141,9 @@ The sections below provide more details:
     Although this may seem cumbersome, it allows you to process applications
     targeted at different run-time environments. For example, you can process
     <a href="examples.html#application">J2SE applications</a> as well as <a
-    href="examples.html#midlet">JME midlets</a>, just by specifying the
-    appropriate run-time jar.</dd>
+    href="examples.html#midlet">JME midlets</a> or <a
+    href="examples.html#androidapplication">Android apps</a>, just by
+    specifying the appropriate run-time jar.</dd>
 
 <dt><a name="skipnonpubliclibraryclasses"><code><b>-skipnonpubliclibraryclasses</b></code></a></dt>
 
@@ -175,12 +176,15 @@ The sections below provide more details:
 <dt><a name="keepdirectories"><code><b>-keepdirectories</b></code></a>
     [<i><a href="#filefilters">directory_filter</a></i>]</dt>
 
-<dd>Specifies the directories to be kept in the output jars (or wars, ears, or
-    directories). By default, directory entries are removed. This reduces the
-    jar size, but it may be undesirable if the program code tries to find them
-    with constructs like "<code>MyClass.class.getResource("")</code>". If the
-    option is specified without a filter, all directories are kept. With a
-    filter, only matching directories are kept.</dd>
+<dd>Specifies the directories to be kept in the output jars (or wars, ears,
+    zips, or directories). By default, directory entries are removed. This
+    reduces the jar size, but it may break your program if the code tries to
+    find them with constructs like
+    "<code>mypackage.MyClass.class.getResource("")</code>". You'll then want to
+    keep the directory corresponding to the package, "<code>-keepdirectories
+    mypackage</code>". If the option is specified without a filter, all
+    directories are kept. With a filter, only matching directories are
+    kept.</dd>
 
 <dt><a name="target"><code><b>-target</b></code></a> <i>version</i></dt>
 
@@ -358,9 +362,9 @@ The sections below provide more details:
 <dd>Specifies methods that don't have any side effects (other than maybe
     returning a value). In the optimization step, ProGuard will then remove
     calls to such methods, if it can determine that the return values aren't
-    used. Note that ProGuard will analyze your program code to find such
-    methods automatically. It will not analyze library code, for which this
-    option can thus be useful. For example, you could specify the method
+    used. ProGuard will analyze your program code to find such methods
+    automatically. It will not analyze library code, for which this option can
+    therefore be useful. For example, you could specify the method
     <code>System.currentTimeMillis()</code>, so that any idle calls to it will
     be removed. Note that ProGuard applies the option to the entire hierarchy
     of the specified methods. Only applicable when optimizing. In general,
@@ -449,11 +453,12 @@ The sections below provide more details:
     mapping may refer to input classes as well as library classes. This option
     can be useful for <a href="examples.html#incremental">incremental
     obfuscation</a>, i.e. processing add-ons or small patches to an existing
-    piece of code. In such cases, you should consider whether you also need
-    the option <a
-    href="#useuniqueclassmembernames"><code>-useuniqueclassmembernames</code></a>.
-    Only a single mapping file is allowed. Only applicable when
-    obfuscating.</dd>
+    piece of code. If the structure of the code changes fundamentally,
+    ProGuard may print out warnings that applying a mapping is causing
+    conflicts. You may be able to reduce this risk by specifying the option <a
+    href="#useuniqueclassmembernames"><code>-useuniqueclassmembernames</code></a>
+    in both obfuscation runs. Only a single mapping file is allowed. Only
+    applicable when obfuscating.</dd>
 
 <dt><a name="obfuscationdictionary"><code><b>-obfuscationdictionary</b></code></a>
     <a href="#filename"><i>filename</i></a></dt>
@@ -558,16 +563,16 @@ The sections below provide more details:
     filing system (say, Windows), the unpacking tool may let similarly named
     class files overwrite each other. Code that self-destructs when it's
     unpacked! Developers who really want to unpack their jars on Windows can
-    use this option to switch off this behavior. Note that the obfuscated jars
-    will become larger as a result. Only applicable when obfuscating.</dd>
+    use this option to switch off this behavior. Obfuscated jars will become
+    slightly larger as a result. Only applicable when obfuscating.</dd>
 
 <dt><a name="keeppackagenames"><code><b>-keeppackagenames</b></code></a>
     [<i><a href="#filters">package_filter</a></i>]</dt>
 
-<dd>Specifies not obfuscate the given package names. The optional filter is a
-    comma-separated list of package names. Package names can contain <b>?</b>,
-    <b>*</b>, and <b>**</b> wildcards, and they can be preceded by the
-    <b>!</b> negator. Only applicable when obfuscating.</dd>
+<dd>Specifies not to obfuscate the given package names. The optional filter is
+    a comma-separated list of package names. Package names can contain
+    <b>?</b>, <b>*</b>, and <b>**</b> wildcards, and they can be preceded by
+    the <b>!</b> negator. Only applicable when obfuscating.</dd>
 
 <dt><a name="flattenpackagehierarchy"><code><b>-flattenpackagehierarchy</b></code></a>
     [<i>package_name</i>]</dt>
@@ -696,9 +701,10 @@ The sections below provide more details:
     files are preverified if they are targeted at Java Micro Edition or at
     Java 6 or higher. For Java Micro Edition, preverification is required, so
     you will need to run an external preverifier on the processed code if you
-    specify this option. For Java 6, preverification is not required (yet),
-    but it improves the efficiency of the class loading in the Java Virtual
-    Machine.</dd>
+    specify this option. For Java 6, preverification is optional, but as of
+    Java 7, it is required. Only when eventually targeting Android, it is not
+    necessary, so you can then switch it off to reduce the processing time a
+    bit.</dd>
 
 <dt><a name="microedition"><code><b>-microedition</b></code></a></dt>
 
@@ -845,8 +851,8 @@ For example, "<code>input.jar(!**.gif,images/**)</code>" matches all files in
 the <code>images</code> directory inside the <code>input</code> jar, except
 gif files.
 <p>
-Note that the different filters are applied to all corresponding file types,
-irrespective of their nesting levels in the input; they are orthogonal.
+The different filters are applied to all corresponding file types, irrespective
+of their nesting levels in the input; they are orthogonal.
 <p>
 For example,
 "<code>input.war(lib/**.jar,support/**.jar;**.class,**.gif)</code>" only
@@ -870,21 +876,20 @@ and directory names. A relative path is interpreted as follows:
 <li>relative to the working directory.</li>
 </ul>
 <p>
-The names can contain Java system properties delimited by '<b>&lt;</b>' and
-'<b>&gt;</b>'. The system properties
-are automatically replaced by their respective values.
+The names can contain Java system properties (or Ant properties, when using
+Ant), delimited by '<b>&lt;</b>' and '<b>&gt;</b>'. The properties are
+automatically replaced by their corresponding values.
 <p>
-For example, <code>&lt;java.home&gt;/lib/rt.jar</code> will automatically be
+For example, <code>&lt;java.home&gt;/lib/rt.jar</code> is automatically
 expanded to something like <code>/usr/local/java/jdk/jre/lib/rt.jar</code>.
-Similarly, <code>&lt;user.home&gt;</code> will be expanded to the user's home
-directory, and <code>&lt;user.dir&gt;</code> will be expanded to the current
+Similarly, <code>&lt;user.home&gt;</code> is expanded to the user's home
+directory, and <code>&lt;user.dir&gt;</code> is expanded to the current
 working directory.
 <p>
 Names with special characters like spaces and parentheses must be quoted with
-single or double quotes. Note that each file name in a list of names has to be
-quoted individually. Also note that the quotes themselves may need to be
-escaped when used on the command line, to avoid them being gobbled by the
-shell.
+single or double quotes. Each file name in a list of names has to be quoted
+individually. Note that the quotes themselves may need to be escaped when used
+on the command line, to avoid them being gobbled by the shell.
 <p>
 For example, on the command line, you could use an option like <code>'-injars
 "my program.jar":"/your directory/your program.jar"'</code>.
@@ -1004,20 +1009,14 @@ If you're not sure which option you need, you should probably simply use
 <code>-keep</code>. It will make sure the specified classes and class members
 are not removed in the shrinking step, and not renamed in the obfuscation step.
 <p>
-<table>
-<tr><td valign="top">
-<img src="attention.gif" width="64" height="64"alt="attention" />
-</td><td>
-Always remember:
-<ul>
+<img class="float" src="attention.gif" width="64" height="64"alt="attention" />
+<ul class="shifted">
 <li>Specifying a class without class members only preserves the class as an
     entry point &mdash; any class members may then still be removed, optimized,
     or obfuscated.</li>
 <li>Specifying a class member only preserves the class member as an entry
     point &mdash; any associated code may still be optimized and adapted.</li>
 </ul>
-</td></tr>
-</table>
 <p>
 
 <h2><a name="keepoptionmodifiers">Keep Option Modifiers</a></h2>
@@ -1095,7 +1094,9 @@ files.
     respectively.</li>
 
 <li>Every <i>classname</i> must be fully qualified, e.g.
-    <code>java.lang.String</code>. Class names may be specified as regular
+    <code>java.lang.String</code>. Inner classes are separated by a dollar sign
+    "<code>$</code>", e.g. <code>java.lang.Thread$State</code>. Class names
+    may be specified as regular
     expressions containing the following wildcards:
 
 <table cellspacing="10">
@@ -1236,7 +1237,7 @@ files.
 <hr />
 <noscript><div><a target="_top" href="../index.html" class="button">Show menu</a></div></noscript>
 <address>
-Copyright &copy; 2002-2011
+Copyright &copy; 2002-2012
 <a target="other" href="http://www.lafortune.eu/">Eric Lafortune</a>.
 </address>
 </body>

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -29,6 +29,7 @@ import proguard.preverify.*;
 import proguard.shrink.Shrinker;
 
 import java.io.*;
+import java.util.Properties;
 
 /**
  * Tool for shrinking, optimizing, obfuscating, and preverifying Java classes.
@@ -37,7 +38,7 @@ import java.io.*;
  */
 public class ProGuard
 {
-    public static final String VERSION = "ProGuard, version 4.7";
+    public static final String VERSION = "ProGuard, version 4.8";
 
     private final Configuration configuration;
     private       ClassPool     programClassPool = new ClassPool();
@@ -477,8 +478,8 @@ public class ProGuard
         try
         {
             // Parse the options specified in the command line arguments.
-            ConfigurationParser parser = new ConfigurationParser(args);
-
+            ConfigurationParser parser = new ConfigurationParser(args,
+                                                                 System.getProperties());
             try
             {
                 parser.parse(configuration);

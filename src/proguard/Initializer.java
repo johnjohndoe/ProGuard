@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -253,7 +253,7 @@ public class Initializer
         {
             System.out.println("Note: there were " + dynamicClassReferenceNoteCount +
                                " unresolved dynamic references to classes or interfaces.");
-            System.err.println("      You should check if you need to specify additional program jars.");
+            System.out.println("      You should check if you need to specify additional program jars.");
         }
 
         int classForNameNoteCount = classForNameNotePrinter.getWarningCount();

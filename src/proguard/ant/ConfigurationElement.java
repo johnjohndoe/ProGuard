@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -20,34 +20,105 @@
  */
 package proguard.ant;
 
-import org.apache.tools.ant.BuildException;
-import org.apache.tools.ant.types.DataType;
-import proguard.Configuration;
+import org.apache.tools.ant.*;
+import org.apache.tools.ant.types.*;
+import proguard.*;
+import proguard.util.ListUtil;
+
+import java.io.*;
+import java.util.Properties;
 
 /**
- * This DataType represents a reference to a ProGuard configuration in Ant.
+ * This DataType represents a reference to an XML-style ProGuard configuration
+ * in Ant, or a file set of ProGuard-style configuration files.
  *
  * @author Eric Lafortune
  */
-public class ConfigurationElement extends DataType
+public class ConfigurationElement extends FileSet
 {
     /**
-     * Adds the contents of this configuration task to the given configuration.
+     * Adds the contents of this configuration element to the given
+     * configuration.
      * @param configuration the configuration to be extended.
      */
     public void appendTo(Configuration configuration)
     {
-        // Get the referenced element.
-        if (!isReference())
+        File     baseDir;
+        String[] fileNames;
+
+        if (isReference())
         {
-            throw new BuildException("Nested element <configuration> must have a refid attribute");
+            // Get the referenced path or file set.
+            Object referencedObject = getCheckedRef(Object.class,
+                                                    Object.class.getName());
+
+            if (referencedObject instanceof ConfigurationTask)
+            {
+                // The reference doesn't point to a file set, but to a
+                // configuration task.
+                ConfigurationTask configurationTask =
+                    (ConfigurationTask)referencedObject;
+
+                // Append the contents of the referenced configuration to the
+                // current configuration.
+                configurationTask.appendTo(configuration);
+
+                return;
+            }
+            else if (referencedObject instanceof AbstractFileSet)
+            {
+                AbstractFileSet fileSet = (AbstractFileSet)referencedObject;
+
+                // Get the names of the existing input files in the referenced file set.
+                DirectoryScanner scanner = fileSet.getDirectoryScanner(getProject());
+                baseDir   = scanner.getBasedir();
+                fileNames = scanner.getIncludedFiles();
+            }
+            else
+            {
+                throw new BuildException("The refid attribute doesn't point to a <proguardconfiguration> element or a <fileset> element");
+            }
+        }
+        else
+        {
+            // Get the names of the existing input files in the referenced file set.
+            DirectoryScanner scanner = getDirectoryScanner(getProject());
+            baseDir   = scanner.getBasedir();
+            fileNames = scanner.getIncludedFiles();
         }
 
-        ConfigurationTask configurationTask =
-            (ConfigurationTask)getCheckedRef(ConfigurationTask.class,
-                                             ConfigurationTask.class.getName());
+        // Get the combined system properties and Ant properties, for
+        // replacing ProGuard-style properties ('<...>').
+        Properties properties = new Properties();
+        properties.putAll(getProject().getProperties());
 
-        // Append the referenced configuration entries to the given configuration.
-        configurationTask.appendTo(configuration);
+        try
+        {
+            // Append the contents of the configuration files to the current
+            // configuration.
+            for (int index = 0; index < fileNames.length; index++)
+            {
+                File configurationFile = new File(baseDir, fileNames[index]);
+
+                ConfigurationParser parser =
+                    new ConfigurationParser(configurationFile, properties);
+                try
+                {
+                    parser.parse(configuration);
+                }
+                catch (ParseException ex)
+                {
+                    throw new BuildException(ex.getMessage());
+                }
+                finally
+                {
+                    parser.close();
+                }
+            }
+        }
+        catch (IOException ex)
+        {
+            throw new BuildException(ex.getMessage());
+        }
     }
 }

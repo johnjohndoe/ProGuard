@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -138,16 +138,14 @@ implements   AttributeVisitor
 
     public void visitInnerClassesAttribute(Clazz clazz, InnerClassesAttribute innerClassesAttribute)
     {
-        // TODO: Implement method.
-        // Note that the attribute may already be present.
-//        // Create a copy of the attribute.
-//        InnerClassesAttribute newInnerClassesAttribute =
-//            new InnerClassesAttribute(constantAdder.addConstant(clazz, innerClassesAttribute.u2attributeNameIndex),
-//                                      0,
-//                                      null);
-//
-//        // Add it to the target class.
-//        attributesEditor.addClassAttribute(newInnerClassesAttribute);
+        // Create a copy of the attribute.
+        InnerClassesAttribute newInnerClassesAttribute =
+            new InnerClassesAttribute(constantAdder.addConstant(clazz, innerClassesAttribute.u2attributeNameIndex),
+                                      0,
+                                      null);
+
+        // Add it to the target class.
+        attributesEditor.addAttribute(newInnerClassesAttribute);
     }
 
 

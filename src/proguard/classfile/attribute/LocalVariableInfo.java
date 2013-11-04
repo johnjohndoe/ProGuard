@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -90,8 +90,8 @@ public class LocalVariableInfo implements Comparable
 
         return
             this.u2startPC          < other.u2startPC          ? -1 : this.u2startPC          > other.u2startPC          ? 1 :
-            this.u2length           < other.u2length           ? -1 : this.u2length           > other.u2length           ? 1 :
             this.u2index            < other.u2index            ? -1 : this.u2index            > other.u2index            ? 1 :
+            this.u2length           < other.u2length           ? -1 : this.u2length           > other.u2length           ? 1 :
             this.u2descriptorIndex  < other.u2descriptorIndex  ? -1 : this.u2descriptorIndex  > other.u2descriptorIndex  ? 1 :
             this.u2nameIndex        < other.u2nameIndex        ? -1 : this.u2nameIndex        > other.u2nameIndex        ? 1 :
                                                                                                                            0;

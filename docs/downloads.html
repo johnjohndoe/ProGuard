@@ -55,6 +55,33 @@ interest too, because they typically contain any less urgent bug fixes
 collected since the previous release.
 <p>
 
+<h3><div>May 2012</div> Version 4.8</h3>
+<ul>
+<li>Added more peephole optimizations for strings.
+<li>Added support for multiple external configuration files in Ant
+    configurations.
+<li>Added support for Ant properties in external configuration files.
+<li>Fixed parsing of empty file filters on input and output.
+<li>Fixed parsing of '*' wildcard for file filters and name filters.
+<li>Fixed obfuscation of private methods that are overridden in concrete
+    classes with intermediary abstract classes and interfaces (workaround
+    for Oracle bugs #6691741 and #6684387).
+<li>Fixed optimization of complex finally blocks, compiled with JDK 1.4 or
+    earlier.
+<li>Fixed optimizing signatures of methods that are marked as not having
+    side effects.
+<li>Fixed optimization of long local variables possibly causing verification
+    error for register pairs.
+<li>Fixed merging of classes defined inside methods.
+<li>Fixed stack consistency in optimization step.
+<li>No longer removing debug information about unused parameters, for
+    <code>-keepparameternames</code> or <code>-keepattributes</code>.
+<li>Fixed updating manifest files with carriage return characters.
+<li>Now removing unreachable code in preverification step.
+<li>Improved default regular expression for stack traces in ReTrace.
+<li>Updated documentation and examples.
+</ul>
+
 <h3><div>Dec 2011</div> Version 4.7</h3>
 <ul>
 <li>Added support for Java 7.
@@ -615,7 +642,7 @@ Upgrade considerations:
 <hr />
 <noscript><div><a target="_top" href="index.html" class="button">Show menu</a></div></noscript>
 <address>
-Copyright &copy; 2002-2011
+Copyright &copy; 2002-2012
 <a target="other" href="http://www.lafortune.eu/">Eric Lafortune</a>.
 </address>
 

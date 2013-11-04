@@ -2,20 +2,24 @@
 
 /* Global settings. */
 
-body {
+body
+{
   background: #FFFFFF;
 }
 
-h1 {
+h1
+{
   text-align: center;
 }
 
-h2 {
+h2
+{
   background: #EEEEFF;
   padding: 10px;
 }
 
-dt {
+dt
+{
   padding: 6px;
 }
 
@@ -25,18 +29,30 @@ dt div
   float: right;
 }
 
-dd {
+dd
+{
   padding: 6px;
 }
 
-pre {
+pre
+{
   padding: 10px;
   background: #E0E0E0;
 }
 
-ul.spacious li
+.spacious li
 {
   padding: 8px;
+}
+
+.shifted li
+{
+  margin-left: 50px;
+}
+
+img.float
+{
+  float: left;
 }
 
 a
@@ -44,7 +60,8 @@ a
   text-decoration: none;
 }
 
-a.button {
+a.button
+{
   color: #000000;
   text-decoration: none;
   background: #E0E0E0;
@@ -54,7 +71,8 @@ a.button {
 
 /* Settings for variable width code. */
 
-p.code {
+p.code
+{
   padding: 10px;
   background: #E0E0E0;
 }
@@ -62,18 +80,21 @@ p.code {
 
 /* Settings for diagrams. */
 
-table.diagram {
+table.diagram
+{
   padding: 8px;
   border: none;
   border-spacing: 2px;
 }
 
-td.transparentblock {
+td.transparentblock
+{
   text-align: center;
   padding: 10px 0px;
 }
 
-td.whiteblock {
+td.whiteblock
+{
   width: 100px;
   text-align: center;
   border: 1px solid #C0C0C0;
@@ -81,7 +102,8 @@ td.whiteblock {
   padding: 10px 0px;
 }
 
-td.lightblock {
+td.lightblock
+{
   width: 100px;
   text-align: center;
   border: 1px solid #8888FF;
@@ -89,7 +111,8 @@ td.lightblock {
   padding: 20px 0px;
 }
 
-td.darkblock {
+td.darkblock
+{
   width: 100px;
   text-align: center;
   background: #8888FF;
@@ -98,7 +121,8 @@ td.darkblock {
 
 /* Settings for buttons. */
 
-td.button {
+td.button
+{
   background: #E0E0E0;
   border: 1px outset #FFFFFF;
   font-weight: bold;

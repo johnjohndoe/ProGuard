@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -27,7 +27,7 @@ import proguard.classfile.ClassConstants;
  * An <code>InternalTypeEnumeration</code> provides an enumeration of all
  * parameter types listed in a given internal method descriptor or signature.
  * The signature can also be a class signature. The return type of a method
- * descriptor can retrieved separately.
+ * descriptor can be retrieved separately.
  *
  * @author Eric Lafortune
  */

@@ -28,8 +28,7 @@ bytecode of the methods. The obfuscation step renames the remaining classes,
 fields, and methods using short meaningless names. These first steps make the
 code base smaller, more efficient, and harder to reverse-engineer. The final
 preverification step adds preverification information to the classes, which is
-required for Java Micro Edition or which improves the start-up time for Java
-6.
+required for Java Micro Edition and for Java 6 and higher.
 <p>
 Each of these steps is optional. For instance, ProGuard can also be used to
 just list dead code in an application, or to preverify class files for
@@ -73,13 +72,13 @@ efficient use in Java 6.
 </table>
 <p>
 
-ProGuard typically reads the <b>input jars</b> (or wars, ears, zips, or
-directories). It then shrinks, optimizes, obfuscates, and preverifies them.
-Optionally, multiple optimization passes can be performed, each typically
-followed by another shrinking step. ProGuard writes the processed results to
-one or more <b>output jars</b> (or wars, ears, zips, or directories). The
-input may contain resource files, whose names and contents can optionally be
-updated to reflect the obfuscated class names.
+ProGuard first reads the <b>input jars</b> (or wars, ears, zips, or
+directories). It then subsequently shrinks, optimizes, obfuscates, and
+preverifies them. You can optionally let ProGuard perform multiple
+optimization passes. ProGuard writes the processed results to one or
+more <b>output jars</b> (or wars, ears, zips, or directories). The input may
+contain resource files, whose names and contents can optionally be updated to
+reflect the obfuscated class names.
 <p>
 ProGuard requires the <b>library jars</b> (or wars, ears, zips, or
 directories) of the input jars to be specified. These are essentially the
@@ -93,7 +92,7 @@ in the class path of your final application.
 In order to determine which code has to be preserved and which code can be
 discarded or obfuscated, you have to specify one or more <i>entry points</i> to
 your code. These entry points are typically classes with main methods, applets,
-midlets, etc.
+midlets, activities, etc.
 <ul>
 <li>In the <b>shrinking step</b>, ProGuard starts from these seeds and
     recursively determines which classes and class members are used. All other
@@ -122,7 +121,7 @@ Reflection and introspection present particular problems for any automatic
 processing of code. In ProGuard, classes or class members in your code that
 are created or invoked dynamically (that is, by name) have to be specified as
 entry points too. For example, <code>Class.forName()</code> constructs may
-refer to any class at run-time. It is generally impossible to foresee which
+refer to any class at run-time. It is generally impossible to compute which
 classes have to be preserved (with their original names), since the class
 names might be read from a configuration file, for instance. You therefore
 have to specify them in your ProGuard configuration, with the same
@@ -166,7 +165,7 @@ about the internals of the code.
 <hr />
 <noscript><div><a target="_top" href="../index.html" class="button">Show menu</a></div></noscript>
 <address>
-Copyright &copy; 2002-2011
+Copyright &copy; 2002-2012
 <a target="other" href="http://www.lafortune.eu/">Eric Lafortune</a>.
 </address>
 </body>

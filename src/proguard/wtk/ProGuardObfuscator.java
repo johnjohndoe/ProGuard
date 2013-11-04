@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -71,7 +71,8 @@ public class ProGuardObfuscator implements Obfuscator
         Configuration configuration = new Configuration();
 
         // Parse the default configuration file.
-        ConfigurationParser parser = new ConfigurationParser(this.getClass().getResource(DEFAULT_CONFIGURATION));
+        ConfigurationParser parser = new ConfigurationParser(this.getClass().getResource(DEFAULT_CONFIGURATION),
+                                                             System.getProperties());
 
         try
         {

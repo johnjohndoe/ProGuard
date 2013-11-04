@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -23,6 +23,7 @@ package proguard.optimize;
 import proguard.classfile.*;
 import proguard.classfile.util.MethodLinker;
 import proguard.classfile.visitor.*;
+import proguard.optimize.info.NoSideEffectMethodMarker;
 
 
 /**
@@ -30,6 +31,7 @@ import proguard.classfile.visitor.*;
  * marks classes and class members it visits. The marked elements
  * will remain unchanged as necessary in the optimization step.
  *
+ * @see NoSideEffectMethodMarker
  * @author Eric Lafortune
  */
 public class KeepMarker
@@ -90,6 +92,12 @@ implements   ClassVisitor,
 
     public static boolean isKept(VisitorAccepter visitorAccepter)
     {
-        return MethodLinker.lastVisitorAccepter(visitorAccepter).getVisitorInfo() == KEPT;
+        // We're also checking for the constant in NoSideEffectMethodMarker,
+        // to keep things simple.
+        Object visitorInfo =
+            MethodLinker.lastVisitorAccepter(visitorAccepter).getVisitorInfo();
+
+        return visitorInfo == KEPT ||
+               visitorInfo == NoSideEffectMethodMarker.KEPT_BUT_NO_SIDE_EFFECTS;
     }
 }

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -865,8 +865,7 @@ implements   AttributeVisitor,
             if (instruction.opcode == InstructionConstants.OP_JSR ||
                 instruction.opcode == InstructionConstants.OP_JSR_W)
             {
-                // Evaluate the subroutine, possibly in another partial
-                // evaluator.
+                // Evaluate the subroutine in another partial evaluator.
                 evaluateSubroutine(clazz,
                                    method,
                                    codeAttribute,
@@ -908,17 +907,13 @@ implements   AttributeVisitor,
 
         if (DEBUG) System.out.println("Evaluating subroutine from "+subroutineStart+" to "+subroutineEnd);
 
-        PartialEvaluator subroutinePartialEvaluator = this;
+        // Create a temporary partial evaluator, so there are no conflicts
+        // with variables that are alive across subroutine invocations, between
+        // different invocations.
+        PartialEvaluator subroutinePartialEvaluator =
+            new PartialEvaluator(this);
 
-        // Create a temporary partial evaluator if necessary.
-        if (evaluationCounts[subroutineStart] > 0)
-        {
-            if (DEBUG) System.out.println("Creating new partial evaluator for subroutine");
-
-            subroutinePartialEvaluator = new PartialEvaluator(this);
-
-            subroutinePartialEvaluator.initializeArrays(codeAttribute);
-        }
+        subroutinePartialEvaluator.initializeArrays(codeAttribute);
 
         // Evaluate the subroutine.
         subroutinePartialEvaluator.evaluateInstructionBlockAndExceptionHandlers(clazz,
@@ -929,11 +924,9 @@ implements   AttributeVisitor,
                                                                                 subroutineStart,
                                                                                 subroutineEnd);
 
-        // Merge back the temporary partial evaluator if necessary.
-        if (subroutinePartialEvaluator != this)
-        {
-            generalize(subroutinePartialEvaluator, 0, codeAttribute.u4codeLength);
-        }
+        // Merge back the temporary partial evaluator. This way, we'll get
+        // the lowest common denominator of stacks and variables.
+        generalize(subroutinePartialEvaluator, 0, codeAttribute.u4codeLength);
 
         if (DEBUG) System.out.println("Ending subroutine from "+subroutineStart+" to "+subroutineEnd);
     }

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -42,8 +42,7 @@ import java.util.*;
  */
 public class CodePreverifier
 extends      SimplifiedVisitor
-implements   MemberVisitor,
-             AttributeVisitor
+implements   AttributeVisitor
 {
     //*
     private static final boolean DEBUG = false;
@@ -54,8 +53,9 @@ implements   MemberVisitor,
 
     private final boolean microEdition;
 
-    private final PartialEvaluator partialEvaluator = new PartialEvaluator();
-    private final LivenessAnalyzer livenessAnalyzer = new LivenessAnalyzer(partialEvaluator);
+    private final PartialEvaluator    partialEvaluator    = new PartialEvaluator();
+    private final LivenessAnalyzer    livenessAnalyzer    = new LivenessAnalyzer(partialEvaluator);
+    private final CodeAttributeEditor codeAttributeEditor = new CodeAttributeEditor(true);
 
 
     /**
@@ -102,18 +102,27 @@ implements   MemberVisitor,
         ProgramClass  programClass  = (ProgramClass)clazz;
         ProgramMethod programMethod = (ProgramMethod)method;
 
+        int codeLength = codeAttribute.u4codeLength;
+
         // Evaluate the method.
         //partialEvaluator.visitCodeAttribute(clazz, method, codeAttribute);
         livenessAnalyzer.visitCodeAttribute(clazz, method, codeAttribute);
 
+        // We may have to remove unreachable code.
+        codeAttributeEditor.reset(codeLength);
+
         // Collect the stack map frames.
         List stackMapFrameList = new ArrayList();
 
-        for (int offset = 0; offset < codeAttribute.u4codeLength; offset++)
+        for (int offset = 0; offset < codeLength; offset++)
         {
             // Only store frames at the beginning of code blocks.
-            if (partialEvaluator.isTraced(offset) &&
-                partialEvaluator.isBranchOrExceptionTarget(offset))
+            if (!partialEvaluator.isTraced(offset))
+            {
+                // Mark the unreachable instruction for deletion.
+                codeAttributeEditor.deleteInstruction(offset);
+            }
+            else if (partialEvaluator.isBranchOrExceptionTarget(offset))
             {
                 // Convert the variable values to types.
                 VerificationType[] variableTypes =
@@ -235,6 +244,9 @@ implements   MemberVisitor,
                 stackMapAttribute.accept(programClass, programMethod, codeAttribute, new ClassPrinter());
             }
         }
+
+        // Apply code modifications, deleting unreachable code.
+        codeAttributeEditor.visitCodeAttribute(clazz, method, codeAttribute);
     }
 
 

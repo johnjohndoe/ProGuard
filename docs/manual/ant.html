@@ -100,11 +100,11 @@ can be removed.
 <p>
 
 Secondly, the use of <code>&lt;</code> and <code>&gt;</code> characters would
-upset the structure of the XML build file. Environment variables are now
-enclosed by an opening <code>${</code> and a closing <code>}</code>. This
-syntax also allows you to use Ant properties within the ProGuard
-configuration. Other occurrences of <code>&lt;</code> and <code>&gt;</code>
-have to be encoded as <code>&amp;lt;</code> and <code>&amp;gt;</code>.
+upset the structure of the XML build file. Environment variables can be
+specified with the usual Ant style <code>${...}</code>, instead of the ProGuard
+style <code>&lt;...&gt;</code>.  Other occurrences of <code>&lt;</code> and
+<code>&gt;</code> have to be encoded as <code>&amp;lt;</code> and
+<code>&amp;gt;</code> respectively.
 <p>
 
 <h3>3. XML configuration tags</h3>
@@ -130,7 +130,8 @@ elements:
 <dt><a name="configuration_attribute"><code><b>configuration</b></code></a>
     = "<i>filename</i>"</dt>
 <dd>Read and merge options from the given ProGuard-style configuration
-    file. Note: for reading XML-style configurations, use the <a
+    file. Note: for reading multiple configuration files or XML-style
+    configurations, use the <a
     href="#configuration_element"><code>configuration</code></a>
     <i>element</i>.</dd>
 
@@ -272,7 +273,7 @@ elements:
 <dt><a href="usage.html#microedition"><code><b>microedition</b></code></a>
     = "<i>boolean</i>"
     (default = false)</dt>
-<dd>Targets the processed class files at Java Micro Edition.</dd>
+<dd>Target the processed class files at Java Micro Edition.</dd>
 
 <dt><a href="usage.html#verbose"><code><b>verbose</b></code></a>
     = "<i>boolean</i>"
@@ -320,7 +321,7 @@ elements:
 <dt><a href="usage.html#outjars"><code><b>&lt;outjar</b></code></a>
     <a href="#classpath"><i>class_path</i></a>
     <code><b>/&gt;</b></code></dt>
-<dd>Specifies the name of the output jars (or wars, ears, zips, or
+<dd>Specifies the names of the output jars (or wars, ears, zips, or
     directories).</dd>
 
 <dt><a href="usage.html#libraryjars"><code><b>&lt;libraryjar</b></code></a>
@@ -451,22 +452,27 @@ elements:
     filter. <i>Only use this option if you know what you're doing!</i></dd>
 
 <dt><a name="configuration_element"><code><b>&lt;configuration refid = </b></code></a>"<i>ref_id</i>"
+    <code><b>/&gt;</b></code><br/>
+    <code><b>&lt;configuration file = </b></code>"<i>name</i>"
     <code><b>/&gt;</b></code></dt>
-<dd>Includes the configuration specified in the
+<dd>The first form includes the XML-style configuration specified in a
     <code>&lt;proguardconfiguration&gt;</code> task (or
-    <code>&lt;proguard&gt;</code> task) with the attribute <code>id</code> =
-    "<i>ref_id</i>". Note that only the nested elements of this configuration
-    are considered, not the attributes. Also note: for reading ProGuard-style
-    configuration files, use the <a
-    href="#configuration_attribute"><code>configuration</code></a>
-    <i>attribute</i>.</dd>
+    <code>&lt;proguard&gt;</code> task) with attribute <code>id</code> =
+    "<i>ref_id</i>". Only the nested elements of this configuration are
+    considered, not the attributes.
+    <p>
+    The second form includes the ProGuard-style configuration from the specified
+    file. The element is actually a <code>fileset</code> element and supports
+    all of its attributes and nested elements, including multiple files.
+    </dd>
 
 </dl>
 
 <h2><a name="classpath">Class Path Attributes and Nested Elements</a></h2>
 
-The jar tags are path tags, so they can have any of the path attributes (or
-nested elements). The most common attributes are:
+The jar elements are <code>path</code> elements, so they can have any of the
+standard <code>path</code> attributes and nested elements. The most common
+attributes are:
 
 <dl>
 
@@ -486,7 +492,7 @@ nested elements). The most common attributes are:
 
 </dl>
 
-In addition, the jar tags can have ProGuard-style filter attributes:
+In addition, the jar elements can have ProGuard-style filter attributes:
 
 <dl>
 
@@ -627,7 +633,7 @@ attributes:
 <hr />
 <noscript><div><a target="_top" href="../index.html" class="button">Show menu</a></div></noscript>
 <address>
-Copyright &copy; 2002-2011
+Copyright &copy; 2002-2012
 <a target="other" href="http://www.lafortune.eu/">Eric Lafortune</a>.
 </address>
 </body>

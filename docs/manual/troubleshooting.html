@@ -182,29 +182,58 @@ some more serious warnings:
 <dl>
 <dt><a name="unresolvedclass"><b>Warning: can't find superclass or interface</b><br/><b>Warning: can't find referenced class</b></a></dt>
 
-<dd>If there are unresolved references to classes or interfaces, you most
-    likely forgot to specify an essential library. For proper processing, all
-    libraries that are referenced by your code must be specified, including
-    the Java run-time library. For specifying libraries, use
-    the <a href="usage.html#libraryjars"><code>-libraryjars</code></a> option.
+<dd>A class in one of your program jars or library jars is referring to a
+    class or interface that is missing from the input. The output lists both
+    the referencing class(es) and the missing referenced class(es). There can
+    be a few reasons, with their own solutions:
     <p>
-    For example, if ProGuard complains that it can't find a
-    <code>javax.crypto</code> class, you probably still have to specify
-    <code>jce.jar</code>, next to the more common <code>rt.jar</code>.
-    <p>
-    If you're missing a library and you're absolutely sure it isn't used
-    anyway, you can try your luck with the <a
-    href="usage.html#ignorewarnings"><code>-ignorewarnings</code></a> option,
-    or even the <a href="usage.html#dontwarn"><code>-dontwarn</code></a>
-    option. Only use these options if you really know what you're doing
-    though.
-    <p>
-    For example, if you're developing for Android, and ProGuard complains that
-    it can't find a <code>java.awt</code> class, then some library that you
-    are using is referring to <code>java.awt</code>. This is a bit shady, since
-    Android doesn't have this package at all, but if your application works
-    anyway, you can let ProGuard accept it with "<code>-dontwarn
-    java.awt.**</code>".</dd>
+    <ol>
+    <li>You may have forgotten to specify an essential library. Just like when
+        compiling all code from scratch, you must specify all libraries that
+        the code is referencing, directly or indirectly. If the library should
+        be processed and included in the output, you should specify it with
+        <a href="usage.html#injars"><code>-injars</code></a>, otherwise you
+        should specify it with
+        <a href="usage.html#libraryjars"><code>-libraryjars</code></a>.
+        <p>
+        For example, if ProGuard complains that it can't find a
+        <code>java.lang</code> class, you have to make sure that you are
+        specifying the run-time library of your platform. For JSE, these are
+        typically packaged in <code>lib/rt.jar</code> (<code>vm.jar</code> for
+        IBM's JVM, and <code>classes.jar</code> in MacOS X). Other platforms
+        like JME and Android have their own run-time libraries.
+        The <a href="examples.html">examples section</a> provides more details
+        for the various platforms.
+        <p>
+        If ProGuard still complains that it can't find a
+        <code>javax.crypto</code> class, you probably still have to specify
+        <code>jce.jar</code>, next to the more common <code>rt.jar</code>.</li>
+    <li>You may have ignored a library because you're absolutely sure it isn't
+        used anyway (your original code runs fine without it). The cleanest
+        solution is to <a href="usage.html#filters">filter out</a>
+        the <i>referencing</i> class or classes from the input, with a filter
+        like "<code>-injars
+        myapplication.jar(!somepackage/SomeUnusedReferencingClass.class)</code>".
+        ProGuard will then skip this class entirely in the input, and it will
+        not bump into the problem of its missing reference. However, you may
+        then have to filter out other classes that are in turn referencing the
+        removed class. In practice, this works best if you can filter out
+        entire unused packages at once, with a wildcard filter like
+        "<code>-injars myapplication.jar(!someunusedpackage/**)</code>".<p></li>
+    <li>If you don't feel like filtering out the problematic classes, you can
+        try your luck with the <a
+        href="usage.html#ignorewarnings"><code>-ignorewarnings</code></a>
+        option, or even
+        the <a href="usage.html#dontwarn"><code>-dontwarn</code></a> option.
+        Only use these options if you really know what you're doing though.
+        <p>
+        For example, if you're developing for Android, and ProGuard complains
+        that it can't find a <code>java.awt</code> class, then some library
+        that you are using is referring to <code>java.awt</code>. This is a
+        bit shady, since Android doesn't have this package at all, but if your
+        application works anyway, you can let ProGuard accept it with
+        "<code>-dontwarn java.awt.**</code>".</li>
+     </ol></dd>
 
 <dt><a name="superclass"><b>Error: Can't find any super classes of ... (not even immediate super class ...)</b><br/><b>Error: Can't find common super class of ... and ...</b></a></dt>
 
@@ -219,9 +248,8 @@ some more serious warnings:
     could also try filtering it out from the input, by adding a filter to the
     corresponding <a href="usage.html#injars"><code>-injars</code></a> option:
     "<code>-injars
-    myapplication.jar(!somepackage/SomeUnusedClass.class)</code>". Hopefully,
-    you can access the configuration of your build process for such a
-    modification. As a final solution, you could switch off optimization
+    myapplication.jar(!somepackage/SomeUnusedClass.class)</code>". As a final
+    solution, you could switch off optimization
     (<a href="usage.html#dontoptimize"><code>-dontoptimize</code></a>) and
     preverification
     (<a href="usage.html#dontpreverify"><code>-dontpreverify</code></a>).</dd>
@@ -312,9 +340,9 @@ some more serious warnings:
 <dt><a name="unsupportedclassversion"><b>Error: Unsupported class version number</b></a></dt>
 
 <dd>You are trying to process class files compiled for a recent version of
-    Java that your copy of ProGuard doesn't support yet. You should check if
-    there is a more recent release
-    <a href="http://proguard.sourceforge.net/downloads.html">on-line</a>.</dd>
+    Java that your copy of ProGuard doesn't support yet. You
+    should <a href="http://proguard.sourceforge.net/downloads.html">check
+    on-line</a> if there is a more recent release.</dd>
 
 <dt><a name="keep"><b>Error: You have to specify '-keep' options</b></a></dt>
 
@@ -722,7 +750,7 @@ might be several reasons:
 <hr />
 <noscript><div><a target="_top" href="../index.html" class="button">Show menu</a></div></noscript>
 <address>
-Copyright &copy; 2002-2011
+Copyright &copy; 2002-2012
 <a target="other" href="http://www.lafortune.eu/">Eric Lafortune</a>.
 </address>
 </body>

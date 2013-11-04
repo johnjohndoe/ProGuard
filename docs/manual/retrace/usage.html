@@ -28,7 +28,8 @@ ProGuard distribution. To run ReTrace, just type:
 <code><b>java -jar retrace.jar </b></code>[<i>options...</i>]
          <i>mapping_file</i> [<i>stacktrace_file</i>]
 </p>
-These are the arguments:
+Alternatively, the <code>bin</code> directory contains some short Linux and
+Windows scripts containing this command. These are the arguments:
 
 <dl>
 <dt><i>mapping_file</i></dt>
@@ -59,7 +60,7 @@ The following options are supported:
     de-obfuscate more general types of input than just stack traces. The
     default is suitable for stack traces produced by most JVMs:
     <pre>
-    (?:\s*%c:.*)|(?:\s*at\s+%c.%m\s*\(.*?(?::%l)?\)\s*)
+    (?:.*?\bat\s+%c.%m\s*\(.*?(?::%l)?\)\s*)|(?:(?:.*?[:"]\s+)?%c(?::.*)?)
     </pre>
     The regular expression is a Java regular expression (cfr. the documentation
     of <code>java.util.regex.Pattern</code>), with a few additional wildcards:
@@ -119,7 +120,7 @@ will be left unchanged.
 <hr />
 <noscript><div><a target="_top" href="../../index.html" class="button">Show menu</a></div></noscript>
 <address>
-Copyright &copy; 2002-2011
+Copyright &copy; 2002-2012
 <a target="other" href="http://www.lafortune.eu/">Eric Lafortune</a>.
 </address>
 </body>

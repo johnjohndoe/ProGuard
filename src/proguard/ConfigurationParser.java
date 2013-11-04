@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -31,75 +31,90 @@ import java.util.*;
 
 /**
  * This class parses ProGuard configurations. Configurations can be read from an
- * array of arguments or from a configuration file or URL.
+ * array of arguments or from a configuration file or URL. External references
+ * in file names ('<...>') can be resolved against a given set of properties.
  *
  * @author Eric Lafortune
  */
 public class ConfigurationParser
 {
-    private WordReader reader;
+    private final WordReader reader;
+    private final Properties properties;
+
     private String     nextWord;
     private String     lastComments;
 
 
     /**
-     * Creates a new ConfigurationParser for the given String arguments.
+     * Creates a new ConfigurationParser for the given String arguments and
+     * the given Properties.
      */
-    public ConfigurationParser(String[] args) throws IOException
+    public ConfigurationParser(String[]   args,
+                               Properties properties) throws IOException
     {
-        this(args, null);
+        this(args, null, properties);
     }
 
 
     /**
      * Creates a new ConfigurationParser for the given String arguments,
-     * with the given base directory.
+     * with the given base directory and the given Properties.
      */
-    public ConfigurationParser(String[] args,
-                               File     baseDir) throws IOException
+    public ConfigurationParser(String[]   args,
+                               File       baseDir,
+                               Properties properties) throws IOException
     {
-        this(new ArgumentWordReader(args, baseDir));
+        this(new ArgumentWordReader(args, baseDir), properties);
     }
 
 
     /**
      * Creates a new ConfigurationParser for the given lines,
-     * with the given base directory.
+     * with the given base directory and the given Properties.
      */
-    public ConfigurationParser(String lines,
-                               String description,
-                               File   baseDir) throws IOException
+    public ConfigurationParser(String     lines,
+                               String     description,
+                               File       baseDir,
+                               Properties properties) throws IOException
     {
         this(new LineWordReader(new LineNumberReader(new StringReader(lines)),
                                 description,
-                                baseDir));
+                                baseDir),
+             properties);
     }
 
 
     /**
-     * Creates a new ConfigurationParser for the given file.
+     * Creates a new ConfigurationParser for the given file and the given
+     * Properties.
      */
-    public ConfigurationParser(File file) throws IOException
+    public ConfigurationParser(File       file,
+                               Properties properties) throws IOException
     {
-        this(new FileWordReader(file));
+        this(new FileWordReader(file), properties);
     }
 
 
     /**
-     * Creates a new ConfigurationParser for the given URL.
+     * Creates a new ConfigurationParser for the given URL and the given
+     * Properties.
      */
-    public ConfigurationParser(URL url) throws IOException
+    public ConfigurationParser(URL        url,
+                               Properties properties) throws IOException
     {
-        this(new FileWordReader(url));
+        this(new FileWordReader(url), properties);
     }
 
 
     /**
-     * Creates a new ConfigurationParser for the given word reader.
+     * Creates a new ConfigurationParser for the given word reader and the
+     * given Properties.
      */
-    public ConfigurationParser(WordReader reader) throws IOException
+    public ConfigurationParser(WordReader reader,
+                               Properties properties) throws IOException
     {
-        this.reader = reader;
+        this.reader     = reader;
+        this.properties = properties;
 
         readNextWord();
     }
@@ -266,7 +281,7 @@ public class ConfigurationParser
                 {
                     // Read the filter.
                     filters[counter++] =
-                        parseCommaSeparatedList("filter", true, false, true, true, false, true, false, false, null);
+                        parseCommaSeparatedList("filter", true, true, true, true, false, true, false, false, null);
                 }
                 while (counter < filters.length &&
                        ConfigurationConstants.SEPARATOR_KEYWORD.equals(nextWord));
@@ -940,9 +955,24 @@ public class ConfigurationParser
 
 
     /**
-     * Reads a comma-separated list of java identifiers or of file names. If an
-     * empty list is allowed, the reading will end after a closing parenthesis
-     * or semi-colon.
+     * Reads a comma-separated list of java identifiers or of file names.
+     * Examples of invocation arguments:
+     *   ("directory n", true,  true,  false, true,  false, true,  false, false, ...)
+     *   ("optimizatio", true,  false, false, false, false, false, false, false, ...)
+     *   ("package nam", true,  true,  false, false, true,  false, true,  false, ...)
+     *   ("attribute n", true,  true,  false, false, true,  false, false, false, ...)
+     *   ("class name",  true,  true,  false, false, true,  false, true,  false, ...)
+     *   ("resource fi", true,  true,  false, true,  false, false, false, false, ...)
+     *   ("resource fi", true,  true,  false, true,  false, false, false, false, ...)
+     *   ("class name",  true,  true,  false, false, true,  false, true,  false, ...)
+     *   ("class name",  true,  true,  false, false, true,  false, true,  false, ...)
+     *   ("filter",      true,  true,  true,  true,  false, true,  false, false, ...)
+     *   ("annotation ", false, false, false, false, true,  false, false, true,  ...)
+     *   ("class name ", true,  false, false, false, true,  false, false, false, ...)
+     *   ("annotation ", true,  false, false, false, true,  false, false, true,  ...)
+     *   ("class name ", false, false, false, false, true,  false, false, false, ...)
+     *   ("annotation ", true,  false, false, false, true,  false, false, true,  ...)
+     *   ("argument",    true,  true,  true,  false, true,  false, false, false, ...)
      */
     private List parseCommaSeparatedList(String  expectedDescription,
                                          boolean readFirstWord,
@@ -963,10 +993,30 @@ public class ConfigurationParser
 
         if (readFirstWord)
         {
-            if (expectClosingParenthesis || !allowEmptyList)
+            if (!allowEmptyList)
             {
                 // Read the first list entry.
                 readNextWord(expectedDescription, isFileName, false);
+            }
+            else if (expectClosingParenthesis)
+            {
+                // Read the first list entry.
+                readNextWord(expectedDescription, isFileName, false);
+
+                // Return if the entry is actually empty (an empty file name or
+                // a closing parenthesis).
+                if (nextWord.length() == 0)
+                {
+                    // Read the closing parenthesis
+                    readNextWord("closing '" + ConfigurationConstants.CLOSE_ARGUMENTS_KEYWORD +
+                                 "'");
+
+                    return list;
+                }
+                else if (nextWord.equals(ConfigurationConstants.CLOSE_ARGUMENTS_KEYWORD))
+                {
+                    return list;
+                }
             }
             else
             {
@@ -974,8 +1024,7 @@ public class ConfigurationParser
                 readNextWord(isFileName);
 
                 // Check if the list is empty.
-                if (configurationEnd() ||
-                    nextWord.equals(ConfigurationConstants.ANY_ATTRIBUTE_KEYWORD))
+                if (configurationEnd())
                 {
                     return list;
                 }
@@ -984,14 +1033,6 @@ public class ConfigurationParser
 
         while (true)
         {
-            if (expectClosingParenthesis &&
-                list.size() == 0         &&
-                (ConfigurationConstants.CLOSE_ARGUMENTS_KEYWORD.equals(nextWord) ||
-                 ConfigurationConstants.SEPARATOR_KEYWORD.equals(nextWord)))
-            {
-                break;
-            }
-
             if (checkJavaIdentifiers)
             {
                 checkJavaIdentifier("java type");
@@ -1029,14 +1070,12 @@ public class ConfigurationParser
 
             if (!ConfigurationConstants.ARGUMENT_SEPARATOR_KEYWORD.equals(nextWord))
             {
-                break;
+                return list;
             }
 
             // Read the next list entry.
             readNextWord(expectedDescription, isFileName, false);
         }
-
-        return list;
     }
 
 
@@ -1091,7 +1130,7 @@ public class ConfigurationParser
             }
 
             String propertyName  = word.substring(fromIndex+1, toIndex);
-            String propertyValue = System.getProperty(propertyName);
+            String propertyValue = properties.getProperty(propertyName);
             if (propertyValue == null)
             {
                 throw new ParseException("Value of system property '" + propertyName +
@@ -1196,6 +1235,11 @@ public class ConfigurationParser
      */
     private boolean isJavaIdentifier(String aWord)
     {
+        if (aWord.length() == 0)
+        {
+            return false;
+        }
+
         for (int index = 0; index < aWord.length(); index++)
         {
             char c = aWord.charAt(index);
@@ -1262,7 +1306,8 @@ public class ConfigurationParser
     {
         try
         {
-            ConfigurationParser parser = new ConfigurationParser(args);
+            ConfigurationParser parser =
+                new ConfigurationParser(args, System.getProperties());
 
             try
             {

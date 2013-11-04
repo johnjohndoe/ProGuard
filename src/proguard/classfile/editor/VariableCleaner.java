@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -134,6 +134,7 @@ implements   AttributeVisitor
                                            int                 maxLocals)
     {
         // Overwrite all empty local variable entries.
+        // Do keep parameter entries.
         int newIndex = 0;
         for (int index = 0; index < localVariableInfoCount; index++)
         {
@@ -141,14 +142,15 @@ implements   AttributeVisitor
 
             if (localVariableInfo.u2index >= 0        &&
                 localVariableInfo.u2index < maxLocals &&
-                localVariableInfo.u2length > 0)
+                (localVariableInfo.u2startPC == 0 ||
+                 localVariableInfo.u2length > 0))
             {
                 localVariableInfos[newIndex++] = localVariableInfos[index];
             }
         }
 
         // Clean up any remaining array elements.
-        Arrays.fill(localVariableInfos,  newIndex, localVariableInfoCount, null);
+        Arrays.fill(localVariableInfos, newIndex, localVariableInfoCount, null);
 
         return newIndex;
     }
@@ -163,6 +165,7 @@ implements   AttributeVisitor
                                                int                     maxLocals)
     {
         // Overwrite all empty local variable type entries.
+        // Do keep parameter entries.
         int newIndex = 0;
         for (int index = 0; index < localVariableTypeInfoCount; index++)
         {
@@ -170,7 +173,8 @@ implements   AttributeVisitor
 
             if (localVariableTypeInfo.u2index >= 0        &&
                 localVariableTypeInfo.u2index < maxLocals &&
-                localVariableTypeInfo.u2length > 0)
+                (localVariableTypeInfo.u2startPC == 0 ||
+                 localVariableTypeInfo.u2length > 0))
             {
                 localVariableTypeInfos[newIndex++] = localVariableTypeInfos[index];
             }

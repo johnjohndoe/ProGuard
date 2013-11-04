@@ -87,6 +87,13 @@
     public <init>(android.content.Context, android.util.AttributeSet, int);
 }
 
+# Preserve all possible onClick handlers.
+
+-keepclassmembers class * extends android.content.Context {
+   public void *(android.view.View);
+   public void *(android.view.MenuItem);
+}
+
 # Preserve the special fields of all Parcelable implementations.
 
 -keepclassmembers class * implements android.os.Parcelable {

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -26,46 +26,64 @@ import proguard.classfile.attribute.annotation.*;
 import proguard.classfile.attribute.preverification.*;
 import proguard.util.*;
 
+import java.util.List;
+
 /**
  * This AttributeVisitor delegates its visits another AttributeVisitor, but
- * only when the visited attribute has a name that passes a given string
- * matcher.
+ * only when the visited attribute has a name that that matches a given regular
+ * expression.
  *
  * @author Eric Lafortune
  */
 public class AttributeNameFilter
 implements   AttributeVisitor
 {
-    private final StringMatcher    stringMatcher;
+    private final StringMatcher    regularExpressionMatcher;
     private final AttributeVisitor attributeVisitor;
 
 
     /**
-     * Creates a new AttributeNameFilter based on a given name.
-     * @param name             the string matcher that will check the attribute
-     *                         names.
-     * @param attributeVisitor the <code>AttributeVisitor</code> to which
-     *                         visits will be delegated.
+     * Creates a new AttributeNameFilter.
+     * @param regularExpression the regular expression against which attribute
+     *                          names will be matched.
+     * @param attributeVisitor  the <code>AttributeVisitor</code> to which
+     *                          visits will be delegated.
      */
-    public AttributeNameFilter(String           name,
+    public AttributeNameFilter(String           regularExpression,
                                AttributeVisitor attributeVisitor)
     {
-        this(new FixedStringMatcher(name), attributeVisitor);
+        this(new ListParser(new NameParser()).parse(regularExpression),
+             attributeVisitor);
     }
 
 
     /**
-     * Creates a new AttributeNameFilter based on a given string matcher.
-     * @param stringMatcher    the string matcher that will check the attribute
-     *                         names.
-     * @param attributeVisitor the <code>AttributeVisitor</code> to which
-     *                         visits will be delegated.
+     * Creates a new AttributeNameFilter.
+     * @param regularExpression the regular expression against which attribute
+     *                          names will be matched.
+     * @param attributeVisitor  the <code>AttributeVisitor</code> to which
+     *                          visits will be delegated.
      */
-    public AttributeNameFilter(StringMatcher    stringMatcher,
+    public AttributeNameFilter(List             regularExpression,
                                AttributeVisitor attributeVisitor)
     {
-        this.stringMatcher    = stringMatcher;
-        this.attributeVisitor = attributeVisitor;
+        this(new ListParser(new NameParser()).parse(regularExpression),
+             attributeVisitor);
+    }
+
+
+    /**
+     * Creates a new AttributeNameFilter.
+     * @param regularExpressionMatcher the string matcher against which
+     *                                 attribute names will be matched.
+     * @param attributeVisitor         the <code>AttributeVisitor</code> to
+     *                                 which visits will be delegated.
+     */
+    public AttributeNameFilter(StringMatcher    regularExpressionMatcher,
+                               AttributeVisitor attributeVisitor)
+    {
+        this.regularExpressionMatcher = regularExpressionMatcher;
+        this.attributeVisitor         = attributeVisitor;
     }
 
 
@@ -363,6 +381,6 @@ implements   AttributeVisitor
 
     private boolean accepted(Clazz clazz, Attribute attribute)
     {
-        return stringMatcher.matches(attribute.getAttributeName(clazz));
+        return regularExpressionMatcher.matches(attribute.getAttributeName(clazz));
     }
 }

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -255,6 +255,15 @@ public interface ClassConstants
     public static final String INTERNAL_METHOD_NAME_EQUALS                 = "equals";
     public static final String INTERNAL_METHOD_TYPE_EQUALS                 = "(Ljava/lang/Object;)Z";
     public static final String INTERNAL_METHOD_NAME_LENGTH                 = "length";
+    public static final String INTERNAL_METHOD_NAME_VALUEOF                = "valueOf";
+    public static final String INTERNAL_METHOD_TYPE_VALUEOF_BOOLEAN        = "(Z)Ljava/lang/String;";
+    public static final String INTERNAL_METHOD_TYPE_VALUEOF_CHAR           = "(C)Ljava/lang/String;";
+    public static final String INTERNAL_METHOD_TYPE_VALUEOF_INT            = "(I)Ljava/lang/String;";
+    public static final String INTERNAL_METHOD_TYPE_VALUEOF_LONG           = "(J)Ljava/lang/String;";
+    public static final String INTERNAL_METHOD_TYPE_VALUEOF_FLOAT          = "(F)Ljava/lang/String;";
+    public static final String INTERNAL_METHOD_TYPE_VALUEOF_DOUBLE         = "(D)Ljava/lang/String;";
+    public static final String INTERNAL_METHOD_TYPE_VALUEOF_OBJECT         = "(Ljava/lang/Object;)Ljava/lang/String;";
+
     public static final String INTERNAL_METHOD_TYPE_LENGTH                 = "()I";
     public static final String INTERNAL_METHOD_NAME_APPEND                 = "append";
     public static final String INTERNAL_METHOD_TYPE_STRING_VOID            = "(Ljava/lang/String;)V";
@@ -265,6 +274,7 @@ public interface ClassConstants
     public static final String INTERNAL_METHOD_TYPE_FLOAT_STRING_BUFFER    = "(F)Ljava/lang/StringBuffer;";
     public static final String INTERNAL_METHOD_TYPE_DOUBLE_STRING_BUFFER   = "(D)Ljava/lang/StringBuffer;";
     public static final String INTERNAL_METHOD_TYPE_STRING_STRING_BUFFER   = "(Ljava/lang/String;)Ljava/lang/StringBuffer;";
+    public static final String INTERNAL_METHOD_TYPE_OBJECT_STRING_BUFFER   = "(Ljava/lang/Object;)Ljava/lang/StringBuffer;";
     public static final String INTERNAL_METHOD_TYPE_BOOLEAN_STRING_BUILDER = "(Z)Ljava/lang/StringBuilder;";
     public static final String INTERNAL_METHOD_TYPE_CHAR_STRING_BUILDER    = "(C)Ljava/lang/StringBuilder;";
     public static final String INTERNAL_METHOD_TYPE_INT_STRING_BUILDER     = "(I)Ljava/lang/StringBuilder;";
@@ -272,6 +282,7 @@ public interface ClassConstants
     public static final String INTERNAL_METHOD_TYPE_FLOAT_STRING_BUILDER   = "(F)Ljava/lang/StringBuilder;";
     public static final String INTERNAL_METHOD_TYPE_DOUBLE_STRING_BUILDER  = "(D)Ljava/lang/StringBuilder;";
     public static final String INTERNAL_METHOD_TYPE_STRING_STRING_BUILDER  = "(Ljava/lang/String;)Ljava/lang/StringBuilder;";
+    public static final String INTERNAL_METHOD_TYPE_OBJECT_STRING_BUILDER  = "(Ljava/lang/Object;)Ljava/lang/StringBuilder;";
     public static final String INTERNAL_METHOD_NAME_TOSTRING               = "toString";
     public static final String INTERNAL_METHOD_TYPE_TOSTRING               = "()Ljava/lang/String;";
 

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -249,7 +249,7 @@ public class Configuration
     public String    newSourceFileAttribute;
 
     /**
-     * A list of <code>String</code>s specifying a filter for clases whose
+     * A list of <code>String</code>s specifying a filter for classes whose
      * string constants are to be adapted, based on corresponding obfuscated
      * class names.
      */

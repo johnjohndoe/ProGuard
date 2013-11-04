@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -291,11 +291,20 @@ public class ConfigurationTask extends Task
     {
         try
         {
-            String arg = getProject().replaceProperties(text);
+            Project project = getProject();
+
+            // Replace Ant-style properties ('${...}').
+            String arg = project.replaceProperties(text);
+
+            // Get the combined system properties and Ant properties, for
+            // replacing ProGuard-style properties ('<...>').
+            Properties properties = new Properties();
+            properties.putAll(project.getProperties());
 
             ConfigurationParser parser = new ConfigurationParser(arg,
                                                                  "embedded configuration",
-                                                                 getProject().getBaseDir());
+                                                                 project.getBaseDir(),
+                                                                 properties);
 
             try
             {

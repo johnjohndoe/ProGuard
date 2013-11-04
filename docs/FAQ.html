@@ -43,7 +43,7 @@ else {
 <li><a href="#forname">Does <b>ProGuard</b> handle <code>Class.forName</code>
     calls?</a></li>
 <li><a href="#resource">Does <b>ProGuard</b> handle resource files?</a></li>
-<li><a href="#encrypt">Does <b>ProGuard</b> encrypt strings constants?</a></li>
+<li><a href="#encrypt">Does <b>ProGuard</b> encrypt string constants?</a></li>
 <li><a href="#flow">Does <b>ProGuard</b> perform control flow
     obfuscation?</a></li>
 <li><a href="#incremental">Does <b>ProGuard</b> support incremental
@@ -124,7 +124,9 @@ At the very least, your bytecode may become a bit smaller.
 Some notable optimizations that aren't supported yet:
 <ul>
 <li>Moving constant expressions out of loops.</li>
-<li>Optimizations that require escape analysis.</li>
+<li>Optimizations that require escape analysis
+    (<a href="http://www.saikoa.com/dexguard" target="_top">DexGuard</a>
+    does).</li>
 </ul>
 
 <h3><a name="commercial">Can I use <b>ProGuard</b> to process my commercial application?</a></h3>
@@ -204,12 +206,16 @@ accordingly.
 Yes. <b>ProGuard</b> copies all non-class resource files, optionally adapting
 their names and their contents to the obfuscation that has been applied.
 
-<h3><a name="encrypt">Does <b>ProGuard</b> encrypt strings constants?</a></h3>
+<h3><a name="encrypt">Does <b>ProGuard</b> encrypt string constants?</a></h3>
 
-No. Storing encrypted string constants in program code is fairly futile, since
-the encryption has to be perfectly reversible by definition. Moreover, the
-decryption costs additional memory and computation at run-time. If this feature
-is ever incorporated, I'll provide a tool to decrypt the strings as well.
+No. String encryption in program code has to be perfectly reversible by
+definition, so it only improves the obfuscation level. It increases the
+footprint of the code. However, by popular demand, ProGuard's sibling for
+Android <a href="http://www.saikoa.com/dexguard"
+target="_top"><b>DexGuard</b></a> does support string encryption, along with
+class encryption and hiding of access to sensitive APIs. <b>DexGuard</b> is
+distributed by <a href="http://www.saikoa.com/" target="_top">Saikoa</a> and
+is not open source.
 
 <h3><a name="flow">Does <b>ProGuard</b> perform flow obfuscation?</a></h3>
 
@@ -246,7 +252,7 @@ Manual</a> for more details.
 <hr />
 <noscript><div><a target="_top" href="index.html" class="button">Show menu</a></div></noscript>
 <address>
-Copyright &copy; 2002-2011
+Copyright &copy; 2002-2012
 <a target="other" href="http://www.lafortune.eu/">Eric Lafortune</a>.
 </address>
 </body>

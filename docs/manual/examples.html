@@ -47,6 +47,7 @@ Some typical useful configurations:
 <li><a href="#database">Processing database drivers</a></li>
 <li><a href="#componentui">Processing ComponentUI classes</a></li>
 <li><a href="#rmi">Processing RMI code</a></li>
+<li><a href="#injection">Processing resource injection</a></li>
 <li><a href="#resourcefiles">Processing resource files</a></li>
 <li><a href="#manifestfiles">Processing manifest files</a></li>
 <li><a href="#stacktrace">Producing useful obfuscated stack traces</a></li>
@@ -302,6 +303,11 @@ external libraries:
     public &lt;init&gt;(android.content.Context, android.util.AttributeSet, int);
 }
 
+-keepclassmembers class * extends android.content.Context {
+   public void *(android.view.View);
+   public void *(android.view.MenuItem);
+}
+
 -keepclassmembers class * implements android.os.Parcelable {
     static android.os.Parcelable$Creator CREATOR;
 }
@@ -321,6 +327,10 @@ We're keeping annotations, since they might be used by custom
 <p>
 We're keeping any custom <code>View</code> extensions and other classes with
 typical constructors, since they might be referenced from XML layout files.
+<p>
+We're also keeping possible <code>onClick</code> handlers in
+custom <code>Context</code> extensions, since they might be referenced from
+XML layout files.
 <p>
 We're also keeping the required static fields in <code>Parcelable</code>
 implementations, since they are accessed by introspection.
@@ -359,13 +369,16 @@ options for producing <a href="#stacktrace">useful stack traces</a>. You can
 find a complete sample configuration in <code>examples/android.pro</code> in
 the ProGuard distribution.
 <p>
-The build process of the Android SDK (version 2.3 and higher) already
-integrates ProGuard by default. You only need to enable it (for release
-builds) by adding <code>proguard.config=proguard.cfg</code> to the file
-<code>build.properties</code>. In case of problems, you may want to check if
-the automatically generated file <code>proguard.cfg</code> contains the
-settings discussed above. The generated Ant build file already sets the input
-and output files for you.
+The Ant and Eclipse build processes of the Android SDK already integrate
+ProGuard by default, with all the proper settings. You only need to enable
+ProGuard (for release builds) by uncommenting the line
+"<code>proguard.config=.....</code>" in the file
+<code>project.properties</code> (created or updated by Android SDK revision 17
+or higher). In case of problems, you may want to check if the configuration
+files that are listed on this line (<code>proguard-project.txt</code>,...)
+contain the necessary settings for your application. Note that the build
+processes are already setting the necessary program jars, library jars, and
+output jars for you.
 <p>
 For more information, you can consult the official <a target="other"
 href="http://developer.android.com/guide/developing/tools/proguard.html">Developer
@@ -978,6 +991,27 @@ The <code>Exceptions</code> attribute has to be kept too, because the RMI
 handling code performs introspection to check whether the method signatures
 are compatible.
 
+<h3><a name="injection">Processing resource injection</a></h3>
+
+If your application is using JEE-style resource injection, the application
+container will automatically assign instances of resource classes to fields and
+methods that are annotated with <code>@Resource</code>. The container applies
+introspection, even accessing private class members directly. It typically
+constructs a resource name based on the type name and the class member name.
+We then have to avoid that such class members are removed or renamed:
+<pre>
+-keepclassmembers class * {
+    @javax.annotation.Resource *;
+}
+</pre>
+<p>
+The Spring framework has another similar annotation <code>@Autowired</code>:
+<pre>
+-keepclassmembers class * {
+    @org.springframework.beans.factory.annotation.Autowired *;
+}
+</pre>
+
 <h3><a name="resourcefiles">Processing resource files</a></h3>
 
 If your application, applet, servlet, library, etc., contains resource files,
@@ -1497,7 +1531,7 @@ illustrate some of the possibilities.
 <hr />
 <noscript><div><a target="_top" href="../index.html" class="button">Show menu</a></div></noscript>
 <address>
-Copyright &copy; 2002-2011
+Copyright &copy; 2002-2012
 <a target="other" href="http://www.lafortune.eu/">Eric Lafortune</a>.
 </address>
 </body>

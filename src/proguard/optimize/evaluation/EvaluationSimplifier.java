@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -43,8 +43,8 @@ extends      SimplifiedVisitor
 implements   AttributeVisitor,
              InstructionVisitor
 {
-    private static int  POS_ZERO_FLOAT_BITS  = Float.floatToIntBits(0.0f);
-    private static long POS_ZERO_DOUBLE_BITS = Double.doubleToLongBits(0.0);
+    private static final int  POS_ZERO_FLOAT_BITS  = Float.floatToIntBits(0.0f);
+    private static final long POS_ZERO_DOUBLE_BITS = Double.doubleToLongBits(0.0);
 
     //*
     private static final boolean DEBUG = false;
@@ -429,6 +429,7 @@ implements   AttributeVisitor,
         Value pushedValue = partialEvaluator.getStackAfter(offset).getTop(0);
         if (pushedValue.isParticular())
         {
+            // Push a constant instead.
             int value = pushedValue.integerValue().value();
             if (value << 16 >> 16 == value)
             {
@@ -452,6 +453,7 @@ implements   AttributeVisitor,
         }
         else if (pushedValue.isSpecific())
         {
+            // Load an equivalent lower-numbered variable instead, if any.
             TracedVariables variables = partialEvaluator.getVariablesBefore(offset);
             for (int variableIndex = 0; variableIndex < maxVariableIndex; variableIndex++)
             {
@@ -462,6 +464,7 @@ implements   AttributeVisitor,
                                                    instruction,
                                                    InstructionConstants.OP_ILOAD,
                                                    variableIndex);
+                    break;
                 }
             }
         }
@@ -495,6 +498,7 @@ implements   AttributeVisitor,
         Value pushedValue = partialEvaluator.getStackAfter(offset).getTop(0);
         if (pushedValue.isParticular())
         {
+            // Push a constant instead.
             long value = pushedValue.longValue().value();
             if (value == 0L ||
                 value == 1L)
@@ -519,10 +523,14 @@ implements   AttributeVisitor,
         }
         else if (pushedValue.isSpecific())
         {
+            // Load an equivalent lower-numbered variable instead, if any.
             TracedVariables variables = partialEvaluator.getVariablesBefore(offset);
             for (int variableIndex = 0; variableIndex < maxVariableIndex; variableIndex++)
             {
-                if (pushedValue.equals(variables.load(variableIndex)))
+                // Note that we have to check the second part as well.
+                if (pushedValue.equals(variables.load(variableIndex)) &&
+                    variables.load(variableIndex + 1) != null         &&
+                    variables.load(variableIndex + 1).computationalType() == Value.TYPE_TOP)
                 {
                     replaceVariablePushInstruction(clazz,
                                                    offset,
@@ -562,6 +570,7 @@ implements   AttributeVisitor,
         Value pushedValue = partialEvaluator.getStackAfter(offset).getTop(0);
         if (pushedValue.isParticular())
         {
+            // Push a constant instead.
             // Make sure to distinguish between +0.0 and -0.0.
             float value = pushedValue.floatValue().value();
             if (value == 0.0f && Float.floatToIntBits(value) == POS_ZERO_FLOAT_BITS ||
@@ -588,6 +597,7 @@ implements   AttributeVisitor,
         }
         else if (pushedValue.isSpecific())
         {
+            // Load an equivalent lower-numbered variable instead, if any.
             TracedVariables variables = partialEvaluator.getVariablesBefore(offset);
             for (int variableIndex = 0; variableIndex < maxVariableIndex; variableIndex++)
             {
@@ -631,6 +641,7 @@ implements   AttributeVisitor,
         Value pushedValue = partialEvaluator.getStackAfter(offset).getTop(0);
         if (pushedValue.isParticular())
         {
+            // Push a constant instead.
             // Make sure to distinguish between +0.0 and -0.0.
             double value = pushedValue.doubleValue().value();
             if (value == 0.0 && Double.doubleToLongBits(value) == POS_ZERO_DOUBLE_BITS ||
@@ -656,10 +667,14 @@ implements   AttributeVisitor,
         }
         else if (pushedValue.isSpecific())
         {
+            // Load an equivalent lower-numbered variable instead, if any.
             TracedVariables variables = partialEvaluator.getVariablesBefore(offset);
             for (int variableIndex = 0; variableIndex < maxVariableIndex; variableIndex++)
             {
-                if (pushedValue.equals(variables.load(variableIndex)))
+                // Note that we have to check the second part as well.
+                if (pushedValue.equals(variables.load(variableIndex)) &&
+                    variables.load(variableIndex + 1) != null         &&
+                    variables.load(variableIndex + 1).computationalType() == Value.TYPE_TOP)
                 {
                     replaceVariablePushInstruction(clazz,
                                                    offset,
