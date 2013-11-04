@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -46,7 +46,7 @@ public class ClassPathEntry
 
 
     /**
-     * Creates a new ClassPathEntry with the given name and type.
+     * Creates a new ClassPathEntry with the given file and output flag.
      */
     public ClassPathEntry(File file, boolean isOutput)
     {
@@ -71,84 +71,187 @@ public class ClassPathEntry
     }
 
 
+    /**
+     * Returns the file.
+     */
     public File getFile()
     {
         return file;
     }
 
 
+    /**
+     * Sets the file.
+     */
     public void setFile(File file)
     {
         this.file = file;
     }
 
 
+    /**
+     * Returns whether this data entry is an output entry.
+     */
     public boolean isOutput()
     {
         return output;
     }
 
 
+    /**
+     * Specifies whether this data entry is an output entry.
+     */
     public void setOutput(boolean output)
     {
         this.output = output;
     }
 
 
+    /**
+     * Returns whether this data entry is a jar file.
+     */
+    public boolean isJar()
+    {
+        return hasExtension(".jar");
+    }
+
+
+    /**
+     * Returns whether this data entry is a war file.
+     */
+    public boolean isWar()
+    {
+        return hasExtension(".war");
+    }
+
+
+    /**
+     * Returns whether this data entry is a ear file.
+     */
+    public boolean isEar()
+    {
+        return hasExtension(".ear");
+    }
+
+
+    /**
+     * Returns whether this data entry is a zip file.
+     */
+    public boolean isZip()
+    {
+        return hasExtension(".zip");
+    }
+
+
+    /**
+     * Returns whether this data entry has the given extension.
+     */
+    private boolean hasExtension(String extension)
+    {
+        return endsWithIgnoreCase(file.getPath(), extension);
+    }
+
+
+    /**
+     * Returns whether the given string ends with the given suffix, ignoring
+     * its case.
+     */
+    private static boolean endsWithIgnoreCase(String string, String suffix)
+    {
+        int stringLength = string.length();
+        int suffixLength = suffix.length();
+
+        return string.regionMatches(true, stringLength -
+                                          suffixLength, suffix, 0, suffixLength);
+    }
+
+
+    /**
+     * Returns the name filter that is applied to bottom-level files in this entry.
+     */
     public List getFilter()
     {
         return filter;
     }
 
+    /**
+     * Sets the name filter that is applied to bottom-level files in this entry.
+     */
     public void setFilter(List filter)
     {
         this.filter = filter == null || filter.size() == 0 ? null : filter;
     }
 
 
+    /**
+     * Returns the name filter that is applied to jar files in this entry, if any.
+     */
     public List getJarFilter()
     {
         return jarFilter;
     }
 
+    /**
+     * Sets the name filter that is applied to jar files in this entry, if any.
+     */
     public void setJarFilter(List filter)
     {
         this.jarFilter = filter == null || filter.size() == 0 ? null : filter;
     }
 
 
+    /**
+     * Returns the name filter that is applied to war files in this entry, if any.
+     */
     public List getWarFilter()
     {
         return warFilter;
     }
 
+    /**
+     * Sets the name filter that is applied to war files in this entry, if any.
+     */
     public void setWarFilter(List filter)
     {
         this.warFilter = filter == null || filter.size() == 0 ? null : filter;
     }
 
 
+    /**
+     * Returns the name filter that is applied to ear files in this entry, if any.
+     */
     public List getEarFilter()
     {
         return earFilter;
     }
 
+    /**
+     * Sets the name filter that is applied to ear files in this entry, if any.
+     */
     public void setEarFilter(List filter)
     {
         this.earFilter = filter == null || filter.size() == 0 ? null : filter;
     }
 
 
+    /**
+     * Returns the name filter that is applied to zip files in this entry, if any.
+     */
     public List getZipFilter()
     {
         return zipFilter;
     }
 
+    /**
+     * Sets the name filter that is applied to zip files in this entry, if any.
+     */
     public void setZipFilter(List filter)
     {
         this.zipFilter = filter == null || filter.size() == 0 ? null : filter;
     }
 
+
+    // Implementations for Object.
 
     public String toString()
     {

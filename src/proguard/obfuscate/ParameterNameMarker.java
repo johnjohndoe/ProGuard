@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -23,14 +23,12 @@ package proguard.obfuscate;
 import proguard.classfile.*;
 import proguard.classfile.attribute.*;
 import proguard.classfile.attribute.visitor.AttributeVisitor;
-import proguard.classfile.util.SimplifiedVisitor;
+import proguard.classfile.util.*;
 
 /**
  * This AttributeVisitor trims and marks all local variable (type) table
  * attributes that it visits. It keeps parameter names and types and removes
  * the ordinary local variable names and types.
- *
- * @see AttributeUsageMarker
  *
  * @author Eric Lafortune
  */
@@ -38,7 +36,18 @@ public class ParameterNameMarker
 extends      SimplifiedVisitor
 implements   AttributeVisitor
 {
-    private AttributeUsageMarker attributeUsageMarker = new AttributeUsageMarker();
+    private final AttributeVisitor attributeUsageMarker;
+
+
+    /**
+     * Constructs a new ParameterNameMarker.
+     * @param attributeUsageMarker the marker that will be used to mark
+     *                             attributes containing local variable info.
+     */
+    public ParameterNameMarker(AttributeVisitor attributeUsageMarker)
+    {
+        this.attributeUsageMarker = attributeUsageMarker;
+    }
 
 
     // Implementations for AttributeVisitor.
@@ -48,23 +57,29 @@ implements   AttributeVisitor
 
     public void visitLocalVariableTableAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableTableAttribute localVariableTableAttribute)
     {
-        if (!AttributeUsageMarker.isUsed(localVariableTableAttribute))
+        if (!AttributeUsageMarker.isUsed(localVariableTableAttribute) &&
+            hasParameters(clazz, method))
         {
+            // Shift the entries that start at offset 0 to the front. 
+            int newIndex = 0;
+            
             for (int index = 0; index < localVariableTableAttribute.u2localVariableTableLength; index++)
             {
                 LocalVariableInfo localVariableInfo =
                     localVariableTableAttribute.localVariableTable[index];
 
-                // Trim the table if we've found an ordinary local variable.
-                // We're assuming the parameters all come first.
-                if (localVariableInfo.u2startPC > 0)
+                if (localVariableInfo.u2startPC == 0)
                 {
-                    localVariableTableAttribute.u2localVariableTableLength = index;
-                    break;
+                    localVariableTableAttribute.localVariableTable[newIndex++] =
+                        localVariableInfo;
                 }
             }
 
-            if (localVariableTableAttribute.u2localVariableTableLength > 0)
+            // Trim the table.
+            localVariableTableAttribute.u2localVariableTableLength = newIndex;
+
+            // Mark the table if there are any entries.
+            if (newIndex > 0)
             {
                 attributeUsageMarker.visitLocalVariableTableAttribute(clazz, method, codeAttribute, localVariableTableAttribute);
             }
@@ -74,26 +89,40 @@ implements   AttributeVisitor
 
     public void visitLocalVariableTypeTableAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableTypeTableAttribute localVariableTypeTableAttribute)
     {
-        if (!AttributeUsageMarker.isUsed(localVariableTypeTableAttribute))
+        if (!AttributeUsageMarker.isUsed(localVariableTypeTableAttribute) &&
+            hasParameters(clazz, method))
         {
+            // Shift the entries that start at offset 0 to the front. 
+            int newIndex = 0;
+            
             for (int index = 0; index < localVariableTypeTableAttribute.u2localVariableTypeTableLength; index++)
             {
                 LocalVariableTypeInfo localVariableTypeInfo =
                     localVariableTypeTableAttribute.localVariableTypeTable[index];
 
-                // Trim the table if we've found an ordinary local variable.
-                // We're assuming the parameters all come first.
-                if (localVariableTypeInfo.u2startPC > 0)
+                if (localVariableTypeInfo.u2startPC == 0)
                 {
-                    localVariableTypeTableAttribute.u2localVariableTypeTableLength = index;
-                    break;
+                    localVariableTypeTableAttribute.localVariableTypeTable[newIndex++] =
+                        localVariableTypeInfo;
                 }
             }
 
-            if (localVariableTypeTableAttribute.u2localVariableTypeTableLength > 0)
+            // Trim the table.
+            localVariableTypeTableAttribute.u2localVariableTypeTableLength = newIndex;
+            
+            // Mark the table if there are any entries.
+            if (newIndex > 0)
             {
                 attributeUsageMarker.visitLocalVariableTypeTableAttribute(clazz, method, codeAttribute, localVariableTypeTableAttribute);
             }
         }
+    }
+
+
+    // Small utility methods.
+
+    private boolean hasParameters(Clazz clazz, Method method)
+    {
+        return method.getDescriptor(clazz).charAt(1) != ClassConstants.INTERNAL_METHOD_ARGUMENTS_CLOSE;
     }
 }

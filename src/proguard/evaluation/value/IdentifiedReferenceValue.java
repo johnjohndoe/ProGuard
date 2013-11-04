@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -54,6 +54,17 @@ final class IdentifiedReferenceValue extends ReferenceValue
     public int equal(ReferenceValue other)
     {
         return this.equals(other) ? ALWAYS : MAYBE;
+    }
+
+
+    // Implementations of binary methods of ReferenceValue.
+
+    public ReferenceValue generalize(ReferenceValue other)
+    {
+        // Remove the ID if both values don't share the same ID.
+        return this.equals(other) ?
+            this :
+            new ReferenceValue(type, referencedClass, mayBeNull).generalize(other);
     }
 
 

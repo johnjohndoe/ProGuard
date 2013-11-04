@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -29,7 +29,8 @@ import java.util.Arrays;
 
 /**
  * This AttributeVisitor cleans up variable tables in all code attributes that
- * it visits.
+ * it visits. It trims overlapping local variables. It removes empty local
+ * variables and empty local variable tables.
  *
  * @author Eric Lafortune
  */
@@ -51,6 +52,7 @@ implements   AttributeVisitor
         deleteLocalVariableTableAttribute     = false;
         deleteLocalVariableTypeTableAttribute = false;
 
+        // Trim the local variable table and the local variable type table.
         codeAttribute.attributesAccept(clazz, method, this);
 
         // Delete the local variable table if it ended up empty.

@@ -17,8 +17,8 @@
 # You may have to adapt the paths below.
 
 -libraryjars <java.home>/lib/rt.jar
--libraryjars /usr/local/java/ant1.5.0/lib/ant.jar
--libraryjars /usr/local/java/wtk2.1/wtklib/kenv.zip
+-libraryjars /usr/local/java/ant/lib/ant.jar
+-libraryjars /usr/local/java/wtk2.5.2/wtklib/kenv.zip
 
 # Allow methods with the same signature, except for the return type,
 # to get the same obfuscation name.

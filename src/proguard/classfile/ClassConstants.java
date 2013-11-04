@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -119,10 +119,13 @@ public interface ClassConstants
     public static final String EXTERNAL_ACC_SYNCHRONIZED = "synchronized";
     public static final String EXTERNAL_ACC_VOLATILE     = "volatile";
     public static final String EXTERNAL_ACC_TRANSIENT    = "transient";
+    public static final String EXTERNAL_ACC_BRIDGE       = "bridge";
+    public static final String EXTERNAL_ACC_VARARGS      = "varargs";
     public static final String EXTERNAL_ACC_NATIVE       = "native";
     public static final String EXTERNAL_ACC_INTERFACE    = "interface";
     public static final String EXTERNAL_ACC_ABSTRACT     = "abstract";
     public static final String EXTERNAL_ACC_STRICT       = "strictfp";
+    public static final String EXTERNAL_ACC_SYNTHETIC    = "synthetic";
     public static final String EXTERNAL_ACC_ANNOTATION   = "@";
     public static final String EXTERNAL_ACC_ENUM         = "enum";
 
@@ -188,23 +191,35 @@ public interface ClassConstants
     public static final String INTERNAL_NAME_JAVA_LANG_STRING     = "java/lang/String";
     public static final String INTERNAL_NAME_JAVA_IO_SERIALIZABLE = "java/io/Serializable";
 
+    public static final String INTERNAL_NAME_JAVA_UTIL_CONCURRENT_ATOMIC_ATOMIC_INTEGER_FIELD_UPDATER   = "java/util/concurrent/atomic/AtomicIntegerFieldUpdater";
+    public static final String INTERNAL_NAME_JAVA_UTIL_CONCURRENT_ATOMIC_ATOMIC_LONG_FIELD_UPDATER      = "java/util/concurrent/atomic/AtomicLongFieldUpdater";
+    public static final String INTERNAL_NAME_JAVA_UTIL_CONCURRENT_ATOMIC_ATOMIC_REFERENCE_FIELD_UPDATER = "java/util/concurrent/atomic/AtomicReferenceFieldUpdater";
+
     public static final String INTERNAL_METHOD_NAME_INIT   = "<init>";
     public static final String INTERNAL_METHOD_TYPE_INIT   = "()V";
     public static final String INTERNAL_METHOD_NAME_CLINIT = "<clinit>";
     public static final String INTERNAL_METHOD_TYPE_CLINIT = "()V";
 
-    public static final String INTERNAL_METHOD_NAME_CLASS_FOR_NAME            = "forName";
-    public static final String INTERNAL_METHOD_TYPE_CLASS_FOR_NAME            = "(Ljava/lang/String;)Ljava/lang/Class;";
-    public static final String INTERNAL_METHOD_NAME_CLASS_GET_COMPONENT_TYPE  = "getComponentType";
-    public static final String INTERNAL_METHOD_TYPE_CLASS_GET_COMPONENT_TYPE  = "()Ljava/lang/Class;";
-    public static final String INTERNAL_METHOD_NAME_CLASS_GET_FIELD           = "getField";
-    public static final String INTERNAL_METHOD_TYPE_CLASS_GET_FIELD           = "(Ljava/lang/String;)Ljava/lang/reflect/Field;";
-    public static final String INTERNAL_METHOD_NAME_CLASS_GET_DECLARED_FIELD  = "getDeclaredField";
-    public static final String INTERNAL_METHOD_TYPE_CLASS_GET_DECLARED_FIELD  = "(Ljava/lang/String;)Ljava/lang/reflect/Field;";
-    public static final String INTERNAL_METHOD_NAME_CLASS_GET_METHOD          = "getMethod";
-    public static final String INTERNAL_METHOD_TYPE_CLASS_GET_METHOD          = "(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;";
-    public static final String INTERNAL_METHOD_NAME_CLASS_GET_DECLARED_METHOD = "getDeclaredMethod";
-    public static final String INTERNAL_METHOD_TYPE_CLASS_GET_DECLARED_METHOD = "(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;";
+    public static final String INTERNAL_METHOD_NAME_CLASS_FOR_NAME                      = "forName";
+    public static final String INTERNAL_METHOD_TYPE_CLASS_FOR_NAME                      = "(Ljava/lang/String;)Ljava/lang/Class;";
+    public static final String INTERNAL_METHOD_NAME_CLASS_GET_COMPONENT_TYPE            = "getComponentType";
+    public static final String INTERNAL_METHOD_TYPE_CLASS_GET_COMPONENT_TYPE            = "()Ljava/lang/Class;";
+    public static final String INTERNAL_METHOD_NAME_CLASS_GET_FIELD                     = "getField";
+    public static final String INTERNAL_METHOD_TYPE_CLASS_GET_FIELD                     = "(Ljava/lang/String;)Ljava/lang/reflect/Field;";
+    public static final String INTERNAL_METHOD_NAME_CLASS_GET_DECLARED_FIELD            = "getDeclaredField";
+    public static final String INTERNAL_METHOD_TYPE_CLASS_GET_DECLARED_FIELD            = "(Ljava/lang/String;)Ljava/lang/reflect/Field;";
+    public static final String INTERNAL_CONSTRUCTOR_NAME_CLASS_GET_CONSTRUCTOR          = "getConstructor";
+    public static final String INTERNAL_CONSTRUCTOR_TYPE_CLASS_GET_CONSTRUCTOR          = "([Ljava/lang/Class;)Ljava/lang/reflect/Constructor;";
+    public static final String INTERNAL_CONSTRUCTOR_NAME_CLASS_GET_DECLARED_CONSTRUCTOR = "getDeclaredConstructor";
+    public static final String INTERNAL_CONSTRUCTOR_TYPE_CLASS_GET_DECLARED_CONSTRUCTOR = "([Ljava/lang/Class;)Ljava/lang/reflect/Constructor;";
+    public static final String INTERNAL_METHOD_NAME_CLASS_GET_METHOD                    = "getMethod";
+    public static final String INTERNAL_METHOD_TYPE_CLASS_GET_METHOD                    = "(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;";
+    public static final String INTERNAL_METHOD_NAME_CLASS_GET_DECLARED_METHOD           = "getDeclaredMethod";
+    public static final String INTERNAL_METHOD_TYPE_CLASS_GET_DECLARED_METHOD           = "(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;";
+    public static final String INTERNAL_METHOD_NAME_NEW_UPDATER                         = "newUpdater";
+    public static final String INTERNAL_METHOD_TYPE_NEW_INTEGER_UPDATER                 = "(Ljava/lang/Class;Ljava/lang/String;)Ljava/util/concurrent/atomic/AtomicIntegerFieldUpdater;";
+    public static final String INTERNAL_METHOD_TYPE_NEW_LONG_UPDATER                    = "(Ljava/lang/Class;Ljava/lang/String;)Ljava/util/concurrent/atomic/AtomicLongFieldUpdater;";
+    public static final String INTERNAL_METHOD_TYPE_NEW_REFERENCE_UPDATER               = "(Ljava/lang/Class;Ljava/lang/Class;Ljava/lang/String;)Ljava/util/concurrent/atomic/AtomicReferenceFieldUpdater;";
 
     public static final String INTERNAL_METHOD_NAME_DOT_CLASS_JAVAC = "class$";
     public static final String INTERNAL_METHOD_TYPE_DOT_CLASS_JAVAC = "(Ljava/lang/String;)Ljava/lang/Class;";

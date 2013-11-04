@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -172,7 +172,7 @@ public class OutputWriter
             {
                 resourceRewriter =
                     new NameFilter(configuration.adaptResourceFileContents,
-                    new NameFilter("META-INF/*",
+                    new NameFilter("META-INF/MANIFEST.MF,META-INF/*.SF",
                         new ManifestRewriter(programClassPool, writer),
                         new DataEntryRewriter(programClassPool, writer)),
                     resourceRewriter);

@@ -9,8 +9,8 @@
 -injars  in.jar
 -outjars out.jar
 
--libraryjars /usr/local/java/wtk2.1/lib/midpapi20.jar
--libraryjars /usr/local/java/wtk2.1/lib/cldcapi11.jar
+-libraryjars /usr/local/java/wtk2.5.2/lib/midpapi20.jar
+-libraryjars /usr/local/java/wtk2.5.2/lib/cldcapi11.jar
 
 # Preverify the code suitably for Java Micro Edition.
 
@@ -34,13 +34,24 @@
 #
 # -dontusemixedcaseclassnames
 
+# Save the obfuscation mapping to a file, so you can de-obfuscate any stack
+# traces later on.
+
+-printmapping out.map
+
+# You can keep a fixed source file attribute and all line number tables to
+# get stack traces with line numbers.
+
+#-renamesourcefileattribute SourceFile
+#-keepattributes SourceFile,LineNumberTable
+
+# You can print out the seeds that are matching the keep options below.
+
+#-printseeds out.seeds
+
 # Preserve all public midlets.
 
 -keep public class * extends javax.microedition.midlet.MIDlet
-
-# Print out a list of what we're preserving.
-
--printseeds
 
 # Preserve all native method names and the names of their classes.
 

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -29,11 +29,14 @@ import proguard.classfile.instruction.visitor.InstructionVisitor;
 import proguard.classfile.util.SimplifiedVisitor;
 import proguard.classfile.visitor.*;
 
+import java.util.*;
+
 /**
  * This class can tell whether an instruction has any side effects. Return
  * instructions can be included or not.
  *
  * @see ReadWriteFieldMarker
+ * @see StaticInitializerContainingClassMarker
  * @see NoSideEffectMethodMarker
  * @see SideEffectMethodMarker
  * @author Eric Lafortune
@@ -47,6 +50,7 @@ implements   InstructionVisitor,
     private final boolean includeReturnInstructions;
 
     // A return value for the visitor methods.
+    private Clazz   referencingClass;
     private boolean hasSideEffects;
 
 
@@ -60,7 +64,7 @@ implements   InstructionVisitor,
     {
         hasSideEffects = false;
 
-        instruction.accept(clazz, method,  codeAttribute, offset, this);
+        instruction.accept(clazz, method, codeAttribute, offset, this);
 
         return hasSideEffects;
     }
@@ -118,9 +122,10 @@ implements   InstructionVisitor,
     public void visitConstantInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, ConstantInstruction constantInstruction)
     {
         byte opcode = constantInstruction.opcode;
-
         // Check for instructions that might cause side effects.
-        if (opcode == InstructionConstants.OP_PUTSTATIC     ||
+        if (opcode == InstructionConstants.OP_GETSTATIC     ||
+            opcode == InstructionConstants.OP_PUTSTATIC     ||
+            opcode == InstructionConstants.OP_GETFIELD      ||
             opcode == InstructionConstants.OP_PUTFIELD      ||
             opcode == InstructionConstants.OP_INVOKEVIRTUAL ||
             opcode == InstructionConstants.OP_INVOKESPECIAL ||
@@ -152,46 +157,27 @@ implements   InstructionVisitor,
 
     public void visitFieldrefConstant(Clazz clazz, FieldrefConstant fieldrefConstant)
     {
+        // Pass the referencing class.
+        referencingClass = clazz;
+
         // We'll have to assume accessing an unknown field has side effects.
         hasSideEffects = true;
 
-        // Check the referenced field.
+        // Check the referenced field, if known.
         fieldrefConstant.referencedMemberAccept(this);
     }
 
 
     public void visitAnyMethodrefConstant(Clazz clazz, RefConstant refConstant)
     {
-        Member referencedMember = refConstant.referencedMember;
+        // Pass the referencing class.
+        referencingClass = clazz;
 
-        // Do we have a reference to the method?
-        if (referencedMember == null)
-        {
-            // We'll have to assume invoking the unknown method has side effects.
-            hasSideEffects = true;
-        }
-        else
-        {
-            // First check the referenced method itself.
-            refConstant.referencedMemberAccept(this);
+        // We'll have to assume invoking an unknown method has side effects.
+        hasSideEffects = true;
 
-            // If the result isn't conclusive, check down the hierarchy.
-            if (!hasSideEffects)
-            {
-                Clazz  referencedClass  = refConstant.referencedClass;
-                Method referencedMethod = (Method)referencedMember;
-
-                // Check all other implementations of the method down the class
-                // hierarchy.
-                if ((referencedMethod.getAccessFlags() & ClassConstants.INTERNAL_ACC_PRIVATE) == 0)
-                {
-                    clazz.hierarchyAccept(false, false, false, true,
-                                          new NamedMethodVisitor(referencedMethod.getName(referencedClass),
-                                                                 referencedMethod.getDescriptor(referencedClass),
-                                          this));
-                }
-            }
-        }
+        // Check the referenced method, if known.
+        refConstant.referencedMemberAccept(this);
     }
 
 
@@ -199,14 +185,24 @@ implements   InstructionVisitor,
 
     public void visitProgramField(ProgramClass programClass, ProgramField programField)
     {
-        hasSideEffects = ReadWriteFieldMarker.isRead(programField);
+        hasSideEffects =
+            (ReadWriteFieldMarker.isRead(programField) &&
+             ReadWriteFieldMarker.isWritten(programField))                                ||
+            ((programField.getAccessFlags() & ClassConstants.INTERNAL_ACC_VOLATILE) != 0) ||
+            (!programClass.equals(referencingClass) &&
+             !initializedSuperClasses(referencingClass).containsAll(initializedSuperClasses(programClass)));
     }
 
 
     public void visitProgramMethod(ProgramClass programClass, ProgramMethod programMethod)
     {
-        hasSideEffects = hasSideEffects ||
-                         SideEffectMethodMarker.hasSideEffects(programMethod);
+        // Note that side effects already include synchronization of some
+        // implementation of the method.
+        hasSideEffects =
+            !NoSideEffectMethodMarker.hasNoSideEffects(programMethod) &&
+            (SideEffectMethodMarker.hasSideEffects(programMethod) ||
+             (!programClass.equals(referencingClass) &&
+              !initializedSuperClasses(referencingClass).containsAll(initializedSuperClasses(programClass))));
     }
 
 
@@ -218,7 +214,24 @@ implements   InstructionVisitor,
 
     public void visitLibraryMethod(LibraryClass libraryClass, LibraryMethod libraryMethod)
     {
-        hasSideEffects = hasSideEffects ||
-                         !NoSideEffectMethodMarker.hasNoSideEffects(libraryMethod);
+        hasSideEffects =
+            !NoSideEffectMethodMarker.hasNoSideEffects(libraryMethod);
+    }
+
+
+    /**
+     * Returns the set of superclasses and interfaces that are initialized.
+     */
+    private Set initializedSuperClasses(Clazz clazz)
+    {
+        Set set = new HashSet();
+
+        // Visit all superclasses and interfaces, collecting the ones that have
+        // static initializers.
+        clazz.hierarchyAccept(true, true, true, false,
+                              new StaticInitializerContainingClassFilter(
+                              new ClassCollector(set)));
+
+        return set;
     }
 }

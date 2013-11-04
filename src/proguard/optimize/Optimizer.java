@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -23,7 +23,7 @@ package proguard.optimize;
 import proguard.*;
 import proguard.classfile.*;
 import proguard.classfile.attribute.visitor.*;
-import proguard.classfile.constant.visitor.AllConstantVisitor;
+import proguard.classfile.constant.visitor.*;
 import proguard.classfile.editor.*;
 import proguard.classfile.instruction.visitor.*;
 import proguard.classfile.util.MethodLinker;
@@ -193,7 +193,8 @@ public class Optimizer
         MemberCounter      codeRemovalVariableCounter          = new MemberCounter();
         ExceptionCounter   codeRemovalExceptionCounter         = new ExceptionCounter();
         MemberCounter      codeAllocationVariableCounter       = new MemberCounter();
-        MemberCounter      initializerFixCounter               = new MemberCounter();
+        MemberCounter      initializerFixCounter1              = new MemberCounter();
+        MemberCounter      initializerFixCounter2              = new MemberCounter();
 
         // Some optimizations are required by other optimizations.
         codeSimplificationAdvanced =
@@ -251,10 +252,17 @@ public class Optimizer
             new AllInstructionVisitor(
             new DotClassClassVisitor(keepMarker)))));
 
-        // We also keep all classes that are involved in Class.forName constructs.
+        // We also keep all classes that are accessed dynamically.
         programClassPool.classesAccept(
             new AllConstantVisitor(
-            new ClassForNameClassVisitor(keepMarker)));
+            new ConstantTagFilter(ClassConstants.CONSTANT_String,
+            new ReferencedClassVisitor(keepMarker))));
+
+        // We also keep all class members that are accessed dynamically.
+        programClassPool.classesAccept(
+            new AllConstantVisitor(
+            new ConstantTagFilter(ClassConstants.CONSTANT_String,
+            new ReferencedMemberVisitor(keepMarker))));
 
         // Attach some optimization info to all classes and class members, so
         // it can be filled out later.
@@ -320,6 +328,9 @@ public class Optimizer
             new OptimizationInfoMemberFilter(
             new ParameterUsageMarker(!methodMarkingStatic,
                                      !methodRemovalParameter))));
+
+        // Mark all classes that have static initializers.
+        programClassPool.classesAccept(new StaticInitializerContainingClassMarker());
 
         // Mark all methods that have side effects.
         programClassPool.accept(new SideEffectMethodMarker());
@@ -442,17 +453,39 @@ public class Optimizer
                 new StackSizeUpdater())));
         }
 
-//        // Specializing the class member descriptors seems to increase the
-//        // class file size, on average.
-//        // Specialize all class member descriptors.
-//        programClassPool.classesAccept(new AllMemberVisitor(
-//                                       new OptimizationInfoMemberFilter(
-//                                       new MemberDescriptorSpecializer())));
-//
-//        // Fix all references to classes, for MemberDescriptorSpecializer.
-//        programClassPool.classesAccept(new AllMemberVisitor(
-//                                       new OptimizationInfoMemberFilter(
-//                                       new ClassReferenceFixer(true))));
+        if (methodRemovalParameter &&
+            methodRemovalParameterCounter.getCount() > 0)
+        {
+            // Tweak the descriptors of duplicate initializers, due to removed
+            // method parameters.
+            programClassPool.classesAccept(
+                new AllMethodVisitor(
+                new DuplicateInitializerFixer(initializerFixCounter1)));
+
+            if (initializerFixCounter1.getCount() > 0)
+            {
+                // Fix all invocations of tweaked initializers.
+                programClassPool.classesAccept(
+                    new AllMethodVisitor(
+                    new AllAttributeVisitor(
+                    new DuplicateInitializerInvocationFixer(addedCounter))));
+
+                // Fix all references to tweaked initializers.
+                programClassPool.classesAccept(new MemberReferenceFixer());
+            }
+        }
+
+        //// Specializing the class member descriptors seems to increase the
+        //// class file size, on average.
+        //// Specialize all class member descriptors.
+        //programClassPool.classesAccept(new AllMemberVisitor(
+        //                               new OptimizationInfoMemberFilter(
+        //                               new MemberDescriptorSpecializer())));
+        //
+        //// Fix all references to classes, for MemberDescriptorSpecializer.
+        //programClassPool.classesAccept(new AllMemberVisitor(
+        //                               new OptimizationInfoMemberFilter(
+        //                               new ClassReferenceFixer(true))));
 
         // Mark all classes with package visible members.
         // Mark all exception catches of methods.
@@ -462,13 +495,13 @@ public class Optimizer
             new MultiClassVisitor(
             new ClassVisitor[]
             {
+                new PackageVisibleMemberContainingClassMarker(),
                 new AllConstantVisitor(
                 new PackageVisibleMemberInvokingClassMarker()),
                 new AllMethodVisitor(
                 new MultiMemberVisitor(
                 new MemberVisitor[]
                 {
-                    new PackageVisibleMemberContainingClassMarker(),
                     new AllAttributeVisitor(
                     new MultiAttributeVisitor(
                     new AttributeVisitor[]
@@ -512,8 +545,8 @@ public class Optimizer
                                           classMergingHorizontalCounter));
         }
 
-        if (classMergingVertical ||
-            classMergingHorizontal)
+        if (classMergingVerticalCounter  .getCount() > 0 ||
+            classMergingHorizontalCounter.getCount() > 0)
         {
             // Clean up inner class attributes to avoid loops.
             programClassPool.classesAccept(new RetargetedInnerClassAttributeRemover());
@@ -537,18 +570,14 @@ public class Optimizer
                 new AllAttributeVisitor(
                 new AllInnerClassesInfoVisitor(
                 new InnerClassesAccessFixer())));
-        }
 
-        if (methodRemovalParameter ||
-            classMergingVertical   ||
-            classMergingHorizontal)
-        {
-            // Tweak the descriptors of duplicate initializers.
+            // Tweak the descriptors of duplicate initializers, due to merged
+            // parameter classes.
             programClassPool.classesAccept(
                 new AllMethodVisitor(
-                new DuplicateInitializerFixer(initializerFixCounter)));
+                new DuplicateInitializerFixer(initializerFixCounter2)));
 
-            if (initializerFixCounter.getCount() > 0)
+            if (initializerFixCounter2.getCount() > 0)
             {
                 // Fix all invocations of tweaked initializers.
                 programClassPool.classesAccept(
@@ -622,9 +651,9 @@ public class Optimizer
                 new MemberPrivatizer(methodMarkingPrivateCounter)))));
         }
 
-        if ((methodInliningUnique ||
-             methodInliningShort  ||
-             methodInliningTailrecursion) &&
+        if ((methodInliningUniqueCounter       .getCount() > 0 ||
+             methodInliningShortCounter        .getCount() > 0 ||
+             methodInliningTailrecursionCounter.getCount() > 0) &&
             configuration.allowAccessModification)
         {
             // Fix the access flags of referenced classes and class members,
@@ -634,10 +663,10 @@ public class Optimizer
                 new AccessFixer()));
         }
 
-        if (methodRemovalParameter ||
-            classMergingVertical   ||
-            classMergingHorizontal ||
-            methodMarkingPrivate)
+        if (methodRemovalParameterCounter .getCount() > 0 ||
+            classMergingVerticalCounter   .getCount() > 0 ||
+            classMergingHorizontalCounter .getCount() > 0 ||
+            methodMarkingPrivateCounter   .getCount() > 0 )
         {
             // Fix invocations of interface methods, of methods that have become
             // non-abstract or private, and of methods that have moved to a
@@ -775,7 +804,7 @@ public class Optimizer
         int methodMarkingPrivateCount         = methodMarkingPrivateCounter        .getCount();
         int methodMarkingStaticCount          = methodMarkingStaticCounter         .getCount();
         int methodMarkingFinalCount           = methodMarkingFinalCounter          .getCount();
-        int methodRemovalParameterCount       = methodRemovalParameterCounter      .getCount() - methodMarkingStaticCounter.getCount() - initializerFixCounter.getCount();
+        int methodRemovalParameterCount       = methodRemovalParameterCounter      .getCount() - methodMarkingStaticCounter.getCount() - initializerFixCounter1.getCount() - initializerFixCounter2.getCount();
         int methodPropagationParameterCount   = methodPropagationParameterCounter  .getCount();
         int methodPropagationReturnvalueCount = methodPropagationReturnvalueCounter.getCount();
         int methodInliningShortCount          = methodInliningShortCounter         .getCount();

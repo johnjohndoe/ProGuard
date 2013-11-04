@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -301,7 +301,8 @@ implements   InstructionVisitor,
     {
         // Save a reference to the corresponding class.
         String externalClassName = stringConstant.getString(clazz);
-        String internalClassName = ClassUtil.internalClassName(externalClassName);
+        String internalClassName = ClassUtil.internalClassName(
+                                   ClassUtil.externalBaseType(externalClassName));
 
         stringConstant.referencedClass = findClass(clazz.getName(), internalClassName);
     }
@@ -350,7 +351,7 @@ implements   InstructionVisitor,
                 return;
             }
 
-            String className  = methodrefConstant.getClassName(clazz);
+            String className = methodrefConstant.getClassName(clazz);
 
             // Note that we look for the class by name, since the referenced
             // class has not been initialized yet.
@@ -434,11 +435,17 @@ implements   InstructionVisitor,
      */
     private Clazz findClass(String referencingClassName, String name)
     {
-        // Ignore any primitive array types.
-        if (ClassUtil.isInternalArrayType(name) &&
-            !ClassUtil.isInternalClassType(name))
+        // Is it an array type?
+        if (ClassUtil.isInternalArrayType(name))
         {
-            return null;
+            // Ignore any primitive array types.
+            if (!ClassUtil.isInternalClassType(name))
+            {
+                return null;
+            }
+
+            // Strip the array part.
+            name = ClassUtil.internalClassNameFromClassType(name);
         }
 
         // First look for the class in the program class pool.

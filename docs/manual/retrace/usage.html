@@ -1,4 +1,4 @@
-<!doctype html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
 <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
@@ -7,8 +7,8 @@
 <title>ReTrace Usage</title>
 <script type="text/javascript" language="JavaScript">
 <!--
-if (window.top.document.title!="ProGuard")
-  window.top.location.replace("index.html#"+window.location.pathname+window.location.hash);
+if (window.self==window.top)
+  window.top.location.replace("../../index.html#"+window.location.pathname+window.location.hash);
 //else if (window.top.location.hash!="#"+window.location.pathname)
 //  window.top.location.hash="#"+window.location.pathname;
 //-->
@@ -95,14 +95,13 @@ the obfuscated class files:
 
 <ul>
 <li>If all line numbers have been preserved while obfuscating the application,
-    ReTrace will be able to restore the stack trace completely.
-    <p>
+    ReTrace will be able to restore the stack trace completely.</li>
 
 <li>If the line numbers have been removed, mapping obfuscated method names
     back to their original names has become ambiguous. Retrace will list all
     possible original method names for each line in the stack trace. The user
     can then try to deduce the actual stack trace manually, based on the logic
-    of the program.
+    of the program.</li>
 
 </ul>
 <p>
@@ -113,13 +112,12 @@ href="../examples.html#stacktrace">example</a> in the ProGuard User Manual.
 
 Unobfuscated elements and obfuscated elements for which no mapping is available
 will be left unchanged.
-<p>
 
-<hr>
+<hr />
 <noscript><div><a target="_top" href="../../index.html" class="button">Show menu</a></div></noscript>
 <address>
-Copyright &copy; 2002-2010
-<a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
+Copyright &copy; 2002-2011
+<a target="other" href="http://www.lafortune.eu/">Eric Lafortune</a>.
 </address>
 </body>
 </html>

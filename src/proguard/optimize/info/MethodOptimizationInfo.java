@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -204,7 +204,7 @@ public class MethodOptimizationInfo
 
     public void setParameterUsed(int parameterIndex)
     {
-        usedParameters |= 1 << parameterIndex;
+        usedParameters |= 1L << parameterIndex;
     }
 
 
@@ -216,7 +216,7 @@ public class MethodOptimizationInfo
 
     public boolean isParameterUsed(int parameterIndex)
     {
-        return parameterIndex >= 64 || (usedParameters & (1 << parameterIndex)) != 0;
+        return parameterIndex >= 64 || (usedParameters & (1L << parameterIndex)) != 0;
     }
 
 

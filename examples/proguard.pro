@@ -53,5 +53,5 @@
 # If you want to preserve the WTK obfuscation plug-in, you'll have to specify
 # the kenv.zip file.
 
-#-libraryjars /usr/local/java/wtk2.1/wtklib/kenv.zip
+#-libraryjars /usr/local/java/wtk2.5.2/wtklib/kenv.zip
 #-keep public class proguard.wtk.ProGuardObfuscator

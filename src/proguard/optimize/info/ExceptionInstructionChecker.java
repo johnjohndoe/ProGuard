@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -123,6 +123,7 @@ implements   InstructionVisitor
             case InstructionConstants.OP_NEW:
             case InstructionConstants.OP_ANEWARRAY:
             case InstructionConstants.OP_CHECKCAST:
+            case InstructionConstants.OP_INSTANCEOF:
             case InstructionConstants.OP_MULTIANEWARRAY:
                 // These instructions may throw exceptions.
                 mayThrowExceptions = true;

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -538,6 +538,7 @@ public class ConfigurationParser
                 strippedWord.equals(ClassConstants.EXTERNAL_ACC_FINAL)      ? ClassConstants.INTERNAL_ACC_FINAL       :
                 strippedWord.equals(ClassConstants.EXTERNAL_ACC_INTERFACE)  ? ClassConstants.INTERNAL_ACC_INTERFACE   :
                 strippedWord.equals(ClassConstants.EXTERNAL_ACC_ABSTRACT)   ? ClassConstants.INTERNAL_ACC_ABSTRACT    :
+                strippedWord.equals(ClassConstants.EXTERNAL_ACC_SYNTHETIC)  ? ClassConstants.INTERNAL_ACC_SYNTHETIC   :
                 strippedWord.equals(ClassConstants.EXTERNAL_ACC_ANNOTATION) ? ClassConstants.INTERNAL_ACC_ANNOTATTION :
                 strippedWord.equals(ClassConstants.EXTERNAL_ACC_ENUM)       ? ClassConstants.INTERNAL_ACC_ENUM        :
                                                                               unknownAccessFlag();
@@ -717,9 +718,12 @@ public class ConfigurationParser
                 strippedWord.equals(ClassConstants.EXTERNAL_ACC_SYNCHRONIZED) ? ClassConstants.INTERNAL_ACC_SYNCHRONIZED :
                 strippedWord.equals(ClassConstants.EXTERNAL_ACC_VOLATILE)     ? ClassConstants.INTERNAL_ACC_VOLATILE     :
                 strippedWord.equals(ClassConstants.EXTERNAL_ACC_TRANSIENT)    ? ClassConstants.INTERNAL_ACC_TRANSIENT    :
+                strippedWord.equals(ClassConstants.EXTERNAL_ACC_BRIDGE)       ? ClassConstants.INTERNAL_ACC_BRIDGE       :
+                strippedWord.equals(ClassConstants.EXTERNAL_ACC_VARARGS)      ? ClassConstants.INTERNAL_ACC_VARARGS      :
                 strippedWord.equals(ClassConstants.EXTERNAL_ACC_NATIVE)       ? ClassConstants.INTERNAL_ACC_NATIVE       :
                 strippedWord.equals(ClassConstants.EXTERNAL_ACC_ABSTRACT)     ? ClassConstants.INTERNAL_ACC_ABSTRACT     :
                 strippedWord.equals(ClassConstants.EXTERNAL_ACC_STRICT)       ? ClassConstants.INTERNAL_ACC_STRICT       :
+                strippedWord.equals(ClassConstants.EXTERNAL_ACC_SYNTHETIC)    ? ClassConstants.INTERNAL_ACC_SYNTHETIC    :
                                                                                 0;
             if (accessFlag == 0)
             {
@@ -1034,16 +1038,6 @@ public class ConfigurationParser
         if (!file.isAbsolute())
         {
             file = new File(reader.getBaseDir(), fileName);
-        }
-
-        // Try to get a canonical representation.
-        try
-        {
-            file = file.getCanonicalFile();
-        }
-        catch (IOException ex)
-        {
-            // Just keep the original representation.
         }
 
         return file;

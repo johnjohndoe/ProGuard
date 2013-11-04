@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -65,11 +65,10 @@ public class DataEntryWriterFactory
     private static DataEntryWriter createClassPathEntryWriter(ClassPathEntry  classPathEntry,
                                                               DataEntryWriter alternativeWriter)
     {
-        String entryName = classPathEntry.getName();
-        boolean isJar = endsWithIgnoreCase(entryName, ".jar");
-        boolean isWar = endsWithIgnoreCase(entryName, ".war");
-        boolean isEar = endsWithIgnoreCase(entryName, ".ear");
-        boolean isZip = endsWithIgnoreCase(entryName, ".zip");
+        boolean isJar = classPathEntry.isJar();
+        boolean isWar = classPathEntry.isWar();
+        boolean isEar = classPathEntry.isEar();
+        boolean isZip = classPathEntry.isZip();
 
         List filter    = classPathEntry.getFilter();
         List jarFilter = classPathEntry.getJarFilter();
@@ -83,7 +82,7 @@ public class DataEntryWriterFactory
                             isEar ? "ear" :
                             isZip ? "zip" :
                                     "directory") +
-                           " [" + entryName + "]" +
+                           " [" + classPathEntry.getName() + "]" +
                            (filter    != null ||
                             jarFilter != null ||
                             warFilter != null ||
@@ -147,18 +146,5 @@ public class DataEntryWriterFactory
                new ExtensionMatcher(jarExtension))),
                    filteredJarWriter,
                    isJar ? jarWriter : writer);
-    }
-
-
-    /**
-     * Returns whether the given string ends with the given suffix, ignoring its
-     * case.
-     */
-    private static boolean endsWithIgnoreCase(String string, String suffix)
-    {
-        int stringLength = string.length();
-        int suffixLength = suffix.length();
-
-        return string.regionMatches(true, stringLength - suffixLength, suffix, 0, suffixLength);
     }
 }

@@ -11,7 +11,8 @@
 
   <proguard printmapping="proguard.map"
             overloadaggressively="on"
-            repackageclasses="">
+            repackageclasses=""
+            renamesourcefileattribute="SourceFile">
 
     <!-- Specify the input jars, output jars, and library jars. -->
 
@@ -22,14 +23,19 @@
     <outjar file="examples/ant/proguard_out.jar" />
 
     <libraryjar file="${java.home}/lib/rt.jar" />
-    <libraryjar file="/usr/local/java/ant1.7.0/lib/ant.jar" />
-    <libraryjar file="/usr/local/java/wtk2.1/wtklib/kenv.zip" />
+    <libraryjar file="/usr/local/java/ant/lib/ant.jar" />
+    <libraryjar file="/usr/local/java/wtk2.5.2/wtklib/kenv.zip" />
 
     <!-- Adapt the resource file names, based on the corresponding obfuscated
          class names. -->
 
     <adaptresourcefilenames    filter="**.properties,**.gif,**.jpg"  />
     <adaptresourcefilecontents filter="proguard/ant/task.properties" />
+
+    <!-- Optionally preserve line numbers in the obfuscated stack traces.
+    <keepattribute name="LineNumberTable">
+    <keepattribute name="SourceFile">
+    -->
 
     <!-- The main seeds: ProGuard and its companion tool ReTrace. -->
 

@@ -1,4 +1,4 @@
-<!doctype html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
 <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
@@ -7,8 +7,8 @@
 <title>ProGuard Introduction</title>
 <script type="text/javascript" language="JavaScript">
 <!--
-if (window.top.document.title!="ProGuard")
-  window.top.location.replace("index.html#"+window.location.pathname+window.location.hash);
+if (window.self==window.top)
+  window.top.location.replace("../index.html#"+window.location.pathname+window.location.hash);
 //else if (window.top.location.hash!="#"+window.location.pathname)
 //  window.top.location.hash="#"+window.location.pathname;
 //-->
@@ -84,7 +84,9 @@ libraries that you would need for compiling the code. ProGuard uses them to
 reconstruct the class dependencies that are necessary for proper processing.
 The library jars themselves always remain unchanged. You should still put them
 in the class path of your final application.
-<p>
+
+<h3>Entry points</h3>
+
 In order to determine which code has to be preserved and which code can be
 discarded or obfuscated, you have to specify one or more <i>entry points</i> to
 your code. These entry points are typically classes with main methods, applets,
@@ -92,19 +94,19 @@ midlets, etc.
 <ul>
 <li>In the <b>shrinking step</b>, ProGuard starts from these seeds and
     recursively determines which classes and class members are used. All other
-    classes and class members are discarded.
+    classes and class members are discarded.</li>
 
 <li>In the <b>optimization step</b>, ProGuard further optimizes the code.
     Among other optimizations, classes and methods that are not entry points
     can be made private, static, or final, unused parameters can be removed,
-    and some methods may be inlined.
+    and some methods may be inlined.</li>
 
 <li>In the <b>obfuscation step</b>, ProGuard renames classes and class members
     that are not entry points. In this entire process, keeping the entry
-    points ensures that they can still be accessed by their original names.
+    points ensures that they can still be accessed by their original names.</li>
 
 <li>The <b>preverification step</b> is the only step that doesn't have to know
-    the entry points.
+    the entry points.</li>
 </ul>
 <p>
 The <a href="usage.html">Usage section</a> of this manual describes the
@@ -126,22 +128,25 @@ simple <code>-keep</code> options.
 However, ProGuard will already detect and handle the following cases for you:
 
 <ul>
-<li><code>Class.forName("SomeClass")</code>
-<li><code>SomeClass.class</code>
-<li><code>SomeClass.class.getField("someField")</code>
-<li><code>SomeClass.class.getDeclaredField("someField")</code>
-<li><code>SomeClass.class.getMethod("someMethod", new Class[] {})</code>
-<li><code>SomeClass.class.getMethod("someMethod", new Class[] { A.class })</code>
-<li><code>SomeClass.class.getMethod("someMethod", new Class[] { A.class, B.class })</code>
-<li><code>SomeClass.class.getDeclaredMethod("someMethod", new Class[] {})</code>
-<li><code>SomeClass.class.getDeclaredMethod("someMethod", new Class[] { A.class })</code>
-<li><code>SomeClass.class.getDeclaredMethod("someMethod", new Class[] { A.class, B.class })</code>
+<li><code>Class.forName("SomeClass")</code></li>
+<li><code>SomeClass.class</code></li>
+<li><code>SomeClass.class.getField("someField")</code></li>
+<li><code>SomeClass.class.getDeclaredField("someField")</code></li>
+<li><code>SomeClass.class.getMethod("someMethod", new Class[] {})</code></li>
+<li><code>SomeClass.class.getMethod("someMethod", new Class[] { A.class })</code></li>
+<li><code>SomeClass.class.getMethod("someMethod", new Class[] { A.class, B.class })</code></li>
+<li><code>SomeClass.class.getDeclaredMethod("someMethod", new Class[] {})</code></li>
+<li><code>SomeClass.class.getDeclaredMethod("someMethod", new Class[] { A.class })</code></li>
+<li><code>SomeClass.class.getDeclaredMethod("someMethod", new Class[] { A.class, B.class })</code></li>
+<li><code>AtomicIntegerFieldUpdater.newUpdater(SomeClass.class, "someField")</code></li>
+<li><code>AtomicLongFieldUpdater.newUpdater(SomeClass.class, "someField")</code></li>
+<li><code>AtomicReferenceFieldUpdater.newUpdater(SomeClass.class, SomeType.class, "someField")</code></li>
 </ul>
 
 The names of the classes and class members may of course be different, but the
 constructs should be literally the same for ProGuard to recognize them. The
 referenced classes and class members are preserved in the shrinking phase, and
-the string arguments are properly replaced in the obfuscation phase.
+the string arguments are properly updated in the obfuscation phase.
 <p>
 Furthermore, ProGuard will offer some suggestions if keeping some classes or
 class members appears necessary. For example, ProGuard will note constructs
@@ -154,13 +159,12 @@ For proper results, you should at least be somewhat familiar with the code
 that you are processing. Obfuscating code that performs a lot of reflection
 may require trial and error, especially without the necessary information
 about the internals of the code.
-<p>
 
-<hr>
+<hr />
 <noscript><div><a target="_top" href="../index.html" class="button">Show menu</a></div></noscript>
 <address>
-Copyright &copy; 2002-2010
-<a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
+Copyright &copy; 2002-2011
+<a target="other" href="http://www.lafortune.eu/">Eric Lafortune</a>.
 </address>
 </body>
 </html>

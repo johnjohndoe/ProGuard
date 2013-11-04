@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -33,7 +33,6 @@ import java.io.*;
 import java.net.URL;
 import java.util.*;
 import java.util.List;
-import java.lang.reflect.InvocationTargetException;
 
 
 /**
@@ -1440,13 +1439,13 @@ public class ProGuardGUI extends JFrame
     /**
      * Loads the given stack trace into the GUI.
      */
-    private void loadStackTrace(String fileName)
+    private void loadStackTrace(File file)
     {
         try
         {
             StringBuffer buffer = new StringBuffer(1024);
 
-            Reader reader = new BufferedReader(new FileReader(fileName));
+            Reader reader = new BufferedReader(new FileReader(file));
             try
             {
                 while (true)
@@ -1471,7 +1470,7 @@ public class ProGuardGUI extends JFrame
         catch (IOException ex)
         {
             JOptionPane.showMessageDialog(getContentPane(),
-                                          msg("cantOpenStackTraceFile", fileName),
+                                          msg("cantOpenStackTraceFile", fileName(file)),
                                           msg("warning"),
                                           JOptionPane.ERROR_MESSAGE);
         }
@@ -1604,10 +1603,8 @@ public class ProGuardGUI extends JFrame
             int returnValue = fileChooser.showOpenDialog(ProGuardGUI.this);
             if (returnValue == JFileChooser.APPROVE_OPTION)
             {
-                File selectedFile = fileChooser.getSelectedFile();
-                String fileName = selectedFile.getPath();
 
-                loadStackTrace(fileName);
+                loadStackTrace(fileChooser.getSelectedFile());
             }
         }
     }
@@ -1645,12 +1642,37 @@ public class ProGuardGUI extends JFrame
     // Small utility methods.
 
     /**
-     * Returns the file name of the given file, if any.
+     * Returns the canonical file name for the given file, or the empty string
+     * if the file name is empty.
      */
-    private static String fileName(File file)
+    private String fileName(File file)
     {
-        return file == null || file.getName().length() == 0 ? "" :
-            file.getAbsolutePath();
+        if (isFile(file))
+        {
+            try
+            {
+                return file.getCanonicalPath();
+            }
+            catch (IOException ex)
+            {
+                return file.getPath();
+            }
+        }
+        else
+        {
+            return "";
+        }
+    }
+
+
+    /**
+     * Returns whether the given file is actually a file, or just a placeholder
+     * for the standard output.
+     */
+    private boolean isFile(File file)
+    {
+        return file != null &&
+               file.getPath().length() > 0;
     }
 
 
@@ -1731,7 +1753,6 @@ public class ProGuardGUI extends JFrame
                     {
                         System.out.println(gui.getClass().getName() + ": ignoring extra arguments [" + args[argIndex] + "...]");
                     }
-
                 }
             });
         }

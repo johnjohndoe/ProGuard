@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -42,7 +42,7 @@ public abstract class SimplifiedVisitor
     /**
      * Visits any type of class member of the given class.
      */
-    public void visitAnyClass(Clazz Clazz)
+    public void visitAnyClass(Clazz clazz)
     {
         throw new UnsupportedOperationException("Method must be overridden in ["+this.getClass().getName()+"] if ever called");
     }

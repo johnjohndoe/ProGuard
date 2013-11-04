@@ -1,4 +1,4 @@
-<!doctype html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
 <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
@@ -7,8 +7,8 @@
 <title>ReTrace Examples</title>
 <script type="text/javascript" language="JavaScript">
 <!--
-if (window.top.document.title!="ProGuard")
-  window.top.location.replace("index.html#"+window.location.pathname+window.location.hash);
+if (window.self==window.top)
+  window.top.location.replace("../../index.html#"+window.location.pathname+window.location.hash);
 //else if (window.top.location.hash!="#"+window.location.pathname)
 //  window.top.location.hash="#"+window.location.pathname;
 //-->
@@ -20,13 +20,13 @@ if (window.top.document.title!="ProGuard")
 
 Some typical example uses:
 <ol>
-<li><a href="#with">Restoring a stack trace with line numbers</a>
-<li><a href="#withverbose">Restoring a stack trace with line numbers (verbose)</a>
-<li><a href="#without">Restoring a stack trace without line numbers</a>
+<li><a href="#with">Restoring a stack trace with line numbers</a></li>
+<li><a href="#withverbose">Restoring a stack trace with line numbers
+    (verbose)</a></li>
+<li><a href="#without">Restoring a stack trace without line numbers</a></li>
 </ol>
 
-<a name="with">&nbsp;</a>
-<h3>Restoring a stack trace with line numbers</h3>
+<h3><a name="with">Restoring a stack trace with line numbers</a></h3>
 
 Assume for instance ProGuard itself has been obfuscated using the following
 extra options:
@@ -141,8 +141,7 @@ Exception in thread "main" java.lang.Error: Random exception
         at proguard.ProGuard.main(ProGuard:429)
 </pre>
 
-<a name="withverbose">&nbsp;</a>
-<h3>Restoring a stack trace with line numbers (verbose)</h3>
+<h3><a name="withverbose">Restoring a stack trace with line numbers (verbose)</a></h3>
 
 In the previous example, we could also use the verbose flag:
 <pre>
@@ -197,8 +196,7 @@ Exception in thread "main" java.lang.Error: Random exception
 </pre>
 
 
-<a name="without">&nbsp;</a>
-<h3>Restoring a stack trace without line numbers</h3>
+<h3><a name="without">Restoring a stack trace without line numbers</a></h3>
 
 Assume for instance ProGuard itself has been obfuscated using the following
 extra options, this time without preserving the line number tables:
@@ -332,13 +330,12 @@ Exception in thread "main" java.lang.Error: Random exception
                              execute
         at proguard.ProGuard.main(Unknown Source)
 </pre>
-<p>
 
-<hr>
+<hr />
 <noscript><div><a target="_top" href="../../index.html" class="button">Show menu</a></div></noscript>
 <address>
-Copyright &copy; 2002-2010
-<a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
+Copyright &copy; 2002-2011
+<a target="other" href="http://www.lafortune.eu/">Eric Lafortune</a>.
 </address>
 </body>
 </html>

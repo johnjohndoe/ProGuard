@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -51,6 +51,9 @@ implements   ClassVisitor,
              AnnotationVisitor,
              ElementValueVisitor
 {
+    private static final boolean DEBUG = false;
+
+
     // Implementations for ClassVisitor.
 
     public void visitProgramClass(ProgramClass programClass)
@@ -190,6 +193,12 @@ implements   ClassVisitor,
         Clazz newReferencedClass = updateReferencedClass(referencedClass);
         if (referencedClass != newReferencedClass)
         {
+            if (DEBUG)
+            {
+                System.out.println("TargetClassChanger:");
+                System.out.println("  ["+clazz.getName()+"] changing reference from ["+refConstant.referencedClass+"."+refConstant.referencedMember.getName(refConstant.referencedClass)+refConstant.referencedMember.getDescriptor(refConstant.referencedClass)+"]");
+            }
+
             // Change the referenced class.
             refConstant.referencedClass  = newReferencedClass;
 
@@ -199,6 +208,11 @@ implements   ClassVisitor,
                                        refConstant.getName(clazz),
                                        refConstant.getType(clazz),
                                        newReferencedClass);
+
+            if (DEBUG)
+            {
+                System.out.println("  ["+clazz.getName()+"]                    to   ["+refConstant.referencedClass+"."+refConstant.referencedMember.getName(refConstant.referencedClass)+refConstant.referencedMember.getDescriptor(refConstant.referencedClass)+"]");
+            }
         }
     }
 

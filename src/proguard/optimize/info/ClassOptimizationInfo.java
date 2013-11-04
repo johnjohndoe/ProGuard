@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -34,6 +34,7 @@ public class ClassOptimizationInfo
     private boolean isInstanceofed                = false;
     private boolean isDotClassed                  = false;
     private boolean isCaught                      = false;
+    private boolean containsStaticInitializer     = false;
     private boolean containsPackageVisibleMembers = false;
     private boolean invokesPackageVisibleMembers  = false;
     private Clazz   targetClass;
@@ -87,6 +88,18 @@ public class ClassOptimizationInfo
     }
 
 
+    public void setContainsStaticInitializer()
+    {
+        containsStaticInitializer = true;
+    }
+
+
+    public boolean containsStaticInitializer()
+    {
+        return containsStaticInitializer;
+    }
+
+
     public void setContainsPackageVisibleMembers()
     {
         containsPackageVisibleMembers = true;
@@ -129,6 +142,7 @@ public class ClassOptimizationInfo
         this.isInstanceofed                |= other.isInstanceofed;
         this.isDotClassed                  |= other.isDotClassed;
         this.isCaught                      |= other.isCaught;
+        this.containsStaticInitializer     |= other.containsStaticInitializer;
         this.containsPackageVisibleMembers |= other.containsPackageVisibleMembers;
         this.invokesPackageVisibleMembers  |= other.invokesPackageVisibleMembers;
     }

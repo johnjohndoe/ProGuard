@@ -1,4 +1,4 @@
-<!doctype html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
 <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
@@ -7,8 +7,8 @@
 <title>ProGuard Limitations</title>
 <script type="text/javascript" language="JavaScript">
 <!--
-if (window.top.document.title!="ProGuard")
-  window.top.location.replace("index.html#"+window.location.pathname+window.location.hash);
+if (window.self==window.top)
+  window.top.location.replace("../index.html#"+window.location.pathname+window.location.hash);
 //else if (window.top.location.hash!="#"+window.location.pathname)
 //  window.top.location.hash="#"+window.location.pathname;
 //-->
@@ -21,7 +21,7 @@ if (window.top.document.title!="ProGuard")
 When using ProGuard, you should be aware of a few technical issues, all of
 which are easily avoided or resolved:
 <p>
-<ul>
+<ul class="spacious">
 
 <li>For best results, ProGuard's optimization algorithms assume that the
     processed code never <b>intentionally throws NullPointerExceptions</b> or
@@ -32,33 +32,29 @@ which are easily avoided or resolved:
     <code>myObject</code> might be null, causing a NullPointerException. In
     some way this is a good thing: optimized code may throw fewer exceptions.
     Should this entire assumption be false, you'll have to switch off
-    optimization using the <code>-dontoptimize</code> option.
-    <p>
+    optimization using the <code>-dontoptimize</code> option.</li>
 
 <li>If an input jar and a library jar contain classes in the <b>same
     package</b>, the obfuscated output jar may contain class names that
     overlap with class names in the library jar. This is most likely if the
     library jar has been obfuscated before, as it will then probably contain
     classes named 'a', 'b', etc. Packages should therefore never be split
-    across input jars and library jars.
-    <p>
+    across input jars and library jars.</li>
 
 <li>When obfuscating, ProGuard writes out class files named
     "<code>a.class</code>", "<code>b.class</code>", etc. If a package contains
     a large number of classes, ProGuard may also write out
     <b>"<code>aux.class</code>"</b>. Inconveniently, Windows refuses to create
     files with this reserved name (among a few other names). It's generally
-    better to write the output to a jar, in order to avoid such problems.
-    <p>
+    better to write the output to a jar, in order to avoid such problems.</li>
 
 </ul>
-<p>
 
-<hr>
+<hr />
 <noscript><div><a target="_top" href="../index.html" class="button">Show menu</a></div></noscript>
 <address>
-Copyright &copy; 2002-2010
-<a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
+Copyright &copy; 2002-2011
+<a target="other" href="http://www.lafortune.eu/">Eric Lafortune</a>.
 </address>
 </body>
 </html>

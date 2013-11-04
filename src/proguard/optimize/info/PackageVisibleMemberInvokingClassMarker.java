@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -24,39 +24,87 @@ import proguard.classfile.*;
 import proguard.classfile.constant.visitor.ConstantVisitor;
 import proguard.classfile.constant.*;
 import proguard.classfile.util.SimplifiedVisitor;
+import proguard.classfile.visitor.*;
 
 /**
- * This ConstantVisitor marks all classes that invoke package visible members
- * in other classes.
+ * This ConstantVisitor marks all classes that refer to package visible classes
+ * or class members.
  *
  * @author Eric Lafortune
  */
 public class PackageVisibleMemberInvokingClassMarker
 extends      SimplifiedVisitor
-implements   ConstantVisitor
+implements   ConstantVisitor,
+             ClassVisitor,
+             MemberVisitor
 {
+    private Clazz referencingClass;
+
+
     // Implementations for ConstantVisitor.
 
     public void visitAnyConstant(Clazz clazz, Constant constant) {}
 
 
+    public void visitStringConstant(Clazz clazz, StringConstant stringConstant)
+    {
+        // Check the referenced class and class member, if any.
+        if (stringConstant.referencedClass != clazz)
+        {
+            referencingClass = clazz;
+
+            stringConstant.referencedClassAccept(this);
+            stringConstant.referencedMemberAccept(this);
+        }
+    }
+
+
     public void visitAnyRefConstant(Clazz clazz, RefConstant refConstant)
     {
-        Clazz referencedClass = refConstant.referencedClass;
-        if (referencedClass != null &&
-            (referencedClass.getAccessFlags() &
+        // Check the referenced class and class member.
+        if (refConstant.referencedClass != clazz)
+        {
+            referencingClass = clazz;
+
+            refConstant.referencedClassAccept(this);
+            refConstant.referencedMemberAccept(this);
+        }
+    }
+
+
+    public void visitClassConstant(Clazz clazz, ClassConstant classConstant)
+    {
+        // Check the referenced class.
+        if (classConstant.referencedClass != clazz)
+        {
+            referencingClass = clazz;
+
+            classConstant.referencedClassAccept(this);
+        }
+    }
+
+
+    // Implementations for ClassVisitor.
+
+    public void visitAnyClass(Clazz clazz)
+    {
+        if ((clazz.getAccessFlags() &
              ClassConstants.INTERNAL_ACC_PUBLIC) == 0)
         {
-            setInvokesPackageVisibleMembers(clazz);
+            setInvokesPackageVisibleMembers(referencingClass);
         }
+    }
 
-        Member referencedMember = refConstant.referencedMember;
-        if (referencedMember != null &&
-            (referencedMember.getAccessFlags() &
+
+    // Implementations for MemberVisitor.
+
+    public void visitAnyMember(Clazz clazz, Member member)
+    {
+        if ((member.getAccessFlags() &
              (ClassConstants.INTERNAL_ACC_PUBLIC |
               ClassConstants.INTERNAL_ACC_PRIVATE)) == 0)
         {
-            setInvokesPackageVisibleMembers(clazz);
+            setInvokesPackageVisibleMembers(referencingClass);
         }
     }
 

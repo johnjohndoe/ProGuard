@@ -34,6 +34,11 @@ pre {
   background: #E0E0E0;
 }
 
+ul.spacious li
+{
+  padding: 8px;
+}
+
 a
 {
   text-decoration: none;

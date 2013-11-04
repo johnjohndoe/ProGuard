@@ -7,7 +7,9 @@
   <taskdef resource="proguard/ant/task.properties"
            classpath="lib/proguard.jar" />
 
-  <proguard printseeds="on">
+  <proguard printseeds="on"
+            printmapping="proguard.map"
+            renamesourcefileattribute="SourceFile">
 
     <!-- Specify the input jars, output jars, and library jars. -->
 
@@ -16,13 +18,18 @@
 
     <libraryjar file="${java.home}/lib/rt.jar" />
 
-    <!-- Keep all public servlets. -->
-
-    <keep access="public" implements="javax.servlet.Servlet" />
+    <!-- Optionally preserve line numbers in the obfuscated stack traces.
+    <keepattribute name="LineNumberTable">
+    <keepattribute name="SourceFile">
+    -->
 
     <!-- Preserve all annotations. -->
 
     <keepattribute name="*Annotation*" />
+
+    <!-- Keep all public servlets. -->
+
+    <keep access="public" implements="javax.servlet.Servlet" />
 
     <!-- Preserve all native method names and the names of their classes. -->
 

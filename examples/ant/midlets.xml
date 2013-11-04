@@ -8,13 +8,15 @@
            classpath="lib/proguard.jar" />
 
   <proguard microedition="on"
+            printseeds="on"
+            printmapping="out.map"
             overloadaggressively="on"
             repackageclasses=""
             allowaccessmodification="on"
-            printseeds="on">
+            renamesourcefileattribute="SourceFile">
 
             <!-- On Windows, you can't use mixed case class names,
-                 for the sake of the preverify tool.
+                 should you still want to use the preverify tool.
             usemixedcaseclassnames="false">
             -->
 
@@ -23,8 +25,13 @@
     <injar  file="in.jar" />
     <outjar file="out.jar" />
 
-    <libraryjar file="/usr/local/java/wtk2.1/lib/midpapi20.jar" />
-    <libraryjar file="/usr/local/java/wtk2.1/lib/cldcapi11.jar" />
+    <libraryjar file="/usr/local/java/wtk2.5.2/lib/midpapi20.jar" />
+    <libraryjar file="/usr/local/java/wtk2.5.2/lib/cldcapi11.jar" />
+
+    <!-- Optionally preserve line numbers in the obfuscated stack traces.
+    <keepattribute name="LineNumberTable">
+    <keepattribute name="SourceFile">
+    -->
 
     <!-- Preserve all public midlets. -->
 

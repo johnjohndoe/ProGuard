@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -47,107 +47,186 @@ public class UpToDateChecker
      */
     public boolean check()
     {
-        long inputLastModified  = configuration.lastModified;
-        long outputLastModified = Long.MAX_VALUE;
-
-        ClassPath programJars = configuration.programJars;
-        ClassPath libraryJars = configuration.libraryJars;
-
-        // Check the dates of the program jars, if any.
-        if (programJars != null)
+        try
         {
-            for (int index = 0; index < programJars.size(); index++)
-            {
-                // Break early, if possible.
-                if (inputLastModified >= outputLastModified)
-                {
-                    break;
-                }
+            ModificationTimeChecker checker = new ModificationTimeChecker();
 
-                // Update the input and output modification times.
-                ClassPathEntry classPathEntry = programJars.get(index);
-                if (classPathEntry.isOutput())
+            checker.updateInputModificationTime(configuration.lastModified);
+
+            ClassPath programJars = configuration.programJars;
+            ClassPath libraryJars = configuration.libraryJars;
+
+            // Check the dates of the program jars, if any.
+            if (programJars != null)
+            {
+                for (int index = 0; index < programJars.size(); index++)
                 {
-                    long lastModified = lastModified(classPathEntry.getFile(), true);
-                    if (outputLastModified > lastModified)
-                    {
-                        outputLastModified = lastModified;
-                    }
-                }
-                else
-                {
-                    long lastModified = lastModified(classPathEntry.getFile(), false);
-                    if (inputLastModified < lastModified)
-                    {
-                        inputLastModified = lastModified;
-                    }
+                    // Update the input and output modification times.
+                    ClassPathEntry classPathEntry = programJars.get(index);
+
+                    checker.updateModificationTime(classPathEntry.getFile(),
+                                                   classPathEntry.isOutput());
                 }
             }
-        }
 
-        // Check the dates of the library jars, if any.
-        if (libraryJars != null)
-        {
-            for (int index = 0; index < libraryJars.size(); index++)
+            // Check the dates of the library jars, if any.
+            if (libraryJars != null)
             {
-                // Break early, if possible.
-                if (inputLastModified >= outputLastModified)
+                for (int index = 0; index < libraryJars.size(); index++)
                 {
-                    break;
-                }
+                    // Update the input modification time.
+                    ClassPathEntry classPathEntry = libraryJars.get(index);
 
-                // Update the input modification time.
-                ClassPathEntry classPathEntry = libraryJars.get(index);
-                long lastModified = lastModified(classPathEntry.getFile(), false);
-                if (inputLastModified < lastModified)
-                {
-                    inputLastModified = lastModified;
+                    checker.updateModificationTime(classPathEntry.getFile(),
+                                                   false);
                 }
             }
-        }
 
-        boolean outputUpToDate = inputLastModified < outputLastModified;
-        if (outputUpToDate)
+            // Check the dates of the auxiliary input files.
+            checker.updateInputModificationTime(configuration.applyMapping);
+            checker.updateInputModificationTime(configuration.obfuscationDictionary);
+            checker.updateInputModificationTime(configuration.classObfuscationDictionary);
+            checker.updateInputModificationTime(configuration.packageObfuscationDictionary);
+
+            // Check the dates of the auxiliary output files.
+            checker.updateOutputModificationTime(configuration.printSeeds);
+            checker.updateOutputModificationTime(configuration.printUsage);
+            checker.updateOutputModificationTime(configuration.printMapping);
+            checker.updateOutputModificationTime(configuration.printConfiguration);
+            checker.updateOutputModificationTime(configuration.dump);
+        }
+        catch (IllegalStateException e)
         {
-            System.out.println("The output is up to date");
+            // The output is outdated.
+            return false;
         }
 
-        return outputUpToDate;
+        System.out.println("The output seems up to date");
+
+        return true;
     }
 
 
     /**
-     * Returns the minimum or maximum modification time of the given file or
-     * of the files in the given directory (recursively).
+     * This class maintains the modification times of input and output.
+     * The methods throw an IllegalStateException if the output appears
+     * outdated.
      */
-    private long lastModified(File file, boolean minimum)
-    {
-        // Is it a directory?
-        if (file.isDirectory())
+    private static class ModificationTimeChecker {
+
+        private long inputModificationTime  = Long.MIN_VALUE;
+        private long outputModificationTime = Long.MAX_VALUE;
+
+
+        /**
+         * Updates the input modification time based on the given file or
+         * directory (recursively).
+         */
+        public void updateInputModificationTime(File file)
         {
-            // Ignore the directory's modification time; just recurse on its files.
-            File[] files = file.listFiles();
-
-            // Still, an empty output directory is probably a sign that it is
-            // not up to date.
-            long lastModified = files.length != 0 && minimum ?
-                Long.MAX_VALUE : 0L;
-
-            for (int index = 0; index < files.length; index++)
+            if (file != null)
             {
-                long fileLastModified = lastModified(files[index], minimum);
-                if ((lastModified < fileLastModified) ^ minimum)
+                updateModificationTime(file, false);
+            }
+        }
+
+
+        /**
+         * Updates the input modification time based on the given file or
+         * directory (recursively).
+         */
+        public void updateOutputModificationTime(File file)
+        {
+            if (file != null && file.getName().length() > 0)
+            {
+                updateModificationTime(file, true);
+            }
+        }
+
+
+        /**
+         * Updates the specified modification time based on the given file or
+         * directory (recursively).
+         */
+        public void updateModificationTime(File file, boolean isOutput)
+        {
+            // Is it a directory?
+            if (file.isDirectory())
+            {
+                // Ignore the directory's modification time; just recurse on
+                // its files.
+                File[] files = file.listFiles();
+
+                // Still, an empty output directory is probably a sign that it
+                // is not up to date.
+                if (files.length == 0 && isOutput)
                 {
-                    lastModified = fileLastModified;
+                    updateOutputModificationTime(Long.MIN_VALUE);
+                }
+
+                for (int index = 0; index < files.length; index++)
+                {
+                    updateModificationTime(files[index], isOutput);
                 }
             }
-
-            return lastModified;
+            else
+            {
+                // Update with the file's modification time.
+                updateModificationTime(file.lastModified(), isOutput);
+            }
         }
-        else
+
+
+        /**
+         * Updates the specified modification time.
+         */
+        public void updateModificationTime(long time, boolean isOutput)
         {
-            // Return the file's modification time.
-            return file.lastModified();
+            if (isOutput)
+            {
+                updateOutputModificationTime(time);
+            }
+            else
+            {
+                updateInputModificationTime(time);
+            }
+        }
+
+
+        /**
+         * Updates the input modification time.
+         */
+        public void updateInputModificationTime(long time)
+        {
+            if (inputModificationTime < time)
+            {
+                inputModificationTime = time;
+
+                checkModificationTimes();
+            }
+        }
+
+
+        /**
+         * Updates the output modification time.
+         */
+        public void updateOutputModificationTime(long time)
+        {
+            if (outputModificationTime > time)
+            {
+                outputModificationTime = time;
+
+                checkModificationTimes();
+            }
+        }
+
+
+        private void checkModificationTimes()
+        {
+            if (inputModificationTime > outputModificationTime)
+            {
+                throw new IllegalStateException("The output is outdated");
+            }
         }
     }
 }

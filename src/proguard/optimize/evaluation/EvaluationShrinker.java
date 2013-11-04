@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -55,7 +55,7 @@ implements   AttributeVisitor
     private final InstructionVisitor extraDeletedInstructionVisitor;
     private final InstructionVisitor extraAddedInstructionVisitor;
 
-    private final PartialEvaluator             partialEvaluator;
+    private final PartialEvaluator               partialEvaluator;
     private final PartialEvaluator               simplePartialEvaluator       = new PartialEvaluator();
     private final SideEffectInstructionChecker   sideEffectInstructionChecker = new SideEffectInstructionChecker(true);
     private final MyUnusedParameterSimplifier    unusedParameterSimplifier    = new MyUnusedParameterSimplifier();
@@ -714,12 +714,23 @@ implements   AttributeVisitor
                     int requiredPushCount = 0;
                     for (int stackIndex = 0; stackIndex < popCount; stackIndex++)
                     {
-                        // Is the stack entry required by other consumers?
-                        if (!isStackSimplifiedBefore(offset, top - stackIndex) &&
-                            !isAnyStackEntryNecessaryAfter(tracedStack.getTopProducerValue(stackIndex).instructionOffsetValue(), top - stackIndex))
+                        InstructionOffsetValue producerOffsets =
+                            tracedStack.getTopProducerValue(stackIndex).instructionOffsetValue();
+
+                        if (!isStackSimplifiedBefore(offset, top - stackIndex))
                         {
-                            // Remember to push it.
-                            requiredPushCount++;
+                            // Is the stack entry pushed by any producer,
+                            // because it is required by other consumers?
+                            if (isAnyStackEntryNecessaryAfter(producerOffsets, top - stackIndex))
+                            {
+                                // Make sure it is pushed after all producers.
+                                markStackEntriesAfter(producerOffsets, top - stackIndex);
+                            }
+                            else
+                            {
+                                // Remember to push it.
+                                requiredPushCount++;
+                            }
                         }
                     }
 
@@ -784,9 +795,16 @@ implements   AttributeVisitor
                     int expectedPopCount = 0;
                     for (int stackIndex = 0; stackIndex < popCount; stackIndex++)
                     {
-                        // Is the stack entry required by other consumers?
-                        if (isAnyStackEntryNecessaryAfter(tracedStack.getTopProducerValue(stackIndex).instructionOffsetValue(), top - stackIndex))
+                        InstructionOffsetValue producerOffsets =
+                            tracedStack.getTopProducerValue(stackIndex).instructionOffsetValue();
+
+                        // Is the stack entry pushed by any producer,
+                        // because it is required by other consumers?
+                        if (isAnyStackEntryNecessaryAfter(producerOffsets, top - stackIndex))
                         {
+                            // Make sure it is pushed after all producers.
+                            markStackEntriesAfter(producerOffsets, top - stackIndex);
+
                             // Remember to pop it.
                             expectedPopCount++;
                         }
@@ -1885,6 +1903,36 @@ implements   AttributeVisitor
     }
 
 
+    /**
+     * Marks the stack entries after the given offsets.
+     * @param instructionOffsets the offsets of the stack entries to be marked.
+     * @param stackIndex         the index of the stack entries to be marked
+     *                           (counting from the bottom).
+     */
+    private void markStackEntriesAfter(InstructionOffsetValue instructionOffsets,
+                                       int                    stackIndex)
+    {
+        if (instructionOffsets != null)
+        {
+            int offsetCount = instructionOffsets.instructionOffsetCount();
+            for (int offsetIndex = 0; offsetIndex < offsetCount; offsetIndex++)
+            {
+                // Make sure the stack entry and the instruction are marked
+                // at the producing offset.
+                int offset = instructionOffsets.instructionOffset(offsetIndex);
+
+                markStackEntryAfter(offset, stackIndex);
+            }
+        }
+    }
+
+
+    /**
+     * Marks the stack entry after the given offset.
+     * @param instructionOffset the offset of the stack entry to be marked.
+     * @param stackIndex        the index of the stack entry to be marked
+     *                          (counting from the bottom).
+     */
     private void markStackEntryAfter(int instructionOffset,
                                      int stackIndex)
     {
@@ -1902,6 +1950,13 @@ implements   AttributeVisitor
     }
 
 
+    /**
+     * Returns whether any of the stack entries after the given offsets are
+     * necessary.
+     * @param instructionOffsets the offsets of the stack entries to be checked.
+     * @param stackIndex         the index of the stack entries to be checked
+     *                           (counting from the bottom).
+     */
     private boolean isAnyStackEntryNecessaryAfter(InstructionOffsetValue instructionOffsets,
                                                   int                    stackIndex)
     {
@@ -1919,6 +1974,13 @@ implements   AttributeVisitor
     }
 
 
+    /**
+     * Returns whether any of the stack entries after the given offset are
+     * necessary.
+     * @param instructionOffset the offset of the stack entry to be checked.
+     * @param stackIndex        the index of the stack entry to be checked
+     *                          (counting from the bottom).
+     */
     private boolean isStackEntryNecessaryAfter(int instructionOffset,
                                                int stackIndex)
     {

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -26,7 +26,7 @@ import proguard.util.ListUtil;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.io.File;
+import java.io.*;
 import java.util.List;
 
 /**
@@ -141,7 +141,7 @@ class ClassPathPanel extends ListPanel
                 // Up to JDK 1.3.1, setSelectedFiles doesn't show in the file
                 // chooser, so we just use setSelectedFile first. It also sets
                 // the current directory.
-                chooser.setSelectedFile(selectedFiles[0]);
+                chooser.setSelectedFile(selectedFiles[0].getAbsoluteFile());
                 chooser.setSelectedFiles(selectedFiles);
 
                 int returnValue = chooser.showOpenDialog(owner);

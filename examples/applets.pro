@@ -11,17 +11,26 @@
 
 -libraryjars <java.home>/lib/rt.jar
 
-# Preserve all public applets.
+# Save the obfuscation mapping to a file, so you can de-obfuscate any stack
+# traces later on. Keep a fixed source file attribute and all line number
+# tables to get line numbers in the stack traces.
+# You can comment this out if you're not interested in stack traces.
 
--keep public class * extends java.applet.Applet
-
-# Print out a list of what we're preserving.
-
--printseeds
+-printmapping out.map
+-renamesourcefileattribute SourceFile
+-keepattributes SourceFile,LineNumberTable
 
 # Preserve all annotations.
 
 -keepattributes *Annotation*
+
+# You can print out the seeds that are matching the keep options below.
+
+#-printseeds out.seeds
+
+# Preserve all public applets.
+
+-keep public class * extends java.applet.Applet
 
 # Preserve all native method names and the names of their classes.
 

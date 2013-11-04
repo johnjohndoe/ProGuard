@@ -1,4 +1,4 @@
-<!doctype html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
 <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
@@ -7,8 +7,8 @@
 <title>Ant Task</title>
 <script type="text/javascript" language="JavaScript">
 <!--
-if (window.top.document.title!="ProGuard")
-  window.top.location.replace("index.html#"+window.location.pathname+window.location.hash);
+if (window.self==window.top)
+  window.top.location.replace("../index.html#"+window.location.pathname+window.location.hash);
 //else if (window.top.location.hash!="#"+window.location.pathname)
 //  window.top.location.hash="#"+window.location.pathname;
 //-->
@@ -115,8 +115,7 @@ href="usage.html">Usage</a> section. You can find some sample configuration
 files in the <code>examples/ant</code> directory of the ProGuard distribution.
 <p>
 
-<a name="proguard">&nbsp;</a>
-<h2>Task Attributes and Nested Elements</h2>
+<h2><a name="proguard">Task Attributes and Nested Elements</a></h2>
 
 The <code><b>&lt;proguard&gt;</b></code> task and the
 <code><b>&lt;proguardconfiguration&gt;</b></code> task can have the following
@@ -461,8 +460,7 @@ elements:
 
 </dl>
 
-<a name="classpath">&nbsp;</a>
-<h2>Class Path Attributes and Nested Elements</h2>
+<h2><a name="classpath">Class Path Attributes and Nested Elements</a></h2>
 
 The jar tags are path tags, so they can have any of the path attributes (or
 nested elements). The most common attributes are:
@@ -512,8 +510,7 @@ In addition, the jar tags can have ProGuard-style filter attributes:
 
 </dl>
 
-<a name="keepmodifier">&nbsp;</a>
-<h2>Keep Modifier Attributes</h2>
+<h2><a name="keepmodifier">Keep Modifier Attributes</a></h2>
 
 The keep tags can have the following <i>modifier</i> attributes:
 
@@ -539,8 +536,7 @@ The keep tags can have the following <i>modifier</i> attributes:
 
 </dl>
 
-<a name="classspecification">&nbsp;</a>
-<h2>Class Specification Attributes and Nested Elements</h2>
+<h2><a name="classspecification">Class Specification Attributes and Nested Elements</a></h2>
 
 The keep tags can have the following <i>class_specification</i> attributes and
 <i>class_member_specifications</i> nested elements:
@@ -551,6 +547,10 @@ The keep tags can have the following <i>class_specification</i> attributes and
 <dd>The optional access modifiers of the class. Any space-separated list of
     "public", "final", and "abstract", with optional negators "!".</dd>
 
+<dt><code><b>annotation</b></code> = "<i>annotation_name</i>"</dt>
+<dd>The optional fully qualified name of an annotation of the class, with
+    optional wildcards.</dd>
+
 <dt><code><b>type</b></code> = "<i>type</i>"</dt>
 <dd>The optional type of the class: one of "class", "interface", or
     "!interface".</dd>
@@ -558,6 +558,10 @@ The keep tags can have the following <i>class_specification</i> attributes and
 <dt><code><b>name</b></code> = "<i>class_name</i>"</dt>
 <dd>The optional fully qualified name of the class, with optional
     wildcards.</dd>
+
+<dt><code><b>extendsannotation</b></code> = "<i>annotation_name</i>"</dt>
+<dd>The optional fully qualified name of an annotation of the the class that
+    the specified classes must extend, with optional wildcards.</dd>
 
 <dt><code><b>extends</b></code> = "<i>class_name</i>"</dt>
 <dd>The optional fully qualified name of the class the specified classes
@@ -584,8 +588,7 @@ The keep tags can have the following <i>class_specification</i> attributes and
 
 </dl>
 
-<a name="classmemberspecification">&nbsp;</a>
-<h2>Class Member Specification Attributes</h2>
+<h2><a name="classmemberspecification">Class Member Specification Attributes</a></h2>
 
 The class member tags can have the following <i>class_member_specification</i>
 attributes:
@@ -596,6 +599,10 @@ attributes:
 <dd>The optional access modifiers of the class. Any space-separated list of
     "public", "protected", "private", "static", etc., with optional negators
     "!".</dd>
+
+<dt><code><b>annotation</b></code> = "<i>annotation_name</i>"</dt>
+<dd>The optional fully qualified name of an annotation of the class member,
+    with optional wildcards.</dd>
 
 <dt><code><b>type</b></code> = "<i>type</i>"</dt>
 <dd>The optional fully qualified type of the class member, with optional
@@ -614,11 +621,11 @@ attributes:
 
 </dl>
 
-<hr>
+<hr />
 <noscript><div><a target="_top" href="../index.html" class="button">Show menu</a></div></noscript>
 <address>
-Copyright &copy; 2002-2010
-<a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
+Copyright &copy; 2002-2011
+<a target="other" href="http://www.lafortune.eu/">Eric Lafortune</a>.
 </address>
 </body>
 </html>

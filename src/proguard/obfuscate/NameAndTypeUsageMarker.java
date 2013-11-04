@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -65,25 +65,7 @@ implements   ClassVisitor,
     public void visitAnyConstant(Clazz clazz, Constant constant) {}
 
 
-    public void visitFieldrefConstant(Clazz clazz, FieldrefConstant fieldrefConstant)
-    {
-        visitRefConstant(clazz, fieldrefConstant);
-    }
-
-
-    public void visitInterfaceMethodrefConstant(Clazz clazz, InterfaceMethodrefConstant interfaceMethodrefConstant)
-    {
-        visitRefConstant(clazz, interfaceMethodrefConstant);
-    }
-
-
-    public void visitMethodrefConstant(Clazz clazz, MethodrefConstant methodrefConstant)
-    {
-        visitRefConstant(clazz, methodrefConstant);
-    }
-
-
-    private void visitRefConstant(Clazz clazz, RefConstant refConstant)
+    public void visitAnyRefConstant(Clazz clazz, RefConstant refConstant)
     {
         markNameAndTypeConstant(clazz, refConstant.u2nameAndTypeIndex);
     }

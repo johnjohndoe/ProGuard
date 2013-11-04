@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -59,6 +59,11 @@ public class Initializer
                         ClassPool libraryClassPool) throws IOException
     {
         int originalLibraryClassPoolSize = libraryClassPool.size();
+
+        // Perform a basic check on the keep options in the configuration.
+        WarningPrinter keepClassMemberNotePrinter = new WarningPrinter(System.out, configuration.note);
+
+        new KeepClassMemberChecker(keepClassMemberNotePrinter).checkClassSpecifications(configuration.keep);
 
         // Construct a reduced library class pool with only those library
         // classes whose hierarchies are referenced by the program classes.

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -87,7 +87,7 @@ public class DataEntryRenamer implements DataEntryReader
         String newName = (String)nameMap.get(name);
         if (newName != null)
         {
-            // Add remove the directory separator if necessary.
+            // Remove the directory separator if necessary.
             if (dataEntry.isDirectory() &&
                 newName.length() > 0)
             {

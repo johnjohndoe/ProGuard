@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -26,7 +26,9 @@ import proguard.classfile.visitor.MemberVisitor;
 /**
  * This <code>MemberVisitor</code> delegates its visits to another given
  * <code>MemberVisitor</code>, but only when the visited member has a new name.
+ * Constructors are judged based on the class name.
  *
+ * @see ClassObfuscator
  * @see MemberObfuscator
  *
  * @author Eric Lafortune
@@ -60,7 +62,7 @@ public class MemberNameFilter implements MemberVisitor
 
     public void visitProgramMethod(ProgramClass programClass, ProgramMethod programMethod)
     {
-        if (hasName(programMethod))
+        if (hasName(programClass, programMethod))
         {
             memberVisitor.visitProgramMethod(programClass, programMethod);
         }
@@ -78,7 +80,7 @@ public class MemberNameFilter implements MemberVisitor
 
     public void visitLibraryMethod(LibraryClass libraryClass, LibraryMethod libraryMethod)
     {
-        if (hasName(libraryMethod))
+        if (hasName(libraryClass, libraryMethod))
         {
             memberVisitor.visitLibraryMethod(libraryClass, libraryMethod);
         }
@@ -88,10 +90,30 @@ public class MemberNameFilter implements MemberVisitor
     // Small utility methods.
 
     /**
-     * Returns whether the given class member has a new name.
-     * @param member the class member.
+     * Returns whether the given class has a new name.
      */
-    private static boolean hasName(Member member)
+    private boolean hasName(Clazz clazz)
+    {
+        return ClassObfuscator.newClassName(clazz) != null;
+    }
+
+
+    /**
+     * Returns whether the given method has a new name.
+     */
+    private boolean hasName(Clazz clazz, Method method)
+    {
+        return
+            hasName(method) ||
+            (hasName(clazz) &&
+             method.getName(clazz).equals(ClassConstants.INTERNAL_METHOD_NAME_INIT));
+    }
+
+
+    /**
+     * Returns whether the given class member has a new name.
+     */
+    private boolean hasName(Member member)
     {
         return MemberObfuscator.newMemberName(member) != null;
     }

@@ -1,4 +1,4 @@
-<!doctype html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
 <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
@@ -7,8 +7,8 @@
 <title>ProGuard Usage</title>
 <script type="text/javascript" language="JavaScript">
 <!--
-if (window.top.document.title!="ProGuard")
-  window.top.location.replace("index.html#"+window.location.pathname+window.location.hash);
+if (window.self==window.top)
+  window.top.location.replace("../index.html#"+window.location.pathname+window.location.hash);
 //else if (window.top.location.hash!="#"+window.location.pathname)
 //  window.top.location.hash="#"+window.location.pathname;
 //-->
@@ -54,24 +54,23 @@ their first unique characters.
 
 The sections below provide more details:
 <ul>
-<li><a href="#iooptions">Input/Output Options</a>
-<li><a href="#keepoptions">Keep Options</a>
-<li><a href="#shrinkingoptions">Shrinking Options</a>
-<li><a href="#optimizationoptions">Optimization Options</a>
-<li><a href="#obfuscationoptions">Obfuscation Options</a>
-<li><a href="#preverificationoptions">Preverification Options</a>
-<li><a href="#generaloptions">General Options</a>
-<li><a href="#classpath">Class Paths</a>
-<li><a href="#filename">File Names</a>
-<li><a href="#filefilters">File Filters</a>
-<li><a href="#filters">Filters</a>
-<li><a href="#keepoverview">Overview of <code>Keep</code> Options</a>
-<li><a href="#keepoptionmodifiers">Keep Option Modifiers</a>
-<li><a href="#classspecification">Class Specifications</a>
+<li><a href="#iooptions">Input/Output Options</a></li>
+<li><a href="#keepoptions">Keep Options</a></li>
+<li><a href="#shrinkingoptions">Shrinking Options</a></li>
+<li><a href="#optimizationoptions">Optimization Options</a></li>
+<li><a href="#obfuscationoptions">Obfuscation Options</a></li>
+<li><a href="#preverificationoptions">Preverification Options</a></li>
+<li><a href="#generaloptions">General Options</a></li>
+<li><a href="#classpath">Class Paths</a></li>
+<li><a href="#filename">File Names</a></li>
+<li><a href="#filefilters">File Filters</a></li>
+<li><a href="#filters">Filters</a></li>
+<li><a href="#keepoverview">Overview of <code>Keep</code> Options</a></li>
+<li><a href="#keepoptionmodifiers">Keep Option Modifiers</a></li>
+<li><a href="#classspecification">Class Specifications</a></li>
 </ul>
 
-<a name="iooptions">&nbsp;</a>
-<h2>Input/Output Options</h2>
+<h2><a name="iooptions">Input/Output Options</a></h2>
 
 <dl>
 <dt><a name="at"><code><b>@</b></code></a><a href="#filename"><i>filename</i></a></dt>
@@ -201,8 +200,7 @@ The sections below provide more details:
 </dl>
 <p>
 
-<a name="keepoptions">&nbsp;</a>
-<h2>Keep Options</h2>
+<h2><a name="keepoptions">Keep Options</a></h2>
 
 <dl>
 <dt><a name="keep"><code><b>-keep</b></code></a>
@@ -257,11 +255,11 @@ The sections below provide more details:
     <p>
     Specifies class members whose names are to be preserved, if they aren't
     removed in the shrinking phase. For example, you may want to preserve the
-    name of the synthetic <code>class$</code> methods when <a
-    href="examples.html#library">processing a library</a>, so obfuscators can
-    detect it again when processing an application that uses the processed
-    library (although ProGuard itself doesn't need this). Only applicable when
-    obfuscating.</dd>
+    name of the synthetic <code>class$</code> methods
+    when <a href="examples.html#library">processing a library</a> compiled by
+    JDK 1.2 or older, so obfuscators can detect it again when processing an
+    application that uses the processed library (although ProGuard itself
+    doesn't need this). Only applicable when obfuscating.</dd>
 
 <dt><a name="keepclasseswithmembernames"><code><b>-keepclasseswithmembernames</b></code></a>
     <a href="#classspecification"><i>class_specification</i></a></dt>
@@ -292,8 +290,7 @@ The sections below provide more details:
 </dl>
 <p>
 
-<a name="shrinkingoptions">&nbsp;</a>
-<h2>Shrinking Options</h2>
+<h2><a name="shrinkingoptions">Shrinking Options</a></h2>
 
 <dl>
 <dt><a name="dontshrink"><code><b>-dontshrink</b></code></a></dt>
@@ -331,8 +328,7 @@ The sections below provide more details:
 </dl>
 <p>
 
-<a name="optimizationoptions">&nbsp;</a>
-<h2>Optimization Options</h2>
+<h2><a name="optimizationoptions">Optimization Options</a></h2>
 
 <dl>
 <dt><a name="dontoptimize"><code><b>-dontoptimize</b></code></a></dt>
@@ -413,14 +409,13 @@ The sections below provide more details:
     <ul>
     <li>Sun's JRE 1.3 may throw an <code>InternalError</code> when
         encountering more than 256 <i>Miranda</i> methods (interface methods
-        without implementations) in a class.
+        without implementations) in a class.</li>
     </ul></dd>
 
 </dl>
 <p>
 
-<a name="obfuscationoptions">&nbsp;</a>
-<h2>Obfuscation Options</h2>
+<h2><a name="obfuscationoptions">Obfuscation Options</a></h2>
 
 <dl>
 <dt><a name="dontobfuscate"><code><b>-dontobfuscate</b></code></a></dt>
@@ -520,11 +515,12 @@ The sections below provide more details:
     <li>Sun's JDK 1.2.2 <code>javac</code> compiler produces an exception when
         compiling with such a library (cfr. <a href=
         "http://bugs.sun.com/view_bug.do?bug_id=4216736">Bug #4216736</a>).
-        You probably shouldn't use this option for processing libraries.
+        You probably shouldn't use this option for processing libraries.</li>
     <li>Sun's JRE 1.4 and later fail to serialize objects with overloaded
-        primitive fields.
+        primitive fields.</li>
     <li>Sun's JRE 1.5 <code>pack200</code> tool reportedly has problems with
-        overloaded class members.
+        overloaded class members.</li>
+    <li>Google's Dalvik VM can't handle overloaded static fields.</li>
     </ul></dd>
 
 <dt><a name="useuniqueclassmembernames"><code><b>-useuniqueclassmembernames</b></code></a></dt>
@@ -620,12 +616,14 @@ The sections below provide more details:
     name can be specified as well, referring to the source name part of this
     attribute. For example, you should at least keep the
     <code>Exceptions</code>, <code>InnerClasses</code>, and
-    <code>Signature</code> attributes when <a
-    href="examples.html#library">processing a library</a>. As another example,
-    you should keep the <code>SourceFile</code> and
-    <code>LineNumberTable</code> attributes for <a
-    href="examples.html#stacktrace">producing useful obfuscated stack
-    traces</a>. Only applicable when obfuscating.</dd>
+    <code>Signature</code> attributes
+    when <a href="examples.html#library">processing a library</a>. You should
+    also keep the <code>SourceFile</code> and
+    <code>LineNumberTable</code> attributes
+    for <a href="examples.html#stacktrace">producing useful obfuscated stack
+    traces</a>. Finally, you may want
+    to <a href="examples.html#annotations">keep annotations</a> if your code
+    depends on them. Only applicable when obfuscating.</dd>
 
 <dt><a name="keepparameternames"><code><b>-keepparameternames</b></code></a></dt>
 
@@ -687,8 +685,7 @@ The sections below provide more details:
 </dl>
 <p>
 
-<a name="preverificationoptions">&nbsp;</a>
-<h2>Preverification Options</h2>
+<h2><a name="preverificationoptions">Preverification Options</a></h2>
 
 <dl>
 <dt><a name="dontpreverify"><code><b>-dontpreverify</b></code></a></dt>
@@ -712,8 +709,7 @@ The sections below provide more details:
 </dl>
 <p>
 
-<a name="generaloptions">&nbsp;</a>
-<h2>General Options</h2>
+<h2><a name="generaloptions">General Options</a></h2>
 
 <dl>
 <dt><a name="verbose"><code><b>-verbose</b></code></a></dt>
@@ -771,8 +767,7 @@ The sections below provide more details:
 </dl>
 <p>
 
-<a name="classpath">&nbsp;</a>
-<h2>Class Paths</h2>
+<h2><a name="classpath">Class Paths</a></h2>
 
 ProGuard accepts a generalization of class paths to specify input files and
 output files. A class path consists of entries, separated by the traditional
@@ -781,12 +776,12 @@ The order of the entries determines their priorities, in case of duplicates.
 <p>
 Each input entry can be:
 <ul>
-<li>A class file or resource file.
-<li>A jar file, containing any of the above,
-<li>A war file, containing any of the above,
-<li>An ear file, containing any of the above,
-<li>A zip file, containing any of the above,
-<li>A directory (structure), containing any of the above.
+<li>A class file or resource file,</li>
+<li>A jar file, containing any of the above,</li>
+<li>A war file, containing any of the above,</li>
+<li>An ear file, containing any of the above,</li>
+<li>A zip file, containing any of the above,</li>
+<li>A directory (structure), containing any of the above.</li>
 </ul>
 <p>
 The paths of directly specified class files and resource files is ignored, so
@@ -798,11 +793,11 @@ any additional directory prefixes inside the archives or directories.
 Each output entry can be:
 <ul>
 <li>A jar file, in which all processed class files and resource files will be
-    collected.
-<li>A war file, in which any and all of the above will be collected,
-<li>An ear file, in which any and all of the above will be collected,
-<li>A zip file, in which any and all of the above will be collected,
-<li>A directory, in which any and all of the above will be collected.
+    collected.</li>
+<li>A war file, in which any and all of the above will be collected,</li>
+<li>An ear file, in which any and all of the above will be collected,</li>
+<li>A zip file, in which any and all of the above will be collected,</li>
+<li>A directory, in which any and all of the above will be collected.</li>
 </ul>
 <p>
 When writing output entries, ProGuard will generally package the results in a
@@ -823,12 +818,12 @@ class path entry can be followed by up to 5 types of <a
 href="#filefilters">file filters</a> between parentheses, separated by
 semi-colons:
 <ul>
-<li>A filter for all zip names that are encountered,
-<li>A filter for all ear names that are encountered,
-<li>A filter for all war names that are encountered,
-<li>A filter for all jar names that are encountered,
+<li>A filter for all zip names that are encountered,</li>
+<li>A filter for all ear names that are encountered,</li>
+<li>A filter for all war names that are encountered,</li>
+<li>A filter for all jar names that are encountered,</li>
 <li>A filter for all class file names and resource file names that are
-    encountered.
+    encountered.</li>
 </ul>
 <p>
 If fewer than 5 filters are specified, they are assumed to be the latter
@@ -862,16 +857,15 @@ possibilities. The Examples section provides a few more examples
 for <a href="examples.html#filtering">filtering input and output</a>.
 <p>
 
-<a name="filename">&nbsp;</a>
-<h2>File Names</h2>
+<h2><a name="filename">File Names</a></h2>
 
 ProGuard accepts absolute paths and relative paths for the various file names
 and directory names. A relative path is interpreted as follows:
 <ul>
-<li>relative to the base directory, if set, or otherwise
+<li>relative to the base directory, if set, or otherwise</li>
 <li>relative to the configuration file in which it is specified, if any, or
-    otherwise
-<li>relative to the working directory.
+    otherwise</li>
+<li>relative to the working directory.</li>
 </ul>
 <p>
 The names can contain Java system properties delimited by '<b>&lt;</b>' and
@@ -894,8 +888,7 @@ For example, on the command line, you could use an option like <code>'-injars
 "my program.jar":"/your directory/your program.jar"'</code>.
 <p>
 
-<a name="filefilters">&nbsp;</a>
-<h2>File Filters</h2>
+<h2><a name="filefilters">File Filters</a></h2>
 
 Like general <a href="#filters">filters</a>, a file filter is a
 comma-separated list of file names that can contain wildcards. Only files with
@@ -927,8 +920,7 @@ For example, "<code>!**.gif,images/**</code>" matches all files in the
 The Examples section provides a few more examples for <a
 href="examples.html#filtering">filtering input and output</a>.
 
-<a name="filters">&nbsp;</a>
-<h2>Filters</h2>
+<h2><a name="filters">Filters</a></h2>
 
 ProGuard offers options with filters for many different aspects of the
 configuration: names of files, directories, classes, packages, attributes,
@@ -966,8 +958,7 @@ For example, "<code>!foobar,*bar</code>" matches all names ending with
 <code>bar</code>, except <code>foobar</code>.
 <p>
 
-<a name="keepoverview">&nbsp;</a>
-<h2>Overview of <code>Keep</code> Options</h2>
+<h2><a name="keepoverview">Overview of <code>Keep</code> Options</a></h2>
 
 The various <code>-keep</code> options for shrinking and obfuscation may seem
 a bit confusing at first, but there's actually a pattern behind them. The
@@ -1013,7 +1004,7 @@ are not removed in the shrinking step, and not renamed in the obfuscation step.
 <p>
 <table>
 <tr><td valign="top">
-<img src="attention.gif" width="64" height="64"alt="attention">
+<img src="attention.gif" width="64" height="64"alt="attention" />
 </td><td>
 Always remember:
 <ul>
@@ -1027,8 +1018,7 @@ Always remember:
 </table>
 <p>
 
-<a name="keepoptionmodifiers">&nbsp;</a>
-<h2>Keep Option Modifiers</h2>
+<h2><a name="keepoptionmodifiers">Keep Option Modifiers</a></h2>
 
 <dl>
 <dt><a name="allowshrinking"><code><b>allowshrinking</b></code></a></dt>
@@ -1057,8 +1047,7 @@ Always remember:
 </dl>
 <p>
 
-<a name="classspecification">&nbsp;</a>
-<h2>Class Specifications</h2>
+<h2><a name="classspecification">Class Specifications</a></h2>
 
 A class specification is a template of classes and class members (fields and
 methods). It is used in the various <code>-keep</code> options and in the
@@ -1093,15 +1082,15 @@ of the specification that belong together. The indentation tries to clarify
 the intended meaning, but white-space is irrelevant in actual configuration
 files.
 <p>
-<ul>
+<ul class="spacious">
 
 <li>The <code><b>class</b></code> keyword refers to any interface or class.
     The <code><b>interface</b></code> keyword restricts matches to interface
     classes. The <code><b>enum</b></code> keyword restricts matches to
     enumeration classes. Preceding the <code><b>interface</b></code> or
     <code><b>enum</b></code> keywords by a <code><b>!</b></code> restricts
-    matches to classes that are not interfaces or enumerations, respectively.
-    <p>
+    matches to classes that are not interfaces or enumerations,
+    respectively.</li>
 
 <li>Every <i>classname</i> must be fully qualified, e.g.
     <code>java.lang.String</code>. Class names may be specified as regular
@@ -1142,22 +1131,19 @@ files.
     should be used with moderation.
     <p>
     For convenience and for backward compatibility, the class name
-    <code><b>*</b></code> refers to any class, irrespective of its package.
-    <p>
+    <code><b>*</b></code> refers to any class, irrespective of its package.</li>
 
 <li>The <code><b>extends</b></code> and <code><b>implements</b></code>
     specifications are typically used to restrict classes with wildcards. They
     are currently equivalent, specifying that only classes extending or
     implementing the given class qualify. Note that the given class itself is
     not included in this set. If required, it should be specified in a
-    separate option.
-    <p>
+    separate option.</li>
 
 <li>The <code><b>@</b></code> specifications can be used to restrict classes
     and class members to the ones that are annotated with the specified
     annotation types. An <i>annotationtype</i> is specified just like a
-    <i>classname</i>.
-    <p>
+    <i>classname</i>.</li>
 
 <li>Fields and methods are specified much like in Java, except that method
     argument lists don't contain argument names (just like in other tools
@@ -1220,13 +1206,11 @@ files.
     <code>***</code> wildcards will match array types of any dimension. For
     example, "<code>** get*()</code>" matches "<code>java.lang.Object
     getObject()</code>", but not "<code>float getFloat()</code>", nor
-    "<code>java.lang.Object[] getObjects()</code>".
-    <p>
+    "<code>java.lang.Object[] getObjects()</code>".</li>
 
 <li>Constructors can also be specified using their short class names (without
     package) or using their full class names. As in the Java language, the
-    constructor specification has an argument list, but no return type.
-    <p>
+    constructor specification has an argument list, but no return type.</li>
 
 <li>The class access modifiers and class member access modifiers are typically
     used to restrict wildcarded classes and class members. They specify that
@@ -1240,15 +1224,18 @@ files.
     which case at least one of them has to be set (e.g. at least
     <code>public</code>
     <i>or</i> <code>protected</code>).
+    <p>
+    ProGuard supports the additional modifiers <code><b>synthetic</b></code>,
+    <code><b>bridge</b></code>, and <code><b>varargs</b></code>, which may be
+    set by compilers.</li>
 
 </ul>
-<p>
 
-<hr>
+<hr />
 <noscript><div><a target="_top" href="../index.html" class="button">Show menu</a></div></noscript>
 <address>
-Copyright &copy; 2002-2010
-<a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
+Copyright &copy; 2002-2011
+<a target="other" href="http://www.lafortune.eu/">Eric Lafortune</a>.
 </address>
 </body>
 </html>

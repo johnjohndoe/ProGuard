@@ -1,6 +1,6 @@
 <!-- This Ant build file illustrates how to process applications,
      by including ProGuard-style configuration options.
-     Usage: ant -f applications.xml -->
+     Usage: ant -f applications2.xml -->
 
 <project name="Applications" default="obfuscate" basedir="../..">
 
@@ -21,15 +21,21 @@
     <!-- -libraryjars jai_core.jar -->
     <!-- ...                       -->
 
+    <!-- Save the obfuscation mapping to a file, and preserve line numbers. -->
+
+    -printmapping out.map
+    -renamesourcefileattribute SourceFile
+    -keepattributes SourceFile,LineNumberTable
+
+    <!-- Preserve all annotations. -->
+
+    -keepattributes *Annotation*
+
     <!-- Preserve all public applications. -->
 
     -keepclasseswithmembers public class * {
         public static void main(java.lang.String[]);
     }
-
-    <!-- Preserve all annotations. -->
-
-    -keepattributes *Annotation*
 
     <!-- Preserve all native method names and the names of their classes. -->
 

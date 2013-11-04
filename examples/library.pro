@@ -15,7 +15,7 @@
 
 # Save the obfuscation mapping to a file, so we can de-obfuscate any stack
 # traces later on. Keep a fixed source file attribute and all line number
-# tables to actually get these stack traces.
+# tables to get line numbers in the stack traces.
 # You can comment this out if you're not interested in stack traces.
 
 -printmapping out.map

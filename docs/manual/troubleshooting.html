@@ -1,4 +1,4 @@
-<!doctype html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
 <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
@@ -7,8 +7,8 @@
 <title>ProGuard Troubleshooting</title>
 <script type="text/javascript" language="JavaScript">
 <!--
-if (window.top.document.title!="ProGuard")
-  window.top.location.replace("index.html#"+window.location.pathname+window.location.hash);
+if (window.self==window.top)
+  window.top.location.replace("../index.html#"+window.location.pathname+window.location.hash);
 //else if (window.top.location.hash!="#"+window.location.pathname)
 //  window.top.location.hash="#"+window.location.pathname;
 //-->
@@ -27,6 +27,7 @@ few problems. The following sections discuss some common issues and solutions:
 <li><a href="#dynamicalclasscast">Note: ... calls '(...)Class.forName(variable).newInstance()'</a></li>
 <li><a href="#dynamicalclassmember">Note: ... accesses a field/method '...' dynamically</a></li>
 <li><a href="#descriptorclass">Note: the configuration keeps the entry point '...', but not the descriptor class '...'</a></li>
+<li><a href="#classmembers">Note: the configuration doesn't specify which class members to keep for class '...'</a></li>
 <li><a href="#duplicateclass">Note: duplicate definition of program/library class</a></li>
 <li><a href="#duplicatezipentry">Warning: can't write resource ... Duplicate zip entry</a></li>
 <li><a href="#unresolvedclass">Warning: can't find superclass or interface</a></li>
@@ -66,6 +67,7 @@ few problems. The following sections discuss some common issues and solutions:
 <li><a href="#classnotfoundexception">ClassNotFoundException</a></li>
 <li><a href="#nosuchmethodexception">NoSuchMethodException</a></li>
 <li><a href="#missingresourceexception">MissingResourceException or NullPointerException</a></li>
+<li><a href="#disappearingannotations">Disappearing annotations</a></li>
 <li><a href="#invalidjarfile">Invalid or corrupt jarfile</a></li>
 <li><a href="#invalidclassexception2">InvalidClassException, class loading error, or verification error (in Java Micro Edition)</a></li>
 <li><a href="#nosuchfieldormethod">Error: No Such Field or Method, Error verifying method (in a Java Micro Edition emulator)</a></li>
@@ -82,8 +84,7 @@ few problems. The following sections discuss some common issues and solutions:
 </ul>
 
 
-<a name="processing">&nbsp;</a>
-<h2>Problems while processing</h2>
+<h2><a name="processing">Problems while processing</a></h2>
 
 ProGuard may print out some notes and non-fatal warnings:
 
@@ -126,6 +127,17 @@ ProGuard may print out some notes and non-fatal warnings:
     then become unfindable as an entry point, e.g. if it is part of a public
     API. You can switch off these notes by specifying the <a
     href="usage.html#dontnote"><code>-dontnote</code></a> option.</dd>
+
+<dt><a name="classmembers"><b>Note: the configuration doesn't specify which class members to keep for class '...'</b></a></dt>
+
+<dd>Your configuration contains
+    a <code>-keepclassmembers/-keepclasseswithmembers</code> option to
+    preserve fields or methods in the given class, but it doesn't specify
+    which fields or methods. This way, the option simply won't have any
+    effect. You probably want to specify one or more fields or methods, as
+    usual between curly braces. You can specify all fields or methods with a
+    wildcard "<code>*;</code>". You can switch off these notes by specifying
+    the <a href="usage.html#dontnote"><code>-dontnote</code></a> option.</dd>
 
 <dt><a name="duplicateclass"><b>Note: duplicate definition of program/library class</b></a></dt>
 
@@ -320,8 +332,7 @@ Should ProGuard crash while processing your application:
 </dl>
 <p>
 
-<a name="afterprocessing">&nbsp;</a>
-<h2>Unexpected observations after processing</h2>
+<h2><a name="afterprocessing">Unexpected observations after processing</a></h2>
 
 If ProGuard seems to run fine, but your processed code doesn't look right,
 there might be a couple of reasons:
@@ -371,8 +382,7 @@ there might be a couple of reasons:
 
 </dl>
 
-<a name="preverifying">&nbsp;</a>
-<h2>Problems while preverifying for Java Micro Edition</h2>
+<h2><a name="preverifying">Problems while preverifying for Java Micro Edition</a></h2>
 
 If ProGuard seems to run fine, but the external preverifier subsequently
 produces errors, it's usually for a single reason:
@@ -403,8 +413,7 @@ Note that it is no longer necessary to use an external preverifier. With the
 ProGuard will preverify the class files for Java Micro Edition.
 <p>
 
-<a name="runtime">&nbsp;</a>
-<h2>Problems at run-time</h2>
+<h2><a name="runtime">Problems at run-time</a></h2>
 
 If ProGuard runs fine, but your processed application doesn't work, there
 might be several reasons:
@@ -437,10 +446,15 @@ might be several reasons:
 
 <dd>Your code is probably calling something like
     <code>myClass.getMethod</code>, trying to find some method dynamically.
-    Since ProGuard isn't detecting this (yet), you have to keep the missing
-    method in using the appropriate <a
+    Since ProGuard can't always detect this automatically, you have to keep
+    the missing method in using the appropriate <a
     href="usage.html#keep"><code>-keep</code></a> option, e.g. "<code>-keep
-    class mypackage.MyClass { void myMethod(); }</code>".</dd>
+    class mypackage.MyClass { void myMethod(); }</code>".
+    <p>
+    More specifically, if the method reported as missing is
+    <code>values</code> or <code>valueOf</code>, you probably have to keep
+    some methods related to <a
+    href="examples.html#enumerations">enumerations</a>.</dd>
 
 <dt><a name="missingresourceexception"><b>MissingResourceException</b> or <b>NullPointerException</b></a></dt>
 
@@ -458,6 +472,14 @@ might be several reasons:
     Note that Sun advises against calling <code>Class.getResource()</code> for
     directories (<a href="http://bugs.sun.com/view_bug.do?bug_id=4761949">Sun
     Bug #4761949</a>).</dd>
+
+<dt><a name="disappearingannotations"><b>Disappearing annotations</b></a></dt>
+
+<dd>By default, the obfuscation step removes all annotations. If your
+    application relies on annotations to function properly, you should
+    explicitly keep them with
+    <code><a href="usage.html#keepattributes">-keepattributes</a>
+    *Annotation*</code>.</dd>
 
 <dt><a name="invalidjarfile"><b>Invalid or corrupt jarfile</b></a></dt>
 
@@ -523,7 +545,7 @@ might be several reasons:
 <dd>You may have forgotten to sign your program jar <i>after</i> having
     processed it with ProGuard.</dd>
 
-<dt><a name="classcastexception"><b>ClassCastException: class not an enum</b>, or <br><b>IllegalArgumentException: class not an enum type</b></a></dt>
+<dt><a name="classcastexception"><b>ClassCastException: class not an enum</b>, or <br /><b>IllegalArgumentException: class not an enum type</b></a></dt>
 
 <dd>You should make sure you're preserving the special methods of enumeration
     types, which the run-time environment calls by introspection. The required
@@ -557,8 +579,9 @@ might be several reasons:
 
 <dd>If you are keeping the <code>LocalVariableTable</code> or
     <code>LocalVariableTypeTable</code> attributes, ProGuard's optimizing step
-    is sometimes unable to update them consistently. You should then not keep
-    the attributes or disable optimization.</dd>
+    is sometimes unable to update them consistently. You should then let the
+    obfuscation step remove these attributes or disable the optimization
+    step.</dd>
 
 <dt><a name="nosuchmethoderror"><b>NoSuchMethodError</b> or <b>AbstractMethodError</b></a></dt>
 
@@ -587,11 +610,11 @@ might be several reasons:
 
 </dl>
 
-<hr>
+<hr />
 <noscript><div><a target="_top" href="../index.html" class="button">Show menu</a></div></noscript>
 <address>
-Copyright &copy; 2002-2010
-<a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
+Copyright &copy; 2002-2011
+<a target="other" href="http://www.lafortune.eu/">Eric Lafortune</a>.
 </address>
 </body>
 </html>

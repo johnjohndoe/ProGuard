@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -75,6 +75,16 @@ implements   AttributeVisitor,
     public LivenessAnalyzer(PartialEvaluator partialEvaluator)
     {
         this.partialEvaluator = partialEvaluator;
+    }
+
+
+    /**
+     * Returns whether the instruction at the given offset has ever been
+     * executed during the partial evaluation.
+     */
+    public boolean isTraced(int instructionOffset)
+    {
+        return partialEvaluator.isTraced(instructionOffset);
     }
 
 

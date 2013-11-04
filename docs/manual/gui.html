@@ -1,4 +1,4 @@
-<!doctype html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
 <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
@@ -7,8 +7,8 @@
 <title>ProGuard GUI</title>
 <script type="text/javascript" language="JavaScript">
 <!--
-if (window.top.document.title!="ProGuard")
-  window.top.location.replace("index.html#"+window.location.pathname+window.location.hash);
+if (window.self==window.top)
+  window.top.location.replace("../index.html#"+window.location.pathname+window.location.hash);
 //else if (window.top.location.hash!="#"+window.location.pathname)
 //  window.top.location.hash="#"+window.location.pathname;
 //-->
@@ -65,8 +65,7 @@ process is assumed. Please refer to the <a
 href="introduction.html">Introduction</a> of this manual.
 <p>
 
-<a name="proguard">&nbsp;</a>
-<h2>The ProGuard Tab</h2>
+<h2><a name="proguard">The ProGuard Tab</a></h2>
 
 The <i>ProGuard</i> tab presents a welcome message and one important button at
 the bottom:
@@ -83,8 +82,7 @@ If you don't want to load an existing configuration, you can just continue
 creating a new configuration from scratch.
 <p>
 
-<a name="inputoutput">&nbsp;</a>
-<h2>The Input/Output Tab</h2>
+<h2><a name="inputoutput">The Input/Output Tab</a></h2>
 
 The <i>Input/Output</i> tab contains two lists, respectively to specify the
 program jars (or wars, ears, zips, or directories), and the library jars (or
@@ -96,12 +94,12 @@ wars, ears, zips, or directories).
     entries specify the destinations to which the processed results will be
     written. They are preceded by arrows, to distinguish them from input
     entries. The results of each consecutive list of input entries will be
-    written to the subsequent consecutive list of output entries.
+    written to the subsequent consecutive list of output entries.</li>
 
 <li>The library jars are not copied to the output jars; they contain class
     files that are used by class files in the program jars and that are
     necessary for correct processing. This list typically at least contains the
-    targeted Java runtime jar.
+    targeted Java runtime jar.</li>
 </ul>
 <p>
 
@@ -153,16 +151,15 @@ any duplicate entries gets precedence, just as in conventional class paths.
 
 Corresponding configuration options:
 <ul type="none">
-<li>-<a href="usage.html#injars">injars</a>
-<li>-<a href="usage.html#outjars">outjars</a>
-<li>-<a href="usage.html#libraryjars">libraryjars</a>
-<li><a href="usage.html#classpath"><i>class_path</i></a>
-<li><a href="usage.html#filters"><i>filters</i></a>
+<li>-<a href="usage.html#injars">injars</a></li>
+<li>-<a href="usage.html#outjars">outjars</a></li>
+<li>-<a href="usage.html#libraryjars">libraryjars</a></li>
+<li><a href="usage.html#classpath"><i>class_path</i></a></li>
+<li><a href="usage.html#filters"><i>filters</i></a></li>
 </ul>
 <p>
 
-<a name="shrinking">&nbsp;</a>
-<h2>The Shrinking Tab</h2>
+<h2><a name="shrinking">The Shrinking Tab</a></h2>
 
 The <i>Shrinking</i> tab presents a number of options that affect the
 shrinking step. The basic options are followed by a few lists of classes and
@@ -232,41 +229,41 @@ advanced options.
 <ul>
 <li>The <b>Comments</b> text field allows to add optional comments to this
     entry. The comments will identify the entry in the list and they will
-    appear as comments in the configuration file.
+    appear as comments in the configuration file.</li>
 
 <li>The <b>Keep</b> selection allows to specify whether you want to protect
     the specified classes and their specified class members, or just the
     specified class members from the specified classes, or the specified
     classes and the specified class members, if the class members are present.
     Note that class members will only be protected if they are explicitly
-    specified, even if only by means of a wildcard.
+    specified, even if only by means of a wildcard.</li>
 
 <li>The <b>Allow</b> selection allows to specify whether you want to allow the
     the specified classes and their specified class members to be shrunk,
-    optimized and/or obfuscated.
+    optimized and/or obfuscated.</li>
 
 <li>The <b>Access</b> selections allows to specify constraints on the class or
-    classes, based on their access modifiers.
+    classes, based on their access modifiers.</li>
 
 <li>The <b>Annotation</b> text field takes the fully-qualified name of an
     annotation that is required for matching classes. The annotation name can
     contain wildcards. This is an advanced option for defining <i>keep</i>
-    annotations.
+    annotations.</li>
 
 <li>The <b>Class</b> text field takes the fully-qualified name of the class or
-    classes. The class name can contain wildcards.
+    classes. The class name can contain wildcards.</li>
 
 <li>The <b>Annotation</b> text field takes the fully-qualified name of an
     annotation that is required for the class or interface that the above
     class must extend. The annotation name can contain wildcards. This is an
-    advanced option for defining <i>keep</i> annotations.
+    advanced option for defining <i>keep</i> annotations.</li>
 
 <li>The <b>Extends/implements class</b> text field takes the fully-qualified
-    name of the class or interface that the above classes must extend.
+    name of the class or interface that the above classes must extend.</li>
 
 <li>The <b>Class members</b> list allows to specify a list of fields and
     methods to keep. It can be edited by means of a list of buttons on the
-    right-hand side.
+    right-hand side.</li>
 </ul>
 <p>
 
@@ -278,18 +275,18 @@ advanced options.
 
 <ul>
 <li>The <b>Access</b> selections allows to specify constraints on the field or
-    fields, based on their access modifiers.
+    fields, based on their access modifiers.</li>
 
 <li>The <b>Annotation</b> text field takes the fully-qualified name of an
     annotation that is required for matching fields. The annotation name can
     contain wildcards. This is an advanced option for defining <i>keep</i>
-    annotations.
+    annotations.</li>
 
 <li>The <b>Return type</b> text field takes the fully-qualified type of the
-    field or fields. The type can contain wildcards.
+    field or fields. The type can contain wildcards.</li>
 
 <li>The <b>Name</b> text field takes the name of the field or fields. The field
-    name can contain wildcards.
+    name can contain wildcards.</li>
 </ul>
 <p>
 
@@ -301,36 +298,35 @@ to toggle showing the advanced options.
 
 <ul>
 <li>The <b>Access</b> selections allows to specify constraints on the method or
-    methods, based on their access modifiers.
+    methods, based on their access modifiers.</li>
 
 <li>The <b>Annotation</b> text field takes the fully-qualified name of an
     annotation that is required for matching methods. The annotation name can
     contain wildcards. This is an advanced option for defining <i>keep</i>
-    annotations.
+    annotations.</li>
 
-<li>The <b>Return type</b> text field takes the fully-qualified type of the         method or methods. The type can contain wildcards.
+<li>The <b>Return type</b> text field takes the fully-qualified type of the         method or methods. The type can contain wildcards.</li>
 
 <li>The <b>Name</b> text field takes the name of the method or methods. The
-    method name can contain wildcards.
+    method name can contain wildcards.</li>
 
 <li>The <b>Arguments</b> text field takes the comma-separated list of
     fully-qualified method arguments. Each of these arguments can contain
-    wildcards.
+    wildcards.</li>
 </ul>
 <p>
 
 Corresponding configuration options:
 <ul type="none">
-<li>-<a href="usage.html#dontshrink">dontshrink</a>
-<li>-<a href="usage.html#printusage">printusage</a>
-<li>-<a href="usage.html#keep">keep</a>
-<li>-<a href="usage.html#keepclassmembers">keepclassmembers</a>
-<li>-<a href="usage.html#keepclasseswithmembers">keepclasseswithmembers</a>
+<li>-<a href="usage.html#dontshrink">dontshrink</a></li>
+<li>-<a href="usage.html#printusage">printusage</a></li>
+<li>-<a href="usage.html#keep">keep</a></li>
+<li>-<a href="usage.html#keepclassmembers">keepclassmembers</a></li>
+<li>-<a href="usage.html#keepclasseswithmembers">keepclasseswithmembers</a></li>
 </ul>
 <p>
 
-<a name="obfuscation">&nbsp;</a>
-<h2>The Obfuscation Tab</h2>
+<h2><a name="obfuscation">The Obfuscation Tab</a></h2>
 
 The <i>Obfuscation</i> tab presents a number of options that affect the
 obfuscation step. The basic options are followed by a few lists of classes and
@@ -344,33 +340,32 @@ href="#shrinking">Shrinking Tab</a>.
 
 Corresponding configuration options:
 <ul type="none">
-<li>-<a href="usage.html#dontobfuscate">dontobfuscate</a>
-<li>-<a href="usage.html#printmapping">printmapping</a>
-<li>-<a href="usage.html#applymapping">applymapping</a>
-<li>-<a href="usage.html#obfuscationdictionary">obfuscationdictionary</a>
-<li>-<a href="usage.html#classobfuscationdictionary">classobfuscationdictionary</a>
-<li>-<a href="usage.html#packageobfuscationdictionary">packageobfuscationdictionary</a>
-<li>-<a href="usage.html#overloadaggressively">overloadaggressively</a>
-<li>-<a href="usage.html#useuniqueclassmembernames">useuniqueclassmembernames</a>
-<li>-<a href="usage.html#dontusemixedcaseclassnames">dontusemixedcaseclassnames</a>
-<li>-<a href="usage.html#keeppackagenames">keeppackagenames</a>
-<li>-<a href="usage.html#flattenpackagehierarchy">flattenpackagehierarchy</a>
-<li>-<a href="usage.html#repackageclasses">repackageclasses</a>
-<li>-<a href="usage.html#keepattributes">keepattributes</a>
-<li>-<a href="usage.html#keepparameternames">keepparameternames</a>
-<li>-<a href="usage.html#renamesourcefileattribute">renamesourcefileattribute</a>
-<li>-<a href="usage.html#adaptclassstrings">adaptclassstrings</a>
-<li>-<a href="usage.html#adaptresourcefilenames">adaptresourcefilenames</a>
-<li>-<a href="usage.html#adaptresourcefilecontents">adaptresourcefilecontents</a>
-<li>-<a href="usage.html#keepnames">keepnames</a>
-<li>-<a href="usage.html#keepclassmembernames">keepclassmembernames</a>
-<li>-<a href="usage.html#keepclasseswithmembernames">keepclasseswithmembernames</a>
-<li><a href="usage.html#classspecification"><i>class_specification</i></a>
+<li>-<a href="usage.html#dontobfuscate">dontobfuscate</a></li>
+<li>-<a href="usage.html#printmapping">printmapping</a></li>
+<li>-<a href="usage.html#applymapping">applymapping</a></li>
+<li>-<a href="usage.html#obfuscationdictionary">obfuscationdictionary</a></li>
+<li>-<a href="usage.html#classobfuscationdictionary">classobfuscationdictionary</a></li>
+<li>-<a href="usage.html#packageobfuscationdictionary">packageobfuscationdictionary</a></li>
+<li>-<a href="usage.html#overloadaggressively">overloadaggressively</a></li>
+<li>-<a href="usage.html#useuniqueclassmembernames">useuniqueclassmembernames</a></li>
+<li>-<a href="usage.html#dontusemixedcaseclassnames">dontusemixedcaseclassnames</a></li>
+<li>-<a href="usage.html#keeppackagenames">keeppackagenames</a></li>
+<li>-<a href="usage.html#flattenpackagehierarchy">flattenpackagehierarchy</a></li>
+<li>-<a href="usage.html#repackageclasses">repackageclasses</a></li>
+<li>-<a href="usage.html#keepattributes">keepattributes</a></li>
+<li>-<a href="usage.html#keepparameternames">keepparameternames</a></li>
+<li>-<a href="usage.html#renamesourcefileattribute">renamesourcefileattribute</a></li>
+<li>-<a href="usage.html#adaptclassstrings">adaptclassstrings</a></li>
+<li>-<a href="usage.html#adaptresourcefilenames">adaptresourcefilenames</a></li>
+<li>-<a href="usage.html#adaptresourcefilecontents">adaptresourcefilecontents</a></li>
+<li>-<a href="usage.html#keepnames">keepnames</a></li>
+<li>-<a href="usage.html#keepclassmembernames">keepclassmembernames</a></li>
+<li>-<a href="usage.html#keepclasseswithmembernames">keepclasseswithmembernames</a></li>
+<li><a href="usage.html#classspecification"><i>class_specification</i></a></li>
 </ul>
 <p>
 
-<a name="optimization">&nbsp;</a>
-<h2>The Optimization Tab</h2>
+<h2><a name="optimization">The Optimization Tab</a></h2>
 
 The <i>Optimization</i> tab presents a number of options that affect the
 optimization step. The basic options are followed by a few lists of class
@@ -384,18 +379,17 @@ href="#shrinking">Shrinking Tab</a>.
 
 Corresponding configuration options:
 <ul type="none">
-<li>-<a href="usage.html#dontoptimize">dontoptimize</a>
-<li>-<a href="usage.html#optimizations">optimizations</a>
-<li>-<a href="usage.html#optimizationpasses">optimizationpasses</a>
-<li>-<a href="usage.html#allowaccessmodification">allowaccessmodification</a>
-<li>-<a href="usage.html#mergeinterfacesaggressively">mergeinterfacesaggressively</a>
-<li>-<a href="usage.html#assumenosideeffects">assumenosideeffects</a>
-<li><a href="usage.html#classspecification"><i>class_specification</i></a>
+<li>-<a href="usage.html#dontoptimize">dontoptimize</a></li>
+<li>-<a href="usage.html#optimizations">optimizations</a></li>
+<li>-<a href="usage.html#optimizationpasses">optimizationpasses</a></li>
+<li>-<a href="usage.html#allowaccessmodification">allowaccessmodification</a></li>
+<li>-<a href="usage.html#mergeinterfacesaggressively">mergeinterfacesaggressively</a></li>
+<li>-<a href="usage.html#assumenosideeffects">assumenosideeffects</a></li>
+<li><a href="usage.html#classspecification"><i>class_specification</i></a></li>
 </ul>
 <p>
 
-<a name="information">&nbsp;</a>
-<h2>The Information Tab</h2>
+<h2><a name="information">The Information Tab</a></h2>
 
 The <i>Information</i> tab presents a number of options for preverification
 and targeting, and for the information that ProGuard returns when processing
@@ -405,27 +399,26 @@ classes and class members are being kept in the shrinking step.
 
 Corresponding configuration options:
 <ul type="none">
-<li>-<a href="usage.html#dontpreverify">dontpreverify</a>
-<li>-<a href="usage.html#microedition">microedition</a>
-<li>-<a href="usage.html#target">target</a>
-<li>-<a href="usage.html#verbose">verbose</a>
-<li>-<a href="usage.html#dontnote">dontnote</a>
-<li>-<a href="usage.html#dontwarn">dontwarn</a>
-<li>-<a href="usage.html#ignorewarnings">ignorewarnings</a>
-<li>-<a href="usage.html#skipnonpubliclibraryclasses">skipnonpubliclibraryclasses</a>
-<li>-<a href="usage.html#dontskipnonpubliclibraryclasses">dontskipnonpubliclibraryclasses</a>
-<li>-<a href="usage.html#dontskipnonpubliclibraryclassmembers">dontskipnonpubliclibraryclassmembers</a>
-<li>-<a href="usage.html#keepdirectories">keepdirectories</a>
-<li>-<a href="usage.html#forceprocessing">forceprocessing</a>
-<li>-<a href="usage.html#printseeds">printseeds</a>
-<li>-<a href="usage.html#printconfiguration">printconfiguration</a>
-<li>-<a href="usage.html#dump">dump</a>
-<li>-<a href="usage.html#whyareyoukeeping">whyareyoukeeping</a>
+<li>-<a href="usage.html#dontpreverify">dontpreverify</a></li>
+<li>-<a href="usage.html#microedition">microedition</a></li>
+<li>-<a href="usage.html#target">target</a></li>
+<li>-<a href="usage.html#verbose">verbose</a></li>
+<li>-<a href="usage.html#dontnote">dontnote</a></li>
+<li>-<a href="usage.html#dontwarn">dontwarn</a></li>
+<li>-<a href="usage.html#ignorewarnings">ignorewarnings</a></li>
+<li>-<a href="usage.html#skipnonpubliclibraryclasses">skipnonpubliclibraryclasses</a></li>
+<li>-<a href="usage.html#dontskipnonpubliclibraryclasses">dontskipnonpubliclibraryclasses</a></li>
+<li>-<a href="usage.html#dontskipnonpubliclibraryclassmembers">dontskipnonpubliclibraryclassmembers</a></li>
+<li>-<a href="usage.html#keepdirectories">keepdirectories</a></li>
+<li>-<a href="usage.html#forceprocessing">forceprocessing</a></li>
+<li>-<a href="usage.html#printseeds">printseeds</a></li>
+<li>-<a href="usage.html#printconfiguration">printconfiguration</a></li>
+<li>-<a href="usage.html#dump">dump</a></li>
+<li>-<a href="usage.html#whyareyoukeeping">whyareyoukeeping</a></li>
 </ul>
 <p>
 
-<a name="process">&nbsp;</a>
-<h2>The Process Tab</h2>
+<h2><a name="process">The Process Tab</a></h2>
 
 The <i>Process</i> tab has an output console for displaying the configuration
 and the messages while processing. There are three important buttons at the
@@ -443,8 +436,7 @@ bottom:
 </table>
 <p>
 
-<a name="retrace">&nbsp;</a>
-<h2>The ReTrace Tab</h2>
+<h2><a name="retrace">The ReTrace Tab</a></h2>
 
 The <i>ReTrace</i> tab has a panel with a few settings, an input text area for
 the obfuscated stack trace, and an output console to view the de-obfuscated
@@ -452,16 +444,16 @@ stack trace:
 
 <ul>
 <li>The <b>Verbose</b> check box in the settings panel allows to toggle between
-    normal mode and verbose mode.
+    normal mode and verbose mode.</li>
 
 <li>The <b>Mapping file</b> text field takes the name of the required mapping
     file that ProGuard wrote while processing the original code. The file name
     can be entered manually or by means of the <b>Browse...</b> button that
-    opens a file chooser.
+    opens a file chooser.</li>
 
 <li>The <b>Obfuscated stack trace</b> text area allows to enter the stack
     trace, typically by copying and pasting it from elsewhere. Alternatively,
-    it can be loaded from a file by means of the load button below.
+    it can be loaded from a file by means of the load button below.</li>
 </ul>
 
 There are two buttons at the bottom:
@@ -473,13 +465,12 @@ There are two buttons at the bottom:
 <tr><td class="button">ReTrace!</td>
     <td>executes ReTrace with the current settings.</td></tr>
 </table>
-<p>
 
-<hr>
+<hr />
 <noscript><div><a target="_top" href="../index.html" class="button">Show menu</a></div></noscript>
 <address>
-Copyright &copy; 2002-2010
-<a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
+Copyright &copy; 2002-2011
+<a target="other" href="http://www.lafortune.eu/">Eric Lafortune</a>.
 </address>
 </body>
 </html>

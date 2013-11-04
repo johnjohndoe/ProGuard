@@ -1,6 +1,6 @@
 <!-- This Ant build file illustrates how to process applications,
      using a full-blown XML configuration.
-     Usage: ant -f applications.xml -->
+     Usage: ant -f applications3.xml -->
 
 <project name="Applications" default="obfuscate" basedir="../..">
 
@@ -8,7 +8,9 @@
   <taskdef resource="proguard/ant/task.properties"
            classpath="lib/proguard.jar" />
 
-  <proguard printseeds="on">
+  <proguard printseeds="on"
+            printmapping="out.map"
+            renamesourcefileattribute="SourceFile">
 
     <!-- Specify the input jars, output jars, and library jars. -->
 
@@ -21,6 +23,14 @@
     <!-- libraryjar file="jai_core.jar"        / -->
     <!-- ...                                   / -->
 
+    <!-- Preserve line numbers in the obfuscated stack traces. -->
+
+    <keepattribute name="LineNumberTable" />
+    <keepattribute name="SourceFile" />
+
+    <!-- Preserve all annotations. -->
+
+    <keepattribute name="*Annotation*" />
 
     <!-- Preserve all public applications. -->
 
@@ -30,10 +40,6 @@
               name      ="main"
               parameters="java.lang.String[]" />
     </keepclasseswithmembers>
-
-    <!-- Preserve all annotations. -->
-
-    <keepattribute name="*Annotation*" />
 
     <!-- Preserve all native method names and the names of their classes. -->
 

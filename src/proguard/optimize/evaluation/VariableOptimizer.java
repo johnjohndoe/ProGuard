@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -21,10 +21,10 @@
 package proguard.optimize.evaluation;
 
 import proguard.classfile.*;
+import proguard.classfile.attribute.visitor.*;
+import proguard.classfile.editor.*;
 import proguard.classfile.visitor.MemberVisitor;
 import proguard.classfile.attribute.*;
-import proguard.classfile.attribute.visitor.AttributeVisitor;
-import proguard.classfile.editor.VariableRemapper;
 import proguard.classfile.util.*;
 
 /**
@@ -35,7 +35,9 @@ import proguard.classfile.util.*;
  */
 public class VariableOptimizer
 extends      SimplifiedVisitor
-implements   AttributeVisitor
+implements   AttributeVisitor,
+             LocalVariableInfoVisitor,
+             LocalVariableTypeInfoVisitor
 {
     //*
     private static final boolean DEBUG = false;
@@ -51,6 +53,7 @@ implements   AttributeVisitor
 
     private final LivenessAnalyzer livenessAnalyzer = new LivenessAnalyzer();
     private final VariableRemapper variableRemapper = new VariableRemapper();
+    private       VariableCleaner  variableCleaner  = new VariableCleaner();
 
     private int[] variableMap = new int[ClassConstants.TYPICAL_VARIABLES_SIZE];
 
@@ -101,6 +104,11 @@ implements   AttributeVisitor
         // Analyze the liveness of the variables in the code.
         livenessAnalyzer.visitCodeAttribute(clazz, method, codeAttribute);
 
+        // Trim the variables in the local variable tables, because even
+        // clipping the tables individually may leave some inconsistencies
+        // between them.
+            codeAttribute.attributesAccept(clazz, method, this);
+
         int startIndex =
             (method.getAccessFlags() & ClassConstants.INTERNAL_ACC_STATIC) != 0 ||
             reuseThis ? 0 : 1;
@@ -142,7 +150,7 @@ implements   AttributeVisitor
             }
         }
 
-        // Remap the variables.
+        // Have we been able to remap any variables?
         if (remapping)
         {
             if (DEBUG)
@@ -154,6 +162,7 @@ implements   AttributeVisitor
                 }
             }
 
+            // Remap the variables.
             variableRemapper.setVariableMap(variableMap);
             variableRemapper.visitCodeAttribute(clazz, method, codeAttribute);
 
@@ -163,6 +172,59 @@ implements   AttributeVisitor
                 method.accept(clazz, extraVariableMemberVisitor);
             }
         }
+        else
+        {
+            // Just clean up any empty variables.
+            variableCleaner.visitCodeAttribute(clazz, method, codeAttribute);
+        }
+    }
+
+
+    public void visitLocalVariableTableAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableTableAttribute localVariableTableAttribute)
+    {
+        // Trim the variables in the local variable table.
+        localVariableTableAttribute.localVariablesAccept(clazz, method, codeAttribute, this);
+    }
+
+
+    public void visitLocalVariableTypeTableAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableTypeTableAttribute localVariableTypeTableAttribute)
+    {
+        // Trim the variables in the local variable type table.
+        localVariableTypeTableAttribute.localVariablesAccept(clazz, method, codeAttribute, this);
+    }
+
+
+    // Implementations for LocalVariableInfoVisitor.
+
+    public void visitLocalVariableInfo(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableInfo localVariableInfo)
+    {
+        // Trim the local variable to the instructions at which it is alive.
+        int variable = localVariableInfo.u2index;
+        int startPC  = localVariableInfo.u2startPC;
+        int endPC    = startPC + localVariableInfo.u2length;
+
+        startPC = firstLiveness(startPC, endPC, variable);
+        endPC   = lastLiveness(startPC, endPC, variable);
+
+        localVariableInfo.u2startPC = startPC;
+        localVariableInfo.u2length  = endPC - startPC;
+    }
+
+
+    // Implementations for LocalVariableTypeInfoVisitor.
+
+    public void visitLocalVariableTypeInfo(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableTypeInfo localVariableTypeInfo)
+    {
+        // Trim the local variable type to the instructions at which it is alive.
+        int variable = localVariableTypeInfo.u2index;
+        int startPC  = localVariableTypeInfo.u2startPC;
+        int endPC    = startPC + localVariableTypeInfo.u2length;
+
+        startPC = firstLiveness(startPC, endPC, variable);
+        endPC   = lastLiveness(startPC, endPC, variable);
+
+        localVariableTypeInfo.u2startPC = startPC;
+        localVariableTypeInfo.u2length  = endPC - startPC;
     }
 
 
@@ -235,5 +297,49 @@ implements   AttributeVisitor
                 livenessAnalyzer.setAliveAfter(offset, newVariableIndex, true);
             }
         }
+    }
+
+
+    /**
+     * Returns the first instruction offset between the given offsets at which
+     * the given variable goes alive.
+     */
+    private int firstLiveness(int startOffset, int endOffset, int variableIndex)
+    {
+        for (int offset = startOffset; offset < endOffset; offset++)
+        {
+            if (livenessAnalyzer.isTraced(offset) &&
+                livenessAnalyzer.isAliveBefore(offset, variableIndex))
+            {
+                return offset;
+            }
+        }
+
+        return endOffset;
+    }
+
+
+    /**
+     * Returns the last instruction offset between the given offsets before
+     * which the given variable is still alive.
+     */
+    private int lastLiveness(int startOffset, int endOffset, int variableIndex)
+    {
+        int previousOffset = endOffset;
+
+        for (int offset = endOffset-1; offset >= startOffset; offset--)
+        {
+            if (livenessAnalyzer.isTraced(offset))
+            {
+                if (livenessAnalyzer.isAliveBefore(offset, variableIndex))
+                {
+                    return previousOffset;
+                }
+
+                previousOffset = offset;
+            }
+        }
+
+        return endOffset;
     }
 }

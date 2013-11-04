@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -99,17 +99,18 @@ public class Obfuscator
         libraryClassPool.classesAccept(new AllMemberVisitor(nameMarker));
 
         // Mark attributes that have to be kept.
-        AttributeUsageMarker requiredAttributeUsageMarker =
-            new AttributeUsageMarker();
+        AttributeVisitor attributeUsageMarker =
+            new NonEmptyAttributeFilter(
+            new AttributeUsageMarker());
 
         AttributeVisitor optionalAttributeUsageMarker =
             configuration.keepAttributes == null ? null :
                 new AttributeNameFilter(new ListParser(new NameParser()).parse(configuration.keepAttributes),
-                                        requiredAttributeUsageMarker);
+                                        attributeUsageMarker);
 
         programClassPool.classesAccept(
             new AllAttributeVisitor(true,
-            new RequiredAttributeFilter(requiredAttributeUsageMarker,
+            new RequiredAttributeFilter(attributeUsageMarker,
                                         optionalAttributeUsageMarker)));
 
         // Keep parameter names and types if specified.
@@ -119,7 +120,7 @@ public class Obfuscator
                 new AllMethodVisitor(
                 new MemberNameFilter(
                 new AllAttributeVisitor(true,
-                new ParameterNameMarker()))));
+                new ParameterNameMarker(attributeUsageMarker)))));
         }
 
         // Remove the attributes that can be discarded. Note that the attributes
@@ -415,6 +416,11 @@ public class Obfuscator
                 new AllInnerClassesInfoVisitor(
                 new InnerClassesAccessFixer())));
         }
+
+        // Fix the bridge method flags.
+        programClassPool.classesAccept(
+            new AllMethodVisitor(
+            new BridgeMethodFixer()));
 
         // Rename the source file attributes, if requested.
         if (configuration.newSourceFileAttribute != null)

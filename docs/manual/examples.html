@@ -1,4 +1,4 @@
-<!doctype html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
 <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
@@ -7,8 +7,8 @@
 <title>ProGuard Examples</title>
 <script type="text/javascript" language="JavaScript">
 <!--
-if (window.top.document.title!="ProGuard")
-  window.top.location.replace("index.html#"+window.location.pathname+window.location.hash);
+if (window.self==window.top)
+  window.top.location.replace("../index.html#"+window.location.pathname+window.location.hash);
 //else if (window.top.location.hash!="#"+window.location.pathname)
 //  window.top.location.hash="#"+window.location.pathname;
 //-->
@@ -20,49 +20,49 @@ if (window.top.document.title!="ProGuard")
 
 Some typical useful configurations:
 <ol>
-<li><a href="#application">A typical application</a>
-<li><a href="#applet">A typical applet</a>
-<li><a href="#midlet">A typical midlet</a>
-<li><a href="#jcapplet">A typical Java Card applet</a>
-<li><a href="#xlet">A typical xlet</a>
-<li><a href="#androidapplication">A typical Android application</a>
-<li><a href="#library">A typical library</a>
-<li><a href="#applications">All possible applications in the input jars</a>
-<li><a href="#applets">All possible applets in the input jars</a>
-<li><a href="#midlets">All possible midlets in the input jars</a>
-<li><a href="#jcapplets">All possible Java Card applets in the input jars</a>
-<li><a href="#xlets">All possible xlets in the input jars</a>
-<li><a href="#androidapplications">All possible Android applications in the input jars</a>
-<li><a href="#servlets">All possible servlets in the input jars</a>
-<li><a href="#native">Processing native methods</a>
-<li><a href="#callback">Processing callback methods</a>
-<li><a href="#enumerations">Processing enumeration classes</a>
-<li><a href="#serializable">Processing serializable classes</a>
-<li><a href="#beans">Processing bean classes</a>
-<li><a href="#annotations">Processing annotations</a>
-<li><a href="#database">Processing database drivers</a>
-<li><a href="#componentui">Processing ComponentUI classes</a>
-<li><a href="#rmi">Processing RMI code</a>
-<li><a href="#resourcefiles">Processing resource files</a>
-<li><a href="#manifestfiles">Processing manifest files</a>
-<li><a href="#stacktrace">Producing useful obfuscated stack traces</a>
-<li><a href="#repackaging">Obfuscating package names</a>
-<li><a href="#restructuring">Restructuring the output archives</a>
-<li><a href="#filtering">Filtering the input and the output</a>
-<li><a href="#multiple">Processing multiple applications at once</a>
-<li><a href="#incremental">Incremental obfuscation</a>
-<li><a href="#microedition">Preverifying class files for Java Micro Edition</a>
-<li><a href="#upgrade">Upgrading class files to Java 6</a>
-<li><a href="#deadcode">Finding dead code</a>
-<li><a href="#structure">Printing out the internal structure of class files</a>
-<li><a href="#annotated">Using annotations to configure ProGuard</a>
+<li><a href="#application">A typical application</a></li>
+<li><a href="#applet">A typical applet</a></li>
+<li><a href="#midlet">A typical midlet</a></li>
+<li><a href="#jcapplet">A typical Java Card applet</a></li>
+<li><a href="#xlet">A typical xlet</a></li>
+<li><a href="#androidactivity">A simple Android activity</a></li>
+<li><a href="#androidapplication">A complete Android application</a></li>
+<li><a href="#library">A typical library</a></li>
+<li><a href="#applications">All possible applications in the input jars</a></li>
+<li><a href="#applets">All possible applets in the input jars</a></li>
+<li><a href="#midlets">All possible midlets in the input jars</a></li>
+<li><a href="#jcapplets">All possible Java Card applets in the input jars</a></li>
+<li><a href="#xlets">All possible xlets in the input jars</a></li>
+<li><a href="#servlets">All possible servlets in the input jars</a></li>
+<li><a href="#scala">Scala applications with the Scala runtime</a></li>
+<li><a href="#native">Processing native methods</a></li>
+<li><a href="#callback">Processing callback methods</a></li>
+<li><a href="#enumerations">Processing enumeration classes</a></li>
+<li><a href="#serializable">Processing serializable classes</a></li>
+<li><a href="#beans">Processing bean classes</a></li>
+<li><a href="#annotations">Processing annotations</a></li>
+<li><a href="#database">Processing database drivers</a></li>
+<li><a href="#componentui">Processing ComponentUI classes</a></li>
+<li><a href="#rmi">Processing RMI code</a></li>
+<li><a href="#resourcefiles">Processing resource files</a></li>
+<li><a href="#manifestfiles">Processing manifest files</a></li>
+<li><a href="#stacktrace">Producing useful obfuscated stack traces</a></li>
+<li><a href="#repackaging">Obfuscating package names</a></li>
+<li><a href="#restructuring">Restructuring the output archives</a></li>
+<li><a href="#filtering">Filtering the input and the output</a></li>
+<li><a href="#multiple">Processing multiple applications at once</a></li>
+<li><a href="#incremental">Incremental obfuscation</a></li>
+<li><a href="#microedition">Preverifying class files for Java Micro Edition</a></li>
+<li><a href="#upgrade">Upgrading class files to Java 6</a></li>
+<li><a href="#deadcode">Finding dead code</a></li>
+<li><a href="#structure">Printing out the internal structure of class files</a></li>
+<li><a href="#annotated">Using annotations to configure ProGuard</a></li>
 </ol>
 
 You can find some sample configuration files in the <code>examples</code>
 directory of the ProGuard distribution.
 
-<a name="application">&nbsp;</a>
-<h3>A typical application</h3>
+<h3><a name="application">A typical application</a></h3>
 
 To shrink, optimize, and obfuscate the ProGuard application itself, one would
 typically create a configuration file <code>proguard.pro</code> and then type:
@@ -116,8 +116,7 @@ href="#annotations">annotations</a>, and <a href="#resourcefiles">resource
 files</a>. For processing 'simple' applications like ProGuard, that is not
 required.
 
-<a name="applet">&nbsp;</a>
-<h3>A typical applet</h3>
+<h3><a name="applet">A typical applet</a></h3>
 
 These options shrink, optimize, and obfuscate the applet
 <code>mypackage.MyApplet</code>:
@@ -140,16 +139,15 @@ classes</a>, <a href="#beans">bean classes</a>, <a
 href="#annotations">annotations</a>, and <a href="#resourcefiles">resource
 files</a>.
 
-<a name="midlet">&nbsp;</a>
-<h3>A typical midlet</h3>
+<h3><a name="midlet">A typical midlet</a></h3>
 
 These options shrink, optimize, obfuscate, and preverify the midlet
 <code>mypackage.MyMIDlet</code>:
 <pre>
 -injars      in.jar
 -outjars     out.jar
--libraryjars /usr/local/java/wtk2.1/lib/midpapi20.jar
--libraryjars /usr/local/java/wtk2.1/lib/cldcapi11.jar
+-libraryjars /usr/local/java/wtk2.5.2/lib/midpapi20.jar
+-libraryjars /usr/local/java/wtk2.5.2/lib/cldcapi11.jar
 -overloadaggressively
 -repackageclasses ''
 -allowaccessmodification
@@ -184,8 +182,7 @@ methods</a> and <a href="#resourcefiles">resource files</a>.
 Note that you will still have to adapt the midlet jar size in the
 corresponding jad file; ProGuard doesn't do that for you.
 
-<a name="jcapplet">&nbsp;</a>
-<h3>A typical Java Card applet</h3>
+<h3><a name="jcapplet">A typical Java Card applet</a></h3>
 
 These options shrink, optimize, and obfuscate the Java Card applet
 <code>mypackage.MyApplet</code>:
@@ -205,8 +202,7 @@ The configuration is very similar to the configuration for midlets, except that
 it now targets the Java Card run-time environment. This environment doesn't
 have java.lang.Class, so we're telling ProGuard not to worry about it.
 
-<a name="xlet">&nbsp;</a>
-<h3>A typical xlet</h3>
+<h3><a name="xlet">A typical xlet</a></h3>
 
 These options shrink, optimize, and obfuscate the xlet
 <code>mypackage.MyXlet</code>:
@@ -226,50 +222,164 @@ These options shrink, optimize, and obfuscate the xlet
 The configuration is very similar to the configuration for midlets, except that
 it now targets the CDC run-time environment with the Java TV API.
 
-<a name="androidapplication">&nbsp;</a>
-<h3>A typical Android application</h3>
+<h3><a name="androidactivity">A simple Android activity</a></h3>
 
-These options shrink, optimize, and obfuscate the simple Android application
-based on a single activity <code>mypackage.MyActivity</code>:
+These options shrink, optimize, and obfuscate the single Android
+activity <code>mypackage.MyActivity</code>:
 <pre>
--injars      in.jar
--outjars     out.jar
--libraryjars /usr/local/java/android-1.5_r1/platforms/android-1.5/android.jar
--overloadaggressively
+-injars      bin/classes
+-outjars     bin/classes-processed.jar
+-libraryjars /usr/local/java/android-sdk/platforms/android-9/android.jar
+
+-dontpreverify
 -repackageclasses ''
 -allowaccessmodification
 -optimizations !code/simplification/arithmetic
 
 -keep public class mypackage.MyActivity
+</pre>
+<p>
+We're targeting the Android run-time and keeping the activity as an entry
+point.
+<p>
+Preverification is irrelevant for the dex compiler and the Dalvik VM, so we
+can switch it off with the
+<a href="usage.html#dontpreverify"><code>-dontpreverify</code></a> option.
+<p>
+The <a href="usage.html#optimizations"><code>-optimizations</code></a> option
+disables some arithmetic simplifications that Dalvik 1.0 and 1.5 can't handle.
+Note that the Dalvik VM also can't
+handle <a href="usage.html#overloadaggressively">aggressive overloading</a>
+(of static fields).
+<p>
+If applicable, you should add options for processing <a href="#native">native
+methods</a>, <a href="#callback">callback methods</a>,
+<a href="#enumerations">enumerations</a>,
+<a href="#annotations">annotations</a>, and
+<a href="#resourcefiles">resource files</a>.
 
--keep public class * extends View {
+<h3><a name="androidapplication">A complete Android application</a></h3>
+
+These options shrink, optimize, and obfuscate all public activities, services,
+broadcast receivers, and content providers from the compiled classes and
+external libraries:
+<pre>
+-injars      bin/classes
+-injars      libs
+-outjars     bin/classes-processed.jar
+-libraryjars /usr/local/java/android-sdk/platforms/android-9/android.jar
+
+-dontpreverify
+-repackageclasses ''
+-allowaccessmodification
+-optimizations !code/simplification/arithmetic
+-keepattributes *Annotation*
+
+-keep public class * extends android.app.Activity
+-keep public class * extends android.app.Application
+-keep public class * extends android.app.Service
+-keep public class * extends android.content.BroadcastReceiver
+-keep public class * extends android.content.ContentProvider
+
+-keep public class * extends android.view.View {
     public &lt;init&gt;(android.content.Context);
     public &lt;init&gt;(android.content.Context, android.util.AttributeSet);
     public &lt;init&gt;(android.content.Context, android.util.AttributeSet, int);
     public void set*(...);
 }
+
+-keepclasseswithmembers class * {
+    public &lt;init&gt;(android.content.Context, android.util.AttributeSet);
+}
+
+-keepclasseswithmembers class * {
+    public &lt;init&gt;(android.content.Context, android.util.AttributeSet, int);
+}
+
+-keepclassmembers class * implements android.os.Parcelable {
+    static android.os.Parcelable$Creator CREATOR;
+}
+
+-keepclassmembers class **.R$* {
+    public static &lt;fields&gt;;
+}
 </pre>
 <p>
-The configuration is very similar to the configuration for midlets, except that
-it now targets the Android run-time environment.
+Most importantly, we're keeping all fundamental classes that may be referenced
+by the <code>AndroidManifest.xml</code> file of the application.
 <p>
-The <a href="usage.html#optimizations"><code>-optimizations</code></a> option
-disables some arithmetic simplifications that Dalvik 1.0 and 1.5 can't handle.
+We're keeping annotations, since they might be used by custom
+<code>RemoteViews</code>.
 <p>
-We're also keeping any custom <code>View</code> extensions and their typical
-constructors and setters, since they might be referenced from XML layout files.
+We're keeping any custom <code>View</code> extensions and other classes with
+typical constructors, since they might be referenced from XML layout files.
+<p>
+We're also keeping the required static fields in <code>Parcelable</code>
+implementations, since they are accessed by introspection.
+<p>
+Finally, we're keeping the static fields of referenced inner classes of
+auto-generated <code>R</code> classes, just in case your code is accessing
+those fields by introspection. Note that the compiler already inlines
+primitive fields, so ProGuard can generally remove all these classes entirely
+anyway (because the classes are not referenced and therefore not required).
+<p>
+If you're using additional Google APIs, you'll have to specify
+those as well, for instance:
+<pre>
+-libraryjars /usr/local/android-sdk/add-ons/google_apis-7_r01/libs/maps.jar
+</pre>
+<p>
+If you're using Google's optional License Verification Library, you can
+obfuscate its code along with your own code. You do have to preserve
+its <code>ILicensingService</code> interface for the library to work:
+<pre>
+-keep public interface com.android.vending.licensing.ILicensingService
+</pre>
 <p>
 If applicable, you should add options for processing <a href="#native">native
-methods</a>, <a href="#callback">callback methods</a>, <a
-href="#annotations">annotations</a>, and <a
-href="#resourcefiles">resource files</a>.
+methods</a>, <a href="#callback">callback methods</a>,
+<a href="#enumerations">enumerations</a>,
+and <a href="#resourcefiles">resource files</a>. You may also want to add
+options for producing <a href="#stacktrace">useful stack traces</a>. You can
+find a complete sample configuration in <code>examples/android.pro</code> in
+the ProGuard distribution.
+<p>
+You can integrate ProGuard in the build process of the <b>Android 2.2 SDK</b>
+(target <code>android-8</code>) by adapting your Ant <code>build.xml</code>
+file, as shown in in <code>examples/ant/android-8.xml</code> in the ProGuard
+distribution. Note the additional configuration after the line containing
+"<code>&lt;setup /&gt;</code>". Make sure that the path
+to <code>proguard.jar</code> is set correctly for your system. The other paths
+should work without changes. Note that we're sending the processed class files
+and libraries to a jar file, which avoids any case-insensitivity problems on
+Windows. We're redefining the dex helper macro so it converts this jar instead
+of the original code.
+<p>
+The build process of the <b>Android 2.3 SDK</b> (target <code>android-9</code>)
+already includes ProGuard by default. You only need to enable it by adding
+<code>proguard.config=proguard.cfg</code> to the file
+<code>build.properties</code>. In case of problems, you may want to check if
+the automatically generated file <code>proguard.cfg</code> contains the
+settings discussed above. The generated Ant build file already sets the input
+and output files for you.
+<p>
+For more information, you can consult the official <a target="other"
+href="http://developer.android.com/guide/developing/tools/proguard.html">Developer
+Guide</a> in the Android SDK. For slightly different approaches, you can read
+Dan Galpin's description "<a target="other"
+href="http://android-developers.blogspot.com/2010/09/proguard-android-and-licensing-server.html">Proguard,
+Android, and the Licensing Server</a>" at the official Android Developers
+blog, or Matt Quigley's more up to date article "<a target="other"
+href="http://www.androidengineer.com/2010/07/optimizing-obfuscating-and-shrinking.html">Optimizing,
+Obfuscating, and Shrinking your Android Applications with ProGuard</a>" at his
+Android Engineer site.
 
-<a name="library">&nbsp;</a>
-<h3>A typical library</h3>
+<h3><a name="library">A typical library</a></h3>
 
 These options shrink, optimize, and obfuscate an entire library, keeping all
 public and protected classes and class members, native method names, and
-serialization code:
+serialization code. The processed version of the library can then still be
+used as such, for developing code based on its public API.
 <pre>
 -injars       in.jar
 -outjars      out.jar
@@ -318,12 +428,12 @@ The <a
 href="usage.html#keepclassmembernames"><code>-keepclassmembernames</code></a>
 option for the <code>class$</code> methods is not strictly necessary. These
 methods are inserted by the <code>javac</code> compiler and the
-<code>jikes</code> compiler respectively, to implement the <code>.class</code>
-construct. ProGuard will automatically detect them and deal with them, even
-when their names have been obfuscated. However, older versions of ProGuard and
-other obfuscators may rely on the original method names. It may therefore be
-helpful to preserve them, in case these other obfuscators are ever used for
-further obfuscation of the library.
+<code>jikes</code> compiler respectively, in JDK 1.2 and older, to implement
+the <code>.class</code> construct. ProGuard will automatically detect them and
+deal with them, even when their names have been obfuscated. However, other
+obfuscators may rely on the original method names. It may therefore be helpful
+to preserve them, in case these other obfuscators are ever used for further
+obfuscation of the library.
 <p>
 The "Exceptions" attribute has to be preserved, so the compiler knows which
 exceptions methods may throw.
@@ -350,8 +460,7 @@ href="#serializable">serializable classes</a>, and <a
 href="#annotations">annotations</a>, which are all discussed in their
 respective examples.
 
-<a name="applications">&nbsp;</a>
-<h3>All possible applications in the input jars</h3>
+<h3><a name="applications">All possible applications in the input jars</a></h3>
 
 These options shrink, optimize, and obfuscate all public applications in
 <code>in.jar</code>:
@@ -382,8 +491,7 @@ classes</a>, <a href="#beans">bean classes</a>, <a
 href="#annotations">annotations</a>, and <a href="#resourcefiles">resource
 files</a>.
 
-<a name="applets">&nbsp;</a>
-<h3>All possible applets in the input jars</h3>
+<h3><a name="applets">All possible applets in the input jars</a></h3>
 
 These options shrink, optimize, and obfuscate all public applets in
 <code>in.jar</code>:
@@ -408,16 +516,15 @@ classes</a>, <a href="#beans">bean classes</a>, <a
 href="#annotations">annotations</a>, and <a href="#resourcefiles">resource
 files</a>.
 
-<a name="midlets">&nbsp;</a>
-<h3>All possible midlets in the input jars</h3>
+<h3><a name="midlets">All possible midlets in the input jars</a></h3>
 
 These options shrink, optimize, obfuscate, and preverify all public midlets in
 <code>in.jar</code>:
 <pre>
 -injars      in.jar
 -outjars     out.jar
--libraryjars /usr/local/java/wtk2.1/lib/midpapi20.jar
--libraryjars /usr/local/java/wtk2.1/lib/cldcapi11.jar
+-libraryjars /usr/local/java/wtk2.5.2/lib/midpapi20.jar
+-libraryjars /usr/local/java/wtk2.5.2/lib/cldcapi11.jar
 -overloadaggressively
 -repackageclasses ''
 -allowaccessmodification
@@ -449,8 +556,7 @@ methods</a> and <a href="#resourcefiles">resource files</a>.
 Note that you will still have to adapt the midlet jar size in the
 corresponding jad file; ProGuard doesn't do that for you.
 
-<a name="jcapplets">&nbsp;</a>
-<h3>All possible Java Card applets in the input jars</h3>
+<h3><a name="jcapplets">All possible Java Card applets in the input jars</a></h3>
 
 These options shrink, optimize, and obfuscate all public Java Card applets in
 <code>in.jar</code>:
@@ -473,8 +579,7 @@ interface.
 The <a href="usage.html#printseeds"><code>-printseeds</code></a> option prints
 out which applets exactly will be preserved.
 
-<a name="xlets">&nbsp;</a>
-<h3>All possible xlets in the input jars</h3>
+<h3><a name="xlets">All possible xlets in the input jars</a></h3>
 
 These options shrink, optimize, and obfuscate all public xlets in
 <code>in.jar</code>:
@@ -497,51 +602,7 @@ We're simply keeping all classes that implement the <code>Xlet</code> interface.
 The <a href="usage.html#printseeds"><code>-printseeds</code></a> option prints
 out which xlets exactly will be preserved.
 
-<a name="androidapplications">&nbsp;</a>
-<h3>All possible Android applications in the input jars</h3>
-
-These options shrink, optimize, and obfuscate all public activities, services,
-broadcast receivers, and content providers in <code>in.jar</code>:
-<pre>
--injars      in.jar
--outjars     out.jar
--libraryjars /usr/local/java/android-1.5_r1/platforms/android-1.5/android.jar
--overloadaggressively
--repackageclasses ''
--allowaccessmodification
--optimizations !code/simplification/arithmetic
--printseeds
-
--keep public class * extends android.app.Activity
--keep public class * extends android.app.Application
--keep public class * extends android.app.Service
--keep public class * extends android.content.BroadcastReceiver
--keep public class * extends android.content.ContentProvider
-
--keep public class * extends View {
-    public &lt;init&gt;(android.content.Context);
-    public &lt;init&gt;(android.content.Context, android.util.AttributeSet);
-    public &lt;init&gt;(android.content.Context, android.util.AttributeSet, int);
-    public void set*(...);
-}
-</pre>
-<p>
-We're keeping all classes that extend the base classes that may be referenced
-by the <code>AndroidManifest.xml</code> file of the application.
-<p>
-We're also keeping any custom <code>View</code> extensions and their typical
-constructors and setters, since they might be referenced from XML layout files.
-<p>
-The <a href="usage.html#printseeds"><code>-printseeds</code></a> option prints
-out which implementations exactly will be preserved.
-<p>
-If applicable, you should add options for processing <a href="#native">native
-methods</a>, <a href="#callback">callback methods</a>, <a
-href="#annotations">annotations</a>, and <a
-href="#resourcefiles">resource files</a>.
-
-<a name="servlets">&nbsp;</a>
-<h3>All possible servlets in the input jars</h3>
+<h3><a name="servlets">All possible servlets in the input jars</a></h3>
 
 These options shrink, optimize, and obfuscate all public servlets in
 <code>in.jar</code>:
@@ -574,8 +635,78 @@ classes</a>, <a href="#beans">bean classes</a>, <a
 href="#annotations">annotations</a>, and <a href="#resourcefiles">resource
 files</a>.
 
-<a name="native">&nbsp;</a>
-<h3>Processing native methods</h3>
+<h3><a name="scala">Scala applications with the Scala runtime</a></h3>
+
+These options shrink, optimize, and obfuscate all public Scala applications in
+<code>in.jar</code>:
+<pre>
+-injars      in.jar
+-injars      /usr/local/java/scala-2.8.1/lib/scala-library.jar
+-outjars     out.jar
+-libraryjars &lt;java.home&gt;/lib/rt.jar
+
+-dontwarn **$$anonfun$*
+-dontwarn scala.collection.immutable.RedBlack$Empty
+-dontwarn scala.tools.**,plugintemplate.**
+
+-keepclasseswithmembers public class * {
+    public static void main(java.lang.String[]);
+}
+
+-keep class * implements org.xml.sax.EntityResolver
+
+-keepclassmembers class * {
+    ** MODULE$;
+}
+
+-keepclassmembernames class scala.concurrent.forkjoin.ForkJoinPool {
+    long eventCount;
+    int  workerCounts;
+    int  runControl;
+    scala.concurrent.forkjoin.ForkJoinPool$WaitQueueNode syncStack;
+    scala.concurrent.forkjoin.ForkJoinPool$WaitQueueNode spareStack;
+}
+
+-keepclassmembernames class scala.concurrent.forkjoin.ForkJoinWorkerThread {
+    int base;
+    int sp;
+    int runState;
+}
+
+-keepclassmembernames class scala.concurrent.forkjoin.ForkJoinTask {
+    int status;
+}
+
+-keepclassmembernames class scala.concurrent.forkjoin.LinkedTransferQueue {
+    scala.concurrent.forkjoin.LinkedTransferQueue$PaddedAtomicReference head;
+    scala.concurrent.forkjoin.LinkedTransferQueue$PaddedAtomicReference tail;
+    scala.concurrent.forkjoin.LinkedTransferQueue$PaddedAtomicReference cleanMe;
+}
+</pre>
+<p>
+The configuration is essentially the same as
+for <a href="#applications">processing applications</a>, because Scala is
+compiled to ordinary Java bytecode. However, the example processes the Scala
+runtime library as well. The processed jar can be an order of magnitude
+smaller and a few times faster than the original code (for the Scala code
+examples, for instance).
+<p>
+The <a href="usage.html#dontwarn"><code>-dontwarn</code></a> option tells
+ProGuard not to complain about some compiler artefacts and dependencies on the
+Scala compiler library, under the assumption that it is not used. Note that
+this option should always be used with care.
+<p>
+The additional <a href="usage.html#keepoverview"><code>-keep</code></a>
+options make sure that some classes and some fields that are accessed by means
+of introspection are not removed or renamed.
+<p>
+If applicable, you should add options for processing <a href="#native">native
+methods</a>, <a href="#callback">callback methods</a>, <a
+href="#enumerations">enumerations</a>, <a href="#serializable">serializable
+classes</a>, <a href="#beans">bean classes</a>, <a
+href="#annotations">annotations</a>, and <a href="#resourcefiles">resource
+files</a>.
+<h3><a name="native">Processing native methods</a></h3>
 
 If your application, applet, servlet, library, etc., contains native methods,
 you'll want to preserve their names and their classes' names, so they can
@@ -597,8 +728,7 @@ the classes or class members that are invoked by the native code. These are
 entry points, which you'll have to specify explicitly.  <a
 href="callback">Callback methods</a> are discussed below as a typical example.
 
-<a name="callback">&nbsp;</a>
-<h3>Processing callback methods</h3>
+<h3><a name="callback">Processing callback methods</a></h3>
 
 If your application, applet, servlet, library, etc., contains callback
 methods, which are called from external code (native code, scripts,...),
@@ -614,8 +744,7 @@ the following option will keep the callback class and method:
 <p>
 This will preserve the given class and method from being removed or renamed.
 
-<a name="enumerations">&nbsp;</a>
-<h3>Processing enumeration classes</h3>
+<h3><a name="enumerations">Processing enumeration classes</a></h3>
 
 If your application, applet, servlet, library, etc., contains enumeration
 classes, you'll have to preserve some special methods. Enumerations were
@@ -632,8 +761,7 @@ removed or obfuscated:
 }
 </pre>
 
-<a name="serializable">&nbsp;</a>
-<h3>Processing serializable classes</h3>
+<h3><a name="serializable">Processing serializable classes</a></h3>
 
 More complex applications, applets, servlets, libraries, etc., may contain
 classes that are serialized. Depending on the way in which they are used, they
@@ -660,8 +788,7 @@ may require special attention:
     option makes sure that any serialization methods are kept. By using this
     option instead of the basic <code>-keep</code> option, we're not
     forcing preservation of <i>all</i> serializable classes, just preservation
-    of the listed members of classes that are actually used.
-    <p>
+    of the listed members of classes that are actually used.</li>
 
 <li>Sometimes, the serialized data are stored, and read back later into newer
     versions of the serializable classes. One then has to take care the classes
@@ -690,7 +817,7 @@ may require special attention:
     The <code>&lt;fields&gt;</code> line preserves all non-static,
     non-transient fields, with their original names. The introspection of the
     serialization process and the de-serialization process will then find
-    consistent names.
+    consistent names.</li>
 
 <li>Occasionally, the serialized data have to remain compatible, but the
     classes involved lack <code>serialVersionUID</code> fields. I imagine the
@@ -726,7 +853,7 @@ may require special attention:
     interfaces of the serializable classes (using something like "<code>-keep
     interface MyInterface</code>"), since these names are also used when
     computing the UID. A fast but sub-optimal alternative would be simply
-    keeping all interfaces with "<code>-keep interface *</code>".
+    keeping all interfaces with "<code>-keep interface *</code>".</li>
 
 </ul>
 <p>
@@ -737,8 +864,7 @@ the <code>Serialization</code> interface, yet only a small number may actually
 ever be serialized. Knowing your application and tuning the configuration
 often produces more compact results.
 
-<a name="beans">&nbsp;</a>
-<h3>Processing bean classes</h3>
+<h3><a name="beans">Processing bean classes</a></h3>
 
 If your application, applet, servlet, library, etc., makes extensive use of
 introspection on bean classes to find bean editor classes, or getter and
@@ -774,8 +900,7 @@ The '<code>***</code>' wildcard matches any type (primitive or non-primitive,
 array or non-array). The methods with the '<code>int</code>' arguments matches
 properties that are lists.
 
-<a name="annotations">&nbsp;</a>
-<h3>Processing annotations</h3>
+<h3><a name="annotations">Processing annotations</a></h3>
 
 If your application, applet, servlet, library, etc., uses annotations, you may
 want to preserve them in the processed output. Annotations are represented by
@@ -804,8 +929,7 @@ has to be preserved as well:
 -keepattributes EnclosingMethod
 </pre>
 
-<a name="database">&nbsp;</a>
-<h3>Processing database drivers</h3>
+<h3><a name="database">Processing database drivers</a></h3>
 
 Database drivers are implementations of the <code>Driver</code> interface.
 Since they are often created dynamically, you may want to preserve any
@@ -819,8 +943,7 @@ This option also gets rid of the note that ProGuard prints out about
 instantiating a driver in your code (without necessarily implementing any
 drivers yourself).
 
-<a name="componentui">&nbsp;</a>
-<h3>Processing ComponentUI classes</h3>
+<h3><a name="componentui">Processing ComponentUI classes</a></h3>
 
 Swing UI look and feels are implemented as extensions of the
 <code>ComponentUI</code> class. For some reason, these have to contain a
@@ -835,8 +958,7 @@ point, for instance like this:
 <p>
 This option also keeps the classes themselves.
 
-<a name="rmi">&nbsp;</a>
-<h3>Processing RMI code</h3>
+<h3><a name="rmi">Processing RMI code</a></h3>
 
 Reportedly, the easiest way to handle RMI code is to process the code with
 ProGuard first and then invoke the <code>rmic</code> tool. If that is not
@@ -861,8 +983,7 @@ The <code>Exceptions</code> attribute has to be kept too, because the RMI
 handling code performs introspection to check whether the method signatures
 are compatible.
 
-<a name="resourcefiles">&nbsp;</a>
-<h3>Processing resource files</h3>
+<h3><a name="resourcefiles">Processing resource files</a></h3>
 
 If your application, applet, servlet, library, etc., contains resource files,
 it may be necessary to adapt their names and/or their contents when the
@@ -882,8 +1003,7 @@ option looks for class names in properties files and in the manifest file, and
 replaces these names by the obfuscated names (if any). You'll probably want to
 adapt the filters to suit your application.
 
-<a name="manifestfiles">&nbsp;</a>
-<h3>Processing manifest files</h3>
+<h3><a name="manifestfiles">Processing manifest files</a></h3>
 
 As illustrated in the previous section, manifest files can be treated like
 ordinary resource files. ProGuard can adapt obfuscated class names in the
@@ -906,8 +1026,7 @@ ignore any manifest files in the second and third input jars. Note that
 ProGuard will leave the order of the files in the jars unchanged; manifest
 files are not necessarily put first.
 
-<a name="stacktrace">&nbsp;</a>
-<h3>Producing useful obfuscated stack traces</h3>
+<h3><a name="stacktrace">Producing useful obfuscated stack traces</a></h3>
 
 These options let obfuscated applications or libraries produce stack traces
 that can still be deciphered later on:
@@ -933,8 +1052,7 @@ their original names, so we're saving the mapping to a file
 <code>out.map</code>. The information can then be used by the <a
 href="retrace/index.html">ReTrace</a> tool to restore the original stack trace.
 
-<a name="repackaging">&nbsp;</a>
-<h3>Obfuscating package names</h3>
+<h3><a name="repackaging">Obfuscating package names</a></h3>
 
 Package names can be obfuscated in various ways, with increasing levels of
 obfuscation and compactness. For example, consider the following classes:
@@ -1041,8 +1159,7 @@ Note that not all levels of obfuscation of package names may be acceptable for
 all code. Notably, you may have to take into account that your application may
 contain <a href="#resourcefiles">resource files</a> that have to be adapted.
 
-<a name="restructuring">&nbsp;</a>
-<h3>Restructuring the output archives</h3>
+<h3><a name="restructuring">Restructuring the output archives</a></h3>
 
 In simple applications, all output classes and resources files are merged into
 a single jar. For example:
@@ -1113,8 +1230,7 @@ This grouping, archiving, and flattening can be arbitrarily complex. ProGuard
 always tries to package output archives in a sensible way, reconstructing the
 input entries as much as required.
 
-<a name="filtering">&nbsp;</a>
-<h3>Filtering the input and the output</h3>
+<h3><a name="filtering">Filtering the input and the output</a></h3>
 
 If you want even greater control, you can add
 <a href="usage.html#filters">filters</a> to the input and the output,
@@ -1174,8 +1290,7 @@ files to <code>code_out.jar</code>, and all remaining files to
 Again, the filtering can be arbitrarily complex, especially when combined with
 grouping input and output.
 
-<a name="multiple">&nbsp;</a>
-<h3>Processing multiple applications at once</h3>
+<h3><a name="multiple">Processing multiple applications at once</a></h3>
 
 You can process several dependent or independent applications (or applets,
 midlets,...) in one go, in order to save time and effort. ProGuard's input and
@@ -1195,8 +1310,7 @@ just the input and output options:
 After processing, the directory <code>processed_applications</code> will
 contain processed versions of application jars, with their original names.
 
-<a name="incremental">&nbsp;</a>
-<h3>Incremental obfuscation</h3>
+<h3><a name="incremental">Incremental obfuscation</a></h3>
 
 After having <a href="#application">processed an application</a>, e.g.
 ProGuard itself, you can still incrementally add other pieces of code that
@@ -1243,8 +1357,7 @@ jar as a library jar:
 }
 </pre>
 
-<a name="microedition">&nbsp;</a>
-<h3>Preverifying class files for Java Micro Edition</h3>
+<h3><a name="microedition">Preverifying class files for Java Micro Edition</a></h3>
 
 Even if you're not interested in shrinking, optimizing, and obfuscating your
 midlets, as shown in the <a href="#midlets">midlets example</a>, you can still
@@ -1254,8 +1367,8 @@ preverifier.
 <pre>
 -injars      in.jar
 -outjars     out.jar
--libraryjars /usr/local/java/wtk2.1/lib/midpapi20.jar
--libraryjars /usr/local/java/wtk2.1/lib/cldcapi11.jar
+-libraryjars /usr/local/java/wtk2.5.2/lib/midpapi20.jar
+-libraryjars /usr/local/java/wtk2.5.2/lib/cldcapi11.jar
 
 -dontshrink
 -dontoptimize
@@ -1270,8 +1383,7 @@ href="usage.html#microedition"><code>-microedition</code></a> option. Note
 that we don't need any <code>-keep</code> options to specify entry points; all
 class files are simply preverified.
 
-<a name="upgrade">&nbsp;</a>
-<h3>Upgrading class files to Java 6</h3>
+<h3><a name="upgrade">Upgrading class files to Java 6</a></h3>
 
 The following options upgrade class files to Java 6, by updating their
 internal version numbers and preverifying them. The class files can then be
@@ -1294,8 +1406,7 @@ automatically be preverified for Java 6 as a result. Note that we don't need
 any <code>-keep</code> options to specify entry points; all class files are
 simply updated and preverified.
 
-<a name="deadcode">&nbsp;</a>
-<h3>Finding dead code</h3>
+<h3><a name="deadcode">Finding dead code</a></h3>
 
 These options list unused classes, fields, and methods in the application
 <code>mypackage.MyApplication</code>:
@@ -1329,8 +1440,7 @@ that keeps those fields a priori, in order to avoid having them listed:
 }
 </pre>
 
-<a name="structure">&nbsp;</a>
-<h3>Printing out the internal structure of class files</h3>
+<h3><a name="structure">Printing out the internal structure of class files</a></h3>
 
 These options print out the internal structure of all class files in the input
 jar:
@@ -1348,8 +1458,7 @@ jar:
 Note how we don't need to specify the Java run-time jar, because we're not
 processing the input jar at all.
 
-<a name="annotated">&nbsp;</a>
-<h3>Using annotations to configure ProGuard</h3>
+<h3><a name="annotated">Using annotations to configure ProGuard</a></h3>
 
 The traditional ProGuard configuration allows to keep a clean separation
 between the code and the configuration for shrinking, optimization, and
@@ -1389,13 +1498,12 @@ href="#annotations">annotations</a>.
 <p>
 The directory <code>examples/annotations</code> contains more examples that
 illustrate some of the possibilities.
-<p>
 
-<hr>
+<hr />
 <noscript><div><a target="_top" href="../index.html" class="button">Show menu</a></div></noscript>
 <address>
-Copyright &copy; 2002-2010
-<a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
+Copyright &copy; 2002-2011
+<a target="other" href="http://www.lafortune.eu/">Eric Lafortune</a>.
 </address>
 </body>
 </html>

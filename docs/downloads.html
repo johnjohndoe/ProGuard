@@ -1,5 +1,5 @@
 
-<!doctype html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<!doctype html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
 <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
@@ -8,7 +8,7 @@
 <title>ProGuard Downloads</title>
 <script type="text/javascript" language="JavaScript">
 <!--
-if (window.top.document.title!="ProGuard")
+if (window.self==window.top)
   window.top.location.replace("index.html#"+window.location.pathname+window.location.hash);
 //else if (window.top.location.hash!="#"+window.location.pathname)
 //  window.top.location.hash="#"+window.location.pathname;
@@ -51,6 +51,32 @@ Finally, there may be beta versions of upcoming releases. They may be of
 interest too, because they typically contain any less urgent bug fixes
 collected since the previous release.
 <p>
+
+<h3><div>Feb 2011</div> Version 4.6</h3>
+<ul>
+<li>Added support for synthetic, bridge, and varargs modifiers in configuration.
+<li>Added detection of atomic updater construction with constant arguments.
+<li>Fixed merging of package visible classes.
+<li>Fixed optimization of fields that are only accessed by reflection.
+<li>Fixed optimization of read-only or write-only fields that are volatile.
+<li>Fixed handling of side-effects due to static initializers.
+<li>Fixed handling of bridge flags in obfuscation step.
+<li>Fixed handling of super flag when merging classes.
+<li>Fixed updating of variable tables when optimizing variables.
+<li>Fixed removal of unused parameters with 32 or more parameters.
+<li>Fixed incorrect removal of exception handler for instanceof instruction.
+<li>Fixed inlining of methods with unusual exception handlers.
+<li>Fixed optimization of unusual code causing stack underflow.
+<li>Fixed keeping of constructor parameter names.
+<li>Fixed unwanted wrapping of non-standard META-INF files.
+<li>Fixed filtering of warnings about references to array types.
+<li>Fixed overriding of warning option and note option in Ant task.
+<li>Improved detection of file name extensions for canonical paths.
+<li>Improved printing of seeds specified by <code>-keep</code> options.
+<li>Improved printing of notes about unkept classes.
+<li>Improved checking whether output is up to date.
+<li>Updated documentation and examples.
+</ul>
 
 <h3><div>Jun 2010</div> Version 4.5</h3>
 <ul>
@@ -552,11 +578,11 @@ Upgrade considerations:
     <b>RetroGuard</b>.
 </ul>
 
-<hr>
+<hr />
 <noscript><div><a target="_top" href="index.html" class="button">Show menu</a></div></noscript>
 <address>
-Copyright &copy; 2002-2010
-<a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
+Copyright &copy; 2002-2011
+<a target="other" href="http://www.lafortune.eu/">Eric Lafortune</a>.
 </address>
 
 </body>

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2011 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -151,7 +151,7 @@ implements   ClassVisitor,
             // infinite recursion.
             (programClass.getAccessFlags() & ClassConstants.INTERNAL_ACC_ANNOTATTION) == 0 &&
 
-            // Only merge classes if we can change the access permissioms, or
+            // Only merge classes if we can change the access permissions, or
             // if they are in the same package, or
             // if they are public and don't contain or invoke package visible
             // class members.
@@ -235,11 +235,12 @@ implements   ClassVisitor,
             targetClass.u2accessFlags =
                 ((targetAccessFlags &
                   sourceAccessFlags) &
-                 (ClassConstants.INTERNAL_ACC_INTERFACE  |
+                 (ClassConstants.INTERNAL_ACC_INTERFACE |
                   ClassConstants.INTERNAL_ACC_ABSTRACT)) |
                 ((targetAccessFlags |
                   sourceAccessFlags) &
-                 (ClassConstants.INTERNAL_ACC_PUBLIC     |
+                 (ClassConstants.INTERNAL_ACC_PUBLIC      |
+                  ClassConstants.INTERNAL_ACC_SUPER       |
                   ClassConstants.INTERNAL_ACC_ANNOTATTION |
                   ClassConstants.INTERNAL_ACC_ENUM));
 
@@ -336,10 +337,8 @@ implements   ClassVisitor,
         // Visit all superclasses and interfaces, collecting the ones that have
         // static initializers.
         clazz.hierarchyAccept(true, true, true, false,
-                              new NamedMethodVisitor(ClassConstants.INTERNAL_METHOD_NAME_CLINIT,
-                                                     ClassConstants.INTERNAL_METHOD_TYPE_INIT,
-                              new MemberToClassVisitor(
-                              new ClassCollector(set))));
+                              new StaticInitializerContainingClassFilter(
+                              new ClassCollector(set)));
 
         return set;
     }
