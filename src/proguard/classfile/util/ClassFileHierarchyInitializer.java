@@ -1,4 +1,4 @@
-/* $Id: ClassFileHierarchyInitializer.java,v 1.11 2005/06/11 13:13:15 eric Exp $
+/* $Id: ClassFileHierarchyInitializer.java,v 1.12 2005/06/25 22:07:51 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *

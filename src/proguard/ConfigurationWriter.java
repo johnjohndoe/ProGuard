@@ -1,4 +1,4 @@
-/* $Id: ConfigurationWriter.java,v 1.16 2005/06/11 13:13:15 eric Exp $
+/* $Id: ConfigurationWriter.java,v 1.17 2005/06/25 22:09:48 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *

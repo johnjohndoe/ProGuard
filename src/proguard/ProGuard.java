@@ -1,4 +1,4 @@
-/* $Id: ProGuard.java,v 1.95 2005/06/11 13:21:35 eric Exp $
+/* $Id: ProGuard.java,v 1.97 2005/06/26 16:20:23 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -46,7 +46,7 @@ import java.util.*;
  */
 public class ProGuard
 {
-    public static final String VERSION = "ProGuard, version 3.3";
+    public static final String VERSION = "ProGuard, version 3.3.1";
 
     private Configuration configuration;
     private ClassPool     programClassPool = new ClassPool();
@@ -292,6 +292,7 @@ public class ProGuard
         // Initialize the Class.forName and .class references.
         ClassFileClassForNameReferenceInitializer classFileClassForNameReferenceInitializer =
             new ClassFileClassForNameReferenceInitializer(programClassPool,
+                                                          libraryClassPool,
                                                           configuration.note,
                                                           createNoteExceptionMatcher(configuration.keep));
 
@@ -672,15 +673,15 @@ public class ProGuard
         programClassPool.classFilesAccept(new AllMethodVisitor(
                                           new PartialEvaluator()));
 
-        // Shrink the method parameters and make methods static.
-        programClassPool.classFilesAccept(new AllMethodVisitor(
-                                          new ParameterShrinker(1024, 64)));
-
         // Inline interfaces with single implementations.
         programClassPool.classFilesAccept(new SingleImplementationInliner());
 
         // Restore the interface references from these single implementations.
         programClassPool.classFilesAccept(new SingleImplementationFixer());
+
+        // Shrink the method parameters and make methods static.
+        programClassPool.classFilesAccept(new AllMethodVisitor(
+                                          new ParameterShrinker(1024, 64)));
 
         // Fix all references to class files.
         programClassPool.classFilesAccept(new ClassFileReferenceFixer());

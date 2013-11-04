@@ -1,4 +1,4 @@
-/* $Id: RuntimeParameterAnnotationsAttrInfo.java,v 1.5 2005/06/11 13:13:15 eric Exp $
+/* $Id: RuntimeParameterAnnotationsAttrInfo.java,v 1.6 2005/06/25 22:04:04 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *

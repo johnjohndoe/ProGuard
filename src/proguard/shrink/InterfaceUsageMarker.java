@@ -1,4 +1,4 @@
-/* $Id: InterfaceUsageMarker.java,v 1.13 2005/06/11 13:21:35 eric Exp $
+/* $Id: InterfaceUsageMarker.java,v 1.14 2005/06/26 16:20:23 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -74,7 +74,7 @@ public class InterfaceUsageMarker
             // Is this an interface with a preliminary mark?
             if (classPossiblyUsed)
             {
-                // Should it now be included?
+                // Should it be included now?
                 if (classUsed)
                 {
                     // At least one if this interface's interfaces is being used.

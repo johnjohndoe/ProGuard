@@ -1,4 +1,4 @@
-/* $Id: UsageMarker.java,v 1.45 2005/06/11 13:21:35 eric Exp $
+/* $Id: UsageMarker.java,v 1.46 2005/06/26 16:19:24 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -55,7 +55,8 @@ public class UsageMarker
     private static final Object USED          = new Object();
 
 
-    private MyInterfaceUsageMarker interfaceUsageMarker = new MyInterfaceUsageMarker();
+    private MyInterfaceUsageMarker          interfaceUsageMarker          = new MyInterfaceUsageMarker();
+    private MyPossiblyUsedMethodUsageMarker possiblyUsedMethodUsageMarker = new MyPossiblyUsedMethodUsageMarker();
 //    private ClassFileVisitor       dynamicClassMarker   =
 //        new MultiClassFileVisitor(
 //        new ClassFileVisitor[]
@@ -65,10 +66,6 @@ public class UsageMarker
 //                                   ClassConstants.INTERNAL_METHOD_TYPE_INIT,
 //                                   this)
 //        });
-
-
-    // A field acting as a parameter to the visitMemberInfo method.
-    private boolean processing = false;
 
 
     // Implementations for ClassFileVisitor.
@@ -111,9 +108,7 @@ public class UsageMarker
                                       this);
 
         // Process all methods that have already been marked as possibly used.
-        processing = true;
-        programClassFile.methodsAccept(this);
-        processing = false;
+        programClassFile.methodsAccept(possiblyUsedMethodUsageMarker);
 
         // Mark the attributes.
         programClassFile.attributesAccept(this);
@@ -180,6 +175,34 @@ public class UsageMarker
     }
 
 
+    private class MyPossiblyUsedMethodUsageMarker implements MemberInfoVisitor
+    {
+        // Implementations for MemberInfoVisitor.
+    
+        public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo) {}
+    
+    
+        public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
+        {
+            // Has the method already been referenced?
+            if (isPossiblyUsed(programMethodInfo))
+            {
+                markAsUsed(programMethodInfo);
+
+                // Mark the method body.
+                markProgramMethodBody(programClassFile, programMethodInfo);
+                
+                // Note that, if the method has been marked as possibly used,
+                // the method hierarchy has already been marked (cfr. below).
+            }
+        }
+    
+    
+        public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo) {}
+        public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo) {}
+    }
+
+    
     // Implementations for MemberInfoVisitor.
 
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
@@ -205,28 +228,26 @@ public class UsageMarker
     {
         if (shouldBeMarkedAsUsed(programMethodInfo))
         {
-            // Are the method and its class used?
-            if (processing ? isPossiblyUsed(programMethodInfo) :
-                             isUsed(programClassFile))
+            // Is the method's class used?
+            if (isUsed(programClassFile))
             {
                 markAsUsed(programMethodInfo);
 
+                // Mark the method body.
                 markProgramMethodBody(programClassFile, programMethodInfo);
 
-                // If the method is being called, mark its hierarchy.
-                if (!processing)
-                {
-                    markMethodHierarchy(programClassFile, programMethodInfo);
-                }
+                // Mark the method hierarchy.
+                markMethodHierarchy(programClassFile, programMethodInfo);
             }
-            else if (!processing && shouldBeMarkedAsPossiblyUsed(programMethodInfo))
+            
+            // Hasn't the method been marked as possibly being used yet?
+            else if (shouldBeMarkedAsPossiblyUsed(programMethodInfo))
             {
-                // We can't process the class member yet, because the class
-                // file isn't marked as being used (yet). Give it a
-                // preliminary mark.
+                // We can't process the method yet, because the class isn't
+                // marked as being used (yet). Give it a preliminary mark.
                 markAsPossiblyUsed(programMethodInfo);
 
-                // The method is being called. Mark its hierarchy.
+                // Mark the method hierarchy.
                 markMethodHierarchy(programClassFile, programMethodInfo);
             }
         }
@@ -241,6 +262,7 @@ public class UsageMarker
         {
             markAsUsed(libraryMethodInfo);
 
+            // Mark the method hierarchy.
             markMethodHierarchy(libraryClassFile, libraryMethodInfo);
         }
     }
@@ -248,10 +270,6 @@ public class UsageMarker
 
     protected void markProgramMethodBody(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
     {
-        // Remember the processing flag.
-        boolean oldProcessing = processing;
-        processing = false;
-
         // Mark the name and descriptor.
         markCpEntry(programClassFile, programMethodInfo.u2nameIndex);
         markCpEntry(programClassFile, programMethodInfo.u2descriptorIndex);
@@ -261,9 +279,6 @@ public class UsageMarker
 
         // Mark the classes referenced in the descriptor string.
         programMethodInfo.referencedClassesAccept(this);
-
-        // Restore the processing flag.
-        processing = oldProcessing;
     }
 
 
@@ -799,7 +814,8 @@ public class UsageMarker
      */
     protected boolean shouldBeMarkedAsPossiblyUsed(VisitorAccepter visitorAccepter)
     {
-        return visitorAccepter.getVisitorInfo() != USED;
+        return visitorAccepter.getVisitorInfo() != USED &&
+               visitorAccepter.getVisitorInfo() != POSSIBLY_USED;
     }
 
 

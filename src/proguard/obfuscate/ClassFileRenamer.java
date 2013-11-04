@@ -1,4 +1,4 @@
-/* $Id: ClassFileRenamer.java,v 1.41 2005/06/11 13:21:35 eric Exp $
+/* $Id: ClassFileRenamer.java,v 1.42 2005/06/25 22:06:31 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *

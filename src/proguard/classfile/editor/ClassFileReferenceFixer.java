@@ -1,4 +1,4 @@
-/* $Id: ClassFileReferenceFixer.java,v 1.3 2005/06/11 13:21:35 eric Exp $
+/* $Id: ClassFileReferenceFixer.java,v 1.4 2005/06/25 22:07:51 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *

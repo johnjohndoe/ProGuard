@@ -1,4 +1,4 @@
-/* $Id: LibraryFieldInfo.java,v 1.15 2005/06/11 13:13:15 eric Exp $
+/* $Id: LibraryFieldInfo.java,v 1.16 2005/06/25 22:07:51 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *

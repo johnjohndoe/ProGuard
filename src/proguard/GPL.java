@@ -1,4 +1,4 @@
-/* $Id: GPL.java,v 1.2 2005/06/11 13:13:15 eric Exp $
+/* $Id: GPL.java,v 1.3 2005/06/25 22:04:40 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *

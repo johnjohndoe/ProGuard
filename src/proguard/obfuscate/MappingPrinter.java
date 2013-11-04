@@ -1,4 +1,4 @@
-/* $Id: MappingPrinter.java,v 1.18 2005/06/11 13:21:35 eric Exp $
+/* $Id: MappingPrinter.java,v 1.19 2005/06/25 22:06:06 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *

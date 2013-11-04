@@ -1,4 +1,4 @@
-/* $Id: SingleImplementationInliner.java,v 1.9 2005/06/11 13:13:16 eric Exp $
+/* $Id: SingleImplementationInliner.java,v 1.10 2005/06/26 16:20:23 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -101,18 +101,11 @@ implements   ClassFileVisitor,
         if (singleImplementationClassFile != null)
         {
             // We know the single implementation contains the method.
-
             String name = interfaceMethodrefCpInfo.getName(classFile);
             String type = interfaceMethodrefCpInfo.getType(classFile);
 
-            MemberInfo referencedMemberInfo =
-                singleImplementationClassFile.findMethod(name, type);
-
-            if (referencedMemberInfo != null)
-            {
-                interfaceMethodrefCpInfo.referencedClassFile  = singleImplementationClassFile;
-                interfaceMethodrefCpInfo.referencedMemberInfo = referencedMemberInfo;
-            }
+            interfaceMethodrefCpInfo.referencedClassFile  = singleImplementationClassFile;
+            interfaceMethodrefCpInfo.referencedMemberInfo = singleImplementationClassFile.findMethod(name, type);
         }
     }
 

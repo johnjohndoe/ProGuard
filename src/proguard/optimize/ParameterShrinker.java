@@ -1,4 +1,4 @@
-/* $Id: ParameterShrinker.java,v 1.3 2005/06/11 13:13:16 eric Exp $
+/* $Id: ParameterShrinker.java,v 1.4 2005/06/25 22:04:04 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -186,6 +186,9 @@ public class ParameterShrinker
 
     // Small utility methods.
 
+    /**
+     * Shrinks the given parameter annotations.
+     */
     private void shrinkParameterAnnotations(ClassFile                           classFile,
                                             RuntimeParameterAnnotationsAttrInfo runtimeParameterAnnotationsAttrInfo)
     {
@@ -231,6 +234,9 @@ public class ParameterShrinker
     }
 
 
+    /**
+     * Returns a shrunk descriptor of the given method.
+     */
     public static String shrinkDescriptor(ProgramClassFile  classFile,
                                           ProgramMethodInfo methodInfo)
     {
@@ -265,46 +271,52 @@ public class ParameterShrinker
     }
 
 
+    /**
+     * Shrinks the array of referenced class files of the given method.
+     */
     private static void shrinkReferencedClassFiles(ProgramClassFile  classFile,
                                                    ProgramMethodInfo methodInfo)
     {
         ClassFile[] referencedClassFiles = methodInfo.referencedClassFiles;
 
-        // All parameters of non-static methods are shifted by one in the local
-        // variable frame.
-        int parameterIndex =
-            (methodInfo.getAccessFlags() & ClassConstants.INTERNAL_ACC_STATIC) != 0 ?
-                0 : 1;
-
-        int referencedClassFileIndex    = 0;
-        int newReferencedClassFileIndex = 0;
-
-        // Go over the parameters.
-        String descriptor = methodInfo.getDescriptor(classFile);
-        InternalTypeEnumeration internalTypeEnumeration =
-            new InternalTypeEnumeration(descriptor);
-
-        while (internalTypeEnumeration.hasMoreTypes())
+        if (referencedClassFiles != null)
         {
-            String type = internalTypeEnumeration.nextType();
-            if (ClassUtil.isInternalClassType(type))
+            // All parameters of non-static methods are shifted by one in the local
+            // variable frame.
+            int parameterIndex =
+                (methodInfo.getAccessFlags() & ClassConstants.INTERNAL_ACC_STATIC) != 0 ?
+                    0 : 1;
+    
+            int referencedClassFileIndex    = 0;
+            int newReferencedClassFileIndex = 0;
+    
+            // Go over the parameters.
+            String descriptor = methodInfo.getDescriptor(classFile);
+            InternalTypeEnumeration internalTypeEnumeration =
+                new InternalTypeEnumeration(descriptor);
+    
+            while (internalTypeEnumeration.hasMoreTypes())
             {
-                if (VariableUsageMarker.isVariableUsed(methodInfo, parameterIndex))
+                String type = internalTypeEnumeration.nextType();
+                if (ClassUtil.isInternalClassType(type))
                 {
-                    referencedClassFiles[newReferencedClassFileIndex++] =
-                        referencedClassFiles[referencedClassFileIndex];
+                    if (VariableUsageMarker.isVariableUsed(methodInfo, parameterIndex))
+                    {
+                        referencedClassFiles[newReferencedClassFileIndex++] =
+                            referencedClassFiles[referencedClassFileIndex];
+                    }
+    
+                    referencedClassFileIndex++;
                 }
-
-                referencedClassFileIndex++;
+    
+                parameterIndex += ClassUtil.isInternalCategory2Type(type) ? 2 : 1;
             }
-
-            parameterIndex += ClassUtil.isInternalCategory2Type(type) ? 2 : 1;
-        }
-
-        // Clear the unused entries.
-        while (newReferencedClassFileIndex < referencedClassFileIndex)
-        {
-            referencedClassFiles[newReferencedClassFileIndex++] = null;
+    
+            // Clear the unused entries.
+            while (newReferencedClassFileIndex < referencedClassFileIndex)
+            {
+                referencedClassFiles[newReferencedClassFileIndex++] = null;
+            }
         }
     }
 }
