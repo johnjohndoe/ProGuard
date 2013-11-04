@@ -1,4 +1,4 @@
-/* $Id: SideEffectInstructionChecker.java,v 1.6 2004/11/20 15:41:24 eric Exp $
+/* $Id: SideEffectInstructionChecker.java,v 1.8 2004/12/11 20:10:10 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -122,21 +122,21 @@ public class SideEffectInstructionChecker
                  opcode == InstructionConstants.OP_PUTFIELD)
         {
             // Check if the field is write-only.
-            classFile.constantPoolEntryAccept(this, cpInstruction.cpIndex);
+            classFile.constantPoolEntryAccept(cpInstruction.cpIndex, this);
         }
         else if (opcode == InstructionConstants.OP_INVOKESPECIAL ||
                  opcode == InstructionConstants.OP_INVOKESTATIC)
         {
             // Check if the invoked method is causing any side effects.
             virtual = false;
-            classFile.constantPoolEntryAccept(this, cpInstruction.cpIndex);
+            classFile.constantPoolEntryAccept(cpInstruction.cpIndex, this);
         }
         else if (opcode == InstructionConstants.OP_INVOKEVIRTUAL ||
                  opcode == InstructionConstants.OP_INVOKEINTERFACE)
         {
             // Check if the invoked method is causing any side effects.
             virtual = true;
-            classFile.constantPoolEntryAccept(this, cpInstruction.cpIndex);
+            classFile.constantPoolEntryAccept(cpInstruction.cpIndex, this);
         }
     }
 
@@ -189,7 +189,7 @@ public class SideEffectInstructionChecker
                 interfaceMethodrefCpInfo.referencedClassAccept(
                     new ConcreteClassFileDownTraveler(
                     new ClassFileHierarchyTraveler(true, true, false, true,
-                    new NamedMethodVisitor(this, name, type))));
+                    new NamedMethodVisitor(name, type, this))));
             }
         }
     }
@@ -208,7 +208,7 @@ public class SideEffectInstructionChecker
             // First check the referenced method itself.
             methodrefCpInfo.referencedMemberInfoAccept(this);
 
-            // If the result isn't conclusive, check up and down the hierarchy.
+            // If the result isn't conclusive, check down the hierarchy.
             if (!hasSideEffects &&
                 virtual)
             {
@@ -219,7 +219,7 @@ public class SideEffectInstructionChecker
                 // down the class hierarchy.
                 methodrefCpInfo.referencedClassAccept(
                     new ClassFileHierarchyTraveler(false, false, false, true,
-                    new NamedMethodVisitor(this, name, type)));
+                    new NamedMethodVisitor(name, type, this)));
             }
         }
     }

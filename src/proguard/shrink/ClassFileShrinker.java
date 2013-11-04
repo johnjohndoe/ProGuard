@@ -1,4 +1,4 @@
-/* $Id: ClassFileShrinker.java,v 1.24 2004/10/10 20:56:58 eric Exp $
+/* $Id: ClassFileShrinker.java,v 1.25 2004/12/04 23:43:43 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -151,7 +151,6 @@ public class ClassFileShrinker
     // Implementations for AttrInfoVisitor.
 
     public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo) {}
-    public void visitEnclosingMethodAttrInfo(ClassFile classFile, EnclosingMethodAttrInfo enclosingMethodAttrInfo) {}
     public void visitConstantValueAttrInfo(ClassFile classFile, FieldInfo fieldInfo, ConstantValueAttrInfo constantValueAttrInfo) {}
     public void visitExceptionsAttrInfo(ClassFile classFile, MethodInfo methodInfo, ExceptionsAttrInfo exceptionsAttrInfo) {}
     public void visitLineNumberTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LineNumberTableAttrInfo lineNumberTableAttrInfo) {}
@@ -175,6 +174,24 @@ public class ClassFileShrinker
         innerClassesAttrInfo.u2numberOfClasses =
             shrinkArray(innerClassesAttrInfo.classes,
                         innerClassesAttrInfo.u2numberOfClasses);
+    }
+
+
+    public void visitEnclosingMethodAttrInfo(ClassFile classFile, EnclosingMethodAttrInfo enclosingMethodAttrInfo)
+    {
+        // Sometimes, a class is still referenced (apparently as a dummy class),
+        // but its enclosing method is not. Then remove the reference to
+        // the enclosing method.
+        // E.g. the anonymous inner class javax.swing.JList$1 is defined inside
+        // a constructor of javax.swing.JList, but it is also referenced as a
+        // dummy argument in a constructor of javax.swing.JList$ListSelectionHandler.
+        if (enclosingMethodAttrInfo.referencedMethodInfo != null &&
+            !UsageMarker.isUsed(enclosingMethodAttrInfo.referencedMethodInfo))
+        {
+            enclosingMethodAttrInfo.u2nameAndTypeIndex = 0;
+
+            enclosingMethodAttrInfo.referencedMethodInfo = null;
+        }
     }
 
 

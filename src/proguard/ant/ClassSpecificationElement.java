@@ -1,4 +1,4 @@
-/* $Id: ClassSpecificationElement.java,v 1.2 2004/08/28 20:55:21 eric Exp $
+/* $Id: ClassSpecificationElement.java,v 1.3 2004/12/18 20:21:43 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -35,6 +35,8 @@ import java.util.*;
  */
 public class ClassSpecificationElement extends DataType
 {
+    private static final String ANY_CLASS_KEYWORD  = "*";
+
     private String access;
     private String type;
     private String name;
@@ -65,6 +67,14 @@ public class ClassSpecificationElement extends DataType
         String type     = classSpecificationElement.type;
         String name     = classSpecificationElement.name;
         String extends_ = classSpecificationElement.extends_;
+
+        // For backward compatibility, allow a single "*" wildcard to match
+        // any class.
+        if (name != null &&
+            name.equals(ANY_CLASS_KEYWORD))
+        {
+            name = null;
+        }
 
         ClassSpecification classSpecification =
             new ClassSpecification(requiredAccessFlags(true,  access, type),

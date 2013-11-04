@@ -1,4 +1,4 @@
-/* $Id: Processor.java,v 1.11 2004/11/14 22:24:45 eric Exp $
+/* $Id: Processor.java,v 1.12 2004/12/11 16:35:23 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -948,7 +948,7 @@ implements   InstructionVisitor,
     private Value cpValue(ClassFile classFile, int cpIndex)
     {
         // Visit the constant pool entry to get its return value.
-        classFile.constantPoolEntryAccept(this, cpIndex);
+        classFile.constantPoolEntryAccept(cpIndex, this);
 
         return cpValue;
     }
@@ -961,7 +961,7 @@ implements   InstructionVisitor,
     private ClassFile referencedClassFile(ClassFile classFile, int cpIndex)
     {
         // Visit the constant pool entry to get its referenced class file.
-        classFile.constantPoolEntryAccept(this, cpIndex);
+        classFile.constantPoolEntryAccept(cpIndex, this);
 
         return referencedClassFile;
     }

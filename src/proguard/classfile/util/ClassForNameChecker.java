@@ -1,4 +1,4 @@
-/* $Id: ClassForNameChecker.java,v 1.10 2004/10/10 20:56:58 eric Exp $
+/* $Id: ClassForNameChecker.java,v 1.11 2004/12/11 16:35:23 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -67,7 +67,7 @@ implements CpInfoVisitor,
     {
         isClassForNameInvocation = false;
 
-        classFile.constantPoolEntryAccept(this, methodrefCpInfoIndex);
+        classFile.constantPoolEntryAccept(methodrefCpInfoIndex, this);
 
         return isClassForNameInvocation;
     }
@@ -219,7 +219,7 @@ implements CpInfoVisitor,
         if (firstInstructionOk &&
             cpInstruction.opcode == InstructionConstants.OP_INVOKESTATIC)
         {
-            classFile.constantPoolEntryAccept(this, cpInstruction.cpIndex);
+            classFile.constantPoolEntryAccept(cpInstruction.cpIndex, this);
         }
     }
 }

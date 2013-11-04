@@ -1,4 +1,4 @@
-/* $Id: NameAndTypeUsageMarker.java,v 1.12 2004/11/20 15:41:24 eric Exp $
+/* $Id: NameAndTypeUsageMarker.java,v 1.13 2004/11/26 12:46:43 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -121,7 +121,10 @@ public class NameAndTypeUsageMarker
 
     public void visitEnclosingMethodAttrInfo(ClassFile classFile, EnclosingMethodAttrInfo enclosingMethodAttrInfo)
     {
-        markNameAndTypeCpEntry(classFile, enclosingMethodAttrInfo.u2nameAndTypeIndex);
+        if (enclosingMethodAttrInfo.u2nameAndTypeIndex != 0)
+        {
+            markNameAndTypeCpEntry(classFile, enclosingMethodAttrInfo.u2nameAndTypeIndex);
+        }
     }
 
 

@@ -1,4 +1,4 @@
-/* $Id: CpInstruction.java,v 1.18 2004/10/10 20:56:58 eric Exp $
+/* $Id: CpInstruction.java,v 1.19 2004/12/11 16:35:23 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -156,7 +156,7 @@ implements   CpInfoVisitor
             case InstructionConstants.OP_PUTSTATIC:
             case InstructionConstants.OP_PUTFIELD:
                 // The field value is be popped from the stack.
-                classFile.constantPoolEntryAccept(this, cpIndex);
+                classFile.constantPoolEntryAccept(cpIndex, this);
                 stackPopCount += typeStackDelta;
                 break;
 
@@ -165,7 +165,7 @@ implements   CpInfoVisitor
             case InstructionConstants.OP_INVOKESTATIC:
             case InstructionConstants.OP_INVOKEINTERFACE:
                 // The some parameters may be popped from the stack.
-                classFile.constantPoolEntryAccept(this, cpIndex);
+                classFile.constantPoolEntryAccept(cpIndex, this);
                 stackPopCount += parameterStackDelta;
                 break;
         }
@@ -188,7 +188,7 @@ implements   CpInfoVisitor
             case InstructionConstants.OP_INVOKESTATIC:
             case InstructionConstants.OP_INVOKEINTERFACE:
                 // The field value or a return value may be pushed onto the stack.
-                classFile.constantPoolEntryAccept(this, cpIndex);
+                classFile.constantPoolEntryAccept(cpIndex, this);
                 stackPushCount += typeStackDelta;
                 break;
         }

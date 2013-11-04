@@ -1,4 +1,4 @@
-/* $Id: ClassNewInstanceChecker.java,v 1.6 2004/08/15 12:39:30 eric Exp $
+/* $Id: ClassNewInstanceChecker.java,v 1.7 2004/12/11 16:35:23 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -59,7 +59,7 @@ implements CpInfoVisitor
     {
         isClassNewInstanceInvocation = false;
 
-        classFile.constantPoolEntryAccept(this, methodrefCpInfoIndex);
+        classFile.constantPoolEntryAccept(methodrefCpInfoIndex, this);
 
         return isClassNewInstanceInvocation;
     }

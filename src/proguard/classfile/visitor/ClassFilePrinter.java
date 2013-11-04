@@ -1,4 +1,4 @@
-/* $Id: ClassFilePrinter.java,v 1.27 2004/11/20 15:41:24 eric Exp $
+/* $Id: ClassFilePrinter.java,v 1.30 2004/12/11 16:35:23 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -305,9 +305,10 @@ public class ClassFilePrinter
     {
         println(visitorInfo(enclosingMethodAttrInfo) +
                 " Enclosing method attribute [" +
-                classFile.getCpClassNameString(enclosingMethodAttrInfo.u2classIndex)  + "." +
-                classFile.getCpNameString(enclosingMethodAttrInfo.u2nameAndTypeIndex) + " " +
-                classFile.getCpTypeString(enclosingMethodAttrInfo.u2nameAndTypeIndex) + "]");
+                classFile.getCpClassNameString(enclosingMethodAttrInfo.u2classIndex)  +
+                (enclosingMethodAttrInfo.u2nameAndTypeIndex == 0 ? "" : "." +
+                 classFile.getCpNameString(enclosingMethodAttrInfo.u2nameAndTypeIndex) + " " +
+                 classFile.getCpTypeString(enclosingMethodAttrInfo.u2nameAndTypeIndex)) + "]");
     }
 
 
@@ -316,7 +317,7 @@ public class ClassFilePrinter
         println(visitorInfo(constantValueAttrInfo) +
                 " Constant value attribute:");
 
-        classFile.constantPoolEntryAccept(this, constantValueAttrInfo.u2constantValueIndex);
+        classFile.constantPoolEntryAccept(constantValueAttrInfo.u2constantValueIndex, this);
     }
 
 
@@ -377,7 +378,8 @@ public class ClassFilePrinter
     public void visitLocalVariableTypeTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeTableAttrInfo localVariableTypeTableAttrInfo)
     {
         println(visitorInfo(localVariableTypeTableAttrInfo) +
-                " Local variable type table attribute (count = "+localVariableTypeTableAttrInfo.u2localVariableTypeTableLength + ")");
+                " Local variable type table attribute (count = "+
+                localVariableTypeTableAttrInfo.u2localVariableTypeTableLength + ")");
         // ...
     }
 
@@ -388,7 +390,7 @@ public class ClassFilePrinter
                 " Source file attribute:");
 
         indent();
-        classFile.constantPoolEntryAccept(this, sourceFileAttrInfo.u2sourceFileIndex);
+        classFile.constantPoolEntryAccept(sourceFileAttrInfo.u2sourceFileIndex, this);
         outdent();
     }
 
@@ -399,7 +401,7 @@ public class ClassFilePrinter
                 " Source dir attribute:");
 
         indent();
-        classFile.constantPoolEntryAccept(this, sourceDirAttrInfo.u2sourceDirIndex);
+        classFile.constantPoolEntryAccept(sourceDirAttrInfo.u2sourceDirIndex, this);
         outdent();
     }
 
@@ -424,7 +426,7 @@ public class ClassFilePrinter
                 " Signature attribute:");
 
         indent();
-        classFile.constantPoolEntryAccept(this, signatureAttrInfo.u2signatureIndex);
+        classFile.constantPoolEntryAccept(signatureAttrInfo.u2signatureIndex, this);
         outdent();
     }
 
@@ -494,17 +496,17 @@ public class ClassFilePrinter
         indent();
         if (innerClassesInfo.u2innerClassInfoIndex != 0)
         {
-            classFile.constantPoolEntryAccept(this, innerClassesInfo.u2innerClassInfoIndex);
+            classFile.constantPoolEntryAccept(innerClassesInfo.u2innerClassInfoIndex, this);
         }
 
         if (innerClassesInfo.u2outerClassInfoIndex != 0)
         {
-            classFile.constantPoolEntryAccept(this, innerClassesInfo.u2outerClassInfoIndex);
+            classFile.constantPoolEntryAccept(innerClassesInfo.u2outerClassInfoIndex, this);
         }
 
         if (innerClassesInfo.u2innerNameIndex != 0)
         {
-            classFile.constantPoolEntryAccept(this, innerClassesInfo.u2innerNameIndex);
+            classFile.constantPoolEntryAccept(innerClassesInfo.u2innerNameIndex, this);
         }
         outdent();
     }
@@ -533,7 +535,7 @@ public class ClassFilePrinter
                 classFile.getCpString(constantElementValue.u2elementName)) + "]");
 
         indent();
-        classFile.constantPoolEntryAccept(this, constantElementValue.u2constantValueIndex);
+        classFile.constantPoolEntryAccept(constantElementValue.u2constantValueIndex, this);
         outdent();
     }
 
@@ -604,7 +606,7 @@ public class ClassFilePrinter
         println(InstructionFactory.create(codeAttrInfo.code, offset).toString(offset));
 
         indent();
-        classFile.constantPoolEntryAccept(this, cpInstruction.cpIndex);
+        classFile.constantPoolEntryAccept(cpInstruction.cpIndex, this);
         outdent();
     }
 
@@ -635,7 +637,7 @@ public class ClassFilePrinter
 
         if (exceptionInfo.u2catchType != 0)
         {
-            classFile.constantPoolEntryAccept(this, exceptionInfo.u2catchType);
+            classFile.constantPoolEntryAccept(exceptionInfo.u2catchType, this);
         }
     }
 

@@ -1,4 +1,4 @@
-/* $Id: SingleImplementationInliner.java,v 1.5 2004/11/20 15:41:24 eric Exp $
+/* $Id: SingleImplementationInliner.java,v 1.7 2004/12/11 16:35:23 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -43,7 +43,7 @@ implements   MemberInfoVisitor,
              LocalVariableInfoVisitor,
              LocalVariableTypeInfoVisitor
 {
-    private MyMemberFinder memberFinder = new MyMemberFinder();
+    private MemberFinder memberFinder = new MemberFinder();
 
     private ConstantPoolEditor constantPoolEditor = new ConstantPoolEditor();
     private CodeAttrInfoEditor codeAttrInfoEditor = new CodeAttrInfoEditor(1024);
@@ -192,7 +192,7 @@ implements   MemberInfoVisitor,
     public void visitCpInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, CpInstruction cpInstruction)
     {
         cpIndex = 0;
-        classFile.constantPoolEntryAccept(this, cpInstruction.cpIndex);
+        classFile.constantPoolEntryAccept(cpInstruction.cpIndex, this);
 
         if (cpIndex != 0)
         {
@@ -246,7 +246,7 @@ implements   MemberInfoVisitor,
     {
         // Create a new field reference entry if its type has changed.
         cpIndex = 0;
-        classFile.constantPoolEntryAccept(this, fieldrefCpInfo.getNameAndTypeIndex());
+        classFile.constantPoolEntryAccept(fieldrefCpInfo.getNameAndTypeIndex(), this);
         int nameAndTypeIndex = cpIndex;
 
         if (nameAndTypeIndex != 0)
@@ -265,7 +265,7 @@ implements   MemberInfoVisitor,
     {
         // Create a new method reference entry if its type has changed.
         cpIndex = 0;
-        classFile.constantPoolEntryAccept(this, methodrefCpInfo.getNameAndTypeIndex());
+        classFile.constantPoolEntryAccept(methodrefCpInfo.getNameAndTypeIndex(), this);
         int nameAndTypeIndex = cpIndex;
 
         if (nameAndTypeIndex != 0)
@@ -286,11 +286,11 @@ implements   MemberInfoVisitor,
         // is an interface with a single implementation, or a a new interface
         // method reference entry, if its type has changed.
         cpIndex = 0;
-        classFile.constantPoolEntryAccept(this, interfaceMethodrefCpInfo.getClassIndex());
+        classFile.constantPoolEntryAccept(interfaceMethodrefCpInfo.getClassIndex(), this);
         int classIndex = cpIndex;
 
         cpIndex = 0;
-        classFile.constantPoolEntryAccept(this, interfaceMethodrefCpInfo.getNameAndTypeIndex());
+        classFile.constantPoolEntryAccept(interfaceMethodrefCpInfo.getNameAndTypeIndex(), this);
         int nameAndTypeIndex = cpIndex;
 
         if (classIndex != 0)
@@ -306,34 +306,19 @@ implements   MemberInfoVisitor,
             String name = interfaceMethodrefCpInfo.getName(classFile);
             String type = interfaceMethodrefCpInfo.getType(classFile);
 
-            // For efficiency, first see if we can find the member in the
-            // referenced class itself.
-            MemberInfo referencedMemberInfo =
-                referencedClassFile.findMethod(name, type);
-
-            if (referencedMemberInfo == null)
-            {
-                // We didn't find the member yet. This must be a retrofitted
-                // interface. Organize a search in the hierarchy of superclasses.
-                try
-                {
-                    referencedClassFile.hierarchyAccept(false, true, false, false,
-                        new NamedMethodVisitor(memberFinder, name, type));
-                }
-                catch (MyMemberFinder.MemberFoundException ex)
-                {
-                    // Save the references.
-                    referencedClassFile  = memberFinder.classFile;
-                    referencedMemberInfo = memberFinder.memberInfo;
-                }
-            }
+            // See if we can find the referenced class membver somewhere in the
+            // hierarchy.
+            MethodInfo referencedMethodInfo = memberFinder.findMethod(referencedClassFile,
+                                                                      name,
+                                                                      type);
+            referencedClassFile             = memberFinder.correspondingClassFile();
 
             // Create an ordinary method reference entry.
             cpIndex = constantPoolEditor.addMethodrefCpInfo((ProgramClassFile)classFile,
                                                             classIndex,
                                                             nameAndTypeIndex,
                                                             referencedClassFile,
-                                                            referencedMemberInfo);
+                                                            referencedMethodInfo);
         }
         else if (nameAndTypeIndex != 0)
         {
@@ -545,53 +530,5 @@ implements   MemberInfoVisitor,
         }
 
         return newClassName;
-    }
-
-
-    /**
-     * This utility class throws a MemberFoundException whenever it visits
-     * a member. For program class files, it then also stores the class file
-     * and member info.
-     */
-    private static class MyMemberFinder implements MemberInfoVisitor
-    {
-        private static class MemberFoundException extends IllegalArgumentException {};
-        private static final MemberFoundException MEMBER_FOUND = new MemberFoundException();
-
-        private ClassFile  classFile;
-        private MemberInfo memberInfo;
-
-
-        // Implementations for MemberInfoVisitor.
-
-        public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
-        {
-            visitMemberInfo(programClassFile, programFieldInfo);
-        }
-
-
-        public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
-        {
-            visitMemberInfo(programClassFile, programMethodInfo);
-        }
-
-
-        public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo)
-        {
-            visitMemberInfo(libraryClassFile, libraryFieldInfo);
-        }
-
-        public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo)
-        {
-            visitMemberInfo(libraryClassFile, libraryMethodInfo);
-        }
-
-
-        private void visitMemberInfo(ClassFile classFile, MemberInfo memberInfo)
-        {
-            this.classFile  = classFile;
-            this.memberInfo = memberInfo;
-            throw MEMBER_FOUND;
-        }
     }
 }

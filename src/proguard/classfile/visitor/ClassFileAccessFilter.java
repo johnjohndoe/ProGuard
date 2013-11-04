@@ -1,4 +1,4 @@
-/* $Id: ClassFileAccessFilter.java,v 1.5 2004/10/10 20:56:58 eric Exp $
+/* $Id: ClassFileAccessFilter.java,v 1.6 2004/12/11 16:35:23 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -34,27 +34,27 @@ import proguard.classfile.*;
  */
 public class ClassFileAccessFilter implements ClassFileVisitor
 {
-    private ClassFileVisitor classFileVisitor;
     private int              requiredSetAccessFlags;
     private int              requiredUnsetAccessFlags;
+    private ClassFileVisitor classFileVisitor;
 
 
     /**
      * Creates a new ClassFileAccessFilter.
-     * @param classFileVisitor         the <code>ClassFileVisitor</code> to
-     *                                 which visits will be delegated.
      * @param requiredSetAccessFlags   the class access flags that should be
      *                                 set.
      * @param requiredUnsetAccessFlags the class access flags that should be
      *                                 unset.
+     * @param classFileVisitor         the <code>ClassFileVisitor</code> to
+     *                                 which visits will be delegated.
      */
-    public ClassFileAccessFilter(ClassFileVisitor classFileVisitor,
-                                 int              requiredSetAccessFlags,
-                                 int              requiredUnsetAccessFlags)
+    public ClassFileAccessFilter(int              requiredSetAccessFlags,
+                                 int              requiredUnsetAccessFlags,
+                                 ClassFileVisitor classFileVisitor)
     {
-        this.classFileVisitor         = classFileVisitor;
         this.requiredSetAccessFlags   = requiredSetAccessFlags;
         this.requiredUnsetAccessFlags = requiredUnsetAccessFlags;
+        this.classFileVisitor         = classFileVisitor;
     }
 
 

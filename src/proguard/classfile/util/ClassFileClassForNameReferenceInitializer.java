@@ -1,4 +1,4 @@
-/* $Id: ClassFileClassForNameReferenceInitializer.java,v 1.13 2004/10/10 20:56:58 eric Exp $
+/* $Id: ClassFileClassForNameReferenceInitializer.java,v 1.14 2004/12/11 16:35:23 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -152,7 +152,7 @@ implements InstructionVisitor,
                     if (classForNameChecker.check(classFile, currentCpIndex))
                     {
                         // Fill out the class file reference in the String.
-                        classFile.constantPoolEntryAccept(this, ldcStringCpIndex);
+                        classFile.constantPoolEntryAccept(ldcStringCpIndex, this);
                     }
 
                     // We've dealt with this invocation, so we can forget about it.
@@ -197,7 +197,7 @@ implements InstructionVisitor,
                         classNewInstanceChecker.check(classFile, invokevirtualMethodRefCpIndex))
                     {
                         // Note which class is being cast to.
-                        classFile.constantPoolEntryAccept(this, currentCpIndex);
+                        classFile.constantPoolEntryAccept(currentCpIndex, this);
                     }
                 }
 

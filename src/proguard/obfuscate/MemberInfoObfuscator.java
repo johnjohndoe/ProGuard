@@ -1,4 +1,4 @@
-/* $Id: MemberInfoObfuscator.java,v 1.11 2004/11/20 15:41:24 eric Exp $
+/* $Id: MemberInfoObfuscator.java,v 1.12 2004/12/11 16:35:23 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -110,9 +110,9 @@ public class MemberInfoObfuscator implements ClassFileVisitor
         {
             MemberInfoAccessFilter nonPrivateNewNameAssigner =
                 new MemberInfoAccessFilter(
-                new MyNewNameAssigner(nonPrivateDescriptorMap),
                 0,
-                ClassConstants.INTERNAL_ACC_PRIVATE);
+                ClassConstants.INTERNAL_ACC_PRIVATE,
+                new MyNewNameAssigner(nonPrivateDescriptorMap));
 
             programClassFile.fieldsAccept(nonPrivateNewNameAssigner);
             programClassFile.methodsAccept(nonPrivateNewNameAssigner);
@@ -133,9 +133,9 @@ public class MemberInfoObfuscator implements ClassFileVisitor
         {
             MemberInfoAccessFilter privateNewNameAssigner =
                 new MemberInfoAccessFilter(
-                new MyNewNameAssigner(privateDescriptorMap, nonPrivateDescriptorMap),
                 ClassConstants.INTERNAL_ACC_PRIVATE,
-                0);
+                0,
+                new MyNewNameAssigner(privateDescriptorMap, nonPrivateDescriptorMap));
 
             programClassFile.fieldsAccept(privateNewNameAssigner);
             programClassFile.methodsAccept(privateNewNameAssigner);

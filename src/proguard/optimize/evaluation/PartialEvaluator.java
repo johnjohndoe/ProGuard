@@ -1,4 +1,4 @@
-/* $Id: PartialEvaluator.java,v 1.22 2004/11/20 15:41:24 eric Exp $
+/* $Id: PartialEvaluator.java,v 1.26 2004/12/11 16:35:23 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -303,15 +303,13 @@ implements   MemberInfoVisitor,
         // Mark all essential instructions that have been encountered as used.
         if (DEBUG_ANALYSIS) System.out.println("Usage initialization: ");
 
-        // The first instruction of a constructor is always necessary.
-        // The subsequent invocation of the <init> method depends on it,
-        // so it will be marked as necessary as a result, even if it is
-        // assumed to have no side effects.
-        if (methodInfo.getName(classFile).equals(ClassConstants.INTERNAL_METHOD_NAME_INIT))
-        {
-            if (DEBUG_ANALYSIS) System.out.print("0,");
-            isNecessary[0] = true;
-        }
+        // The invocation of the "super" or "this" <init> method inside a
+        // constructor is always necessary, even if it is assumed to have no
+        // side effects.
+        boolean markSuperOrThis = 
+            methodInfo.getName(classFile).equals(ClassConstants.INTERNAL_METHOD_NAME_INIT);
+
+        int aload0Index = 0;
 
         int index = 0;
         do
@@ -321,12 +319,31 @@ implements   MemberInfoVisitor,
                 Instruction instruction = InstructionFactory.create(codeAttrInfo.code,
                                                                     index);
 
+                // Remember the most recent aload0 instruction index.
+                if (instruction.opcode == InstructionConstants.OP_ALOAD_0)
+                {
+                    aload0Index = index;
+                }
+
+                // Mark the instruction as necessary if it is the first
+                // invocation of the "super" or "this" <init> method
+                // inside a constructor.
+                else if (markSuperOrThis &&
+                         instruction.opcode == InstructionConstants.OP_INVOKESPECIAL &&
+                         stackTraceValues[index].contains(aload0Index))
+                {
+                    markSuperOrThis = false;
+                    
+                    if (DEBUG_ANALYSIS) System.out.print(index+",");
+                    isNecessary[index] = true;
+                }
+                
                 // Mark the instruction as necessary if it has side effects.
-                if (sideEffectInstructionChecker.hasSideEffects(classFile,
-                                                                methodInfo,
-                                                                codeAttrInfo,
-                                                                index,
-                                                                instruction))
+                else if (sideEffectInstructionChecker.hasSideEffects(classFile,
+                                                                     methodInfo,
+                                                                     codeAttrInfo,
+                                                                     index,
+                                                                     instruction))
                 {
                     if (DEBUG_ANALYSIS) System.out.print(index+",");
                     isNecessary[index] = true;
@@ -915,14 +932,14 @@ implements   MemberInfoVisitor,
         byte popOpcode = popInstruction.opcode;
 
         int popCount = popInstruction.stackPopCount(classFile);
-        if (popCount > 0 &&
-            popOpcode != InstructionConstants.OP_DUP     &&
-            popOpcode != InstructionConstants.OP_DUP_X1  &&
-            popOpcode != InstructionConstants.OP_DUP_X2  &&
-            popOpcode != InstructionConstants.OP_DUP2    &&
-            popOpcode != InstructionConstants.OP_DUP2_X1 &&
-            popOpcode != InstructionConstants.OP_DUP2_X2 &&
-            popOpcode != InstructionConstants.OP_SWAP)
+        if (popCount > 0) // &&
+            //popOpcode != InstructionConstants.OP_DUP     &&
+            //popOpcode != InstructionConstants.OP_DUP_X1  &&
+            //popOpcode != InstructionConstants.OP_DUP_X2  &&
+            //popOpcode != InstructionConstants.OP_DUP2    &&
+            //popOpcode != InstructionConstants.OP_DUP2_X1 &&
+            //popOpcode != InstructionConstants.OP_DUP2_X2 &&
+            //popOpcode != InstructionConstants.OP_SWAP)
         {
             // Check the instructions on which it depends.
             InstructionOffsetValue traceOffsetValue = stackTraceValues[index];
@@ -1114,6 +1131,8 @@ implements   MemberInfoVisitor,
 
             Instruction replacementInstruction = new SimpleInstruction(replacementOpcode);
 
+            if (DEBUG_ANALYSIS) System.out.println("    Pop instruction after ["+offset+"]: "+replacementInstruction);
+ 
             // Insert the pop instruction.
             codeAttrInfoEditor.insertAfterInstruction(offset,
                                                       replacementInstruction);
@@ -1706,7 +1725,7 @@ implements   MemberInfoVisitor,
             cpInstruction.opcode == InstructionConstants.OP_INVOKESPECIAL)
         {
             // Check if the invoked method is an initalizer.
-            classFile.constantPoolEntryAccept(this, cpInstruction.cpIndex);
+            classFile.constantPoolEntryAccept(cpInstruction.cpIndex, this);
 
             if (isInitializer)
             {

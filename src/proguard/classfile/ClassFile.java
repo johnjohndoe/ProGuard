@@ -1,4 +1,4 @@
-/* $Id: ClassFile.java,v 1.19 2004/10/23 16:53:00 eric Exp $
+/* $Id: ClassFile.java,v 1.20 2004/12/11 16:35:23 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -159,7 +159,7 @@ public interface ClassFile extends VisitorAccepter
      * Lets the given constant pool entry visitor visit the constant pool entry
      * at the specified index.
      */
-    public void constantPoolEntryAccept(CpInfoVisitor cpInfoVisitor, int index);
+    public void constantPoolEntryAccept(int index, CpInfoVisitor cpInfoVisitor);
 
     /**
      * Lets the given member info visitor visit all fields of this class.
@@ -169,7 +169,7 @@ public interface ClassFile extends VisitorAccepter
     /**
      * Lets the given member info visitor visit the specified field.
      */
-    public void fieldAccept(MemberInfoVisitor memberInfoVisitor, String name, String descriptor);
+    public void fieldAccept(String name, String descriptor, MemberInfoVisitor memberInfoVisitor);
 
     /**
      * Lets the given member info visitor visit all methods of this class.
@@ -179,7 +179,7 @@ public interface ClassFile extends VisitorAccepter
     /**
      * Lets the given member info visitor visit the specified method.
      */
-    public void methodAccept(MemberInfoVisitor memberInfoVisitor, String name, String descriptor);
+    public void methodAccept(String name, String descriptor, MemberInfoVisitor memberInfoVisitor);
 
     /**
      * Lets the given attribute info visitor visit all attributes of this class.

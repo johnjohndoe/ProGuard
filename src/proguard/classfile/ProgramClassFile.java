@@ -1,4 +1,4 @@
-/* $Id: ProgramClassFile.java,v 1.30 2004/10/23 16:53:01 eric Exp $
+/* $Id: ProgramClassFile.java,v 1.32 2004/12/11 16:35:23 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -159,35 +159,6 @@ public class ProgramClassFile implements ClassFile
     }
 
 
-
-    /**
-     * Returns the CpInfo at the given index in the constant pool.
-     */
-    public CpInfo getCpEntry(int cpIndex)
-    {
-        return constantPool[cpIndex];
-    }
-
-
-    /**
-     * Returns the field with the given name and descriptor.
-     */
-    ProgramFieldInfo findProgramField(String name, String descriptor)
-    {
-        for (int i = 0; i < u2fieldsCount; i++)
-        {
-            ProgramFieldInfo field = fields[i];
-            if (field.getName(this).equals(name) &&
-                field.getDescriptor(this).equals(descriptor))
-            {
-                return field;
-            }
-        }
-
-        return null;
-    }
-
-
     /**
      * Exports the representation to a DataOutput stream.
      */
@@ -232,6 +203,34 @@ public class ProgramClassFile implements ClassFile
 
 
     /**
+     * Returns the CpInfo at the given index in the constant pool.
+     */
+    public CpInfo getCpEntry(int cpIndex)
+    {
+        return constantPool[cpIndex];
+    }
+
+
+    /**
+     * Returns the field with the given name and descriptor.
+     */
+    ProgramFieldInfo findProgramField(String name, String descriptor)
+    {
+        for (int i = 0; i < u2fieldsCount; i++)
+        {
+            ProgramFieldInfo field = fields[i];
+            if ((name       == null || field.getName(this).equals(name)) &&
+                (descriptor == null || field.getDescriptor(this).equals(descriptor)))
+            {
+                return field;
+            }
+        }
+
+        return null;
+    }
+
+
+    /**
      * Returns the method with the given name and descriptor.
      */
     ProgramMethodInfo findProgramMethod(String name, String descriptor)
@@ -239,8 +238,8 @@ public class ProgramClassFile implements ClassFile
         for (int i = 0; i < u2methodsCount; i++)
         {
             ProgramMethodInfo method = methods[i];
-            if (method.getName(this).equals(name) &&
-                method.getDescriptor(this).equals(descriptor))
+            if ((name       == null || method.getName(this).equals(name)) &&
+                (descriptor == null || method.getDescriptor(this).equals(descriptor)))
             {
                 return method;
             }
@@ -476,7 +475,7 @@ public class ProgramClassFile implements ClassFile
         }
     }
 
-    public void constantPoolEntryAccept(CpInfoVisitor cpInfoVisitor, int index)
+    public void constantPoolEntryAccept(int index, CpInfoVisitor cpInfoVisitor)
     {
         constantPool[index].accept(this, cpInfoVisitor);
     }
@@ -489,7 +488,7 @@ public class ProgramClassFile implements ClassFile
         }
     }
 
-    public void fieldAccept(MemberInfoVisitor memberInfoVisitor, String name, String descriptor)
+    public void fieldAccept(String name, String descriptor, MemberInfoVisitor memberInfoVisitor)
     {
         ProgramFieldInfo field = findProgramField(name, descriptor);
         if (field != null)
@@ -506,7 +505,7 @@ public class ProgramClassFile implements ClassFile
         }
     }
 
-    public void methodAccept(MemberInfoVisitor memberInfoVisitor, String name, String descriptor)
+    public void methodAccept(String name, String descriptor, MemberInfoVisitor memberInfoVisitor)
     {
         ProgramMethodInfo method = findProgramMethod(name, descriptor);
         if (method != null)

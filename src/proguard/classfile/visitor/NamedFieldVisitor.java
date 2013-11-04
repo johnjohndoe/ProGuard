@@ -1,4 +1,4 @@
-/* $Id: NamedFieldVisitor.java,v 1.10 2004/08/15 12:39:30 eric Exp $
+/* $Id: NamedFieldVisitor.java,v 1.11 2004/12/11 16:35:23 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -31,29 +31,29 @@ import proguard.classfile.*;
  */
 public class NamedFieldVisitor implements ClassFileVisitor
 {
-    private MemberInfoVisitor memberInfoVisitor;
     private String            name;
     private String            descriptor;
+    private MemberInfoVisitor memberInfoVisitor;
 
 
-    public NamedFieldVisitor(MemberInfoVisitor memberInfoVisitor,
-                             String            name,
-                             String            descriptor)
+    public NamedFieldVisitor(String            name,
+                             String            descriptor,
+                             MemberInfoVisitor memberInfoVisitor)
     {
-        this.memberInfoVisitor = memberInfoVisitor;
         this.name              = name;
         this.descriptor        = descriptor;
+        this.memberInfoVisitor = memberInfoVisitor;
     }
 
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
-        programClassFile.fieldAccept(memberInfoVisitor, name, descriptor);
+        programClassFile.fieldAccept(name, descriptor, memberInfoVisitor);
     }
 
 
     public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
     {
-        libraryClassFile.fieldAccept(memberInfoVisitor, name, descriptor);
+        libraryClassFile.fieldAccept(name, descriptor, memberInfoVisitor);
     }
 }

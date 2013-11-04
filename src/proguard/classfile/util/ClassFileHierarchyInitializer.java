@@ -1,4 +1,4 @@
-/* $Id: ClassFileHierarchyInitializer.java,v 1.9 2004/08/15 12:39:30 eric Exp $
+/* $Id: ClassFileHierarchyInitializer.java,v 1.10 2004/12/11 16:35:23 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -104,8 +104,8 @@ public class ClassFileHierarchyInitializer
 
             if (programClassFile.u2superClass != 0)
             {
-                programClassFile.constantPoolEntryAccept(this,
-                                                         programClassFile.u2superClass);
+                programClassFile.constantPoolEntryAccept(programClassFile.u2superClass,
+                                                         this);
             }
 
             // Add this class to the subclasses of its superclass.
@@ -119,8 +119,8 @@ public class ClassFileHierarchyInitializer
             // Add this class to the subclasses of its interfaces.
             for (int index = 0; index < programClassFile.u2interfacesCount; index++)
             {
-                programClassFile.constantPoolEntryAccept(this,
-                                                         programClassFile.u2interfaces[index]);
+                programClassFile.constantPoolEntryAccept(programClassFile.u2interfaces[index],
+                                                         this);
 
                 addSubclass(programClassFile,
                             programClassFile.getInterface(index),

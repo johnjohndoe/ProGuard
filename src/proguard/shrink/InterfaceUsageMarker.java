@@ -1,4 +1,4 @@
-/* $Id: InterfaceUsageMarker.java,v 1.9 2004/08/15 12:39:30 eric Exp $
+/* $Id: InterfaceUsageMarker.java,v 1.10 2004/12/11 16:35:23 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -153,6 +153,6 @@ public class InterfaceUsageMarker
      */
     private void markCpEntry(ClassFile classFile, int index)
     {
-         classFile.constantPoolEntryAccept(this, index);
+         classFile.constantPoolEntryAccept(index, this);
     }
 }

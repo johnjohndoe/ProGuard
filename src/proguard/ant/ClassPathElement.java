@@ -1,4 +1,4 @@
-/* $Id: ClassPathElement.java,v 1.6 2004/11/20 15:41:24 eric Exp $
+/* $Id: ClassPathElement.java,v 1.7 2004/12/18 20:21:11 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -82,7 +82,7 @@ public class ClassPathElement extends Path
 
                 // Get the names of the existing input files in the referenced file set.
                 DirectoryScanner scanner = fileSet.getDirectoryScanner(getProject());
-                basePath = scanner.getBasedir().getPath();
+                basePath = scanner.getBasedir().getPath() + File.separator;
                 files    = scanner.getIncludedFiles();
             }
             else
@@ -136,9 +136,9 @@ public class ClassPathElement extends Path
     /**
      * @deprecated Use {@link #setLocation(File)} instead.
      */
-    public void setName(String name)
+    public void setName(File file)
     {
-        setLocation(new File(name));
+        setLocation(file);
     }
 
 

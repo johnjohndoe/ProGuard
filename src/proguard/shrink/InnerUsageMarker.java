@@ -1,4 +1,4 @@
-/* $Id: InnerUsageMarker.java,v 1.14 2004/10/10 20:56:58 eric Exp $
+/* $Id: InnerUsageMarker.java,v 1.15 2004/12/11 16:35:23 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -219,6 +219,6 @@ public class InnerUsageMarker
      */
     private void markCpEntry(ClassFile classFile, int index)
     {
-         classFile.constantPoolEntryAccept(this, index);
+         classFile.constantPoolEntryAccept(index, this);
     }
 }

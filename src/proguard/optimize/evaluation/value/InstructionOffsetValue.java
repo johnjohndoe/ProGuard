@@ -1,4 +1,4 @@
-/* $Id: InstructionOffsetValue.java,v 1.5 2004/11/20 15:06:55 eric Exp $
+/* $Id: InstructionOffsetValue.java,v 1.6 2004/12/04 19:34:42 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -84,7 +84,7 @@ public class InstructionOffsetValue extends Category1Value
     /**
      * Returns the generalization of this InstructionOffsetValue and the given
      * other InstructionOffsetValue. The values of the other InstructionOffsetValue
-     * are guaranteed to remain at the end of the list.
+     * are guaranteed to remain at the end of the list, in the same order.
      */
     public final Value generalize(InstructionOffsetValue other)
     {
@@ -103,7 +103,7 @@ public class InstructionOffsetValue extends Category1Value
         int newLength = this.values.length;
         for (int index = 0; index < other.values.length; index++)
         {
-            if (!contains(other.values[index]))
+            if (!this.contains(other.values[index]))
             {
                 newLength++;
             }
@@ -116,10 +116,12 @@ public class InstructionOffsetValue extends Category1Value
             return other;
         }
 
-        if (newLength == this.values.length)
-        {
-            return this;
-        }
+        // The ordering of the this array may not be right, so we can't just
+        // use it.
+        //if (newLength == this.values.length)
+        //{
+        //    return this;
+        //}
 
         // Create the union array.
         int[] newValues = new int[newLength];

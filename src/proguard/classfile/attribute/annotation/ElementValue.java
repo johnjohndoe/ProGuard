@@ -1,4 +1,4 @@
-/* $Id: ElementValue.java,v 1.3 2004/11/20 15:41:24 eric Exp $
+/* $Id: ElementValue.java,v 1.4 2004/11/27 10:09:26 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -43,9 +43,9 @@ public abstract class ElementValue implements VisitorAccepter
     public int u2elementName;
 
     /**
-     * An extra field optionally pointing to the referenced MethodInfo object.
-     * This field is typically filled out by the <code>{@link
-     * ClassFileReferenceInitializer}</code>.
+     * An extra field pointing to the referenced <code>MethodInfo</code>
+     * object, if applicable. This field is typically filled out by the
+     * <code>{@link ClassFileReferenceInitializer}</code>.
      */
     public MethodInfo referencedMethodInfo;
 

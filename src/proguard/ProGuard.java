@@ -1,4 +1,4 @@
-/* $Id: ProGuard.java,v 1.83 2004/11/20 15:41:24 eric Exp $
+/* $Id: ProGuard.java,v 1.84 2004/12/11 16:35:23 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -43,7 +43,7 @@ import java.io.*;
  */
 public class ProGuard
 {
-    public static final String VERSION = "ProGuard, version 3.1";
+    public static final String VERSION = "ProGuard, version 3.2";
 
     private Configuration configuration;
     private ClassPool     programClassPool = new ClassPool();

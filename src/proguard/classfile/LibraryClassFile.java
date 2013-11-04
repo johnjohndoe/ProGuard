@@ -1,4 +1,4 @@
-/* $Id: LibraryClassFile.java,v 1.33 2004/11/20 15:11:45 eric Exp $
+/* $Id: LibraryClassFile.java,v 1.35 2004/12/11 16:35:23 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -287,9 +287,11 @@ public class LibraryClassFile implements ClassFile
         {
             LibraryFieldInfo field = fields[i];
             if (field != null &&
-                field.getName(this).equals(name) &&
-                field.getDescriptor(this).equals(descriptor))
+                (name       == null || field.getName(this).equals(name)) &&
+                (descriptor == null || field.getDescriptor(this).equals(descriptor)))
+            {
                 return field;
+            }
         }
 
         return null;
@@ -305,9 +307,11 @@ public class LibraryClassFile implements ClassFile
         {
             LibraryMethodInfo method = methods[i];
             if (method != null &&
-                method.getName(this).equals(name) &&
-                method.getDescriptor(this).equals(descriptor))
+                (name       == null || method.getName(this).equals(name)) &&
+                (descriptor == null || method.getDescriptor(this).equals(descriptor)))
+            {
                 return method;
+            }
         }
 
         return null;
@@ -517,7 +521,7 @@ public class LibraryClassFile implements ClassFile
         // This class doesn't keep references to its constant pool entries.
     }
 
-    public void constantPoolEntryAccept(CpInfoVisitor cpInfoVisitor, int index)
+    public void constantPoolEntryAccept(int index, CpInfoVisitor cpInfoVisitor)
     {
         // This class doesn't keep references to its constant pool entries.
     }
@@ -533,7 +537,7 @@ public class LibraryClassFile implements ClassFile
         }
     }
 
-    public void fieldAccept(MemberInfoVisitor memberInfoVisitor, String name, String descriptor)
+    public void fieldAccept(String name, String descriptor, MemberInfoVisitor memberInfoVisitor)
     {
         LibraryMemberInfo libraryMemberInfo = findLibraryField(name, descriptor);
         if (libraryMemberInfo != null)
@@ -553,7 +557,7 @@ public class LibraryClassFile implements ClassFile
         }
     }
 
-    public void methodAccept(MemberInfoVisitor memberInfoVisitor, String name, String descriptor)
+    public void methodAccept(String name, String descriptor, MemberInfoVisitor memberInfoVisitor)
     {
         LibraryMemberInfo libraryMemberInfo = findLibraryMethod(name, descriptor);
         if (libraryMemberInfo != null)

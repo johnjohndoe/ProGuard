@@ -1,4 +1,4 @@
-/* $Id: ExceptionsAttrInfo.java,v 1.1 2004/10/10 21:10:04 eric Exp $
+/* $Id: ExceptionsAttrInfo.java,v 1.2 2004/12/11 16:35:23 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -92,8 +92,8 @@ public class ExceptionsAttrInfo extends AttrInfo
     {
         for (int i = 0; i < u2numberOfExceptions; i++)
         {
-            programClassFile.constantPoolEntryAccept(cpInfoVisitor,
-                                                     u2exceptionIndexTable[i]);
+            programClassFile.constantPoolEntryAccept(u2exceptionIndexTable[i],
+                                                     cpInfoVisitor);
         }
     }
 }

@@ -1,4 +1,4 @@
-/* $Id: ClassSpecificationVisitorFactory.java,v 1.3 2004/08/15 12:39:30 eric Exp $
+/* $Id: ClassSpecificationVisitorFactory.java,v 1.5 2004/12/11 16:35:23 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -157,9 +157,9 @@ class ClassSpecificationVisitorFactory
             classSpecification.requiredUnsetAccessFlags != 0)
         {
             composedClassFileVisitor =
-                new ClassFileAccessFilter(composedClassFileVisitor,
-                                          classSpecification.requiredSetAccessFlags,
-                                          classSpecification.requiredUnsetAccessFlags);
+                new ClassFileAccessFilter(classSpecification.requiredSetAccessFlags,
+                                          classSpecification.requiredUnsetAccessFlags,
+                                          composedClassFileVisitor);
         }
 
         // If it's specified, start visiting from the extended class.
@@ -315,15 +315,13 @@ class ClassSpecificationVisitorFactory
             if (descriptor != null)
             {
                 memberInfoVisitor =
-                    new MemberInfoDescriptorFilter(memberInfoVisitor,
-                                                   descriptor);
+                    new MemberInfoDescriptorFilter(descriptor, memberInfoVisitor);
             }
 
             if (name != null)
             {
                 memberInfoVisitor =
-                    new MemberInfoNameFilter(memberInfoVisitor,
-                                             name);
+                    new MemberInfoNameFilter(name, memberInfoVisitor);
             }
         }
 
@@ -332,19 +330,19 @@ class ClassSpecificationVisitorFactory
             classMemberSpecification.requiredUnsetAccessFlags != 0)
         {
             memberInfoVisitor =
-                new MemberInfoAccessFilter(memberInfoVisitor,
-                                           classMemberSpecification.requiredSetAccessFlags,
-                                           classMemberSpecification.requiredUnsetAccessFlags);
+                new MemberInfoAccessFilter(classMemberSpecification.requiredSetAccessFlags,
+                                           classMemberSpecification.requiredUnsetAccessFlags,
+                                           memberInfoVisitor);
         }
 
         // Depending on what's specified, visit a single named class member,
         // or all class members, filtering the matching ones.
         return isField ?
             fullySpecified ?
-                (ClassFileVisitor)new NamedFieldVisitor(memberInfoVisitor, name, descriptor) :
+                (ClassFileVisitor)new NamedFieldVisitor(name, descriptor, memberInfoVisitor) :
                 (ClassFileVisitor)new AllFieldVisitor(memberInfoVisitor) :
             fullySpecified ?
-                (ClassFileVisitor)new NamedMethodVisitor(memberInfoVisitor, name, descriptor) :
+                (ClassFileVisitor)new NamedMethodVisitor(name, descriptor, memberInfoVisitor) :
                 (ClassFileVisitor)new AllMethodVisitor(memberInfoVisitor);
     }
 

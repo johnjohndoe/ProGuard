@@ -1,4 +1,4 @@
-/* $Id: ClassFileReferenceInitializer.java,v 1.26 2004/11/20 15:41:24 eric Exp $
+/* $Id: ClassFileReferenceInitializer.java,v 1.28 2004/11/27 10:09:26 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -58,7 +58,7 @@ public class ClassFileReferenceInitializer
     // A reusable object for checking whether referenced methods are Class.forName,...
     private ClassFileClassForNameReferenceInitializer classFileClassForNameReferenceInitializer;
 
-    private MyMemberFinder memberFinder = new MyMemberFinder();
+    private MemberFinder memberFinder = new MemberFinder();
 
     private ClassPool programClassPool;
     private ClassPool libraryClassPool;
@@ -209,43 +209,17 @@ public class ClassFileReferenceInitializer
             String name = refCpInfo.getName(classFile);
             String type = refCpInfo.getType(classFile);
 
-            // For efficiency, first see if we can find the member in the
-            // referenced class itself.
-            MemberInfo referencedMemberInfo = isFieldRef ?
-                (MemberInfo)referencedClassFile.findField(name, type) :
-                (MemberInfo)referencedClassFile.findMethod(name, type);
+            // See if we can find the referenced class membver somewhere in the
+            // hierarchy.
+            refCpInfo.referencedMemberInfo = memberFinder.findMember(referencedClassFile,
+                                                                     name,
+                                                                     type,
+                                                                     isFieldRef);
+            refCpInfo.referencedClassFile  = memberFinder.correspondingClassFile();
 
-            if (referencedMemberInfo != null)
+            if (warn && refCpInfo.referencedMemberInfo == null)
             {
-                // Save the references.
-                refCpInfo.referencedClassFile  = referencedClassFile;
-                refCpInfo.referencedMemberInfo = referencedMemberInfo;
-
-                return;
-            }
-
-            // We didn't find the member yet. Organize a search in the hierarchy
-            // of superclasses and interfaces. This can happen with classes
-            // compiled with "-target 1.2" (the default in JDK 1.4).
-            try
-            {
-                referencedClassFile.hierarchyAccept(false, true, true, false,
-                    isFieldRef ?
-                        (ClassFileVisitor)new NamedFieldVisitor(memberFinder, name, type) :
-                        (ClassFileVisitor)new NamedMethodVisitor(memberFinder, name, type));
-            }
-            catch (MyMemberFinder.MemberFoundException ex)
-            {
-                // Save the references.
-                refCpInfo.referencedClassFile  = memberFinder.classFile;
-                refCpInfo.referencedMemberInfo = memberFinder.memberInfo;
-
-                return;
-            }
-
-            // We've visited the entire hierarchy and still no member...
-            if (warn)
-            {
+                // We've haven't found the class member anywhere in the hierarchy.
                 warningCount++;
                 System.err.println("Warning: " +
                                    ClassUtil.externalClassName(classFile.getName()) +
@@ -308,6 +282,12 @@ public class ClassFileReferenceInitializer
                                    ClassUtil.externalClassName(className));
             }
 
+            return;
+        }
+
+        // Make sure there is actually an enclosed method.
+        if (enclosingMethodAttrInfo.u2nameAndTypeIndex == 0)
+        {
             return;
         }
 
@@ -474,17 +454,10 @@ public class ClassFileReferenceInitializer
         {
             // See if we can find the method in the referenced class
             // (ignoring the descriptor).
-            try {
-                annotation.referencedClassFiles[0].accept(
-                    new AllMemberInfoVisitor(
-                    new MemberInfoNameFilter(memberFinder,
-                                             classFile.getCpString(elementValue.u2elementName))));
-            }
-            catch (MyMemberFinder.MemberFoundException ex)
-            {
-                elementValue.referencedMethodInfo = (MethodInfo)memberFinder.memberInfo;
-//                    annotation.referencedClassFiles[0].findMethod(classFile.getCpString(elementValue.u2elementName), null);
-            }
+            String name = classFile.getCpString(elementValue.u2elementName);
+            
+            elementValue.referencedMethodInfo =
+                annotation.referencedClassFiles[0].findMethod(name, null);
         }
     }
 
@@ -546,53 +519,5 @@ public class ClassFileReferenceInitializer
         }
 
         return classFile;
-    }
-
-
-    /**
-     * This utility class throws a MemberFoundException whenever it visits
-     * a member. For program class files, it then also stores the class file
-     * and member info.
-     */
-    private static class MyMemberFinder implements MemberInfoVisitor
-    {
-        private static class MemberFoundException extends IllegalArgumentException {};
-        private static final MemberFoundException MEMBER_FOUND = new MemberFoundException();
-
-        private ClassFile  classFile;
-        private MemberInfo memberInfo;
-
-
-        // Implementations for MemberInfoVisitor.
-
-        public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
-        {
-            visitMemberInfo(programClassFile, programFieldInfo);
-        }
-
-
-        public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
-        {
-            visitMemberInfo(programClassFile, programMethodInfo);
-        }
-
-
-        public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo)
-        {
-            visitMemberInfo(libraryClassFile, libraryFieldInfo);
-        }
-
-        public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo)
-        {
-            visitMemberInfo(libraryClassFile, libraryMethodInfo);
-        }
-
-
-        private void visitMemberInfo(ClassFile classFile, MemberInfo memberInfo)
-        {
-            this.classFile  = classFile;
-            this.memberInfo = memberInfo;
-            throw MEMBER_FOUND;
-        }
     }
 }

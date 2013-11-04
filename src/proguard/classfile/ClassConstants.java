@@ -1,4 +1,4 @@
-/* $Id: ClassConstants.java,v 1.22 2004/11/14 00:54:38 eric Exp $
+/* $Id: ClassConstants.java,v 1.24 2004/12/19 21:03:54 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -157,6 +157,7 @@ public interface ClassConstants
     public static final String INTERNAL_NAME_JAVA_IO_SERIALIZABLE = "java/io/Serializable";
 
     public static final String INTERNAL_METHOD_NAME_INIT   = "<init>";
+    public static final String INTERNAL_METHOD_TYPE_INIT   = "()V";
     public static final String INTERNAL_METHOD_NAME_CLINIT = "<clinit>";
     public static final String INTERNAL_METHOD_TYPE_CLINIT = "()V";
 
@@ -171,18 +172,20 @@ public interface ClassConstants
     public static final String INTERNAL_METHOD_NAME_NEW_INSTANCE = "newInstance";
     public static final String INTERNAL_METHOD_TYPE_NEW_INSTANCE = "()Ljava/lang/Object;";
 
-    public static final char   INTERNAL_TYPE_VOID        = 'V';
-    public static final char   INTERNAL_TYPE_BOOLEAN     = 'Z';
-    public static final char   INTERNAL_TYPE_BYTE        = 'B';
-    public static final char   INTERNAL_TYPE_CHAR        = 'C';
-    public static final char   INTERNAL_TYPE_SHORT       = 'S';
-    public static final char   INTERNAL_TYPE_INT         = 'I';
-    public static final char   INTERNAL_TYPE_FLOAT       = 'F';
-    public static final char   INTERNAL_TYPE_LONG        = 'J';
-    public static final char   INTERNAL_TYPE_DOUBLE      = 'D';
-    public static final char   INTERNAL_TYPE_CLASS_START = 'L';
-    public static final char   INTERNAL_TYPE_CLASS_END   = ';';
-    public static final char   INTERNAL_TYPE_ARRAY       = '[';
+    public static final char   INTERNAL_TYPE_VOID          = 'V';
+    public static final char   INTERNAL_TYPE_BOOLEAN       = 'Z';
+    public static final char   INTERNAL_TYPE_BYTE          = 'B';
+    public static final char   INTERNAL_TYPE_CHAR          = 'C';
+    public static final char   INTERNAL_TYPE_SHORT         = 'S';
+    public static final char   INTERNAL_TYPE_INT           = 'I';
+    public static final char   INTERNAL_TYPE_FLOAT         = 'F';
+    public static final char   INTERNAL_TYPE_LONG          = 'J';
+    public static final char   INTERNAL_TYPE_DOUBLE        = 'D';
+    public static final char   INTERNAL_TYPE_CLASS_START   = 'L';
+    public static final char   INTERNAL_TYPE_CLASS_END     = ';';
+    public static final char   INTERNAL_TYPE_ARRAY         = '[';
+    public static final char   INTERNAL_TYPE_GENERIC_START = '<';
+    public static final char   INTERNAL_TYPE_GENERIC_END   = '>';
 
     public static final String EXTERNAL_TYPE_JAVA_LANG_OBJECT = "java.lang.Object";
     public static final String EXTERNAL_PACKAGE_JAVA_LANG     = "java.lang.";

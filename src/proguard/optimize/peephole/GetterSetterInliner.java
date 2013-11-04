@@ -1,4 +1,4 @@
-/* $Id: GetterSetterInliner.java,v 1.12 2004/11/20 15:41:24 eric Exp $
+/* $Id: GetterSetterInliner.java,v 1.14 2004/12/18 20:22:42 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -41,6 +41,7 @@ implements   InstructionVisitor,
 
     private ConstantPoolEditor    constantPoolEditor  = new ConstantPoolEditor();
     private MyGetterSetterChecker getterSetterChecker = new MyGetterSetterChecker();
+    private MemberFinder          memberFinder        = new MemberFinder();
 
     private CodeAttrInfoEditor codeAttrInfoEditor;
     private boolean            allowAccessModification;
@@ -91,7 +92,7 @@ implements   InstructionVisitor,
             // Check if it's a getter or setter that can be inlined.
             getFieldPutFieldOpcode = 0;
 
-            classFile.constantPoolEntryAccept(this, cpInstruction.cpIndex);
+            classFile.constantPoolEntryAccept(cpInstruction.cpIndex, this);
 
             // Do we have a getfield or putfield instruction to inline?
             if (getFieldPutFieldOpcode != 0)
@@ -149,10 +150,12 @@ implements   InstructionVisitor,
             return;
         }
 
-        // The referenced method must be present and final.
+        // The referenced method must be present and private or final.
         MemberInfo referencedMethodInfo = methodrefCpInfo.referencedMemberInfo;
         if (referencedMethodInfo == null ||
-            (referencedMethodInfo.getAccessFlags() & ClassConstants.INTERNAL_ACC_FINAL) == 0)
+            (referencedMethodInfo.getAccessFlags() &
+             (ClassConstants.INTERNAL_ACC_PRIVATE |
+              ClassConstants.INTERNAL_ACC_FINAL)) == 0)
         {
             return;
         }
@@ -178,16 +181,13 @@ implements   InstructionVisitor,
             // Are we allowed to fix the access?
             if (allowAccessModification)
             {
-                // Is the field access private?
-                if (AccessUtil.accessLevel(referencedFieldInfo.getAccessFlags()) == AccessUtil.PRIVATE)
+                // Is the field access private, and is the field shadowed by
+                // a field in a subclass?
+                if (AccessUtil.accessLevel(referencedFieldInfo.getAccessFlags()) == AccessUtil.PRIVATE &&
+                    memberFinder.isShadowed(referencedClassFile, (FieldInfo)referencedFieldInfo))
                 {
-                    // Cancel the inlining if there's a field of the same
-                    // name and type in a subclass.
-                    referencedClassFile.hierarchyAccept(false, false, false, true,
-                                                        new NamedFieldVisitor(
-                                                        new MyInliningCanceler(),
-                                                        referencedFieldInfo.getName(referencedClassFile),
-                                                        referencedFieldInfo.getDescriptor(referencedClassFile)));
+                    // Cancel the inlining.
+                    getFieldPutFieldOpcode = 0;
                 }
 
                 if (getFieldPutFieldOpcode != 0)
@@ -350,7 +350,7 @@ implements   InstructionVisitor,
             referencedFieldIndex = cpInstruction.cpIndex;
 
             // Retrieve the referenced field and its class file.
-            classFile.constantPoolEntryAccept(this, cpInstruction.cpIndex);
+            classFile.constantPoolEntryAccept(cpInstruction.cpIndex, this);
         }
 
 
@@ -374,7 +374,7 @@ implements   InstructionVisitor,
             referencedFieldInfo = fieldrefCpInfo.referencedMemberInfo;
 
             // Retrieve the referenced class files.
-            classFile.constantPoolEntryAccept(this, fieldrefCpInfo.u2nameAndTypeIndex);
+            classFile.constantPoolEntryAccept(fieldrefCpInfo.u2nameAndTypeIndex, this);
         }
 
 
@@ -382,35 +382,6 @@ implements   InstructionVisitor,
         {
             // Remember the referenced class files of the field.
             typeReferencedClassFiles = nameAndTypeCpInfo.referencedClassFiles;
-        }
-    }
-
-
-    /**
-     * This MemberInfoVisitor cancels the inlining every time it visits a class
-     * member.
-     */
-    private class MyInliningCanceler
-    implements    MemberInfoVisitor
-    {
-        public void visitProgramFieldInfo( ProgramClassFile programClassFile, ProgramFieldInfo  programFieldInfo)
-        {
-            getFieldPutFieldOpcode = 0;
-        }
-
-        public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
-        {
-            getFieldPutFieldOpcode = 0;
-        }
-
-        public void visitLibraryFieldInfo( LibraryClassFile libraryClassFile, LibraryFieldInfo  libraryFieldInfo)
-        {
-            getFieldPutFieldOpcode = 0;
-        }
-
-        public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo)
-        {
-            getFieldPutFieldOpcode = 0;
         }
     }
 }

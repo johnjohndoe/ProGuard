@@ -1,4 +1,4 @@
-/* $Id: ConfigurationParser.java,v 1.18 2004/11/20 15:41:24 eric Exp $
+/* $Id: ConfigurationParser.java,v 1.19 2004/12/18 20:22:13 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -407,7 +407,8 @@ public class ConfigurationParser
         readNextWord("class name or interface name");
         checkJavaIdentifier("class name or interface name");
 
-        // Parse the class name part.
+        // Parse the class name part. For backward compatibility, allow a
+        // single "*" wildcard to match any class.
         String externalClassName = nextWord;
         String className = ConfigurationConstants.ANY_CLASS_KEYWORD.equals(externalClassName) ?
             null :

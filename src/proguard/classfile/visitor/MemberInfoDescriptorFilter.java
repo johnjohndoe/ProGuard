@@ -1,4 +1,4 @@
-/* $Id: MemberInfoDescriptorFilter.java,v 1.8 2004/08/15 12:39:30 eric Exp $
+/* $Id: MemberInfoDescriptorFilter.java,v 1.9 2004/11/27 10:09:26 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -33,22 +33,22 @@ import proguard.util.*;
  */
 public class MemberInfoDescriptorFilter implements MemberInfoVisitor
 {
-    private MemberInfoVisitor        memberInfoVisitor;
-    private StringMatcher regularExpressionMatcher;
+    private StringMatcher     regularExpressionMatcher;
+    private MemberInfoVisitor memberInfoVisitor;
 
 
     /**
      * Creates a new MemberInfoDescriptorFilter.
-     * @param memberInfoVisitor the <code>MemberInfoVisitor</code> to which visits
-     *                          will be delegated.
      * @param regularExpression the regular expression against which class names
      *                          will be matched.
+     * @param memberInfoVisitor the <code>MemberInfoVisitor</code> to which visits
+     *                          will be delegated.
      */
-    public MemberInfoDescriptorFilter(MemberInfoVisitor memberInfoVisitor,
-                                      String            regularExpression)
+    public MemberInfoDescriptorFilter(String            regularExpression,
+                                      MemberInfoVisitor memberInfoVisitor)
     {
-        this.memberInfoVisitor        = memberInfoVisitor;
         this.regularExpressionMatcher = new ClassNameMatcher(regularExpression);
+        this.memberInfoVisitor        = memberInfoVisitor;
     }
 
 

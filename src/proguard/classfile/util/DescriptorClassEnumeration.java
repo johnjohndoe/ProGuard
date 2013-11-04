@@ -1,4 +1,4 @@
-/* $Id: DescriptorClassEnumeration.java,v 1.9 2004/11/14 15:16:01 eric Exp $
+/* $Id: DescriptorClassEnumeration.java,v 1.10 2004/11/26 22:53:15 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,7 +21,6 @@
 package proguard.classfile.util;
 
 import proguard.classfile.*;
-
 
 /**
  * A <code>DescriptorClassEnumeration</code> provides an enumeration of all
@@ -72,45 +71,95 @@ public class DescriptorClassEnumeration
     {
         int count = 0;
 
-        // TODO: Handle generic types.
-        for (int i = 0; i < descriptor.length(); i++)
+        while (nextClassNameStartIndex() >= 0)
         {
-            if (descriptor.charAt(i) == ClassConstants.INTERNAL_TYPE_CLASS_END)
-            {
-                count++;
-            }
+            count++;
+            
+            nextClassNameEndIndex();
         }
 
+        index = 0;
+        
         return count;
     }
 
 
     public boolean hasMoreClassNames()
     {
-        return descriptor.indexOf(ClassConstants.INTERNAL_TYPE_CLASS_START, index) >= 0;
+        return index >= 0 && nextClassNameStartIndex() >= 0;
     }
 
 
     public String nextFluff()
     {
-        // TODO: Handle generic types.
-        int startIndex = index;
-        index = descriptor.indexOf(ClassConstants.INTERNAL_TYPE_CLASS_START, index);
-        int endIndex   = index + 1;
-        if (index < 0)
+        int fluffStartIndex = index;
+        int fluffEndIndex   = nextClassNameStartIndex() + 1;
+
+        // There may be fluff at the end of the descriptor.
+        if (fluffEndIndex == 0)
         {
-            index    = descriptor.length();
-            endIndex = index;
+            fluffEndIndex = descriptor.length();
         }
 
-        return descriptor.substring(startIndex, endIndex);
+        return descriptor.substring(fluffStartIndex, fluffEndIndex);
     }
 
 
     public String nextClassName()
     {
-        int startIndex = descriptor.indexOf(ClassConstants.INTERNAL_TYPE_CLASS_START, index) + 1;
-        index = descriptor.indexOf(ClassConstants.INTERNAL_TYPE_CLASS_END, startIndex);
-        return descriptor.substring(startIndex, index);
+        int classNameStartIndex = nextClassNameStartIndex() + 1;
+        int classNameEndIndex   = nextClassNameEndIndex();
+        
+        return descriptor.substring(classNameStartIndex, classNameEndIndex);
+    }
+    
+    
+    private int nextClassNameStartIndex()
+    {
+        index = descriptor.indexOf(ClassConstants.INTERNAL_TYPE_CLASS_START, index);
+        
+        return index;
+    }
+    
+    
+    private int nextClassNameEndIndex()
+    {
+        while (++index < descriptor.length())
+        {
+            char c = descriptor.charAt(index);
+            if (c == ClassConstants.INTERNAL_TYPE_CLASS_END ||
+                c == ClassConstants.INTERNAL_TYPE_GENERIC_START)
+            {
+                return index;
+            }
+        }
+        
+        throw new IllegalArgumentException("Missing class name terminator in descriptor ["+descriptor+"]");
+    }
+
+
+
+
+    /**
+     * A main method for testing the class name enumeration.
+     */
+    public static void main(String[] args)
+    {
+        try
+        {
+            System.out.println("Descriptor ["+args[0]+"]");
+            DescriptorClassEnumeration enumeration = new DescriptorClassEnumeration(args[0]);
+            System.out.println("Class count = "+enumeration.classCount());
+            System.out.println("  Fluff: ["+enumeration.nextFluff()+"]");
+            while (enumeration.hasMoreClassNames())
+            {
+                System.out.println("  Name:  ["+enumeration.nextClassName()+"]");
+                System.out.println("  Fluff: ["+enumeration.nextFluff()+"]");
+            }
+        }
+        catch (Exception ex)
+        {
+            ex.printStackTrace();
+        }
     }
 }

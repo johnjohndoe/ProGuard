@@ -218,14 +218,14 @@ elements:
 <dt><code><b>&lt;keep</b></code>
     <a href="#classspecification"><i>class_specification</i></a>
     <code><b>&gt;</b></code>
-    <a href="#classspecification"><i>class_member_specifications</i></a>
+    <a href="#classmemberspecification"><i>class_member_specifications</i></a>
     <code><b>&lt;/keep&gt;</b></code></dt>
 <dd>Preserve the specified classes <i>and</i> class members.</dd>
 
 <dt><code><b>&lt;keepclassmembers</b></code>
     <a href="#classspecification"><i>class_specification</i></a>
     <code><b>&gt;</b></code>
-    <a href="#classspecification"><i>class_member_specifications</i></a>
+    <a href="#classmemberspecification"><i>class_member_specifications</i></a>
     <code><b>&lt;/keepclassmembers&gt;</b></code></dt>
 <dd>Preserve the specified class members, if their classes are preserved as
     well.</dd>
@@ -233,7 +233,7 @@ elements:
 <dt><code><b>&lt;keepclasseswithmembers</b></code>
     <a href="#classspecification"><i>class_specification</i></a>
     <code><b>&gt;</b></code>
-    <a href="#classspecification"><i>class_member_specifications</i></a>
+    <a href="#classmemberspecification"><i>class_member_specifications</i></a>
     <code><b>&lt;/keepclasseswithmembers&gt;</b></code></dt>
 <dd>Preserve the specified classes <i>and</i> class members, if all of the
     specified class members are present.</dd>
@@ -241,7 +241,7 @@ elements:
 <dt><code><b>&lt;keepnames</b></code>
     <a href="#classspecification"><i>class_specification</i></a>
     <code><b>&gt;</b></code>
-    <a href="#classspecification"><i>class_member_specifications</i></a>
+    <a href="#classmemberspecification"><i>class_member_specifications</i></a>
     <code><b>&lt;/keepnames&gt;</b></code></dt>
 <dd>Preserve the names of the specified classes <i>and</i> class members (if
     they aren't removed in the shrinking step).</dd>
@@ -249,7 +249,7 @@ elements:
 <dt><code><b>&lt;keepclassmembernames</b></code>
     <a href="#classspecification"><i>class_specification</i></a>
     <code><b>&gt;</b></code>
-    <a href="#classspecification"><i>class_member_specifications</i></a>
+    <a href="#classmemberspecification"><i>class_member_specifications</i></a>
     <code><b>&lt;/keepclassmembernames&gt;</b></code></dt>
 <dd>Preserve the names of the specified class members (if they aren't removed
     in the shrinking step).</dd>
@@ -257,7 +257,7 @@ elements:
 <dt><code><b>&lt;keepclasseswithmembernames</b></code>
     <a href="#classspecification"><i>class_specification</i></a>
     <code><b>&gt;</b></code>
-    <a href="#classspecification"><i>class_member_specifications</i></a>
+    <a href="#classmemberspecification"><i>class_member_specifications</i></a>
     <code><b>&lt;/keepclasseswithmembernames&gt;</b></code></dt>
 <dd>Preserve the names of the specified classes <i>and</i> class members, if
     all of the specified class members are present (after the shrinking
@@ -266,7 +266,7 @@ elements:
 <dt><code><b>&lt;assumenosideeffects</b></code>
     <a href="#classspecification"><i>class_specification</i></a>
     <code><b>&gt;</b></code>
-    <a href="#classspecification"><i>class_member_specifications</i></a>
+    <a href="#classmemberspecification"><i>class_member_specifications</i></a>
     <code><b>&lt;/assumenosideeffects&gt;</b></code></dt>
 <dd>Assume that the specified methods don't have any side effects, while
     optimizing.</dd>

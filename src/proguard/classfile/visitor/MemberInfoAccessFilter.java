@@ -1,4 +1,4 @@
-/* $Id: MemberInfoAccessFilter.java,v 1.5 2004/10/10 20:56:58 eric Exp $
+/* $Id: MemberInfoAccessFilter.java,v 1.6 2004/12/11 16:35:23 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -46,29 +46,29 @@ public class MemberInfoAccessFilter
         ClassConstants.INTERNAL_ACC_PRIVATE |
         ClassConstants.INTERNAL_ACC_PROTECTED;
 
-    private MemberInfoVisitor memberInfoVisitor;
     private int               requiredSetAccessFlags;
     private int               requiredUnsetAccessFlags;
     private int               requiredOneSetAccessFlags;
+    private MemberInfoVisitor memberInfoVisitor;
 
 
     /**
      * Creates a new MemberInfoAccessFilter.
-     * @param memberInfoVisitor        the <code>MemberInfoVisitor</code> to
-     *                                 which visits will be delegated.
      * @param requiredSetAccessFlags   the class access flags that should be
      *                                 set.
      * @param requiredUnsetAccessFlags the class access flags that should be
      *                                 unset.
+     * @param memberInfoVisitor        the <code>MemberInfoVisitor</code> to
+     *                                 which visits will be delegated.
      */
-    public MemberInfoAccessFilter(MemberInfoVisitor memberInfoVisitor,
-                                  int               requiredSetAccessFlags,
-                                  int               requiredUnsetAccessFlags)
+    public MemberInfoAccessFilter(int               requiredSetAccessFlags,
+                                  int               requiredUnsetAccessFlags,
+                                  MemberInfoVisitor memberInfoVisitor)
     {
-        this.memberInfoVisitor         = memberInfoVisitor;
         this.requiredSetAccessFlags    = requiredSetAccessFlags & ~ACCESS_MASK;
         this.requiredUnsetAccessFlags  = requiredUnsetAccessFlags;
         this.requiredOneSetAccessFlags = requiredSetAccessFlags &  ACCESS_MASK;
+        this.memberInfoVisitor         = memberInfoVisitor;
     }
 
 

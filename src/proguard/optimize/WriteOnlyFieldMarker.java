@@ -1,4 +1,4 @@
-/* $Id: WriteOnlyFieldMarker.java,v 1.4 2004/10/10 20:56:58 eric Exp $
+/* $Id: WriteOnlyFieldMarker.java,v 1.5 2004/12/11 16:35:23 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -64,14 +64,14 @@ public class WriteOnlyFieldMarker
         {
             // Mark the field as being read from.
             reading = true;
-            classFile.constantPoolEntryAccept(this, cpInstruction.cpIndex);
+            classFile.constantPoolEntryAccept(cpInstruction.cpIndex, this);
         }
         else if (opcode == InstructionConstants.OP_PUTSTATIC     ||
                  opcode == InstructionConstants.OP_PUTFIELD)
         {
             // Mark the field as being written to.
             reading = false;
-            classFile.constantPoolEntryAccept(this, cpInstruction.cpIndex);
+            classFile.constantPoolEntryAccept(cpInstruction.cpIndex, this);
         }
     }
 

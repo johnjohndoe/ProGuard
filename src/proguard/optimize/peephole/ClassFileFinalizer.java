@@ -1,4 +1,4 @@
-/* $Id: ClassFileFinalizer.java,v 1.3 2004/08/15 12:39:30 eric Exp $
+/* $Id: ClassFileFinalizer.java,v 1.6 2004/12/19 21:03:13 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,9 +21,9 @@
 package proguard.optimize.peephole;
 
 import proguard.classfile.*;
+import proguard.classfile.util.MemberFinder;
 import proguard.classfile.visitor.*;
 import proguard.optimize.*;
-
 
 /**
  * This <code>ClassFileVisitor</code> and <code>MemberInfoVisitor</code>
@@ -35,6 +35,9 @@ public class ClassFileFinalizer
   implements ClassFileVisitor,
              MemberInfoVisitor
 {
+    private MemberFinder memberFinder = new MemberFinder();
+
+
     // Implementations for ClassFileVisitor.
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
@@ -68,18 +71,20 @@ public class ClassFileFinalizer
     {
         String name = programMethodInfo.getName(programClassFile);
 
-        // If the method is not final/abstract.
+        // If the method is not final/abstract/private.
         // and it is not an initialization method,
         // and its class is final,
         //     or it is not being kept and it is not overridden,
         // then make it final.
-        if ((programMethodInfo.u2accessFlags & (ClassConstants.INTERNAL_ACC_FINAL |
-                                                ClassConstants.INTERNAL_ACC_ABSTRACT)) == 0 &&
+        if ((programMethodInfo.u2accessFlags & (ClassConstants.INTERNAL_ACC_FINAL    |
+                                                ClassConstants.INTERNAL_ACC_ABSTRACT |
+                                                ClassConstants.INTERNAL_ACC_PRIVATE)) == 0 &&
             !name.equals(ClassConstants.INTERNAL_METHOD_NAME_CLINIT)                        &&
             !name.equals(ClassConstants.INTERNAL_METHOD_NAME_INIT)                          &&
             ((programClassFile.u2accessFlags & ClassConstants.INTERNAL_ACC_FINAL) != 0 ||
              (!KeepMarker.isKept(programMethodInfo) &&
-              !isOverriden(programClassFile, programMethodInfo))))
+              (programClassFile.subClasses == null ||
+               !memberFinder.isOverriden(programClassFile, programMethodInfo)))))
         {
             programMethodInfo.u2accessFlags |= ClassConstants.INTERNAL_ACC_FINAL;
         }
@@ -88,70 +93,4 @@ public class ClassFileFinalizer
 
     public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo) {}
     public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo) {}
-
-
-    // Small utility methods.
-
-    private boolean isOverriden(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
-    {
-        // If the class file doesn't have any subclasses, we can stop looking
-        // right here.
-        if (programClassFile.subClasses == null)
-        {
-            return false;
-        }
-
-        // Go looking for the method down the class hierarchy.
-        try
-        {
-            String name       = programMethodInfo.getName(programClassFile);
-            String descriptor = programMethodInfo.getDescriptor(programClassFile);
-
-            programClassFile.hierarchyAccept(false, false, false, true,
-                                             new NamedMethodVisitor(
-                                             new MyMemberFinder(), name, descriptor));
-        }
-        catch (MyMemberFinder.MemberFoundException ex)
-        {
-            return true;
-        }
-
-        return false;
-    }
-
-
-    /**
-     * This utility class throws a MemberFoundException whenever it visits
-     * a member. For program class files, it then also stores the class file
-     * and member info.
-     */
-    private static class MyMemberFinder implements MemberInfoVisitor
-    {
-        private static class MemberFoundException extends IllegalArgumentException {};
-        private static final MemberFoundException MEMBER_FOUND = new MemberFoundException();
-
-
-        // Implementations for MemberInfoVisitor.
-
-        public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
-        {
-            throw MEMBER_FOUND;
-        }
-
-        public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
-        {
-            throw MEMBER_FOUND;
-        }
-
-
-        public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo)
-        {
-            throw MEMBER_FOUND;
-        }
-
-        public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo)
-        {
-            throw MEMBER_FOUND;
-        }
-    }
 }
