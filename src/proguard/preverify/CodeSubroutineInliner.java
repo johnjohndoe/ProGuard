@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2013 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -45,12 +45,12 @@ implements   AttributeVisitor,
     //*
     private static final boolean DEBUG = false;
     /*/
-    private static       boolean DEBUG = true;
+    private static       boolean DEBUG = System.getProperty("csi") != null;
     //*/
 
 
     private final BranchTargetFinder    branchTargetFinder    = new BranchTargetFinder();
-    private final CodeAttributeComposer codeAttributeComposer = new CodeAttributeComposer(true);
+    private final CodeAttributeComposer codeAttributeComposer = new CodeAttributeComposer(true, true);
 
     private ExceptionInfoVisitor subroutineExceptionInliner = this;
     private int                  clipStart                  = 0;
@@ -98,7 +98,7 @@ implements   AttributeVisitor,
         branchTargetFinder.visitCodeAttribute(clazz, method, codeAttribute);
 
         // Don't bother if there aren't any subroutines anyway.
-        if (!containsSubroutines(codeAttribute))
+        if (!branchTargetFinder.containsSubroutines())
         {
             return;
         }
@@ -158,23 +158,6 @@ implements   AttributeVisitor,
         // End and update the code attribute.
         codeAttributeComposer.endCodeFragment();
         codeAttributeComposer.visitCodeAttribute(clazz, method, codeAttribute);
-    }
-
-
-    /**
-     * Returns whether the given code attribute contains any subroutines.
-     */
-    private boolean containsSubroutines(CodeAttribute codeAttribute)
-    {
-        for (int offset = 0; offset < codeAttribute.u4codeLength; offset++)
-        {
-            if (branchTargetFinder.isSubroutineInvocation(offset))
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
 
@@ -246,7 +229,7 @@ implements   AttributeVisitor,
     public void visitAnyInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, Instruction instruction)
     {
         // Append the instruction.
-        codeAttributeComposer.appendInstruction(offset, instruction.shrink());
+        codeAttributeComposer.appendInstruction(offset, instruction);
     }
 
 
@@ -276,7 +259,7 @@ implements   AttributeVisitor,
                 // Replace the instruction by a branch.
                 Instruction replacementInstruction =
                     new BranchInstruction(InstructionConstants.OP_GOTO,
-                                          branchTargetFinder.subroutineEnd(offset) - offset).shrink();
+                                          branchTargetFinder.subroutineEnd(offset) - offset);
 
                 codeAttributeComposer.appendInstruction(offset, replacementInstruction);
             }
@@ -332,7 +315,7 @@ implements   AttributeVisitor,
                 // Replace the subroutine invocation by a simple branch.
                 Instruction replacementInstruction =
                     new BranchInstruction(InstructionConstants.OP_GOTO,
-                                          branchOffset).shrink();
+                                          branchOffset);
 
                 codeAttributeComposer.appendInstruction(offset, replacementInstruction);
             }

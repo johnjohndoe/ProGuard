@@ -190,13 +190,6 @@
     public boolean isNaN();
     public boolean isInfinite();
     public int compareTo(java.lang.Double);
-    public <init>(byte);
-    public <init>(short);
-    public <init>(int);
-    public <init>(long);
-    public <init>(float);
-    public <init>(double);
-    public <init>(java.lang.String);
     public byte byteValue();
     public short shortValue();
     public int intValue();
@@ -212,17 +205,6 @@
 # Remove - String method calls. Remove all invocations of String
 # methods without side effects whose return values are not used.
 -assumenosideeffects public class java.lang.String {
-    public <init>();
-    public <init>(byte[]);
-    public <init>(byte[],int);
-    public <init>(byte[],int,int);
-    public <init>(byte[],int,int,int);
-    public <init>(byte[],int,int,java.lang.String);
-    public <init>(byte[],java.lang.String);
-    public <init>(char[]);
-    public <init>(char[],int,int);
-    public <init>(java.lang.String);
-    public <init>(java.lang.StringBuffer);
     public static java.lang.String copyValueOf(char[]);
     public static java.lang.String copyValueOf(char[],int,int);
     public static java.lang.String valueOf(boolean);
@@ -280,10 +262,6 @@
 # Remove - StringBuffer method calls. Remove all invocations of StringBuffer
 # methods without side effects whose return values are not used.
 -assumenosideeffects public class java.lang.StringBuffer {
-    public <init>();
-    public <init>(int);
-    public <init>(java.lang.String);
-    public <init>(java.lang.CharSequence);
     public java.lang.String toString();
     public char charAt(int);
     public int capacity();
@@ -300,10 +278,6 @@
 # Remove - StringBuilder method calls. Remove all invocations of StringBuilder
 # methods without side effects whose return values are not used.
 -assumenosideeffects public class java.lang.StringBuilder {
-    public <init>();
-    public <init>(int);
-    public <init>(java.lang.String);
-    public <init>(java.lang.CharSequence);
     public java.lang.String toString();
     public char charAt(int);
     public int capacity();

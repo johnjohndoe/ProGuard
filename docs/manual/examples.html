@@ -52,6 +52,7 @@ Some typical useful configurations:
 <li><a href="#manifestfiles">Processing manifest files</a></li>
 <li><a href="#stacktrace">Producing useful obfuscated stack traces</a></li>
 <li><a href="#repackaging">Obfuscating package names</a></li>
+<li><a href="#logging">Removing logging code</a></li>
 <li><a href="#restructuring">Restructuring the output archives</a></li>
 <li><a href="#filtering">Filtering the input and the output</a></li>
 <li><a href="#multiple">Processing multiple applications at once</a></li>
@@ -267,9 +268,37 @@ methods</a>, <a href="#callback">callback methods</a>,
 
 <h3><a name="androidapplication">A complete Android application</a></h3>
 
-These options shrink, optimize, and obfuscate all public activities, services,
-broadcast receivers, and content providers from the compiled classes and
-external libraries:
+<img class="float" src="attention.gif" width="64" height="64" alt="attention" />
+The Ant and Eclipse build processes of the Android SDK already integrate
+ProGuard by default, with all the proper settings. You only need to enable
+ProGuard (for release builds), by uncommenting the line
+"<code>proguard.config=.....</code>" in the file
+<code>project.properties</code> (created or updated by Android SDK revision 17
+or higher). Notes:
+<ul>
+<li>In case of problems, you may want to check if the configuration files that
+    are listed on this line (<code>proguard-project.txt</code>,...) contain
+    the necessary settings for your application.</li>
+<li>Android SDK revision 20 and higher have a different configuration file for
+    enabling optimization:
+    <code>${sdk.dir}/tools/proguard/proguard-android-optimize.txt</code>
+    instead of the default
+    <code>${sdk.dir}/tools/proguard/proguard-android.txt</code>.</li>
+<li>The build processes are already setting the necessary program jars,
+    library jars, and output jars for you &mdash; don't specify them again.</li>
+<li>If you get warnings about missing referenced classes: it's all too common
+    that libraries refer to missing classes.
+    See <a href="troubleshooting.html#unresolvedclass">"Warning: can't find
+    referenced class"</a> in the Troubleshooting section.</li>
+</ul>
+<p>
+For more information, you can consult the official <a target="other"
+href="http://developer.android.com/guide/developing/tools/proguard.html">Developer
+Guide</a> in the Android SDK.
+<p>
+If you're constructing a build process from scratch: these options shrink,
+optimize, and obfuscate all public activities, services, broadcast receivers,
+and content providers from the compiled classes and external libraries:
 <pre>
 -injars      bin/classes
 -injars      libs
@@ -365,24 +394,10 @@ If applicable, you should add options for processing <a href="#native">native
 methods</a>, <a href="#callback">callback methods</a>,
 <a href="#enumerations">enumerations</a>,
 and <a href="#resourcefiles">resource files</a>. You may also want to add
-options for producing <a href="#stacktrace">useful stack traces</a>. You can
-find a complete sample configuration in <code>examples/android.pro</code> in
-the ProGuard distribution.
-<p>
-The Ant and Eclipse build processes of the Android SDK already integrate
-ProGuard by default, with all the proper settings. You only need to enable
-ProGuard (for release builds) by uncommenting the line
-"<code>proguard.config=.....</code>" in the file
-<code>project.properties</code> (created or updated by Android SDK revision 17
-or higher). In case of problems, you may want to check if the configuration
-files that are listed on this line (<code>proguard-project.txt</code>,...)
-contain the necessary settings for your application. Note that the build
-processes are already setting the necessary program jars, library jars, and
-output jars for you.
-<p>
-For more information, you can consult the official <a target="other"
-href="http://developer.android.com/guide/developing/tools/proguard.html">Developer
-Guide</a> in the Android SDK.
+options for producing <a href="#stacktrace">useful stack traces</a> and
+to <a href="#logging">remove logging</a>. You can find a complete sample
+configuration in <code>examples/android.pro</code> in the ProGuard
+distribution.
 
 <h3><a name="library">A typical library</a></h3>
 
@@ -889,8 +904,8 @@ names don't change. For instance:
 </pre>
 <p>
 If there are too many elements to list explicitly, wildcards in class names
-and method signatures might be helpful. This example should encompasses all
-possible setters and getters in classes in the package <code>mybeans</code>:
+and method signatures might be helpful. This example preserves all possible
+setters and getters in classes in the package <code>mybeans</code>:
 <pre>
 -keep class mybeans.** {
     void set*(***);
@@ -1187,6 +1202,35 @@ f
 Note that not all levels of obfuscation of package names may be acceptable for
 all code. Notably, you may have to take into account that your application may
 contain <a href="#resourcefiles">resource files</a> that have to be adapted.
+
+<h3><a name="logging">Removing logging code</a></h3>
+
+You can let ProGuard remove logging code. The trick is to specify that the
+logging methods don't have side-effects &mdash; even though they actually do,
+since they write to the console or to a log file. ProGuard will take your word
+for it and remove the invocations (in the optimization step) and if possible
+the logging classes and methods themselves (in the shrinking step).
+<p>
+For example, this configuration removes invocations of the Android logging
+methods:
+<pre>
+-assumenosideeffects class android.util.Log {
+    public static boolean isLoggable(java.lang.String, int);
+    public static int v(...);
+    public static int i(...);
+    public static int w(...);
+    public static int d(...);
+    public static int e(...);
+}
+</pre>
+<p>
+The wildcards are a shortcut to match all versions of the methods.
+<p>
+Note that you generally can't remove logging code that uses
+<code>System.out.println</code>, since you would be removing all invocations
+of <code>java.io.PrintStream#println</code>, which could break your
+application. You can work around it by creating your own logging methods and
+let ProGuard remove those.
 
 <h3><a name="restructuring">Restructuring the output archives</a></h3>
 
@@ -1531,7 +1575,7 @@ illustrate some of the possibilities.
 <hr />
 <noscript><div><a target="_top" href="../index.html" class="button">Show menu</a></div></noscript>
 <address>
-Copyright &copy; 2002-2012
+Copyright &copy; 2002-2013
 <a target="other" href="http://www.lafortune.eu/">Eric Lafortune</a>.
 </address>
 </body>

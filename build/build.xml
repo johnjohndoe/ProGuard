@@ -9,19 +9,23 @@
   <property name = "classes" value = "classes"/>
   <property name = "lib"     value = "lib"/>
 
-  <property name = "ant.jar" value = "${ant.home}/lib/ant.jar"/>
-  <property name = "wtk.jar" value = "${wtk.home}/wtklib/kenv.jar"/>
+  <property name = "gradle.jar1" value = "${gradle.home}/lib/plugins/gradle-plugins-1.3.jar"/>
+  <property name = "gradle.jar2" value = "${gradle.home}/lib/gradle-base-services-1.3.jar"/>
+  <property name = "gradle.jar3" value = "${gradle.home}/lib/gradle-core-1.3.jar"/>
+  <property name = "gradle.jar4" value = "${gradle.home}/lib/groovy-all-1.8.6.jar"/>
+  <property name = "wtk.jar"     value = "${wtk.home}/wtklib/kenv.zip"/>
 
   <target name = "all"     depends = "basic,options"/>
   <target name = "basic"   depends = "proguard,proguardgui,retrace"/>
   <target name = "options" depends = "anttask,wtkplugin"/>
 
   <target name = "proguard" depends = "classes,lib">
-    <javac nowarn      = "true"
-           deprecation = "false"
-           srcdir      = "${src}"
-           destdir     = "${classes}"
-           includes    = "proguard/ProGuard.java">
+    <javac nowarn            = "true"
+           deprecation       = "false"
+           includeantruntime = "false"
+           srcdir            = "${src}"
+           destdir           = "${classes}"
+           includes          = "proguard/ProGuard.java">
       <compilerarg value = "-Xlint:none"/>
     </javac>
 
@@ -41,11 +45,12 @@
   </target>
 
   <target name = "proguardgui" depends = "proguard">
-    <javac nowarn      = "true"
-           deprecation = "false"
-           srcdir      = "${src}"
-           destdir     = "${classes}"
-           includes    = "proguard/gui/ProGuardGUI.java">
+    <javac nowarn            = "true"
+           deprecation       = "false"
+           includeantruntime = "false"
+           srcdir            = "${src}"
+           destdir           = "${classes}"
+           includes          = "proguard/gui/ProGuardGUI.java">
       <compilerarg value = "-Xlint:none"/>
     </javac>
 
@@ -65,11 +70,12 @@
   </target>
 
   <target name = "retrace" depends = "classes,lib">
-    <javac nowarn      = "true"
-           deprecation = "false"
-           srcdir      = "${src}"
-           destdir     = "${classes}"
-           includes    = "proguard/retrace/ReTrace.java">
+    <javac nowarn            = "true"
+           deprecation       = "false"
+           includeantruntime = "false"
+           srcdir            = "${src}"
+           destdir           = "${classes}"
+           includes          = "proguard/retrace/ReTrace.java">
       <compilerarg value = "-Xlint:none"/>
     </javac>
 
@@ -89,20 +95,12 @@
   </target>
 
   <target name = "anttask" depends = "proguard">
-    <fail message="Please set the value of the property ant.home in the file build/build.properties, if you want to build the optional ProGuard Ant task.">
-      <condition>
-        <not>
-          <available file="${ant.jar}"/>
-        </not>
-      </condition>
-    </fail>
-
-    <javac nowarn      = "true"
-           deprecation = "false"
-           classpath   = "${ant.jar}"
-           srcdir      = "${src}"
-           destdir     = "${classes}"
-           includes    = "proguard/ant/ProGuardTask.java">
+    <javac nowarn            = "true"
+           deprecation       = "false"
+           includeantruntime = "true"
+           srcdir            = "${src}"
+           destdir           = "${classes}"
+           includes          = "proguard/ant/ProGuardTask.java">
       <compilerarg value = "-Xlint:none"/>
     </javac>
 
@@ -121,8 +119,52 @@
          includes = "proguard/ant/**"/>
   </target>
 
+  <target name = "gradletask" depends = "proguard">
+    <fail message="Please set the value of the property gradle.home in the file build.properties, if you want to build the optional ProGuard Gradle task.">
+      <condition>
+        <not>
+          <and>
+            <available file="${gradle.jar1}"/>
+            <available file="${gradle.jar2}"/>
+            <available file="${gradle.jar3}"/>
+            <available file="${gradle.jar4}"/>
+          </and>
+        </not>
+      </condition>
+    </fail>
+
+    <javac nowarn            = "true"
+           deprecation       = "false"
+           includeantruntime = "false"
+           srcdir            = "${src}"
+           destdir           = "${classes}"
+           includes          = "proguard/gradle/ProGuardTask.java">
+      <compilerarg value = "-Xlint:none"/>
+      <classpath>
+        <path location="${gradle.jar1}"/>
+        <path location="${gradle.jar2}"/>
+        <path location="${gradle.jar3}"/>
+        <path location="${gradle.jar4}"/>
+      <classpath>
+    </javac>
+
+    <copy todir = "${classes}">
+      <fileset dir = "${src}">
+        <include name = "proguard/gradle/*.properties"/>
+        <include name = "proguard/gradle/*.png"/>
+        <include name = "proguard/gradle/*.gif"/>
+        <include name = "proguard/gradle/*.pro"/>
+      </fileset>
+    </copy>
+
+    <jar jarfile  = "${lib}/proguard.jar"
+         update   = "true"
+         basedir  = "${classes}"
+         includes = "proguard/gradle/**"/>
+  </target>
+
   <target name = "wtkplugin" depends = "proguard">
-    <fail message="Please set the value of the property wtk.home in the file build/build.properties, if you want to build the optional ProGuard WTK plugin.">
+    <fail message="Please set the value of the property wtk.home in the file build.properties, if you want to build the optional ProGuard WTK plugin.">
       <condition>
         <not>
           <available file="${wtk.jar}"/>
@@ -130,12 +172,13 @@
       </condition>
     </fail>
 
-    <javac nowarn      = "true"
-           deprecation = "false"
-           classpath   = "${wtk.jar}"
-           srcdir      = "${src}"
-           destdir     = "${classes}"
-           includes    = "proguard/wtk/ProGuardObfuscator.java">
+    <javac nowarn            = "true"
+           deprecation       = "false"
+           includeantruntime = "false"
+           classpath         = "${wtk.jar}"
+           srcdir            = "${src}"
+           destdir           = "${classes}"
+           includes          = "proguard/wtk/ProGuardObfuscator.java">
       <compilerarg value = "-Xlint:none"/>
     </javac>
 

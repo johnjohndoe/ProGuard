@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2013 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -20,7 +20,7 @@
  */
 package proguard.classfile.attribute;
 
-import proguard.classfile.Clazz;
+import proguard.classfile.*;
 import proguard.classfile.visitor.ClassVisitor;
 
 /**
@@ -28,7 +28,7 @@ import proguard.classfile.visitor.ClassVisitor;
  *
  * @author Eric Lafortune
  */
-public class LocalVariableTypeInfo implements Comparable
+public class LocalVariableTypeInfo implements VisitorAccepter, Comparable
 {
     public int u2startPC;
     public int u2length;
@@ -44,6 +44,11 @@ public class LocalVariableTypeInfo implements Comparable
      * References to primitive types are ignored.
      */
     public Clazz[] referencedClasses;
+
+    /**
+     * An extra field in which visitors can store information.
+     */
+    public Object visitorInfo;
 
 
     /**
@@ -87,6 +92,19 @@ public class LocalVariableTypeInfo implements Comparable
                 }
             }
         }
+    }
+
+
+    // Implementations for VisitorAccepter.
+
+    public Object getVisitorInfo()
+    {
+        return visitorInfo;
+    }
+
+    public void setVisitorInfo(Object visitorInfo)
+    {
+        this.visitorInfo = visitorInfo;
     }
 
 

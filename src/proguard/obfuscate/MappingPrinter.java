@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2013 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -21,6 +21,8 @@
 package proguard.obfuscate;
 
 import proguard.classfile.*;
+import proguard.classfile.attribute.*;
+import proguard.classfile.attribute.visitor.AttributeVisitor;
 import proguard.classfile.util.*;
 import proguard.classfile.visitor.*;
 
@@ -38,7 +40,8 @@ import java.io.PrintStream;
 public class MappingPrinter
 extends      SimplifiedVisitor
 implements   ClassVisitor,
-             MemberVisitor
+             MemberVisitor,
+             AttributeVisitor
 {
     private final PrintStream ps;
 
@@ -80,11 +83,6 @@ implements   ClassVisitor,
     }
 
 
-    public void visitLibraryClass(LibraryClass libraryClass)
-    {
-    }
-
-
     // Implementations for MemberVisitor.
 
     public void visitProgramField(ProgramClass programClass, ProgramField programField)
@@ -93,7 +91,6 @@ implements   ClassVisitor,
         if (newName != null)
         {
             ps.println("    " +
-                       //lineNumberRange(programClass, programField) +
                        ClassUtil.externalFullFieldDescription(
                            0,
                            programField.getName(programClass),
@@ -118,9 +115,9 @@ implements   ClassVisitor,
         String newName = MemberObfuscator.newMemberName(programMethod);
         if (newName != null)
         {
-            ps.println("    " +
-                       lineNumberRange(programClass, programMethod) +
-                       ClassUtil.externalFullMethodDescription(
+            ps.print("    ");
+            programMethod.attributesAccept(programClass, this);
+            ps.println(ClassUtil.externalFullMethodDescription(
                            programClass.getName(),
                            0,
                            programMethod.getName(programClass),
@@ -131,17 +128,20 @@ implements   ClassVisitor,
     }
 
 
-    // Small utility methods.
+    // Implementations for AttributeVisitor.
 
-    /**
-     * Returns the line number range of the given class member, followed by a
-     * colon, or just an empty String if no range is available.
-     */
-    private static String lineNumberRange(ProgramClass programClass, ProgramMember programMember)
+    public void visitAnyAttribute(Clazz clazz, Attribute attribute) {}
+
+
+    public void visitCodeAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute)
     {
-        String range = programMember.getLineNumberRange(programClass);
-        return range != null ?
-            (range + ":") :
-            "";
+        codeAttribute.attributesAccept(clazz, method, this);
+    }
+
+
+    public void visitLineNumberTableAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, LineNumberTableAttribute lineNumberTableAttribute)
+    {
+        ps.print(lineNumberTableAttribute.getLowestLineNumber() + ":" +
+                 lineNumberTableAttribute.getHighestLineNumber() + ":");
     }
 }

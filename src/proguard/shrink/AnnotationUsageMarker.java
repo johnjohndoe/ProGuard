@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2013 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -52,7 +52,7 @@ implements   AttributeVisitor,
     // Fields acting as a return parameters for several methods.
     private boolean attributeUsed;
     private boolean annotationUsed;
-    private boolean classUsed;
+    private boolean allClassesUsed;
     private boolean methodUsed;
 
 
@@ -159,10 +159,10 @@ implements   AttributeVisitor,
         if (isReferencedMethodUsed(enumConstantElementValue))
         {
             // Check the referenced classes.
-            classUsed = true;
+            allClassesUsed = true;
             enumConstantElementValue.referencedClassesAccept(this);
 
-            if (classUsed)
+            if (allClassesUsed)
             {
                 // Mark the element value as being used.
                 usageMarker.markAsUsed(enumConstantElementValue);
@@ -179,18 +179,16 @@ implements   AttributeVisitor,
     {
         if (isReferencedMethodUsed(classElementValue))
         {
-            // Check the referenced classes.
-            classUsed = true;
-            classElementValue.referencedClassesAccept(this);
+            // Mark the element value as being used.
+            usageMarker.markAsUsed(classElementValue);
 
-            if (classUsed)
-            {
-                // Mark the element value as being used.
-                usageMarker.markAsUsed(classElementValue);
+            markConstant(clazz, classElementValue.u2elementNameIndex);
+            markConstant(clazz, classElementValue.u2classInfoIndex);
 
-                markConstant(clazz, classElementValue.u2elementNameIndex);
-                markConstant(clazz, classElementValue.u2classInfoIndex);
-            }
+            // Mark the referenced classes, since they can be retrieved from
+            // the annotation and then used.
+            // TODO: This could mark more annotation methods, affecting other annotations.
+            classElementValue.referencedClassesAccept(usageMarker);
         }
     }
 
@@ -243,17 +241,15 @@ implements   AttributeVisitor,
 
     public void visitClassConstant(Clazz clazz, ClassConstant classConstant)
     {
-        classUsed = usageMarker.isUsed(classConstant);
-
         // Is the class constant marked as being used?
-        if (!classUsed)
+        if (!usageMarker.isUsed(classConstant))
         {
             // Check the referenced class.
-            classUsed = true;
+            allClassesUsed = true;
             classConstant.referencedClassAccept(this);
 
             // Is the referenced class marked as being used?
-            if (classUsed)
+            if (allClassesUsed)
             {
                 // Mark the class constant and its Utf8 constant.
                 usageMarker.markAsUsed(classConstant);
@@ -268,13 +264,12 @@ implements   AttributeVisitor,
 
     public void visitProgramClass(ProgramClass programClass)
     {
-        classUsed = usageMarker.isUsed(programClass);
+        allClassesUsed &= usageMarker.isUsed(programClass);
     }
 
 
     public void visitLibraryClass(LibraryClass libraryClass)
     {
-        classUsed = true;
     }
 
 
@@ -288,7 +283,6 @@ implements   AttributeVisitor,
 
     public void visitLibraryMethod(LibraryClass LibraryClass, LibraryMethod libraryMethod)
     {
-        classUsed = true;
     }
 
 
@@ -300,10 +294,10 @@ implements   AttributeVisitor,
     private boolean isReferencedClassUsed(Annotation annotation)
     {
         // Check if the referenced class is being used.
-        classUsed = true;
+        allClassesUsed = true;
         annotation.referencedClassAccept(this);
 
-        return classUsed;
+        return allClassesUsed;
     }
 
 

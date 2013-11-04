@@ -366,10 +366,12 @@ The sections below provide more details:
     automatically. It will not analyze library code, for which this option can
     therefore be useful. For example, you could specify the method
     <code>System.currentTimeMillis()</code>, so that any idle calls to it will
-    be removed. Note that ProGuard applies the option to the entire hierarchy
-    of the specified methods. Only applicable when optimizing. In general,
-    making assumptions can be dangerous; you can easily break the processed
-    code. <i>Only use this option if you know what you're doing!</i></dd>
+    be removed. With some care, you can also use the option to
+    <a href="examples.html#logging">remove logging code</a>. Note that
+    ProGuard applies the option to the entire hierarchy of the specified
+    methods. Only applicable when optimizing. In general, making assumptions
+    can be dangerous; you can easily break the processed code. <i>Only use
+    this option if you know what you're doing!</i></dd>
 
 <dt><a name="allowaccessmodification"><code><b>-allowaccessmodification</b></code></a></dt>
 
@@ -877,8 +879,8 @@ and directory names. A relative path is interpreted as follows:
 </ul>
 <p>
 The names can contain Java system properties (or Ant properties, when using
-Ant), delimited by '<b>&lt;</b>' and '<b>&gt;</b>'. The properties are
-automatically replaced by their corresponding values.
+Ant), delimited by angular brackets, '<b>&lt;</b>' and '<b>&gt;</b>'. The
+properties are automatically replaced by their corresponding values.
 <p>
 For example, <code>&lt;java.home&gt;/lib/rt.jar</code> is automatically
 expanded to something like <code>/usr/local/java/jdk/jre/lib/rt.jar</code>.
@@ -1009,13 +1011,13 @@ If you're not sure which option you need, you should probably simply use
 <code>-keep</code>. It will make sure the specified classes and class members
 are not removed in the shrinking step, and not renamed in the obfuscation step.
 <p>
-<img class="float" src="attention.gif" width="64" height="64"alt="attention" />
+<img class="float" src="attention.gif" width="64" height="64" alt="attention" />
 <ul class="shifted">
-<li>Specifying a class without class members only preserves the class as an
-    entry point &mdash; any class members may then still be removed, optimized,
-    or obfuscated.</li>
-<li>Specifying a class member only preserves the class member as an entry
-    point &mdash; any associated code may still be optimized and adapted.</li>
+<li>If you specify a class, without class members, ProGuard only preserves the
+    class and its parameterless constructor as entry points. It may
+    still remove, optimize, or obfuscate its other class members.</li>
+<li>If you specify a method, ProGuard only preserves the method as an entry
+    point. Its code may still be optimized and adapted.</li>
 </ul>
 <p>
 
@@ -1237,7 +1239,7 @@ files.
 <hr />
 <noscript><div><a target="_top" href="../index.html" class="button">Show menu</a></div></noscript>
 <address>
-Copyright &copy; 2002-2012
+Copyright &copy; 2002-2013
 <a target="other" href="http://www.lafortune.eu/">Eric Lafortune</a>.
 </address>
 </body>

@@ -47,6 +47,8 @@ few problems. The following sections discuss some common issues and solutions:
 <li><a href="#keep">Error: You have to specify '-keep' options</a></li>
 <li><a href="#filename">Error: Expecting class path separator ';' before 'Files\Java\...' (in Windows)</a></li>
 <li><a href="#macosx">Error: Can't read [.../lib/rt.jar] (No such file or directory) (in MacOS X)</a></li>
+<li><a href="#cantread">Error: Can't read ...</a></li>
+<li><a href="#cantwrite">Error: Can't write ...</a></li>
 <li><a href="#startinggui">Internal problem starting the ProGuard GUI (Cannot write XdndAware property) (in Linux)</a></li>
 <li><a href="#outofmemoryerror">OutOfMemoryError</a></li>
 <li><a href="#stackoverflowerror">StackOverflowError</a></li>
@@ -79,6 +81,7 @@ few problems. The following sections discuss some common issues and solutions:
 <li><a href="#stacktraces">Stack traces without class names or line numbers</a></li>
 <li><a href="#noclassdeffounderror">NoClassDefFoundError</a></li>
 <li><a href="#classnotfoundexception">ClassNotFoundException</a></li>
+<li><a href="#nosuchfieldexception">NoSuchFieldException</a></li>
 <li><a href="#nosuchmethodexception">NoSuchMethodException</a></li>
 <li><a href="#missingresourceexception">MissingResourceException or NullPointerException</a></li>
 <li><a href="#disappearingannotations">Disappearing annotations</a></li>
@@ -188,10 +191,11 @@ some more serious warnings:
     be a few reasons, with their own solutions:
     <p>
     <ol>
-    <li>You may have forgotten to specify an essential library. Just like when
-        compiling all code from scratch, you must specify all libraries that
-        the code is referencing, directly or indirectly. If the library should
-        be processed and included in the output, you should specify it with
+    <li>If the missing class is referenced from your own code, you may have
+        forgotten to specify an essential library. Just like when compiling
+        all code from scratch, you must specify all libraries that the code is
+        referencing, directly or indirectly. If the library should be
+        processed and included in the output, you should specify it with
         <a href="usage.html#injars"><code>-injars</code></a>, otherwise you
         should specify it with
         <a href="usage.html#libraryjars"><code>-libraryjars</code></a>.
@@ -208,32 +212,39 @@ some more serious warnings:
         If ProGuard still complains that it can't find a
         <code>javax.crypto</code> class, you probably still have to specify
         <code>jce.jar</code>, next to the more common <code>rt.jar</code>.</li>
-    <li>You may have ignored a library because you're absolutely sure it isn't
-        used anyway (your original code runs fine without it). The cleanest
-        solution is to <a href="usage.html#filters">filter out</a>
-        the <i>referencing</i> class or classes from the input, with a filter
-        like "<code>-injars
+    <li>If the missing class is referenced from a pre-compiled third-party
+        library, and your original code runs fine without it, then the missing
+        dependency doesn't seem to hurt. The cleanest solution is to
+        <a href="usage.html#filters">filter out</a> the <i>referencing</i>
+        class or classes from the input, with a filter like "<code>-injars
         myapplication.jar(!somepackage/SomeUnusedReferencingClass.class)</code>".
         ProGuard will then skip this class entirely in the input, and it will
         not bump into the problem of its missing reference. However, you may
         then have to filter out other classes that are in turn referencing the
         removed class. In practice, this works best if you can filter out
         entire unused packages at once, with a wildcard filter like
-        "<code>-injars myapplication.jar(!someunusedpackage/**)</code>".<p></li>
+        "<code>-injars
+        myapplication.jar(!someunusedpackage/**)</code>".<p></li>
     <li>If you don't feel like filtering out the problematic classes, you can
         try your luck with the <a
         href="usage.html#ignorewarnings"><code>-ignorewarnings</code></a>
         option, or even
         the <a href="usage.html#dontwarn"><code>-dontwarn</code></a> option.
-        Only use these options if you really know what you're doing though.
-        <p>
-        For example, if you're developing for Android, and ProGuard complains
-        that it can't find a <code>java.awt</code> class, then some library
-        that you are using is referring to <code>java.awt</code>. This is a
-        bit shady, since Android doesn't have this package at all, but if your
-        application works anyway, you can let ProGuard accept it with
-        "<code>-dontwarn java.awt.**</code>".</li>
-     </ol></dd>
+        Only use these options if you really know what you're doing though.</li>
+    </ol>
+    <p>
+    This last solution is commonly necessary in the standard Android build
+    process. The standard build script automatically passes the libraries that
+    it can find in the <code>libs</code> directory to ProGuard. Unfortunately,
+    many third-party libraries refer to other libraries that are not actually
+    used and not present. This works fine in debug builds, but in release
+    builds, ProGuard expects all libraries, so it can perform a proper static
+    analysis. For example, if ProGuard complains that it can't find
+    a <code>java.awt</code> class, then some library that you are using is
+    referring to <code>java.awt</code>. This is a bit shady, since Android
+    doesn't have this package at all, but if your application works anyway,
+    you can let ProGuard accept it with "<code>-dontwarn
+    java.awt.**</code>".</dd>
 
 <dt><a name="superclass"><b>Error: Can't find any super classes of ... (not even immediate super class ...)</b><br/><b>Error: Can't find common super class of ... and ...</b></a></dt>
 
@@ -256,26 +267,49 @@ some more serious warnings:
 
 <dt><a name="unresolvedclassmember"><b>Warning: can't find referenced field/method</b></a></dt>
 
-<dd>If there are unresolved references to class members in input classes, your
-    class files are most likely inconsistent. Possibly, some class file didn't
-    get recompiled properly, or some class file was left behind after its
-    source file was removed. Try removing all class files, recompiling them,
-    zipping them up, and running ProGuard again.
+<dd>A class in one of your program jars is referring to a field or a method
+    that is missing from the input, even though its class is present. The
+    output lists both the referencing class and the missing referenced class
+    member. There can be a few reasons, with their own solutions:
     <p>
-    If your program classes reside in the same packages as library classes,
-    and refer to their package visible class members, then you should also
-    specify the
-    <a href="usage.html#dontskipnonpubliclibraryclassmembers"><code>-dontskipnonpubliclibraryclassmembers</code></a>
-    option.</dd>
+    <ol>
+    <li>If there are unresolved references to class members in <i>program
+        classes</i>, your compiled class files are most likely inconsistent.
+        Possibly, some class file didn't get recompiled properly, or some
+        class file was left behind after its source file was removed. Try
+        removing all compiled class files and rebuilding your project.</li>
+    <li>If there are unresolved references to class members in <i>library
+        classes</i>, your compiled class files are inconsistent with the
+        libraries. You may need to recompile the class files, or otherwise
+        upgrade the libraries to consistent versions.
+        <p>
+        For example, if you're developing for Android, and ProGuard complains
+        that it can't find a run-time method that is only available in recent
+        versions of Android, you should change the target in
+        <code>project.properties</code> to that recent version.
+        <p>
+        Alternatively, you may get away with ignoring the inconsistency with
+        the options
+        <a href="usage.html#ignorewarnings"><code>-ignorewarnings</code></a>
+        or even
+        <a href="usage.html#dontwarn"><code>-dontwarn</code></a>. For
+        instance if the code contains a class to optionally support recent
+        versions of Android, you can specify "<code>-dontwarn
+        mypackage.MySupportClass</code>".</li>
+    <li>If your program classes reside in the same packages as library classes,
+        and refer to their package visible class members, then you should also
+        specify the
+        <a href="usage.html#dontskipnonpubliclibraryclassmembers"><code>-dontskipnonpubliclibraryclassmembers</code></a>
+        option.</li>
+    </ol></dd>
 
 <dt><a name="unresolvedenclosingmethod"><b>Warning: can't find enclosing class/method</b></a></dt>
 
 <dd>If there are unresolved references to classes that are defined inside
-    methods in your input, once more, your class files are most likely
+    methods in your input, once more, your compiled class files are most likely
     inconsistent. Possibly, some class file didn't get recompiled properly, or
     some class file was left behind after its source file was removed. Try
-    removing all class files, recompiling them, zipping them up, and running
-    ProGuard again.</dd>
+    removing all compiled class files and rebuilding your project.</dd>
 
 <dt><a name="dependency"><b>Warning: library class ... depends on program class ...</b></a></dt>
 
@@ -290,7 +324,14 @@ some more serious warnings:
     href="usage.html#injars"><code>-injars</code></a>) and library code
     (specified with <a
     href="usage.html#libraryjars"><code>-libraryjars</code></a>), and try
-    again.</dd>
+    again.
+    <p>
+    On Android, it is not uncommon that sloppy libraries contain duplicates of
+    classes that are already present in the Android run-time
+    (e.g. <code>org.json</code>, <code>org.xml</code>, <code>org.xmlpull</code>,
+    <code>org.w3c.dom</code>, or <code>org.apache.http</code>). You must remove
+    these classes from your libraries, since they are possibly inconsistent,
+    and the run-time libraries would get precedence anyway.</dd>
 
 <dt><a name="unexpectedclass"><b>Warning: class file ... unexpectedly contains class ...</b></a></dt>
 
@@ -368,6 +409,22 @@ some more serious warnings:
     the path <code>&lt;java.home&gt;/lib/rt.jar</code> by
     <code>&lt;java.home&gt;/../Classes/classes.jar</code>.</dd>
 
+<dt><a name="cantread"><b>Error: Can't read ...</b></a></dt>
+
+<dd>ProGuard can't read the specified file or directory. Double-check that the
+    name is correct in your configuration, that the file is readable, and that
+    it is not corrupt. An additional message "Unexpected end of ZLIB input
+    stream" suggests that the file is truncated. You should then make sure
+    that the file is complete on disk when ProGuard starts (asynchronous
+    copying? unflushed buffer or cache?), and that it is not somehow
+    overwritten by ProGuard's own output.</dd>
+
+<dt><a name="cantwrite"><b>Error: Can't write ...</b></a></dt>
+
+<dd>ProGuard can't write the specified file or directory. Double-check that
+    the name is correct in your configuration and that the file is
+    writable.</dd>
+
 <dt><a name="startinggui"><b>Internal problem starting the ProGuard GUI (Cannot write XdndAware property)</b> (in Linux)</a></dt>
 
 <dd>In Linux, at least with Java 6, the GUI may not start properly, due to
@@ -375,8 +432,6 @@ some more serious warnings:
     Bug #7027598</a>. The work-around at this time is to specify the JVM
    option <code>-DsuppressSwingDropSupport=true</code> when running the
    GUI.</dd>
-
-<dd>
 
 </dl>
 <p>
@@ -461,10 +516,11 @@ there might be a couple of reasons:
     You should therefore always explicitly keep any marker interfaces, with
     an option like "<code>-keep interface MyMarkerInterface</code>".
     <p>
-    Similarly, if you are keeping classes based on annotations, you may have to
-    avoid that the annotation classes themselves are removed in the shrinking
-    step. You can explicitly keep all annotation classes in your program code
-    with an option like "<code>-keep @interface *</code>".<dd>
+    Similarly, if you are keeping classes based on annotations, you may have
+    to avoid that the annotation classes themselves are removed in the
+    shrinking step. You should package the annotation classes as a library, or
+    explicitly keep them in your program code with an option like "<code>-keep
+    @interface *</code>".</dd>
 
 <dt><a name="notobfuscated"><b>Variable names not being obfuscated</b></a></dt>
 
@@ -568,14 +624,25 @@ might be several reasons:
     class mypackage.MyClass</code>" or "<code>-keep class * implements
     mypackage.MyInterface</code>".</dd>
 
+<dt><a name="nosuchfieldexception"><b>NoSuchFieldException</b></a></dt>
+
+<dd>Your code is probably calling something like
+    <code>myClass.getField</code>, trying to find some field dynamically.
+    Since ProGuard can't always detect this automatically, you have to keep
+    the missing field in using the
+    appropriate <a href="usage.html#keep"><code>-keep</code></a> option, e.g.
+    "<code>-keepclassmembers class mypackage.MyClass { int myField;
+    }</code>".</dd>
+
 <dt><a name="nosuchmethodexception"><b>NoSuchMethodException</b></a></dt>
 
 <dd>Your code is probably calling something like
     <code>myClass.getMethod</code>, trying to find some method dynamically.
     Since ProGuard can't always detect this automatically, you have to keep
-    the missing method in using the appropriate <a
-    href="usage.html#keep"><code>-keep</code></a> option, e.g. "<code>-keep
-    class mypackage.MyClass { void myMethod(); }</code>".
+    the missing method in using the
+    appropriate <a href="usage.html#keep"><code>-keep</code></a> option, e.g.
+    "<code>-keepclassmembers class mypackage.MyClass { void myMethod();
+    }</code>".
     <p>
     More specifically, if the method reported as missing is
     <code>values</code> or <code>valueOf</code>, you probably have to keep
@@ -750,7 +817,7 @@ might be several reasons:
 <hr />
 <noscript><div><a target="_top" href="../index.html" class="button">Show menu</a></div></noscript>
 <address>
-Copyright &copy; 2002-2012
+Copyright &copy; 2002-2013
 <a target="other" href="http://www.lafortune.eu/">Eric Lafortune</a>.
 </address>
 </body>

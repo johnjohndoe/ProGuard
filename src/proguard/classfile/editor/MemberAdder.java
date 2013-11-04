@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2013 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -96,51 +96,54 @@ implements   MemberVisitor
 
     public void visitProgramField(ProgramClass programClass, ProgramField programField)
     {
-        String name        = programField.getName(programClass);
-        String descriptor  = programField.getDescriptor(programClass);
+        //String name        = programField.getName(programClass);
+        //String descriptor  = programField.getDescriptor(programClass);
         int    accessFlags = programField.getAccessFlags();
 
-        // Does the target class already have such a field?
-        ProgramField targetField = (ProgramField)targetClass.findField(name, descriptor);
-        if (targetField != null)
-        {
-            // Is the field private or static?
-            int targetAccessFlags = targetField.getAccessFlags();
-            if ((targetAccessFlags &
-                 (ClassConstants.INTERNAL_ACC_PRIVATE |
-                  ClassConstants.INTERNAL_ACC_STATIC)) != 0)
-            {
-                if (DEBUG)
-                {
-                    System.out.println("MemberAdder: renaming field ["+targetClass+"."+targetField.getName(targetClass)+" "+targetField.getDescriptor(targetClass)+"]");
-                }
-
-                // Rename the private or static field.
-                targetField.u2nameIndex =
-                    constantPoolEditor.addUtf8Constant(newUniqueMemberName(name, targetClass.getName()));
-            }
-//            else
-//            {
-//                // Keep the non-private and non-static field, but update its
-//                // contents, in order to keep any references to it valid.
-//                if (DEBUG)
-//                {
-//                    System.out.println("MemberAdder: updating field ["+programClass+"."+programField.getName(programClass)+" "+programField.getDescriptor(programClass)+"] into ["+targetClass.getName()+"]");
-//                }
-//
-//                // Combine the access flags.
-//                targetField.u2accessFlags = accessFlags | targetAccessFlags;
-//
-//                // Add and replace any attributes.
-//                programField.attributesAccept(programClass,
-//                                              new AttributeAdder(targetClass,
-//                                                                 targetField,
-//                                                                 true));
-//
-//                // Don't add a new field.
-//                return;
-//            }
-        }
+        // TODO: Handle field with the same name and descriptor in the target class.
+        // We currently avoid this case, since renaming the identical field
+        // still causes confused field references.
+        //// Does the target class already have such a field?
+        //ProgramField targetField = (ProgramField)targetClass.findField(name, descriptor);
+        //if (targetField != null)
+        //{
+        //    // Is the field private or static?
+        //    int targetAccessFlags = targetField.getAccessFlags();
+        //    if ((targetAccessFlags &
+        //         (ClassConstants.INTERNAL_ACC_PRIVATE |
+        //          ClassConstants.INTERNAL_ACC_STATIC)) != 0)
+        //    {
+        //        if (DEBUG)
+        //        {
+        //            System.out.println("MemberAdder: renaming field ["+targetClass+"."+targetField.getName(targetClass)+" "+targetField.getDescriptor(targetClass)+"]");
+        //        }
+        //
+        //        // Rename the private or static field.
+        //        targetField.u2nameIndex =
+        //            constantPoolEditor.addUtf8Constant(newUniqueMemberName(name, targetClass.getName()));
+        //    }
+        //    else
+        //    {
+        //        // Keep the non-private and non-static field, but update its
+        //        // contents, in order to keep any references to it valid.
+        //        if (DEBUG)
+        //        {
+        //            System.out.println("MemberAdder: updating field ["+programClass+"."+programField.getName(programClass)+" "+programField.getDescriptor(programClass)+"] into ["+targetClass.getName()+"]");
+        //        }
+        //
+        //        // Combine the access flags.
+        //        targetField.u2accessFlags = accessFlags | targetAccessFlags;
+        //
+        //        // Add and replace any attributes.
+        //        programField.attributesAccept(programClass,
+        //                                      new AttributeAdder(targetClass,
+        //                                                         targetField,
+        //                                                         true));
+        //
+        //        // Don't add a new field.
+        //        return;
+        //    }
+        //}
 
         if (DEBUG)
         {
@@ -231,9 +234,12 @@ implements   MemberVisitor
                 System.out.println("MemberAdder: renaming method ["+targetClass.getName()+"."+targetMethod.getName(targetClass)+targetMethod.getDescriptor(targetClass)+"]");
             }
 
-            // Rename the private (non-abstract) or static method.
-            targetMethod.u2nameIndex =
-                constantPoolEditor.addUtf8Constant(newUniqueMemberName(name, descriptor));
+            // TODO: Handle non-abstract method with the same name and descriptor in the target class.
+            // We currently avoid this case, since renaming the identical method
+            // still causes confused method references.
+            //// Rename the private (non-abstract) or static method.
+            //targetMethod.u2nameIndex =
+            //    constantPoolEditor.addUtf8Constant(newUniqueMemberName(name, descriptor));
         }
 
         if (DEBUG)

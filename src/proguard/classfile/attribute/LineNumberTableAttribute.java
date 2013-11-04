@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2013 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -74,6 +74,56 @@ public class LineNumberTableAttribute extends Attribute
         return u2lineNumberTableLength > 0 ?
             lineNumberTable[0].u2lineNumber :
             0;
+    }
+
+
+    /**
+     * Returns the lowest line number, or 0 if there aren't any line numbers.
+     */
+    public int getLowestLineNumber()
+    {
+        if (u2lineNumberTableLength == 0)
+        {
+            return 0;
+        }
+
+        int lowestLineNumber = Integer.MAX_VALUE;
+
+        for (int index = 0; index < u2lineNumberTableLength; index++)
+        {
+            int lineNumber = lineNumberTable[index].u2lineNumber;
+            if (lineNumber < lowestLineNumber)
+            {
+                lowestLineNumber = lineNumber;
+            }
+        }
+
+        return lowestLineNumber;
+    }
+
+
+    /**
+     * Returns the highest line number, or 0 if there aren't any line numbers.
+     */
+    public int getHighestLineNumber()
+    {
+        if (u2lineNumberTableLength == 0)
+        {
+            return 0;
+        }
+
+        int highestLineNumber = Integer.MIN_VALUE;
+
+        for (int index = 0; index < u2lineNumberTableLength; index++)
+        {
+            int lineNumber = lineNumberTable[index].u2lineNumber;
+            if (lineNumber > highestLineNumber)
+            {
+                highestLineNumber = lineNumber;
+            }
+        }
+
+        return highestLineNumber;
     }
 
 

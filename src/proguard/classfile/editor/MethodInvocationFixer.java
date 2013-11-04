@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2013 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -100,7 +100,7 @@ implements   AttributeVisitor,
                     // Replace the invocation by an invokestatic instruction.
                     Instruction replacementInstruction =
                         new ConstantInstruction(InstructionConstants.OP_INVOKESTATIC,
-                                                constantIndex).shrink();
+                                                constantIndex);
 
                     codeAttributeEditor.replaceInstruction(offset, replacementInstruction);
 
@@ -121,7 +121,7 @@ implements   AttributeVisitor,
                     // Replace the invocation by an invokespecial instruction.
                     Instruction replacementInstruction =
                         new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL,
-                                                constantIndex).shrink();
+                                                constantIndex);
 
                     codeAttributeEditor.replaceInstruction(offset, replacementInstruction);
 
@@ -147,7 +147,7 @@ implements   AttributeVisitor,
                     Instruction replacementInstruction =
                         new ConstantInstruction(InstructionConstants.OP_INVOKEINTERFACE,
                                                 constantIndex,
-                                                invokeinterfaceConstant).shrink();
+                                                invokeinterfaceConstant);
 
                     codeAttributeEditor.replaceInstruction(offset, replacementInstruction);
 
@@ -172,7 +172,7 @@ implements   AttributeVisitor,
                     // Replace the invocation by an invokevirtual instruction.
                     Instruction replacementInstruction =
                         new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL,
-                                                constantIndex).shrink();
+                                                constantIndex);
 
                     codeAttributeEditor.replaceInstruction(offset, replacementInstruction);
 

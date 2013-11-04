@@ -32,13 +32,15 @@ else {
 <li><a href="#commercial">Can I use <b>ProGuard</b> to process my commercial
     application?</a></li>
 <li><a href="#jdk1.4">Does <b>ProGuard</b> work with Java 2? Java 5? Java
-    6?</a></li>
+    6? Java 7?</a></li>
 <li><a href="#jme">Does <b>ProGuard</b> work with Java Micro Edition?</a></li>
 <li><a href="#android">Does <b>ProGuard</b> work for Google Android
     code?</a></li>
 <li><a href="#blackberry">Does <b>ProGuard</b> work for Blackberry
     code?</a></li>
 <li><a href="#ant">Does <b>ProGuard</b> have support for Ant?</a></li>
+<li><a href="#gradle">Does <b>ProGuard</b> have support for Gradle?</a></li>
+<li><a href="#maven">Does <b>ProGuard</b> have support for Maven?</a></li>
 <li><a href="#gui">Does <b>ProGuard</b> come with a GUI?</a></li>
 <li><a href="#forname">Does <b>ProGuard</b> handle <code>Class.forName</code>
     calls?</a></li>
@@ -160,7 +162,10 @@ Toolkit.
 Yes. Google's <code>dx</code> compiler converts ordinary jar files into files
 that run on Android devices. By preprocessing the original jar files,
 <b>ProGuard</b> can significantly reduce the file sizes and boost the run-time
-performance of the code.
+performance of the code. It is distributed as part of the Android SDK.
+<a href="http://www.saikoa.com/dexguard" target="_top"><b>DexGuard</b></a>,
+<b>ProGuard</b>'s closed-source sibling for Android, offers additional
+optimizations and more application protection.
 
 <h3><a name="blackberry">Does <b>ProGuard</b> work for Blackberry code?</a></h3>
 
@@ -175,9 +180,25 @@ JME tools and VMs. Your mileage may therefore vary.
 <h3><a name="ant">Does <b>ProGuard</b> have support for Ant?</a></h3>
 
 Yes. <b>ProGuard</b> provides an Ant task, so that it integrates seamlessly
-into your Ant build processes. You can still use configurations in
+into your Ant build process. You can still use configurations in
 <b>ProGuard</b>'s own readable format. Alternatively, if you prefer XML, you
 can specify the equivalent XML configuration.
+
+<h3><a name="gradle">Does <b>ProGuard</b> have support for Gradle?</a></h3>
+
+Yes. <b>ProGuard</b> also provides a Gradle task, so that it integrates into
+your Gradle build process. You can specify configurations in
+<b>ProGuard</b>'s own format or embedded in the Groovy configuration.
+
+<h3><a name="maven">Does <b>ProGuard</b> have support for Maven?</a></h3>
+
+<b>ProGuard</b>'s jar files are also distributed as artefacts from the <a
+href="http://search.maven.org/#search|ga|1|g:%22net.sf.proguard%22"
+target="other">Maven Central</a> repository. There are some third-party
+plugins, like the <a href="http://code.google.com/p/maven-android-plugin/"
+target="other">android-maven-plugin</a> that support <b>ProGuard</b>.
+<a href="http://www.saikoa.com/dexguard" target="_top"><b>DexGuard</b></a>
+also has a compatible Maven plugin.
 
 <h3><a name="gui">Does <b>ProGuard</b> come with a GUI?</a></h3>
 
@@ -198,8 +219,8 @@ possible values. They might be read from a configuration file, for instance.
 However, <b>ProGuard</b> will note a number of constructs like
 "<code>(SomeClass)Class.forName(variable).newInstance()</code>". These might
 be an indication that the class or interface <code>SomeClass</code> and/or its
-implementations may need to be preserved. The user can adapt his configuration
-accordingly.
+implementations may need to be preserved. The developer can adapt his
+configuration accordingly.
 
 <h3><a name="resource">Does <b>ProGuard</b> handle resource files?</a></h3>
 
@@ -210,12 +231,10 @@ their names and their contents to the obfuscation that has been applied.
 
 No. String encryption in program code has to be perfectly reversible by
 definition, so it only improves the obfuscation level. It increases the
-footprint of the code. However, by popular demand, ProGuard's sibling for
-Android <a href="http://www.saikoa.com/dexguard"
-target="_top"><b>DexGuard</b></a> does support string encryption, along with
-class encryption and hiding of access to sensitive APIs. <b>DexGuard</b> is
-distributed by <a href="http://www.saikoa.com/" target="_top">Saikoa</a> and
-is not open source.
+footprint of the code. However, by popular demand, <b>ProGuard</b>'s
+closed-source sibling for Android, <a href="http://www.saikoa.com/dexguard"
+target="_top"><b>DexGuard</b></a>, does provide string encryption, along with
+more protection techniques against static and dynamic analysis.
 
 <h3><a name="flow">Does <b>ProGuard</b> perform flow obfuscation?</a></h3>
 
@@ -252,7 +271,7 @@ Manual</a> for more details.
 <hr />
 <noscript><div><a target="_top" href="index.html" class="button">Show menu</a></div></noscript>
 <address>
-Copyright &copy; 2002-2012
+Copyright &copy; 2002-2013
 <a target="other" href="http://www.lafortune.eu/">Eric Lafortune</a>.
 </address>
 </body>

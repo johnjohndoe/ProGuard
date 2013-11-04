@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2013 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -42,10 +42,10 @@ extends      SimplifiedVisitor
 implements   InstructionVisitor,
              ConstantVisitor
 {
-    /*
-    public  static       boolean DEBUG = true;
-    /*/
+    //*
     private static final boolean DEBUG = false;
+    /*/
+    public  static       boolean DEBUG = true;
     //*/
 
     public static final int X = InstructionSequenceMatcher.X;
@@ -187,7 +187,7 @@ implements   InstructionVisitor,
             for (int index = 0; index < replacementInstructions.length; index++)
             {
                 codeAttributeEditor.replaceInstruction(instructionSequenceMatcher.matchedInstructionOffset(index),
-                                                       replacementInstructionFactory.create(clazz, index).shrink());
+                                                       replacementInstructionFactory.create(clazz, index));
             }
 
             // Delete any remaining instructions in the from sequence.
@@ -253,7 +253,7 @@ implements   InstructionVisitor,
                                                   this);
 
             // Return it.
-            return replacementInstruction.shrink();
+            return replacementInstruction;
         }
 
 

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2013 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -30,6 +30,8 @@ import proguard.obfuscate.AttributeShrinker;
  * This AttributeVisitor delegates its visits to one of two other
  * AttributeVisitor instances, depending on whether the visited attribute
  * is strictly required or not.
+ *
+ * Stack map attributes and stack map table attributes are treated as optional.
  *
  * @see AttributeShrinker
  *
@@ -244,9 +246,9 @@ implements   AttributeVisitor
 
     public void visitStackMapTableAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, StackMapTableAttribute stackMapTableAttribute)
     {
-        if (requiredAttributeVisitor != null)
+        if (optionalAttributeVisitor != null)
         {
-            stackMapTableAttribute.accept(clazz, method, codeAttribute, requiredAttributeVisitor);
+            stackMapTableAttribute.accept(clazz, method, codeAttribute, optionalAttributeVisitor);
         }
     }
 

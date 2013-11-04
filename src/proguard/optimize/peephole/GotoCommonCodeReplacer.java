@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2013 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -50,7 +50,7 @@ implements   AttributeVisitor,
     private final InstructionVisitor  extraInstructionVisitor;
 
     private final BranchTargetFinder  branchTargetFinder  = new BranchTargetFinder();
-    private final CodeAttributeEditor codeAttributeEditor = new CodeAttributeEditor();
+    private final CodeAttributeEditor codeAttributeEditor = new CodeAttributeEditor(true, false);
 
 
     /**
@@ -123,10 +123,7 @@ implements   AttributeVisitor,
                     int deleteOffset = offset - delta;
                     if (branchTargetFinder.isInstruction(deleteOffset))
                     {
-                        codeAttributeEditor.replaceInstruction(     deleteOffset, (Instruction)null);
-                        codeAttributeEditor.insertBeforeInstruction(deleteOffset, (Instruction)null);
-                        codeAttributeEditor.insertAfterInstruction( deleteOffset, (Instruction)null);
-
+                        codeAttributeEditor.clearModifications(deleteOffset);
                         codeAttributeEditor.deleteInstruction(deleteOffset);
                     }
                 }
@@ -136,7 +133,7 @@ implements   AttributeVisitor,
                 if (newBranchOffset != branchInstruction.length(offset))
                 {
                     Instruction newGotoInstruction =
-                         new BranchInstruction(opcode, newBranchOffset);
+                         new BranchInstruction(opcode, newBranchOffset).shrink();
                     codeAttributeEditor.replaceInstruction(offset,
                                                            newGotoInstruction);
                 }

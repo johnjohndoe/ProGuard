@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2013 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -189,6 +189,27 @@ implements   ClassVisitor,
         codeAttribute.u2attributesCount =
             shrinkArray(codeAttribute.attributes,
                         codeAttribute.u2attributesCount);
+
+        // Shrink the attributes themselves.
+        codeAttribute.attributesAccept(clazz, method, this);
+    }
+
+
+    public void visitLocalVariableTableAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableTableAttribute localVariableTableAttribute)
+    {
+        // Shrink the local variable info array.
+        localVariableTableAttribute.u2localVariableTableLength =
+            shrinkArray(localVariableTableAttribute.localVariableTable,
+                        localVariableTableAttribute.u2localVariableTableLength);
+    }
+
+
+    public void visitLocalVariableTypeTableAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableTypeTableAttribute localVariableTypeTableAttribute)
+    {
+        // Shrink the local variable type info array.
+        localVariableTypeTableAttribute.u2localVariableTypeTableLength =
+            shrinkArray(localVariableTypeTableAttribute.localVariableTypeTable,
+                        localVariableTypeTableAttribute.u2localVariableTypeTableLength);
     }
 
 

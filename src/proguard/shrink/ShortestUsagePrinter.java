@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2013 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -21,7 +21,9 @@
 package proguard.shrink;
 
 import proguard.classfile.*;
-import proguard.classfile.util.ClassUtil;
+import proguard.classfile.attribute.*;
+import proguard.classfile.attribute.visitor.AttributeVisitor;
+import proguard.classfile.util.*;
 import proguard.classfile.visitor.*;
 
 import java.io.PrintStream;
@@ -36,8 +38,10 @@ import java.io.PrintStream;
  * @author Eric Lafortune
  */
 public class ShortestUsagePrinter
+extends      SimplifiedVisitor
 implements   ClassVisitor,
-             MemberVisitor
+             MemberVisitor,
+             AttributeVisitor
 {
     private final ShortestUsageMarker shortestUsageMarker;
     private final boolean             verbose;
@@ -117,8 +121,7 @@ implements   ClassVisitor,
         ps.println(ClassUtil.externalClassName(programClass.getName()) +
                    (verbose ?
                         ": " + ClassUtil.externalFullFieldDescription(0, name, type):
-                        "."  + name) +
-                   lineNumberRange(programClass, programField));
+                        "."  + name));
 
         // Print the reason for keeping this method.
         printReason(programField);
@@ -131,11 +134,12 @@ implements   ClassVisitor,
         String name = programMethod.getName(programClass);
         String type = programMethod.getDescriptor(programClass);
 
-        ps.println(ClassUtil.externalClassName(programClass.getName()) +
-                   (verbose ?
-                        ": " + ClassUtil.externalFullMethodDescription(programClass.getName(), 0, name, type):
-                        "."  + name) +
-                   lineNumberRange(programClass, programMethod));
+        ps.print(ClassUtil.externalClassName(programClass.getName()) +
+                 (verbose ?
+                      ": " + ClassUtil.externalFullMethodDescription(programClass.getName(), 0, name, type):
+                      "."  + name));
+        programMethod.attributesAccept(programClass, this);
+        ps.println();
 
         // Print the reason for keeping this method.
         printReason(programMethod);
@@ -174,6 +178,25 @@ implements   ClassVisitor,
     }
 
 
+    // Implementations for AttributeVisitor.
+
+    public void visitAnyAttribute(Clazz clazz, Attribute attribute) {}
+
+
+    public void visitCodeAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute)
+    {
+        codeAttribute.attributesAccept(clazz, method, this);
+    }
+
+
+    public void visitLineNumberTableAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, LineNumberTableAttribute lineNumberTableAttribute)
+    {
+        ps.print(" (" +
+                 lineNumberTableAttribute.getLowestLineNumber() + ":" +
+                 lineNumberTableAttribute.getHighestLineNumber() + ")");
+    }
+
+
     // Small utility methods.
 
     private void printReason(VisitorAccepter visitorAccepter)
@@ -193,18 +216,5 @@ implements   ClassVisitor,
         {
             ps.println("  is not being kept.\n");
         }
-    }
-
-
-    /**
-     * Returns the line number range of the given class member, followed by a
-     * colon, or just an empty String if no range is available.
-     */
-    private static String lineNumberRange(ProgramClass programClass, ProgramMember programMember)
-    {
-        String range = programMember.getLineNumberRange(programClass);
-        return range != null ?
-            (" (" + range + ")") :
-            "";
     }
 }

@@ -6,9 +6,10 @@
 #
 
 # Specify the input jars, output jars, and library jars.
-# We'll filter out the Ant and WTK classes, keeping everything else.
+# We'll filter out the Ant classes, Gradle classes, and WTK classes, keeping
+# everything else.
 
--injars  ../lib/proguard.jar(!proguard/ant/**,!proguard/wtk/**)
+-injars  ../lib/proguard.jar(!proguard/ant/**,!proguard/gradle/**,!proguard/wtk/**)
 -outjars proguard_out.jar
 
 -libraryjars <java.home>/lib/rt.jar
@@ -48,6 +49,18 @@
 #    <init>(org.apache.tools.ant.Project);
 #    public void set*(***);
 #    public void add*(***);
+#}
+
+# If you want to preserve the Gradle task, you'll have to specify the Gradle
+# jars.
+
+#-libraryjars /usr/local/java/gradle/lib/plugins/gradle-plugins-1.3.jar
+#-libraryjars /usr/local/java/gradle/lib/gradle-base-services-1.3.jar
+#-libraryjars /usr/local/java/gradle/lib/gradle-core-1.3.jar
+#-libraryjars /usr/local/java/gradle/lib/groovy-all-1.8.6.jar
+
+#-keep public class proguard.gradle.* {
+#    public *;
 #}
 
 # If you want to preserve the WTK obfuscation plug-in, you'll have to specify

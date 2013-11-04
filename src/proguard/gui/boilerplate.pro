@@ -257,13 +257,6 @@
     public boolean isInfinite();
     public int compareTo(java.lang.Double);
 
-    public <init>(byte);
-    public <init>(short);
-    public <init>(int);
-    public <init>(long);
-    public <init>(float);
-    public <init>(double);
-    public <init>(java.lang.String);
     public byte byteValue();
     public short shortValue();
     public int intValue();
@@ -280,17 +273,6 @@
 # Remove - String method calls. Remove all invocations of String
 # methods without side effects whose return values are not used.
 -assumenosideeffects public class java.lang.String {
-    public java.lang.String();
-    public java.lang.String(byte[]);
-    public java.lang.String(byte[],int);
-    public java.lang.String(byte[],int,int);
-    public java.lang.String(byte[],int,int,int);
-    public java.lang.String(byte[],int,int,java.lang.String);
-    public java.lang.String(byte[],java.lang.String);
-    public java.lang.String(char[]);
-    public java.lang.String(char[],int,int);
-    public java.lang.String(java.lang.String);
-    public java.lang.String(java.lang.StringBuffer);
     public static java.lang.String copyValueOf(char[]);
     public static java.lang.String copyValueOf(char[],int,int);
     public static java.lang.String valueOf(boolean);
@@ -348,10 +330,6 @@
 # Remove - StringBuffer method calls. Remove all invocations of StringBuffer
 # methods without side effects whose return values are not used.
 -assumenosideeffects public class java.lang.StringBuffer {
-    public java.lang.StringBuffer();
-    public java.lang.StringBuffer(int);
-    public java.lang.StringBuffer(java.lang.String);
-    public java.lang.StringBuffer(java.lang.CharSequence);
     public java.lang.String toString();
     public char charAt(int);
     public int capacity();
@@ -368,10 +346,6 @@
 # Remove - StringBuilder method calls. Remove all invocations of StringBuilder
 # methods without side effects whose return values are not used.
 -assumenosideeffects public class java.lang.StringBuilder {
-    public java.lang.StringBuilder();
-    public java.lang.StringBuilder(int);
-    public java.lang.StringBuilder(java.lang.String);
-    public java.lang.StringBuilder(java.lang.CharSequence);
     public java.lang.String toString();
     public char charAt(int);
     public int capacity();

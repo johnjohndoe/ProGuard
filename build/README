@@ -3,9 +3,10 @@ ProGuard, Java class file shrinker, optimizer, obfuscator, and preverifier
 
 This directory contains a number of alternative ways to build ProGuard:
 
-- build.sh  : a shell script for GNU/Linux
-- makefile  : a makefile for GNU/Linux
-- build.xml : an Ant build file for all platforms
+- build.sh      : a shell script for GNU/Linux
+- makefile      : a makefile for GNU/Linux
+- build.xml     : an Ant build file for all platforms
+- maven/pom.xml : a Maven POM for building the Maven artifacts
 
 - As a final alternative, you can also easily compile the code from the
   command line:
@@ -20,6 +21,11 @@ This directory contains a number of alternative ways to build ProGuard:
     javac -sourcepath src -d classes -classpath lib/ant.jar \
         src/proguard/ant/ProGuardTask.java
 
+  For the ProGuard Gradle task:
+
+    javac -sourcepath src -d classes -classpath ..... \
+        src/proguard/gradle/ProGuardTask.java
+
   For the Java Micro Edition Wireless Tool Kit (JME WTK) obfuscator plug-in:
 
     javac -sourcepath src -d classes -classpath wtklib/kenv.zip \
@@ -31,4 +37,4 @@ Enjoy!
 
 http://proguard.sourceforge.net/
 
-Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
+Copyright (c) 2002-2013 Eric Lafortune (eric@graphics.cornell.edu)

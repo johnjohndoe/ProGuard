@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2013 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -353,16 +353,26 @@ implements ClassVisitor,
      */
     protected void markMethodHierarchy(Clazz clazz, Method method)
     {
-        if ((method.getAccessFlags() &
+        int accessFlags = method.getAccessFlags();
+        if ((accessFlags &
              (ClassConstants.INTERNAL_ACC_PRIVATE |
               ClassConstants.INTERNAL_ACC_STATIC)) == 0 &&
             !ClassUtil.isInitializer(method.getName(clazz)))
         {
+            // We can skip private and static methods in the hierarchy, and
+            // also abstract methods, unless they might widen a current
+            // non-public access.
+            int requiredUnsetAccessFlags =
+                ClassConstants.INTERNAL_ACC_PRIVATE |
+                ClassConstants.INTERNAL_ACC_STATIC  |
+                ((accessFlags & ClassConstants.INTERNAL_ACC_PUBLIC) == 0 ? 0 :
+                     ClassConstants.INTERNAL_ACC_ABSTRACT);
+
             clazz.accept(new ConcreteClassDownTraveler(
                          new ClassHierarchyTraveler(true, true, false, true,
                          new NamedMethodVisitor(method.getName(clazz),
                                                 method.getDescriptor(clazz),
-                         new MemberAccessFilter(0, ClassConstants.INTERNAL_ACC_PRIVATE | ClassConstants.INTERNAL_ACC_STATIC | ClassConstants.INTERNAL_ACC_ABSTRACT,
+                         new MemberAccessFilter(0, requiredUnsetAccessFlags,
                          this)))));
         }
     }
@@ -648,10 +658,12 @@ implements ClassVisitor,
 
     public void visitSignatureAttribute(Clazz clazz, SignatureAttribute signatureAttribute)
     {
-        markAsUsed(signatureAttribute);
-
-        markConstant(clazz, signatureAttribute.u2attributeNameIndex);
-        markConstant(clazz, signatureAttribute.u2signatureIndex);
+        // Don't mark the attribute and its contents yet. We may mark them later,
+        // in SignatureUsageMarker.
+        //markAsUsed(signatureAttribute);
+        //
+        //markConstant(clazz, signatureAttribute.u2attributeNameIndex);
+        //markConstant(clazz, signatureAttribute.u2signatureIndex);
     }
 
 
@@ -721,23 +733,27 @@ implements ClassVisitor,
 
     public void visitLocalVariableTableAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableTableAttribute localVariableTableAttribute)
     {
-        markAsUsed(localVariableTableAttribute);
-
-        markConstant(clazz, localVariableTableAttribute.u2attributeNameIndex);
-
-        // Mark the constant pool entries referenced by the local variables.
-        localVariableTableAttribute.localVariablesAccept(clazz, method, codeAttribute, this);
+        // Don't mark the attribute and its contents yet. We may mark them later,
+        // in LocalVariableTypeUsageMarker.
+        //markAsUsed(localVariableTableAttribute);
+        //
+        //markConstant(clazz, localVariableTableAttribute.u2attributeNameIndex);
+        //
+        //// Mark the constant pool entries referenced by the local variables.
+        //localVariableTableAttribute.localVariablesAccept(clazz, method, codeAttribute, this);
     }
 
 
     public void visitLocalVariableTypeTableAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableTypeTableAttribute localVariableTypeTableAttribute)
     {
-        markAsUsed(localVariableTypeTableAttribute);
-
-        markConstant(clazz, localVariableTypeTableAttribute.u2attributeNameIndex);
-
-        // Mark the constant pool entries referenced by the local variable types.
-        localVariableTypeTableAttribute.localVariablesAccept(clazz, method, codeAttribute, this);
+        // Don't mark the attribute and its contents yet. We may mark them later,
+        // in LocalVariableTypeUsageMarker.
+        //markAsUsed(localVariableTypeTableAttribute);
+        //
+        //markConstant(clazz, localVariableTypeTableAttribute.u2attributeNameIndex);
+        //
+        //// Mark the constant pool entries referenced by the local variable types.
+        //localVariableTypeTableAttribute.localVariablesAccept(clazz, method, codeAttribute, this);
     }
 
 
@@ -745,12 +761,12 @@ implements ClassVisitor,
     {
         // Don't mark the attribute and its contents yet. We may mark them later,
         // in AnnotationUsageMarker.
-//        markAsUsed(annotationsAttribute);
-//
-//        markConstant(clazz, annotationsAttribute.u2attributeNameIndex);
-//
-//        // Mark the constant pool entries referenced by the annotations.
-//        annotationsAttribute.annotationsAccept(clazz, this);
+        //markAsUsed(annotationsAttribute);
+        //
+        //markConstant(clazz, annotationsAttribute.u2attributeNameIndex);
+        //
+        //// Mark the constant pool entries referenced by the annotations.
+        //annotationsAttribute.annotationsAccept(clazz, this);
     }
 
 
@@ -758,12 +774,12 @@ implements ClassVisitor,
     {
         // Don't mark the attribute and its contents yet. We may mark them later,
         // in AnnotationUsageMarker.
-//        markAsUsed(parameterAnnotationsAttribute);
-//
-//        markConstant(clazz, parameterAnnotationsAttribute.u2attributeNameIndex);
-//
-//        // Mark the constant pool entries referenced by the annotations.
-//        parameterAnnotationsAttribute.annotationsAccept(clazz, method, this);
+        //markAsUsed(parameterAnnotationsAttribute);
+        //
+        //markConstant(clazz, parameterAnnotationsAttribute.u2attributeNameIndex);
+        //
+        //// Mark the constant pool entries referenced by the annotations.
+        //parameterAnnotationsAttribute.annotationsAccept(clazz, method, this);
     }
 
 

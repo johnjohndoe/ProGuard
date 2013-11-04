@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2013 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -365,8 +365,8 @@ public class VariableInstruction extends Instruction
     private int requiredConstantSize()
     {
         return opcode != InstructionConstants.OP_IINC ? 0 :
-               constant << 24 >> 24 == constant       ? 1 :
-               constant << 16 >> 16 == constant       ? 2 :
+               (byte)constant  == constant            ? 1 :
+               (short)constant == constant            ? 2 :
                                                         4;
     }
 }

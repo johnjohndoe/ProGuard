@@ -7,10 +7,11 @@
 
 # Specify the input jars, output jars, and library jars.
 # The input jars will be merged in a single output jar.
-# We'll filter out the Ant and WTK classes.
+# We'll filter out the Ant classes, Gradle classes, and WTK classes, keeping
+# everything else.
 
 -injars  ../lib/proguardgui.jar
--injars  ../lib/proguard.jar(!META-INF/**,!proguard/ant/**,!proguard/wtk/**)
+-injars  ../lib/proguard.jar(!META-INF/**,!proguard/ant/**,!proguard/gradle/**,!proguard/wtk/**)
 -injars  ../lib/retrace.jar (!META-INF/**)
 -outjars proguardgui_out.jar
 

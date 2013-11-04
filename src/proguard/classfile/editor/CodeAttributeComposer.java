@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2013 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -28,6 +28,7 @@ import proguard.classfile.attribute.visitor.*;
 import proguard.classfile.instruction.*;
 import proguard.classfile.instruction.visitor.InstructionVisitor;
 import proguard.classfile.util.SimplifiedVisitor;
+import proguard.util.ArrayUtil;
 
 import java.util.Arrays;
 
@@ -59,7 +60,8 @@ implements   AttributeVisitor,
     private static final int INVALID        = -1;
 
 
-    private boolean allowExternalExceptionHandlers;
+    private final boolean allowExternalExceptionHandlers;
+    private final boolean shrinkInstructions;
 
     private int maximumCodeLength;
     private int codeLength;
@@ -79,26 +81,34 @@ implements   AttributeVisitor,
 
     private final StackSizeUpdater    stackSizeUpdater    = new StackSizeUpdater();
     private final VariableSizeUpdater variableSizeUpdater = new VariableSizeUpdater();
-//    private final InstructionWriter   instructionWriter   = new InstructionWriter();
+    private final InstructionWriter   instructionWriter   = new InstructionWriter();
 
 
     /**
      * Creates a new CodeAttributeComposer that doesn't allow external exception
-     * handlers.
+     * handlers and that automatically shrinks instructions.
      */
     public CodeAttributeComposer()
     {
-        this(false);
+        this(false, true);
     }
 
 
     /**
-     * Creates a new CodeAttributeComposer that optionally allows external
-     * exception handlers.
+     * Creates a new CodeAttributeComposer.
+     * @param allowExternalExceptionHandlers specifies whether exception
+     *                                       handlers can lie outside the code
+     *                                       fragment in which exceptions are
+     *                                       defined.
+     * @param shrinkInstructions             specifies whether instructions
+     *                                       should automatically be shrunk
+     *                                       before being written.
      */
-    public CodeAttributeComposer(boolean allowExternalExceptionHandlers)
+    public CodeAttributeComposer(boolean allowExternalExceptionHandlers,
+                                 boolean shrinkInstructions)
     {
         this.allowExternalExceptionHandlers = allowExternalExceptionHandlers;
+        this.shrinkInstructions             = shrinkInstructions;
     }
 
 
@@ -111,6 +121,8 @@ implements   AttributeVisitor,
         codeLength           = 0;
         exceptionTableLength = 0;
         level                = -1;
+
+        instructionWriter.reset(ClassConstants.TYPICAL_CODE_LENGTH);
     }
 
 
@@ -118,7 +130,10 @@ implements   AttributeVisitor,
      * Starts a new code fragment. Branch instructions that are added are
      * assumed to be relative within such code fragments.
      * @param maximumCodeFragmentLength the maximum length of the code that will
-     *                                  be added as part of this fragment.
+     *                                  be added as part of this fragment (more
+     *                                  precisely, the maximum old instruction
+     *                                  offset or label that is specified, plus
+     *                                  one).
      */
     public void beginCodeFragment(int maximumCodeFragmentLength)
     {
@@ -129,14 +144,9 @@ implements   AttributeVisitor,
             throw new IllegalArgumentException("Maximum number of code fragment levels exceeded ["+level+"]");
         }
 
-//        // TODO: Figure out some length.
-//        if (level == 0)
-//        {
-//            // Prepare for possible widening of instructions.
-//            instructionWriter.reset(2 * maximumCodeFragmentLength);
-//        }
-
         // Make sure there is sufficient space for adding the code fragment.
+        // It's only a rough initial estimate for the code length, not even
+        // necessarily a length expressed in bytes.
         maximumCodeLength += maximumCodeFragmentLength;
 
         ensureCodeLength(maximumCodeLength);
@@ -161,6 +171,8 @@ implements   AttributeVisitor,
 
     /**
      * Appends the given instruction with the given old offset.
+     * Branch instructions must fit, for instance by enabling automatic
+     * shrinking of instructions.
      * @param oldInstructionOffset the old offset of the instruction, to which
      *                             branches and other references in the current
      *                             code fragment are pointing.
@@ -169,12 +181,17 @@ implements   AttributeVisitor,
     public void appendInstruction(int         oldInstructionOffset,
                                   Instruction instruction)
     {
+        if (shrinkInstructions)
+        {
+            instruction = instruction.shrink();
+        }
+
         if (DEBUG)
         {
             println("["+codeLength+"] <- ", instruction.toString(oldInstructionOffset));
         }
 
-        // Make sure the code array is large enough.
+        // Make sure the code and offset arrays are large enough.
         int newCodeLength = codeLength + instruction.length(codeLength);
 
         ensureCodeLength(newCodeLength);
@@ -182,16 +199,17 @@ implements   AttributeVisitor,
         // Remember the old offset of the appended instruction.
         oldInstructionOffsets[codeLength] = oldInstructionOffset;
 
-        // Write the instruction.
-//        instruction.accept(null,
-//                           null,
-//                           new CodeAttribute(0, 0, 0, 0, code, 0, null, 0, null),
-//                           codeLength,
-//                           instructionWriter);
-        instruction.write(code, codeLength);
-
         // Fill out the new offset of the appended instruction.
         instructionOffsetMap[level][oldInstructionOffset] = codeLength;
+
+        // Write the instruction. The instruction writer may widen it later on,
+        // if necessary.
+        instruction.accept(null,
+                           null,
+                           new CodeAttribute(0, 0, 0, 0, code, 0, null, 0, null),
+                           codeLength,
+                           instructionWriter);
+        //instruction.write(code, codeLength);
 
         // Continue appending at the next instruction offset.
         codeLength = newCodeLength;
@@ -211,8 +229,66 @@ implements   AttributeVisitor,
             println("["+codeLength+"] <- ", "[" + oldInstructionOffset + "] (label)");
         }
 
-        // Fill out the new offset of the appended instruction.
+        // Make sure the code and offset arrays are large enough.
+        ensureCodeLength(codeLength + 1);
+
+        // Remember the old offset of the following instruction.
+        oldInstructionOffsets[codeLength] = oldInstructionOffset;
+
+        // Fill out the new offset of the following instruction.
         instructionOffsetMap[level][oldInstructionOffset] = codeLength;
+    }
+
+
+    /**
+     * Appends the given instruction without defined offsets.
+     * @param instructions the instructions to be appended.
+     */
+    public void appendInstructions(Instruction[] instructions)
+    {
+        for (int index = 0; index < instructions.length; index++)
+        {
+            appendInstruction(instructions[index]);
+        }
+    }
+
+
+    /**
+     * Appends the given instruction without a defined offset.
+     * Branch instructions should have a label, to allow computing the
+     * new relative offset.
+     * Branch instructions must fit, for instance by enabling automatic
+     * shrinking of instructions.
+     * @param instruction the instruction to be appended.
+     */
+    public void appendInstruction(Instruction instruction)
+    {
+        if (shrinkInstructions)
+        {
+            instruction = instruction.shrink();
+        }
+
+        if (DEBUG)
+        {
+            println("["+codeLength+"] <- ", instruction.toString());
+        }
+
+        // Make sure the code array is large enough.
+        int newCodeLength = codeLength + instruction.length(codeLength);
+
+        ensureCodeLength(newCodeLength);
+
+        // Write the instruction. The instruction writer may widen it later on,
+        // if necessary.
+        instruction.accept(null,
+                           null,
+                           new CodeAttribute(0, 0, 0, 0, code, 0, null, 0, null),
+                           codeLength,
+                           instructionWriter);
+        //instruction.write(code, codeLength);
+
+        // Continue appending at the next instruction offset.
+        codeLength = newCodeLength;
     }
 
 
@@ -246,16 +322,11 @@ implements   AttributeVisitor,
             return;
         }
 
-        // Make sure there is sufficient space in the exception table.
-        if (exceptionTable.length <= exceptionTableLength)
-        {
-            ExceptionInfo[] newExceptionTable = new ExceptionInfo[exceptionTableLength+1];
-            System.arraycopy(exceptionTable, 0, newExceptionTable, 0, exceptionTableLength);
-            exceptionTable = newExceptionTable;
-        }
-
         // Add the exception.
-        exceptionTable[exceptionTableLength++] = exceptionInfo;
+        exceptionTable =
+            (ExceptionInfo[])ArrayUtil.add(exceptionTable,
+                                           exceptionTableLength++,
+                                           exceptionInfo);
     }
 
 
@@ -283,13 +354,14 @@ implements   AttributeVisitor,
                 // Adapt the instruction for its new offset.
                 instruction.accept(null, null, null, instructionOffset, this);
 
-                // Write the instruction back.
-//                instruction.accept(null,
-//                                   null,
-//                                   new CodeAttribute(0, 0, 0, 0, code, 0, null, 0, null),
-//                                   instructionOffset,
-//                                   instructionWriter);
-                instruction.write(code, instructionOffset);
+                // Write the instruction back. The instruction writer may still
+                // widen it later on, if necessary.
+                instruction.accept(null,
+                                   null,
+                                   new CodeAttribute(0, 0, 0, 0, code, 0, null, 0, null),
+                                   instructionOffset,
+                                   instructionWriter);
+                //instruction.write(code, codeLength);
 
                 // Don't remap this instruction again.
                 oldInstructionOffsets[instructionOffset] = -1;
@@ -317,7 +389,7 @@ implements   AttributeVisitor,
                 {
                     if (remappableExceptionHandler(handlerPC))
                     {
-                        exceptionInfo.u2handlerPC = remapInstructionOffset(handlerPC);
+                        exceptionInfo.u2handlerPC = newInstructionOffset(handlerPC);
                     }
                     else if (level == 0)
                     {
@@ -383,7 +455,7 @@ implements   AttributeVisitor,
         // Remap  the line number table and the local variable table.
         codeAttribute.attributesAccept(clazz, method, this);
 
-        // Remap the exception table.
+        // Remap the exception table (done before).
         //codeAttribute.exceptionsAccept(clazz, method, this);
 
         // Remove exceptions with empty code blocks (done before).
@@ -391,8 +463,8 @@ implements   AttributeVisitor,
         //    removeEmptyExceptions(codeAttribute.exceptionTable,
         //                          codeAttribute.u2exceptionTableLength);
 
-//        // Make sure instructions are widened if necessary.
-//        instructionWriter.visitCodeAttribute(clazz, method, codeAttribute);
+        // Make sure instructions are widened if necessary.
+        instructionWriter.visitCodeAttribute(clazz, method, codeAttribute);
 
         level--;
     }
@@ -461,20 +533,20 @@ implements   AttributeVisitor,
     public void visitBranchInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, BranchInstruction branchInstruction)
     {
         // Adjust the branch offset.
-        branchInstruction.branchOffset = remapBranchOffset(offset,
-                                                           branchInstruction.branchOffset);
+        branchInstruction.branchOffset = newBranchOffset(offset,
+                                                         branchInstruction.branchOffset);
     }
 
 
     public void visitAnySwitchInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, SwitchInstruction switchInstruction)
     {
         // Adjust the default jump offset.
-        switchInstruction.defaultOffset = remapBranchOffset(offset,
-                                                            switchInstruction.defaultOffset);
+        switchInstruction.defaultOffset = newBranchOffset(offset,
+                                                          switchInstruction.defaultOffset);
 
         // Adjust the jump offsets.
-        remapJumpOffsets(offset,
-                         switchInstruction.jumpOffsets);
+        updateJumpOffsets(offset,
+                          switchInstruction.jumpOffsets);
     }
 
 
@@ -484,8 +556,8 @@ implements   AttributeVisitor,
     {
         // Remap the code offsets. Note that the instruction offset map also has
         // an entry for the first offset after the code, for u2endPC.
-        exceptionInfo.u2startPC = remapInstructionOffset(exceptionInfo.u2startPC);
-        exceptionInfo.u2endPC   = remapInstructionOffset(exceptionInfo.u2endPC);
+        exceptionInfo.u2startPC = newInstructionOffset(exceptionInfo.u2startPC);
+        exceptionInfo.u2endPC   = newInstructionOffset(exceptionInfo.u2endPC);
 
         // See if we can remap the handler right away. Unmapped exception
         // handlers are negated, in order to mark them as external.
@@ -493,7 +565,7 @@ implements   AttributeVisitor,
         exceptionInfo.u2handlerPC =
             !allowExternalExceptionHandlers ||
             remappableExceptionHandler(handlerPC) ?
-                remapInstructionOffset(handlerPC) :
+                newInstructionOffset(handlerPC) :
                 -handlerPC;
     }
 
@@ -503,7 +575,7 @@ implements   AttributeVisitor,
     public void visitAnyStackMapFrame(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, StackMapFrame stackMapFrame)
     {
         // Remap the stack map frame offset.
-        int stackMapFrameOffset = remapInstructionOffset(offset);
+        int stackMapFrameOffset = newInstructionOffset(offset);
 
         int offsetDelta = stackMapFrameOffset;
 
@@ -559,7 +631,7 @@ implements   AttributeVisitor,
     public void visitUninitializedType(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, UninitializedType uninitializedType)
     {
         // Remap the offset of the 'new' instruction.
-        uninitializedType.u2newInstructionOffset = remapInstructionOffset(uninitializedType.u2newInstructionOffset);
+        uninitializedType.u2newInstructionOffset = newInstructionOffset(uninitializedType.u2newInstructionOffset);
     }
 
 
@@ -568,7 +640,7 @@ implements   AttributeVisitor,
     public void visitLineNumberInfo(Clazz clazz, Method method, CodeAttribute codeAttribute, LineNumberInfo lineNumberInfo)
     {
         // Remap the code offset.
-        lineNumberInfo.u2startPC = remapInstructionOffset(lineNumberInfo.u2startPC);
+        lineNumberInfo.u2startPC = newInstructionOffset(lineNumberInfo.u2startPC);
     }
 
 
@@ -578,8 +650,9 @@ implements   AttributeVisitor,
     {
         // Remap the code offset and length.
         // TODO: The local variable frame might not be strictly preserved.
-        int startPC = remapInstructionOffset(localVariableInfo.u2startPC);
-        int endPC   = remapInstructionOffset(localVariableInfo.u2startPC + localVariableInfo.u2length);
+        int startPC = newInstructionOffset(localVariableInfo.u2startPC);
+        int endPC   = newInstructionOffset(localVariableInfo.u2startPC +
+                                           localVariableInfo.u2length);
 
         localVariableInfo.u2startPC = startPC;
         localVariableInfo.u2length  = endPC - startPC;
@@ -591,8 +664,9 @@ implements   AttributeVisitor,
     {
         // Remap the code offset and length.
         // TODO: The local variable frame might not be strictly preserved.
-        int startPC = remapInstructionOffset(localVariableTypeInfo.u2startPC);
-        int endPC   = remapInstructionOffset(localVariableTypeInfo.u2startPC + localVariableTypeInfo.u2length);
+        int startPC = newInstructionOffset(localVariableTypeInfo.u2startPC);
+        int endPC   = newInstructionOffset(localVariableTypeInfo.u2startPC +
+                                           localVariableTypeInfo.u2length);
 
         localVariableTypeInfo.u2startPC = startPC;
         localVariableTypeInfo.u2length  = endPC - startPC;
@@ -611,13 +685,10 @@ implements   AttributeVisitor,
             // Add 20% to avoid extending the arrays too often.
             newCodeLength = newCodeLength * 6 / 5;
 
-            byte[] newCode = new byte[newCodeLength];
-            System.arraycopy(code, 0, newCode, 0, codeLength);
-            code = newCode;
+            code                  = ArrayUtil.extendArray(code,                  newCodeLength);
+            oldInstructionOffsets = ArrayUtil.extendArray(oldInstructionOffsets, newCodeLength);
 
-            int[] newOldInstructionOffsets = new int[newCodeLength];
-            System.arraycopy(oldInstructionOffsets, 0, newOldInstructionOffsets, 0, codeLength);
-            oldInstructionOffsets = newOldInstructionOffsets;
+            instructionWriter.extend(newCodeLength);
         }
     }
 
@@ -625,11 +696,11 @@ implements   AttributeVisitor,
     /**
      * Adjusts the given jump offsets for the instruction at the given offset.
      */
-    private void remapJumpOffsets(int offset, int[] jumpOffsets)
+    private void updateJumpOffsets(int offset, int[] jumpOffsets)
     {
         for (int index = 0; index < jumpOffsets.length; index++)
         {
-            jumpOffsets[index] = remapBranchOffset(offset, jumpOffsets[index]);
+            jumpOffsets[index] = newBranchOffset(offset, jumpOffsets[index]);
         }
     }
 
@@ -638,7 +709,7 @@ implements   AttributeVisitor,
      * Computes the new branch offset for the instruction at the given new offset
      * with the given old branch offset.
      */
-    private int remapBranchOffset(int newInstructionOffset, int branchOffset)
+    private int newBranchOffset(int newInstructionOffset, int oldBranchOffset)
     {
         if (newInstructionOffset < 0 ||
             newInstructionOffset > codeLength)
@@ -648,8 +719,8 @@ implements   AttributeVisitor,
 
         int oldInstructionOffset = oldInstructionOffsets[newInstructionOffset];
 
-        return remapInstructionOffset(oldInstructionOffset + branchOffset) -
-               remapInstructionOffset(oldInstructionOffset);
+        return newInstructionOffset(oldInstructionOffset + oldBranchOffset) -
+               newInstructionOffset(oldInstructionOffset);
     }
 
 
@@ -657,7 +728,7 @@ implements   AttributeVisitor,
      * Computes the new instruction offset for the instruction at the given old
      * offset.
      */
-    private int remapInstructionOffset(int oldInstructionOffset)
+    private int newInstructionOffset(int oldInstructionOffset)
     {
         if (oldInstructionOffset < 0 ||
             oldInstructionOffset > codeFragmentLengths[level])
@@ -681,11 +752,15 @@ implements   AttributeVisitor,
      */
     private boolean remappableExceptionHandler(int oldInstructionOffset)
     {
+        // Can we index in the array?
         if (oldInstructionOffset > codeFragmentLengths[level])
         {
             return false;
         }
 
+        // Do we have a valid new instruction offset, but not yet right after
+        // the code? That offset is only labeled for mapping try blocks, not
+        // for mapping handlers.
         int newInstructionOffset =
             instructionOffsetMap[level][oldInstructionOffset];
 

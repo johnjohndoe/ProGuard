@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2013 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -38,7 +38,7 @@ import java.util.Properties;
  */
 public class ProGuard
 {
-    public static final String VERSION = "ProGuard, version 4.8";
+    public static final String VERSION = "ProGuard, version 4.9";
 
     private final Configuration configuration;
     private       ClassPool     programClassPool = new ClassPool();
@@ -403,9 +403,10 @@ public class ProGuard
     private PrintStream createPrintStream(File file)
     throws FileNotFoundException
     {
-        return isFile(file) ?
-            new PrintStream(new BufferedOutputStream(new FileOutputStream(file))) :
-            System.out;
+        return file == Configuration.STD_OUT ? System.out :
+            new PrintStream(
+            new BufferedOutputStream(
+            new FileOutputStream(file)));
     }
 
 
@@ -432,7 +433,11 @@ public class ProGuard
      */
     private String fileName(File file)
     {
-        if (isFile(file))
+        if (file == Configuration.STD_OUT)
+        {
+            return "standard output";
+        }
+        else
         {
             try
             {
@@ -443,20 +448,6 @@ public class ProGuard
                 return file.getPath();
             }
         }
-        else
-        {
-            return "standard output";
-        }
-    }
-
-
-    /**
-     * Returns whether the given file is actually a file, or just a placeholder
-     * for the standard output.
-     */
-    private boolean isFile(File file)
-    {
-        return file.getPath().length() > 0;
     }
 
 

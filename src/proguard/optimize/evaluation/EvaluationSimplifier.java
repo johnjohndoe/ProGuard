@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2013 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -49,14 +49,14 @@ implements   AttributeVisitor,
     //*
     private static final boolean DEBUG = false;
     /*/
-    private static boolean DEBUG       = true;
+    private static       boolean DEBUG = true;
     //*/
 
     private final InstructionVisitor extraInstructionVisitor;
 
     private final PartialEvaluator             partialEvaluator;
-    private final SideEffectInstructionChecker sideEffectInstructionChecker = new SideEffectInstructionChecker(true);
-    private final CodeAttributeEditor          codeAttributeEditor          = new CodeAttributeEditor(false);
+    private final SideEffectInstructionChecker sideEffectInstructionChecker = new SideEffectInstructionChecker(true, true);
+    private final CodeAttributeEditor          codeAttributeEditor          = new CodeAttributeEditor(false, true);
 
 
     /**
@@ -431,7 +431,7 @@ implements   AttributeVisitor,
         {
             // Push a constant instead.
             int value = pushedValue.integerValue().value();
-            if (value << 16 >> 16 == value)
+            if ((short)value == value)
             {
                 replaceConstantPushInstruction(clazz,
                                                offset,
@@ -446,7 +446,7 @@ implements   AttributeVisitor,
 
                 Instruction replacementInstruction =
                     new ConstantInstruction(InstructionConstants.OP_LDC,
-                                            constantPoolEditor.addIntegerConstant(value)).shrink();
+                                            constantPoolEditor.addIntegerConstant(value));
 
                 replaceInstruction(clazz, offset, instruction, replacementInstruction);
             }
@@ -516,7 +516,7 @@ implements   AttributeVisitor,
 
                 Instruction replacementInstruction =
                     new ConstantInstruction(InstructionConstants.OP_LDC2_W,
-                                            constantPoolEditor.addLongConstant(value)).shrink();
+                                            constantPoolEditor.addLongConstant(value));
 
                 replaceInstruction(clazz, offset, instruction, replacementInstruction);
             }
@@ -590,7 +590,7 @@ implements   AttributeVisitor,
 
                 Instruction replacementInstruction =
                     new ConstantInstruction(InstructionConstants.OP_LDC,
-                                            constantPoolEditor.addFloatConstant(value)).shrink();
+                                            constantPoolEditor.addFloatConstant(value));
 
                 replaceInstruction(clazz, offset, instruction, replacementInstruction);
             }
@@ -660,7 +660,7 @@ implements   AttributeVisitor,
 
                 Instruction replacementInstruction =
                     new ConstantInstruction(InstructionConstants.OP_LDC2_W,
-                                            constantPoolEditor.addDoubleConstant(value)).shrink();
+                                            constantPoolEditor.addDoubleConstant(value));
 
                 replaceInstruction(clazz, offset, instruction, replacementInstruction);
             }
@@ -719,7 +719,7 @@ implements   AttributeVisitor,
                                                 int         value)
     {
         Instruction replacementInstruction =
-            new SimpleInstruction(replacementOpcode, value).shrink();
+            new SimpleInstruction(replacementOpcode, value);
 
         replaceInstruction(clazz, offset, instruction, replacementInstruction);
     }
@@ -736,7 +736,7 @@ implements   AttributeVisitor,
                                                 int         variableIndex)
     {
         Instruction replacementInstruction =
-            new VariableInstruction(replacementOpcode, variableIndex).shrink();
+            new VariableInstruction(replacementOpcode, variableIndex);
 
         replaceInstruction(clazz, offset, instruction, replacementInstruction);
     }
@@ -814,8 +814,8 @@ implements   AttributeVisitor,
             {
                 // Replace the branch instruction by a simple branch instruction.
                 Instruction replacementInstruction =
-                    new BranchInstruction(InstructionConstants.OP_GOTO_W,
-                                          branchOffset).shrink();
+                    new BranchInstruction(InstructionConstants.OP_GOTO,
+                                          branchOffset);
 
                 replaceInstruction(clazz, offset, instruction, replacementInstruction);
             }

@@ -18,6 +18,10 @@
 
 -libraryjars <java.home>/lib/rt.jar
 -libraryjars /usr/local/java/ant/lib/ant.jar
+-libraryjars /usr/local/java/gradle/lib/plugins/gradle-plugins-1.3.jar
+-libraryjars /usr/local/java/gradle/lib/gradle-base-services-1.3.jar
+-libraryjars /usr/local/java/gradle/lib/gradle-core-1.3.jar
+-libraryjars /usr/local/java/gradle/lib/groovy-all-1.8.6.jar
 -libraryjars /usr/local/java/wtk2.5.2/wtklib/kenv.zip
 
 # Allow methods with the same signature, except for the return type,
@@ -55,6 +59,12 @@
     <init>(org.apache.tools.ant.Project);
     public void set*(***);
     public void add*(***);
+}
+
+# If we have the Gradle jars, we can properly process the Gradle task.
+
+-keep public class proguard.gradle.* {
+    public *;
 }
 
 # If we have kenv.zip, we can process the J2ME WTK plugin.

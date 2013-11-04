@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2013 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -633,11 +633,14 @@ public class ProGuardGUI extends JFrame
         reTracePanel      .add(tip(loadStackTraceButton,   "loadStackTraceTip"),      bottomButtonConstraints);
         reTracePanel      .add(tip(reTraceButton,          "reTraceTip"),             lastBottomButtonConstraints);
 
+        // Add the main tabs to the frame.
+        getContentPane().add(tabs);
+
+        // Pack the entire GUI before setting some default values.
+        pack();
+
         // Initialize the GUI settings to reasonable defaults.
         loadConfiguration(this.getClass().getResource(DEFAULT_CONFIGURATION));
-
-        // Add the main tabs to the frame and pack it.
-        getContentPane().add(tabs);
     }
 
 
@@ -1046,10 +1049,7 @@ public class ProGuardGUI extends JFrame
         dumpCheckBox                            .setSelected(configuration.dump               != null);
 
         printUsageTextField                     .setText(fileName(configuration.printUsage));
-        optimizationsTextField                  .setText(configuration.optimizations ==
-                                                         null ?
-                                                             OPTIMIZATIONS_DEFAULT :
-                                                             ListUtil.commaSeparatedString(configuration.optimizations, true));
+        optimizationsTextField                  .setText(configuration.optimizations             == null ? OPTIMIZATIONS_DEFAULT                : ListUtil.commaSeparatedString(configuration.optimizations, true));
         printMappingTextField                   .setText(fileName(configuration.printMapping));
         applyMappingTextField                   .setText(fileName(configuration.applyMapping));
         obfuscationDictionaryTextField          .setText(fileName(configuration.obfuscationDictionary));
@@ -1659,7 +1659,11 @@ public class ProGuardGUI extends JFrame
      */
     private String fileName(File file)
     {
-        if (isFile(file))
+        if (file == null)
+        {
+            return "";
+        }
+        else
         {
             try
             {
@@ -1670,21 +1674,6 @@ public class ProGuardGUI extends JFrame
                 return file.getPath();
             }
         }
-        else
-        {
-            return "";
-        }
-    }
-
-
-    /**
-     * Returns whether the given file is actually a file, or just a placeholder
-     * for the standard output.
-     */
-    private boolean isFile(File file)
-    {
-        return file != null &&
-               file.getPath().length() > 0;
     }
 
 
@@ -1735,7 +1724,6 @@ public class ProGuardGUI extends JFrame
                     try
                     {
                         ProGuardGUI gui = new ProGuardGUI();
-                        gui.pack();
 
                         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
                         Dimension guiSize    = gui.getSize();

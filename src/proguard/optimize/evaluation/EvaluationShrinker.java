@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2013 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -93,17 +93,16 @@ implements   AttributeVisitor
 
     private final PartialEvaluator               partialEvaluator;
     private final PartialEvaluator               simplePartialEvaluator       = new PartialEvaluator();
-    private final SideEffectInstructionChecker   sideEffectInstructionChecker = new SideEffectInstructionChecker(true);
+    private final SideEffectInstructionChecker   sideEffectInstructionChecker = new SideEffectInstructionChecker(true, true);
     private final MyUnusedParameterSimplifier    unusedParameterSimplifier    = new MyUnusedParameterSimplifier();
     private final MyProducerMarker               producerMarker               = new MyProducerMarker();
     private final MyVariableInitializationMarker variableInitializationMarker = new MyVariableInitializationMarker();
     private final MyStackConsistencyFixer        stackConsistencyFixer        = new MyStackConsistencyFixer();
-    private final CodeAttributeEditor            codeAttributeEditor          = new CodeAttributeEditor(false);
+    private final CodeAttributeEditor            codeAttributeEditor          = new CodeAttributeEditor(false, false);
 
-    private boolean[][] variablesNecessaryAfter = new boolean[ClassConstants.TYPICAL_CODE_LENGTH][ClassConstants.TYPICAL_VARIABLES_SIZE];
-    private boolean[][] stacksNecessaryAfter    = new boolean[ClassConstants.TYPICAL_CODE_LENGTH][ClassConstants.TYPICAL_STACK_SIZE];
-    private boolean[][] stacksSimplifiedBefore  = new boolean[ClassConstants.TYPICAL_CODE_LENGTH][ClassConstants.TYPICAL_STACK_SIZE];
-    private boolean[]   instructionsNecessary   = new boolean[ClassConstants.TYPICAL_CODE_LENGTH];
+    private boolean[][] stacksNecessaryAfter   = new boolean[ClassConstants.TYPICAL_CODE_LENGTH][ClassConstants.TYPICAL_STACK_SIZE];
+    private boolean[][] stacksSimplifiedBefore = new boolean[ClassConstants.TYPICAL_CODE_LENGTH][ClassConstants.TYPICAL_STACK_SIZE];
+    private boolean[]   instructionsNecessary  = new boolean[ClassConstants.TYPICAL_CODE_LENGTH];
 
     private int maxMarkedOffset;
 
@@ -190,6 +189,9 @@ implements   AttributeVisitor
 
         // Evaluate the method.
         partialEvaluator.visitCodeAttribute(clazz, method, codeAttribute);
+
+        // Evaluate the method the way the JVM verifier would do it.
+        simplePartialEvaluator.visitCodeAttribute(clazz, method, codeAttribute);
 
         int codeLength = codeAttribute.u4codeLength;
 
@@ -309,10 +311,9 @@ implements   AttributeVisitor
 
         for (int offset = 0; offset < codeLength; offset++)
         {
-            // Is it a variable initialization that hasn't been marked yet?
-            if (partialEvaluator.isTraced(offset) &&
-                !isInstructionNecessary(offset))
+            if (isInstructionNecessary(offset))
             {
+                // Mark initializations of the required instruction.
                 Instruction instruction = InstructionFactory.create(codeAttribute.code,
                                                                     offset);
 
@@ -412,11 +413,8 @@ implements   AttributeVisitor
                                                                 offset);
             if (!isInstructionNecessary(offset))
             {
+                codeAttributeEditor.clearModifications(offset);
                 codeAttributeEditor.deleteInstruction(offset);
-
-                codeAttributeEditor.insertBeforeInstruction(offset, (Instruction)null);
-                codeAttributeEditor.replaceInstruction(offset,      (Instruction)null);
-                codeAttributeEditor.insertAfterInstruction(offset,  (Instruction)null);
 
                 // Visit the instruction, if required.
                 if (extraDeletedInstructionVisitor != null)
@@ -645,8 +643,8 @@ implements   AttributeVisitor
 
         public void visitVariableInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, VariableInstruction variableInstruction)
         {
-            // Is the variable being loaded (or incremented)?
-            if (variableInstruction.opcode < InstructionConstants.OP_ISTORE)
+            // Is the variable being loaded or incremented?
+            if (variableInstruction.isLoad())
             {
                 markVariableProducers(offset, variableInstruction.variableIndex);
             }
@@ -702,20 +700,12 @@ implements   AttributeVisitor
 
         public void visitVariableInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, VariableInstruction variableInstruction)
         {
-            if (!variableInstruction.isLoad())
+            // Is the variable being loaded or incremented?
+            if (variableInstruction.isLoad())
             {
-                int variableIndex = variableInstruction.variableIndex;
-
-                if (isVariableInitialization(offset,
-                                             variableIndex) &&
-                    isVariableInitializationNecessary(clazz,
-                                                      method,
-                                                      codeAttribute,
-                                                      offset,
-                                                      variableIndex))
-                {
-                    markInstruction(offset);
-                }
+                // Mark any variable initializations for this variable load that
+                // are required according to the JVM.
+                markVariableInitializers(offset, variableInstruction.variableIndex);
             }
         }
     }
@@ -776,7 +766,7 @@ implements   AttributeVisitor
 
                         if (requiredPushCount > (instruction.isCategory2() ? 2 : 1))
                         {
-                            throw new IllegalArgumentException("Unsupported stack size increment ["+requiredPushCount+"]");
+                            throw new IllegalArgumentException("Unsupported stack size increment ["+requiredPushCount+"] at ["+offset+"]");
                         }
 
                         insertPushInstructions(offset, false, tracedStack.getTop(0).computationalType());
@@ -909,7 +899,7 @@ implements   AttributeVisitor
             }
         }
 
-        
+
         public void visitSimpleInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, SimpleInstruction simpleInstruction)
         {
             if (isInstructionNecessary(offset) &&
@@ -1065,7 +1055,7 @@ implements   AttributeVisitor
                     stackEntryNecessary1 ? DUP : // ...O -> ...OO
                                            NOP : // ...O -> ...O
                 stackEntryNecessary1     ? NOP : // ...O -> ...O
-                stackEntryPresent0       ? POP : // ...O -> ...  
+                stackEntryPresent0       ? POP : // ...O -> ...
                                            NOP;  // ...  -> ...
         }
 
@@ -1211,7 +1201,7 @@ implements   AttributeVisitor
             boolean stackEntryNecessary2 = isStackEntryNecessaryAfter(instructionOffset, topAfter - 2);
             boolean stackEntryNecessary3 = isStackEntryNecessaryAfter(instructionOffset, topAfter - 3);
 
-            return 
+            return
                 stackEntryNecessary3 ?
                     stackEntryNecessary2 ?
                         stackEntryNecessary1 ?
@@ -1417,31 +1407,17 @@ implements   AttributeVisitor
     // Small utility methods.
 
     /**
-     * Marks the variable and the corresponding producing instructions
-     * of the consumer at the given offset.
-     * @param consumerOffset the offset of the consumer.
-     * @param variableIndex  the index of the variable to be marked.
+     * Marks the producing instructions of the variable consumer at the given
+     * offset.
+     * @param consumerOffset the offset of the variable consumer.
+     * @param variableIndex  the index of the variable that is loaded.
      */
     private void markVariableProducers(int consumerOffset,
                                        int variableIndex)
     {
-        TracedVariables tracedVariables =
-            partialEvaluator.getVariablesBefore(consumerOffset);
+        InstructionOffsetValue producerOffsets =
+            partialEvaluator.getVariablesBefore(consumerOffset).getProducerValue(variableIndex).instructionOffsetValue();
 
-        // Mark the producer of the loaded value.
-        markVariableProducers(tracedVariables.getProducerValue(variableIndex).instructionOffsetValue(),
-                              variableIndex);
-    }
-
-
-    /**
-     * Marks the variable and its producing instructions at the given offsets.
-     * @param producerOffsets the offsets of the producers to be marked.
-     * @param variableIndex   the index of the variable to be marked.
-     */
-    private void markVariableProducers(InstructionOffsetValue producerOffsets,
-                                       int                    variableIndex)
-    {
         if (producerOffsets != null)
         {
             int offsetCount = producerOffsets.instructionOffsetCount();
@@ -1451,8 +1427,42 @@ implements   AttributeVisitor
                 // at the producing offset.
                 int offset = producerOffsets.instructionOffset(offsetIndex);
 
-                markVariableAfter(offset, variableIndex);
                 markInstruction(offset);
+            }
+        }
+    }
+
+
+    /**
+     * Marks the initializing instructions of the variable consumer at the given
+     * offset.
+     * @param consumerOffset the offset of the variable consumer.
+     * @param variableIndex  the index of the variable that is loaded.
+     */
+    private void markVariableInitializers(int consumerOffset,
+                                          int variableIndex)
+    {
+        InstructionOffsetValue producerOffsets =
+            simplePartialEvaluator.getVariablesBefore(consumerOffset).getProducerValue(variableIndex).instructionOffsetValue();
+
+        if (producerOffsets != null)
+        {
+            int offsetCount = producerOffsets.instructionOffsetCount();
+            for (int offsetIndex = 0; offsetIndex < offsetCount; offsetIndex++)
+            {
+                // Make sure the variable and the instruction are marked
+                // at the producing offset.
+                int offset = producerOffsets.instructionOffset(offsetIndex);
+
+                if (!isInstructionNecessary(offset) &&
+                    isVariableInitialization(offset, variableIndex))
+                {
+                    if (DEBUG) System.out.print("  Marking initialization of v"+variableIndex+" at ");
+
+                    markInstruction(offset);
+
+                    if (DEBUG) System.out.println();
+                }
             }
         }
     }
@@ -1801,7 +1811,7 @@ implements   AttributeVisitor
         // Remember the replacement instruction.
         Instruction replacementInstruction =
              new ConstantInstruction(InstructionConstants.OP_INVOKESTATIC,
-                                     constantInstruction.constantIndex).shrink();
+                                     constantInstruction.constantIndex);
 
         if (DEBUG) System.out.println("  Replacing by static invocation "+constantInstruction.toString(offset)+" -> "+replacementInstruction.toString());
 
@@ -1943,19 +1953,6 @@ implements   AttributeVisitor
         int maxStack   = codeAttribute.u2maxStack;
 
         // Create new arrays for storing information at each instruction offset.
-        if (variablesNecessaryAfter.length    < codeLength ||
-            variablesNecessaryAfter[0].length < maxLocals)
-        {
-            variablesNecessaryAfter = new boolean[codeLength][maxLocals];
-        }
-        else
-        {
-            for (int offset = 0; offset < codeLength; offset++)
-            {
-                Arrays.fill(variablesNecessaryAfter[offset], 0, maxLocals, false);
-            }
-        }
-
         if (stacksNecessaryAfter.length    < codeLength ||
             stacksNecessaryAfter[0].length < maxStack)
         {
@@ -2014,171 +2011,18 @@ implements   AttributeVisitor
             return true;
         }
 
+        // Is the reference type different now?
+        if (valueAfter.computationalType() == Value.TYPE_REFERENCE &&
+            (valueAfter.referenceValue().isNull() == Value.ALWAYS ||
+             !valueAfter.referenceValue().getType().equals(valueBefore.referenceValue().getType())))
+        {
+            return true;
+        }
+
         // Was the producer an argument (which may be removed)?
         Value producersBefore = partialEvaluator.getVariablesBefore(instructionOffset).getProducerValue(variableIndex);
         return producersBefore.instructionOffsetValue().instructionOffsetCount() == 1 &&
                producersBefore.instructionOffsetValue().instructionOffset(0) == PartialEvaluator.AT_METHOD_ENTRY;
-    }
-
-
-    /**
-     * Returns whether the specified variable must be initialized at the
-     * specified offset, according to the verifier of the JVM.
-     */
-    private boolean isVariableInitializationNecessary(Clazz         clazz,
-                                                      Method        method,
-                                                      CodeAttribute codeAttribute,
-                                                      int           initializationOffset,
-                                                      int           variableIndex)
-    {
-        int codeLength = codeAttribute.u4codeLength;
-
-        // Is the variable necessary anywhere at all?
-        if (isVariableNecessaryAfterAny(0, codeLength, variableIndex))
-        {
-            if (DEBUG) System.out.println("Simple partial evaluation for initialization of variable v"+variableIndex+" at ["+initializationOffset+"]");
-
-            // Lazily perform simple partial evaluation, the way the JVM
-            // verifier would do it.
-            simplePartialEvaluator.visitCodeAttribute(clazz, method, codeAttribute);
-
-            if (DEBUG) System.out.println("End of simple partial evaluation for initialization of variable v"+variableIndex+" at ["+initializationOffset+"]");
-
-            // Check if the variable is necessary elsewhere.
-            for (int offset = 0; offset < codeLength; offset++)
-            {
-                if (partialEvaluator.isTraced(offset))
-                {
-                    Value producer = partialEvaluator.getVariablesBefore(offset).getProducerValue(variableIndex);
-                    if (producer != null)
-                    {
-                        Value simpleProducer = simplePartialEvaluator.getVariablesBefore(offset).getProducerValue(variableIndex);
-                        if (simpleProducer != null)
-                        {
-                            InstructionOffsetValue producerOffsets =
-                                producer.instructionOffsetValue();
-                            InstructionOffsetValue simpleProducerOffsets =
-                                simpleProducer.instructionOffsetValue();
-
-                            if (DEBUG)
-                            {
-                                System.out.println("  ["+offset+"] producers ["+producerOffsets+"], simple producers ["+simpleProducerOffsets+"]");
-                            }
-
-                            // Is the variable being used without all of its
-                            // immediate simple producers being marked?
-                            if (isVariableNecessaryAfterAny(producerOffsets, variableIndex) &&
-                                !isVariableNecessaryAfterAll(simpleProducerOffsets, variableIndex))
-                            {
-                                if (DEBUG)
-                                {
-                                    System.out.println("    => initialization of variable v"+variableIndex+" at ["+initializationOffset+"] necessary");
-                                }
-
-                                // Then the initialization may be necessary.
-                                return true;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        if (DEBUG)
-        {
-            System.out.println("    => initialization of variable v"+variableIndex+" at ["+initializationOffset+"] not necessary");
-        }
-
-        return false;
-    }
-
-
-    private void markVariableAfter(int instructionOffset,
-                                   int variableIndex)
-    {
-        if (!isVariableNecessaryAfter(instructionOffset, variableIndex))
-        {
-            if (DEBUG) System.out.print("["+instructionOffset+".v"+variableIndex+"],");
-
-            variablesNecessaryAfter[instructionOffset][variableIndex] = true;
-
-            if (maxMarkedOffset < instructionOffset)
-            {
-                maxMarkedOffset = instructionOffset;
-            }
-        }
-    }
-
-
-    /**
-     * Returns whether the specified variable is ever necessary after any
-     * instructions in the specified block.
-     */
-    private boolean isVariableNecessaryAfterAny(int startOffset,
-                                                int endOffset,
-                                                int variableIndex)
-    {
-        for (int offset = startOffset; offset < endOffset; offset++)
-        {
-            if (isVariableNecessaryAfter(offset, variableIndex))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-
-    /**
-     * Returns whether the specified variable is ever necessary after any
-     * instructions in the specified set of instructions offsets.
-     */
-    private boolean isVariableNecessaryAfterAny(InstructionOffsetValue instructionOffsetValue,
-                                                int                    variableIndex)
-    {
-        int count = instructionOffsetValue.instructionOffsetCount();
-
-        for (int index = 0; index < count; index++)
-        {
-            if (isVariableNecessaryAfter(instructionOffsetValue.instructionOffset(index),
-                                         variableIndex))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-
-    /**
-     * Returns whether the specified variable is ever necessary after all
-     * instructions in the specified set of instructions offsets.
-     */
-    private boolean isVariableNecessaryAfterAll(InstructionOffsetValue instructionOffsetValue,
-                                                int                    variableIndex)
-    {
-        int count = instructionOffsetValue.instructionOffsetCount();
-
-        for (int index = 0; index < count; index++)
-        {
-            if (!isVariableNecessaryAfter(instructionOffsetValue.instructionOffset(index),
-                                          variableIndex))
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-
-    private boolean isVariableNecessaryAfter(int instructionOffset,
-                                             int variableIndex)
-    {
-        return instructionOffset == PartialEvaluator.AT_METHOD_ENTRY ||
-               variablesNecessaryAfter[instructionOffset][variableIndex];
     }
 
 

@@ -161,11 +161,37 @@ are added and reorganized.
 <dt><code><b>code/allocation/variable</b></code></dt>
 <dd>Optimizes variable allocation on the local variable frame.</dd>
 </dl>
+<p>
+
+ProGuard also provides some unofficial settings to control optimizations, that
+may disappear in future versions. These are Java system properties, which
+can be set as JVM arguments (with <code>-D.....)</code>:
+<dl>
+<dt><code><b>maximum.inlined.code.length</b></code> (default = 8 bytes)</dt>
+<dd>Specifies the maximum code length (expressed in bytes) of short methods
+    that are eligible to be inlined. Inlining methods that are too long may
+    unnecessarily inflate the code size.</dd>
+
+<dt><code><b>maximum.resulting.code.length</b></code> (default = 8000 bytes
+    for JSE, 2000 bytes for JME)</dt>
+<dd>Specifies the maximum resulting code length (expressed in bytes) allowed
+    when inlining methods. Many Java virtual machines do not apply just-in-time
+    compilation to methods that are too long, so it's important not to let them
+    grow too large.</dd>
+
+<dt><code><b>optimize.conservatively</b></code> (default = unset)</dt>
+<dd>Allows input code with ordinary instructions intentionally throwing
+    <code>NullPointerException</code>,
+    <code>ArrayIndexOutOfBoundsException</code>, or
+    <code>ClassCastException</code>, without any other useful purposes. By
+    default, ProGuard may just discard such seemingly useless instructions,
+    resulting in better optimization of most common code.</dd>
+</dl>
 
 <hr />
 <noscript><div><a target="_top" href="../index.html" class="button">Show menu</a></div></noscript>
 <address>
-Copyright &copy; 2002-2012
+Copyright &copy; 2002-2013
 <a target="other" href="http://www.lafortune.eu/">Eric Lafortune</a>.
 </address>
 </body>

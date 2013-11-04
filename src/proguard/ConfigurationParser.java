@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2013 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -81,6 +81,17 @@ public class ConfigurationParser
                                 description,
                                 baseDir),
              properties);
+    }
+
+
+    /**
+     * Creates a new ConfigurationParser for the given file, with the system
+     * Properties.
+     * @deprecated Temporary code for backward compatibility in Obclipse.
+     */
+    public ConfigurationParser(File file) throws IOException
+    {
+        this(file, System.getProperties());
     }
 
 
@@ -399,7 +410,7 @@ public class ConfigurationParser
         // Didn't the user specify a file name?
         if (configurationEnd())
         {
-            return new File("");
+            return Configuration.STD_OUT;
         }
 
         // Make sure the file is properly resolved.
@@ -537,7 +548,13 @@ public class ConfigurationParser
     }
 
 
-    private ClassSpecification parseClassSpecificationArguments()
+    /**
+     * Parses and returns a class specification.
+     * @throws ParseException if the class specification contains a syntax error.
+     * @throws IOException    if an IO error occurs while reading the class
+     *                        specification.
+     */
+    public ClassSpecification parseClassSpecificationArguments()
     throws ParseException, IOException
     {
         // Clear the annotation type.
@@ -1107,10 +1124,10 @@ public class ConfigurationParser
 
 
     /**
-     * Replaces any system properties in the given word by their values
-     * (e.g. the substring "<java.home>" is replaced by its value).
+     * Replaces any properties in the given word by their values.
+     * For instance, the substring "<java.home>" is replaced by its value.
      */
-    private String replaceSystemProperties(String word) throws ParseException
+    public String replaceSystemProperties(String word) throws ParseException
     {
         int fromIndex = 0;
         while (true)

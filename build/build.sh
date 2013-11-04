@@ -7,6 +7,7 @@
 #
 
 ANT_HOME=${ANT_HOME:-/usr/local/java/ant}
+GRADLE_HOME=${GRADLE_HOME:-/usr/local/java/gradle}
 WTK_HOME=${WTK_HOME:-/usr/local/java/wtk}
 
 if [ -z $PROGUARD_HOME ]; then
@@ -24,9 +25,15 @@ PROGUARD=proguard/ProGuard
 PROGUARD_GUI=proguard/gui/ProGuardGUI
 RETRACE=proguard/retrace/ReTrace
 ANT_TASK=proguard/ant/ProGuardTask
+GRADLE_TASK=proguard/gradle/ProGuardTask
 WTK_PLUGIN=proguard/wtk/ProGuardObfuscator
 
 ANT_JAR=$ANT_HOME/lib/ant.jar
+GRADLE_PATH=\
+$GRADLE_HOME/lib/plugins/gradle-plugins-1.3.jar:\
+$GRADLE_HOME/lib/gradle-base-services-1.3.jar:\
+$GRADLE_HOME/lib/gradle-core-1.3.jar:\
+$GRADLE_HOME/lib/groovy-all-1.8.6.jar
 WTK_JAR=$WTK_HOME/wtklib/kenv.zip
 
 PROGUARD_JAR=$LIB/proguard.jar
@@ -82,6 +89,15 @@ if [ -f "$ANT_JAR" ]; then
 else
   echo "Please make sure the environment variable ANT_HOME is set correctly,"
   echo "if you want to compile the optional ProGuard Ant task."
+fi
+
+if [ -f "${GRADLE_PATH%%:*}" ]; then
+  export CLASSPATH=$GRADLE_PATH
+  compile   $GRADLE_TASK
+  updatejar $GRADLE_TASK
+else
+  echo "Please make sure the environment variable GRADLE_HOME is set correctly,"
+  echo "if you want to compile the optional ProGuard Gradle task."
 fi
 
 if [ -f "$WTK_JAR" ]; then

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2013 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -30,6 +30,7 @@ import proguard.classfile.instruction.*;
 import proguard.classfile.instruction.visitor.InstructionVisitor;
 import proguard.classfile.util.*;
 import proguard.classfile.visitor.*;
+import proguard.optimize.*;
 import proguard.optimize.info.*;
 
 import java.util.*;
@@ -312,7 +313,7 @@ implements   AttributeVisitor,
                 }
 
                 codeAttributeComposer.appendInstruction(parameterSize-parameterIndex-1,
-                                                        new VariableInstruction(opcode, variableOffset + parameterOffset + parameterIndex).shrink());
+                                                        new VariableInstruction(opcode, variableOffset + parameterOffset + parameterIndex));
             }
         }
 
@@ -320,7 +321,7 @@ implements   AttributeVisitor,
         if (!isStatic)
         {
             codeAttributeComposer.appendInstruction(parameterSize,
-                                                    new VariableInstruction(InstructionConstants.OP_ASTORE, variableOffset).shrink());
+                                                    new VariableInstruction(InstructionConstants.OP_ASTORE, variableOffset));
         }
 
         codeAttributeComposer.endCodeFragment();
@@ -353,7 +354,7 @@ implements   AttributeVisitor,
 
     public void visitAnyInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, Instruction instruction)
     {
-        codeAttributeComposer.appendInstruction(offset, instruction.shrink());
+        codeAttributeComposer.appendInstruction(offset, instruction);
     }
 
 
@@ -380,7 +381,7 @@ implements   AttributeVisitor,
                                                   codeAttribute.u4codeLength - offset);
 
                         codeAttributeComposer.appendInstruction(offset,
-                                                                branchInstruction.shrink());
+                                                                branchInstruction);
                     }
                     else
                     {
@@ -393,7 +394,7 @@ implements   AttributeVisitor,
             }
         }
 
-        codeAttributeComposer.appendInstruction(offset, simpleInstruction.shrink());
+        codeAttributeComposer.appendInstruction(offset, simpleInstruction);
     }
 
 
@@ -406,7 +407,7 @@ implements   AttributeVisitor,
             variableInstruction.variableIndex += variableOffset;
         }
 
-        codeAttributeComposer.appendInstruction(offset, variableInstruction.shrink());
+        codeAttributeComposer.appendInstruction(offset, variableInstruction);
     }
 
 
@@ -464,7 +465,7 @@ implements   AttributeVisitor,
                 constantAdder.addConstant(clazz, constantInstruction.constantIndex);
         }
 
-        codeAttributeComposer.appendInstruction(offset, constantInstruction.shrink());
+        codeAttributeComposer.appendInstruction(offset, constantInstruction);
     }
 
 
@@ -488,7 +489,10 @@ implements   AttributeVisitor,
     {
         int accessFlags = programMethod.getAccessFlags();
 
-        if (// Only inline the method if it is private, static, or final.
+        if (// Don't inline methods that must be preserved.
+            !KeepMarker.isKept(programMethod)                                                     &&
+
+            // Only inline the method if it is private, static, or final.
             (accessFlags & (ClassConstants.INTERNAL_ACC_PRIVATE |
                             ClassConstants.INTERNAL_ACC_STATIC  |
                             ClassConstants.INTERNAL_ACC_FINAL)) != 0                              &&

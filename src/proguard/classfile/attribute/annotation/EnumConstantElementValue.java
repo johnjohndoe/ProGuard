@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2013 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -22,7 +22,7 @@ package proguard.classfile.attribute.annotation;
 
 import proguard.classfile.*;
 import proguard.classfile.attribute.annotation.visitor.ElementValueVisitor;
-import proguard.classfile.visitor.ClassVisitor;
+import proguard.classfile.visitor.*;
 
 /**
  * This ElementValue represents an enumeration constant element value.
@@ -42,6 +42,14 @@ public class EnumConstantElementValue extends ElementValue
      * References to primitive types are ignored.
      */
     public Clazz[] referencedClasses;
+
+    /**
+     * An extra field optionally pointing to the referenced enum Field object.
+     * This field is typically filled out by the <code>{@link
+     * proguard.classfile.util.ClassReferenceInitializer
+     * ClassReferenceInitializer}</code>.
+     */
+    public Field referencedField;
 
 
     /**
@@ -67,6 +75,24 @@ public class EnumConstantElementValue extends ElementValue
 
 
     /**
+     * Returns the enumeration type name.
+     */
+    public String getTypeName(Clazz clazz)
+    {
+        return clazz.getString(u2typeNameIndex);
+    }
+
+
+    /**
+     * Returns the constant name.
+     */
+    public String getConstantName(Clazz clazz)
+    {
+        return clazz.getString(u2constantNameIndex);
+    }
+
+
+    /**
      * Applies the given visitor to all referenced classes.
      */
     public void referencedClassesAccept(ClassVisitor classVisitor)
@@ -85,9 +111,22 @@ public class EnumConstantElementValue extends ElementValue
     }
 
 
+    /**
+     * Applies the given visitor to the referenced field.
+     */
+    public void referencedFieldAccept(MemberVisitor memberVisitor)
+    {
+        if (referencedField != null)
+        {
+            referencedField.accept(referencedClasses[0],
+                                   memberVisitor);
+        }
+    }
+
+
     // Implementations for ElementValue.
 
-    public int getTag()
+    public char getTag()
     {
         return ClassConstants.ELEMENT_VALUE_ENUM_CONSTANT;
     }

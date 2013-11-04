@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2013 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -392,14 +392,20 @@ public class Obfuscator
         // Print out the mapping, if requested.
         if (configuration.printMapping != null)
         {
-            PrintStream ps = isFile(configuration.printMapping) ?
-                new PrintStream(new BufferedOutputStream(new FileOutputStream(configuration.printMapping))) :
-                System.out;
+            PrintStream ps =
+                configuration.printMapping == Configuration.STD_OUT ? System.out :
+                    new PrintStream(
+                    new BufferedOutputStream(
+                    new FileOutputStream(configuration.printMapping)));
 
             // Print out items that will be removed.
             programClassPool.classesAcceptAlphabetically(new MappingPrinter(ps));
 
-            if (ps != System.out)
+            if (ps == System.out)
+            {
+                ps.flush();
+            }
+            else
             {
                 ps.close();
             }
@@ -444,15 +450,5 @@ public class Obfuscator
         // Remove unused constants.
         programClassPool.classesAccept(
             new ConstantPoolShrinker());
-    }
-
-
-    /**
-     * Returns whether the given file is actually a file, or just a placeholder
-     * for the standard output.
-     */
-    private boolean isFile(File file)
-    {
-        return file.getPath().length() > 0;
     }
 }

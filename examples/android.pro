@@ -4,11 +4,12 @@
 # Usage:
 #     java -jar proguard.jar @android.pro
 #
-# If you're using the Android SDK (version 2.3 or higher), the android tool
-# already creates a file like this in your project, called proguard.cfg.
-# It should contain the settings of this file, minus the input and output paths
-# (-injars, -outjars, -libraryjars, -printmapping, and -printseeds).
-# The generated Ant build file automatically sets these paths.
+# If you're using the Android SDK, the Ant release build and Eclipse export
+# already take care of the proper settings. You only need to enable ProGuard
+# by commenting in the corresponding line in project.properties. You can still
+# add project-specific configuration in proguard-project.txt.
+#
+# This configuration file is for custom, stand-alone builds.
 
 # Specify the input jars, output jars, and library jars.
 # Note that ProGuard works with Java bytecode (.class),
@@ -154,3 +155,14 @@
 # -keep public class mypackage.MyClass
 # -keep public interface mypackage.MyInterface
 # -keep public class * implements mypackage.MyInterface
+
+# If you wish, you can let the optimization step remove Android logging calls.
+
+#-assumenosideeffects class android.util.Log {
+#    public static boolean isLoggable(java.lang.String, int);
+#    public static int v(...);
+#    public static int i(...);
+#    public static int w(...);
+#    public static int d(...);
+#    public static int e(...);
+#}

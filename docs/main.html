@@ -28,8 +28,8 @@ else {
 preverifier. It detects and removes unused classes, fields, methods, and
 attributes. It optimizes bytecode and removes unused instructions. It renames
 the remaining classes, fields, and methods using short meaningless names.
-Finally, it preverifies the processed code for Java 6 or for Java Micro
-Edition.
+Finally, it preverifies the processed code for Java 6 or higher, or for Java
+Micro Edition.
 </p>
 Some uses of <b>ProGuard</b> are:
 <ul>
@@ -41,8 +41,8 @@ Some uses of <b>ProGuard</b> are:
 
 <li>Listing dead code, so it can be removed from the source code.</li>
 
-<li>Retargeting and preverifying existing class files for Java 6, to take full
-    advantage of Java 6's faster class loading.</li>
+<li>Retargeting and preverifying existing class files for Java 6 or higher, to
+    take full advantage of their faster class loading.</li>
 
 </ul>
 <p>
@@ -57,15 +57,17 @@ libraries of several megabytes. The results section presents actual figures
 for a number of applications.
 <p>
 <b>ProGuard</b> is a command-line tool with an optional graphical user
-interface. It also comes with plugins for Ant and for the JME Wireless
-Toolkit.
+interface. It also comes with plugins for Ant, for Gradle, and for the JME
+Wireless Toolkit.
 <p>
 <p class="intro">
-<b>ProGuard</b> now has a sibling optimizer and obfuscator for Android,
+<a href="http://www.saikoa.com/dexguard" target="_top">
+<img align="left" src="android_shades.png" width="64" height="64" /></a>
+<b>ProGuard</b> now has a sibling optimizer and obfuscator for Android:
 <a href="http://www.saikoa.com/dexguard" target="_top"><b>DexGuard</b></a>. It
-is compatible with ProGuard, but it goes further. It directly targets Dalvik
-bytecode and it provides additional features like string encryption, class
-encryption, and hiding access to sensitive APIs.
+focuses on code protection, with additional features like string encryption
+and class encryption. It directly targets Dalvik bytecode and streamlines the
+Android build process.
 </p>
 The following sections provide more detailed information:
 <ul>
@@ -95,7 +97,7 @@ The following sections provide more detailed information:
 <hr />
 <noscript><div><a target="_top" href="index.html" class="button">Show menu</a></div></noscript>
 <address>
-Copyright &copy; 2002-2012
+Copyright &copy; 2002-2013
 <a target="other" href="http://www.lafortune.eu/">Eric Lafortune</a>.
 </address>
 </body>

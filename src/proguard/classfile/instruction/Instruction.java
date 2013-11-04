@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2013 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -887,7 +887,7 @@ public abstract class Instruction
 
     protected static void writeSignedByte(byte[] code, int offset, int value)
     {
-        if (value << 24 >> 24 != value)
+        if ((byte)value != value)
         {
             throw new IllegalArgumentException("Signed byte value out of range ["+value+"]");
         }
@@ -897,7 +897,7 @@ public abstract class Instruction
 
     protected static void writeSignedShort(byte[] code, int offset, int value)
     {
-        if (value << 16 >> 16 != value)
+        if ((short)value != value)
         {
             throw new IllegalArgumentException("Signed short value out of range ["+value+"]");
         }

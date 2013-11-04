@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2013 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -21,6 +21,8 @@
 package proguard.shrink;
 
 import proguard.classfile.*;
+import proguard.classfile.attribute.*;
+import proguard.classfile.attribute.visitor.AttributeVisitor;
 import proguard.classfile.util.*;
 import proguard.classfile.visitor.*;
 
@@ -38,7 +40,8 @@ import java.io.PrintStream;
 public class UsagePrinter
 extends      SimplifiedVisitor
 implements   ClassVisitor,
-             MemberVisitor
+             MemberVisitor,
+             AttributeVisitor
 {
     private final UsageMarker usageMarker;
     private final boolean     printUnusedItems;
@@ -121,7 +124,6 @@ implements   ClassVisitor,
             printClassNameHeader();
 
             ps.println("    " +
-                       lineNumberRange(programClass, programField) +
                        ClassUtil.externalFullFieldDescription(
                            programField.getAccessFlags(),
                            programField.getName(programClass),
@@ -136,14 +138,33 @@ implements   ClassVisitor,
         {
             printClassNameHeader();
 
-            ps.println("    " +
-                       lineNumberRange(programClass, programMethod) +
-                       ClassUtil.externalFullMethodDescription(
+            ps.print("====");
+            ps.print("    ");
+            programMethod.attributesAccept(programClass, this);
+            ps.println(ClassUtil.externalFullMethodDescription(
                            programClass.getName(),
                            programMethod.getAccessFlags(),
                            programMethod.getName(programClass),
                            programMethod.getDescriptor(programClass)));
         }
+    }
+
+
+    // Implementations for AttributeVisitor.
+
+    public void visitAnyAttribute(Clazz clazz, Attribute attribute) {}
+
+
+    public void visitCodeAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute)
+    {
+        codeAttribute.attributesAccept(clazz, method, this);
+    }
+
+
+    public void visitLineNumberTableAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, LineNumberTableAttribute lineNumberTableAttribute)
+    {
+        ps.print(lineNumberTableAttribute.getLowestLineNumber() + ":" +
+                 lineNumberTableAttribute.getHighestLineNumber() + ":");
     }
 
 
@@ -160,18 +181,5 @@ implements   ClassVisitor,
             ps.println(ClassUtil.externalClassName(className) + ":");
             className = null;
         }
-    }
-
-
-    /**
-     * Returns the line number range of the given class member, followed by a
-     * colon, or just an empty String if no range is available.
-     */
-    private static String lineNumberRange(ProgramClass programClass, ProgramMember programMember)
-    {
-        String range = programMember.getLineNumberRange(programClass);
-        return range != null ?
-            (range + ":") :
-            "";
     }
 }

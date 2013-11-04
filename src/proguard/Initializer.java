@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2013 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -21,6 +21,7 @@
 package proguard;
 
 import proguard.classfile.ClassPool;
+import proguard.classfile.attribute.annotation.visitor.*;
 import proguard.classfile.attribute.visitor.AllAttributeVisitor;
 import proguard.classfile.constant.visitor.*;
 import proguard.classfile.instruction.visitor.AllInstructionVisitor;
@@ -120,7 +121,13 @@ public class Initializer
                                                    null));
         }
 
-        // Initialize the Class.forName references.
+        // Initialize the enum annotation references.
+        programClassPool.classesAccept(
+            new AllAttributeVisitor(true,
+            new AllElementValueVisitor(true,
+            new EnumFieldReferenceInitializer())));
+
+            // Initialize the Class.forName references.
         WarningPrinter dynamicClassReferenceNotePrinter = new WarningPrinter(System.out, configuration.note);
         WarningPrinter classForNameNotePrinter          = new WarningPrinter(System.out, configuration.note);
 
@@ -280,7 +287,9 @@ public class Initializer
         {
             System.err.println("Warning: there were " + classReferenceWarningCount +
                                " unresolved references to classes or interfaces.");
-            System.err.println("         You may need to specify additional library jars (using '-libraryjars').");
+            System.err.println("         You may need to add missing library jars or update their versions.");
+            System.err.println("         If your code works fine without the missing classes, you can suppress");
+            System.err.println("         the warnings with '-dontwarn' options.");
 
             if (configuration.skipNonPublicLibraryClasses)
             {
@@ -303,7 +312,7 @@ public class Initializer
             System.err.println("Warning: there were " + memberReferenceWarningCount +
                                " unresolved references to program class members.");
             System.err.println("         Your input classes appear to be inconsistent.");
-            System.err.println("         You may need to recompile them and try again.");
+            System.err.println("         You may need to recompile the code or update the library versions.");
             System.err.println("         Alternatively, you may have to specify the option ");
             System.err.println("         '-dontskipnonpubliclibraryclassmembers'.");
 

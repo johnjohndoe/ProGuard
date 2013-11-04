@@ -27,33 +27,75 @@ License. Please consult the <a href="license.html">license page</a> for more
 details.
 <p>
 <b>ProGuard</b> is written in Java, so it requires a Java Runtime Environment
-   (JRE 1.4 or higher).
+   (JRE 1.5 or higher).
 <p>
-You can download the latest release (containing the program jar, the
-documentation you're reading now, examples, and the source code) from this
+You can download the latest release (containing the program jars, the
+documentation that you're reading now, examples, and the source code) from this
 location:
 <p>
-<center><a href="http://sourceforge.net/project/showfiles.php?group_id=54750"
-target="other">Download section</a> (at <a
-href="http://sourceforge.net/projects/proguard/"
-target="other">SourceForge</a>)</center>
+<center><a href="http://sourceforge.net/projects/proguard/files/"
+target="other">Download section at SourceForge</a></center>
 <p>
 
+The <a href="http://sourceforge.net/projects/proguard/files/proguard/"
+target="other">proguard</a> section contains major releases and updates with
+sub-minor version numbers, for applying emergency fixes. The
+<a href="http://sourceforge.net/projects/proguard/files/proguard beta/"
+target="other">proguard beta</a> section contains beta releases. These include
+new features and any less urgent bug fixes collected since the previous
+release.
+<p>
 If you're still working with an older version of <b>ProGuard</b>, check out
 the summary of changes below, to see if you're missing something essential.
 Better look at the up-to-date <a
 href="http://proguard.sourceforge.net/downloads.html">on-line version</a> if
-you're reading a local copy of this page.
+you're reading a local copy of this page. Unless noted otherwise,
+<b>ProGuard</b> remains compatible across versions, so don't be afraid to
+update.
 <p>
-The download section may also contain updates with sub-minor version numbers.
-These versions are typically released shortly after their parent versions, for
-applying emergency fixes. Please make sure to look at those if you are
-encountering any problems with recent releases.
-<p>
-Finally, there may be beta versions of upcoming releases. They may be of
-interest too, because they typically contain any less urgent bug fixes
-collected since the previous release.
-<p>
+If you're only interested in individual jar files for your build process, you
+can also download them from the Maven Central repository, with GroupId
+<a href="http://search.maven.org/#search|ga|1|g:%22net.sf.proguard%22"
+target="other">net.sf.proguard</a> and ArtifactIds
+<a href="http://search.maven.org/#search|ga|1|a:%22proguard-parent%22"
+target="other">proguard-parent</a>,
+<a href="http://search.maven.org/#search|ga|1|a:%22proguard-base%22"
+target="other">proguard-base</a>,
+<a href="http://search.maven.org/#search|ga|1|a:%22proguard-gui%22"
+target="other">proguard-gui</a>,
+<a href="http://search.maven.org/#search|ga|1|a:%22proguard-anttask%22"
+target="other">proguard-anttask</a>,
+<a href="http://search.maven.org/#search|ga|1|a:%22proguard-gradle%22"
+target="other">proguard-gradle</a>,
+<a href="http://search.maven.org/#search|ga|1|a:%22proguard-wtk-plugin%22"
+target="other">proguard-wtk-plugin</a>, and
+<a href="http://search.maven.org/#search|ga|1|a:%22proguard-retrace%22"
+target="other">proguard-retrace</a>.
+
+<h3><div>Mar 2013</div> Version 4.9</h3>
+<ul>
+<li>Added Gradle task.
+<li>Added more peephole optimizations for strings.
+<li>Improved optimization of classes with static initializers.
+<li>Improved processing of finally blocks compiled with JDK 1.4 or older.
+<li>Fixed shrinking of access widening abstract methods, for the Dalvik VM.
+<li>Fixed overly aggressive shrinking of class annotations.
+<li>Fixed processing of unused classes in generic signatures.
+<li>Fixed merging of classes with similar class members.
+<li>Added java system property <code>optimize.conservatively</code> to allow
+    for instructions intentionally throwing <code>NullPointerException</code>,
+    <code>ArrayIndexOutOfBoundsException</code>, or
+    <code>ClassCastException</code> without other useful effects.
+<li>Fixed optimization of unnecessary variable initializations.
+<li>Fixed optimization of code involving NaN.
+<li>Fixed inlining of methods that are supposed to be kept.
+<li>Fixed preverification of artificially convoluted dup constructs.
+<li>Fixed quotes for java commands in .bat scripts.
+<li>Improved handling of non-sequential line number information.
+<li>Now requiring Java 5 or higher for running ProGuard.
+<li>Updated build files.
+<li>Updated documentation and examples.
+</ul>
 
 <h3><div>May 2012</div> Version 4.8</h3>
 <ul>
@@ -642,7 +684,7 @@ Upgrade considerations:
 <hr />
 <noscript><div><a target="_top" href="index.html" class="button">Show menu</a></div></noscript>
 <address>
-Copyright &copy; 2002-2012
+Copyright &copy; 2002-2013
 <a target="other" href="http://www.lafortune.eu/">Eric Lafortune</a>.
 </address>
 

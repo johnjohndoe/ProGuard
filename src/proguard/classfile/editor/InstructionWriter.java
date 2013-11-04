@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2013 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -31,7 +31,7 @@ import proguard.classfile.util.SimplifiedVisitor;
  * This InstructionVisitor writes out the instructions that it visits,
  * collecting instructions that have to be widened. As an AttributeVisitor,
  * it then applies the collected changes. The process will be repeated
- * recursively, if necessary.
+ * recursively, if necessary. The caller still has to update the frame sizes.
  *
  * @author Eric Lafortune
  */
@@ -40,23 +40,44 @@ extends      SimplifiedVisitor
 implements   InstructionVisitor,
              AttributeVisitor
 {
+    //*
+    private static final boolean DEBUG = false;
+    /*/
+    public  static       boolean DEBUG = false;
+    //*/
+
+
     private int codeLength;
 
     private CodeAttributeEditor codeAttributeEditor;
 
 
     /**
-     * Resets the accumulated code changes.
+     * Resets the accumulated code.
      * @param codeLength the length of the code that will be edited next.
      */
     public void reset(int codeLength)
     {
         this.codeLength = codeLength;
 
-        // The code attribute editor has to be created lazily.
         if (codeAttributeEditor != null)
         {
             codeAttributeEditor.reset(codeLength);
+        }
+    }
+
+
+    /**
+     * Extends the size of the accumulated code.
+     * @param codeLength the length of the code that will be edited next.
+     */
+    public void extend(int codeLength)
+    {
+        this.codeLength = codeLength;
+
+        if (codeAttributeEditor != null)
+        {
+            codeAttributeEditor.extend(codeLength);
         }
     }
 
@@ -84,7 +105,12 @@ implements   InstructionVisitor,
             Instruction replacementInstruction =
                 new ConstantInstruction(constantInstruction.opcode,
                                         constantInstruction.constantIndex,
-                                        constantInstruction.constant).shrink();
+                                        constantInstruction.constant);
+
+            if (DEBUG)
+            {
+                System.out.println("  "+constantInstruction.toString(offset)+" will be widened to "+replacementInstruction.toString());
+            }
 
             replaceInstruction(offset, replacementInstruction);
 
@@ -109,9 +135,14 @@ implements   InstructionVisitor,
             Instruction replacementInstruction =
                 new VariableInstruction(variableInstruction.opcode,
                                         variableInstruction.variableIndex,
-                                        variableInstruction.constant).shrink();
+                                        variableInstruction.constant);
 
             replaceInstruction(offset, replacementInstruction);
+
+            if (DEBUG)
+            {
+                System.out.println("  "+variableInstruction.toString(offset)+" will be widened to "+replacementInstruction.toString());
+            }
 
             // Write out a dummy variable instruction for now.
             variableInstruction.variableIndex = 0;
@@ -143,7 +174,7 @@ implements   InstructionVisitor,
                     // Create a new branch instruction that will fit.
                     replacementInstruction =
                         new BranchInstruction(branchInstruction.opcode,
-                                              branchInstruction.branchOffset).shrink();
+                                              branchInstruction.branchOffset);
 
                     break;
                 }
@@ -190,6 +221,11 @@ implements   InstructionVisitor,
                 }
             }
 
+            if (DEBUG)
+            {
+                System.out.println("  "+branchInstruction.toString(offset)+" will be widened to "+replacementInstruction.toString());
+            }
+
             replaceInstruction(offset, replacementInstruction);
 
             // Write out a dummy branch instruction for now.
@@ -214,10 +250,16 @@ implements   InstructionVisitor,
         // Avoid doing any work if nothing is changing anyway.
         if (codeAttributeEditor != null)
         {
+            if (DEBUG)
+            {
+                System.out.println("InstructionWriter: widening instructions in "+clazz.getName()+"."+method.getName(clazz)+method.getDescriptor(clazz));
+            }
+
             // Apply the collected expansions.
             codeAttributeEditor.visitCodeAttribute(clazz, method, codeAttribute);
 
-            // Clear the modifications for the next run.
+            // Don't keep the editor around. We're assuming it won't be needed
+            // very often, so we don't want to be resetting it all the time.
             codeAttributeEditor = null;
         }
     }
@@ -271,7 +313,7 @@ implements   InstructionVisitor,
     {
         if (codeAttributeEditor == null)
         {
-            codeAttributeEditor = new CodeAttributeEditor();
+            codeAttributeEditor = new CodeAttributeEditor(false, true);
             codeAttributeEditor.reset(codeLength);
         }
     }

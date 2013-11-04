@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2013 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -3725,6 +3725,145 @@ public class InstructionSequenceConstants
                 new SimpleInstruction(InstructionConstants.OP_SIPUSH, STRING_A_LENGTH),
             },
         },
+        {   // new StringBuffer() (without dup) = nothing
+            {
+                new ConstantInstruction(InstructionConstants.OP_NEW, CLASS_STRINGBUFFER),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT),
+            },{
+                // Nothing.
+            },
+        },
+        {   // new StringBuffer("...") (without dup) = nothing
+            {
+                new ConstantInstruction(InstructionConstants.OP_NEW, CLASS_STRINGBUFFER),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+            },{
+                // Nothing.
+            },
+        },
+        {   // new StringBuffer()/pop = nothing
+            {
+                new ConstantInstruction(InstructionConstants.OP_NEW, CLASS_STRINGBUFFER),
+                new SimpleInstruction(InstructionConstants.OP_DUP),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT),
+                new SimpleInstruction(InstructionConstants.OP_POP),
+            },{
+                // Nothing.
+            },
+        },
+        {   // new StringBuffer("...")/pop = nothing
+            {
+                new ConstantInstruction(InstructionConstants.OP_NEW, CLASS_STRINGBUFFER),
+                new SimpleInstruction(InstructionConstants.OP_DUP),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+                new SimpleInstruction(InstructionConstants.OP_POP),
+            },{
+                // Nothing.
+            },
+        },
+        {   // new StringBuffer("...").append(z)/pop = nothing
+            {
+                new ConstantInstruction(InstructionConstants.OP_NEW, CLASS_STRINGBUFFER),
+                new SimpleInstruction(InstructionConstants.OP_DUP),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+                new VariableInstruction(InstructionConstants.OP_ILOAD, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_Z),
+                new SimpleInstruction(InstructionConstants.OP_POP),
+            },{
+                // Nothing.
+            },
+        },
+        {   // new StringBuffer("...").append(c)/pop = nothing
+            {
+                new ConstantInstruction(InstructionConstants.OP_NEW, CLASS_STRINGBUFFER),
+                new SimpleInstruction(InstructionConstants.OP_DUP),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+                new VariableInstruction(InstructionConstants.OP_ILOAD, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_C),
+                new SimpleInstruction(InstructionConstants.OP_POP),
+            },{
+                // Nothing.
+            },
+        },
+        {   // new StringBuffer("...").append(i)/pop = nothing
+            {
+                new ConstantInstruction(InstructionConstants.OP_NEW, CLASS_STRINGBUFFER),
+                new SimpleInstruction(InstructionConstants.OP_DUP),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+                new VariableInstruction(InstructionConstants.OP_ILOAD, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_I),
+                new SimpleInstruction(InstructionConstants.OP_POP),
+            },{
+                // Nothing.
+            },
+        },
+        {   // new StringBuffer("...").append(l)/pop = nothing
+            {
+                new ConstantInstruction(InstructionConstants.OP_NEW, CLASS_STRINGBUFFER),
+                new SimpleInstruction(InstructionConstants.OP_DUP),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+                new VariableInstruction(InstructionConstants.OP_LLOAD, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_J),
+                new SimpleInstruction(InstructionConstants.OP_POP),
+            },{
+                // Nothing.
+            },
+        },
+        {   // new StringBuffer("...").append(f)/pop = nothing
+            {
+                new ConstantInstruction(InstructionConstants.OP_NEW, CLASS_STRINGBUFFER),
+                new SimpleInstruction(InstructionConstants.OP_DUP),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+                new VariableInstruction(InstructionConstants.OP_FLOAD, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_F),
+                new SimpleInstruction(InstructionConstants.OP_POP),
+            },{
+                // Nothing.
+            },
+        },
+        {   // new StringBuffer("...").append(d)/pop = nothing
+            {
+                new ConstantInstruction(InstructionConstants.OP_NEW, CLASS_STRINGBUFFER),
+                new SimpleInstruction(InstructionConstants.OP_DUP),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+                new VariableInstruction(InstructionConstants.OP_DLOAD, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_D),
+                new SimpleInstruction(InstructionConstants.OP_POP),
+            },{
+                // Nothing.
+            },
+        },
+        {   // new StringBuffer("...").append(s)/pop = nothing
+            {
+                new ConstantInstruction(InstructionConstants.OP_NEW, CLASS_STRINGBUFFER),
+                new SimpleInstruction(InstructionConstants.OP_DUP),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+                new VariableInstruction(InstructionConstants.OP_ALOAD, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_STRING),
+                new SimpleInstruction(InstructionConstants.OP_POP),
+            },{
+                // Nothing.
+            },
+        },
+        {   // StringBuffer#toString()/pop = pop
+            {
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_TOSTRING),
+                new SimpleInstruction(InstructionConstants.OP_POP),
+            },{
+                new SimpleInstruction(InstructionConstants.OP_POP),
+            },
+        },
         {   // StringBuffer#append("") = nothing
             {
                 new ConstantInstruction(InstructionConstants.OP_LDC, STRING_EMPTY),
@@ -4252,6 +4391,145 @@ public class InstructionSequenceConstants
                 new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_LENGTH),
             },{
                 new SimpleInstruction(InstructionConstants.OP_SIPUSH, STRING_A_LENGTH),
+            },
+        },
+        {   // new StringBuilder() (without dup) = nothing
+            {
+                new ConstantInstruction(InstructionConstants.OP_NEW, CLASS_STRINGBUILDER),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT),
+            },{
+                // Nothing.
+            },
+        },
+        {   // new StringBuilder("...") (without dup) = nothing
+            {
+                new ConstantInstruction(InstructionConstants.OP_NEW, CLASS_STRINGBUILDER),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+            },{
+                // Nothing.
+            },
+        },
+        {   // new StringBuilder()/pop = nothing
+            {
+                new ConstantInstruction(InstructionConstants.OP_NEW, CLASS_STRINGBUILDER),
+                new SimpleInstruction(InstructionConstants.OP_DUP),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT),
+                new SimpleInstruction(InstructionConstants.OP_POP),
+            },{
+                // Nothing.
+            },
+        },
+        {   // new StringBuilder("...")/pop = nothing
+            {
+                new ConstantInstruction(InstructionConstants.OP_NEW, CLASS_STRINGBUILDER),
+                new SimpleInstruction(InstructionConstants.OP_DUP),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+                new SimpleInstruction(InstructionConstants.OP_POP),
+            },{
+                // Nothing.
+            },
+        },
+        {   // new StringBuilder("...").append(z)/pop = nothing
+            {
+                new ConstantInstruction(InstructionConstants.OP_NEW, CLASS_STRINGBUILDER),
+                new SimpleInstruction(InstructionConstants.OP_DUP),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+                new VariableInstruction(InstructionConstants.OP_ILOAD, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_Z),
+                new SimpleInstruction(InstructionConstants.OP_POP),
+            },{
+                // Nothing.
+            },
+        },
+        {   // new StringBuilder("...").append(c)/pop = nothing
+            {
+                new ConstantInstruction(InstructionConstants.OP_NEW, CLASS_STRINGBUILDER),
+                new SimpleInstruction(InstructionConstants.OP_DUP),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+                new VariableInstruction(InstructionConstants.OP_ILOAD, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_C),
+                new SimpleInstruction(InstructionConstants.OP_POP),
+            },{
+                // Nothing.
+            },
+        },
+        {   // new StringBuilder("...").append(i)/pop = nothing
+            {
+                new ConstantInstruction(InstructionConstants.OP_NEW, CLASS_STRINGBUILDER),
+                new SimpleInstruction(InstructionConstants.OP_DUP),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+                new VariableInstruction(InstructionConstants.OP_ILOAD, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_I),
+                new SimpleInstruction(InstructionConstants.OP_POP),
+            },{
+                // Nothing.
+            },
+        },
+        {   // new StringBuilder("...").append(l)/pop = nothing
+            {
+                new ConstantInstruction(InstructionConstants.OP_NEW, CLASS_STRINGBUILDER),
+                new SimpleInstruction(InstructionConstants.OP_DUP),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+                new VariableInstruction(InstructionConstants.OP_LLOAD, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_J),
+                new SimpleInstruction(InstructionConstants.OP_POP),
+            },{
+                // Nothing.
+            },
+        },
+        {   // new StringBuilder("...").append(f)/pop = nothing
+            {
+                new ConstantInstruction(InstructionConstants.OP_NEW, CLASS_STRINGBUILDER),
+                new SimpleInstruction(InstructionConstants.OP_DUP),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+                new VariableInstruction(InstructionConstants.OP_FLOAD, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_F),
+                new SimpleInstruction(InstructionConstants.OP_POP),
+            },{
+                // Nothing.
+            },
+        },
+        {   // new StringBuilder("...").append(d)/pop = nothing
+            {
+                new ConstantInstruction(InstructionConstants.OP_NEW, CLASS_STRINGBUILDER),
+                new SimpleInstruction(InstructionConstants.OP_DUP),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+                new VariableInstruction(InstructionConstants.OP_DLOAD, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_D),
+                new SimpleInstruction(InstructionConstants.OP_POP),
+            },{
+                // Nothing.
+            },
+        },
+        {   // new StringBuilder("...").append(s)/pop = nothing
+            {
+                new ConstantInstruction(InstructionConstants.OP_NEW, CLASS_STRINGBUILDER),
+                new SimpleInstruction(InstructionConstants.OP_DUP),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+                new VariableInstruction(InstructionConstants.OP_ALOAD, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_STRING),
+                new SimpleInstruction(InstructionConstants.OP_POP),
+            },{
+                // Nothing.
+            },
+        },
+        {   // StringBuilder#toString()/pop = pop
+            {
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_TOSTRING),
+                new SimpleInstruction(InstructionConstants.OP_POP),
+            },{
+                new SimpleInstruction(InstructionConstants.OP_POP),
             },
         },
         {   // StringBuilder#append("") = nothing

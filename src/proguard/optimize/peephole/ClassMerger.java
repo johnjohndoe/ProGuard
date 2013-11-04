@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2013 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -22,7 +22,6 @@ package proguard.optimize.peephole;
 
 import proguard.classfile.*;
 import proguard.classfile.attribute.visitor.AttributeNameFilter;
-import proguard.classfile.constant.ClassConstant;
 import proguard.classfile.constant.visitor.*;
 import proguard.classfile.editor.*;
 import proguard.classfile.util.*;
@@ -52,7 +51,7 @@ implements   ClassVisitor,
     //*
     private static final boolean DEBUG = false;
     /*/
-    private static       boolean DEBUG = true;
+    private static       boolean DEBUG = System.getProperty("cm") != null;
     //*/
 
 
@@ -200,12 +199,19 @@ implements   ClassVisitor,
             !(DotClassMarker.isDotClassed(programClass) &&
               DotClassMarker.isDotClassed(targetClass)) &&
 
+            // The classes must not have clashing fields.
+            !haveAnyIdenticalFields(programClass, targetClass) &&
+
             // The two classes must not introduce any unwanted fields.
             !introducesUnwantedFields(programClass, targetClass) &&
             !introducesUnwantedFields(targetClass, programClass) &&
 
-            // The classes must not have clashing constructors.
-            !haveAnyIdenticalInitializers(programClass, targetClass) &&
+            // The two classes must not shadow each others fields.
+            !shadowsAnyFields(programClass, targetClass) &&
+            !shadowsAnyFields(targetClass, programClass) &&
+
+            // The classes must not have clashing methods.
+            !haveAnyIdenticalMethods(programClass, targetClass) &&
 
             // The classes must not introduce abstract methods, unless
             // explicitly allowed.
@@ -230,6 +236,10 @@ implements   ClassVisitor,
                 System.out.println("  Target subclasses ["+targetClass.subClasses+"]");
                 System.out.println("  Source superclass ["+programClass.getSuperClass().getName()+"]");
                 System.out.println("  Target superclass ["+targetClass.getSuperClass().getName()+"]");
+
+                //System.out.println("=== Before ===");
+                //programClass.accept(new ClassPrinter());
+                //targetClass.accept(new ClassPrinter());
             }
 
             // Combine the access flags.
@@ -288,6 +298,12 @@ implements   ClassVisitor,
 
             // Remember to replace the inlined class by the target class.
             setTargetClass(programClass, targetClass);
+
+            //if (DEBUG)
+            //{
+            //    System.out.println("=== After ====");
+            //    targetClass.accept(new ClassPrinter());
+            //}
 
             // Visit the merged class, if required.
             if (extraClassVisitor != null)
@@ -387,9 +403,26 @@ implements   ClassVisitor,
 
         clazz.hierarchyAccept(true, true, false, false,
                               new CaughtClassFilter(
-                                  new ClassCollector(set)));
+                              new ClassCollector(set)));
 
         return set;
+    }
+
+
+    /**
+     * Returns whether the two given classes have class members with the same
+     * name and descriptor.
+     */
+    private boolean haveAnyIdenticalFields(Clazz clazz, Clazz targetClass)
+    {
+        MemberCounter counter = new MemberCounter();
+
+        // Visit all fields, counting the with the same name and descriptor in
+        // the target class.
+        clazz.fieldsAccept(new SimilarMemberVisitor(targetClass, true, false, false, false,
+                           counter));
+
+        return counter.getCount() > 0;
     }
 
 
@@ -400,32 +433,59 @@ implements   ClassVisitor,
     private boolean introducesUnwantedFields(ProgramClass programClass,
                                              ProgramClass targetClass)
     {
-        // The class must not have any fields, or it must not be instantiated,
-        // without any other subclasses.
-        return
-            programClass.u2fieldsCount != 0 &&
-            (InstantiationClassMarker.isInstantiated(targetClass) ||
-             (targetClass.subClasses != null &&
-              !isOnlySubClass(programClass, targetClass)));
+        // It's ok if the target class is never instantiated, without any other
+        // subclasses except for maybe the source class.
+        if (!InstantiationClassMarker.isInstantiated(targetClass) &&
+            (targetClass.subClasses == null ||
+             isOnlySubClass(programClass, targetClass)))
+        {
+            return false;
+        }
+
+        MemberCounter counter = new MemberCounter();
+
+        // Count all non-static fields in the the source class.
+        programClass.fieldsAccept(new MemberAccessFilter(0, ClassConstants.INTERNAL_ACC_STATIC,
+                                  counter));
+
+        return counter.getCount() > 0;
     }
 
 
     /**
-     * Returns whether the two given classes have initializers with the same
-     * descriptors.
+     * Returns whether the given class or its subclasses shadow any fields in
+     * the given target class.
      */
-    private boolean haveAnyIdenticalInitializers(Clazz clazz, Clazz targetClass)
+    private boolean shadowsAnyFields(Clazz clazz, Clazz targetClass)
     {
         MemberCounter counter = new MemberCounter();
 
-        // TODO: Currently checking shared methods, not just initializers.
-        // TODO: Allow identical methods.
-        // Visit all methods, counting the ones that are also present in the
-        // target class.
-        clazz.methodsAccept(//new MemberNameFilter(new FixedStringMatcher(ClassConstants.INTERNAL_METHOD_NAME_INIT),
+        // Visit all fields, counting the ones that are shadowing non-private
+        // fields in the class hierarchy of the target class.
+        clazz.hierarchyAccept(true, false, false, true,
+                              new AllFieldVisitor(
+                              new SimilarMemberVisitor(targetClass, true, true, true, false,
+                              new MemberAccessFilter(0, ClassConstants.INTERNAL_ACC_PRIVATE,
+                              counter))));
+
+        return counter.getCount() > 0;
+    }
+
+
+    /**
+     * Returns whether the two given classes have class members with the same
+     * name and descriptor.
+     */
+    private boolean haveAnyIdenticalMethods(Clazz clazz, Clazz targetClass)
+    {
+        MemberCounter counter = new MemberCounter();
+
+        // Visit all non-abstract methods, counting the ones that are also
+        // present in the target class.
+        clazz.methodsAccept(new MemberAccessFilter(0, ClassConstants.INTERNAL_ACC_ABSTRACT,
                             new SimilarMemberVisitor(targetClass, true, false, false, false,
                             new MemberAccessFilter(0, ClassConstants.INTERNAL_ACC_ABSTRACT,
-                            counter)));
+                            counter))));
 
         return counter.getCount() > 0;
     }

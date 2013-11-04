@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2013 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -30,14 +30,14 @@ import proguard.classfile.attribute.annotation.visitor.ElementValueVisitor;
  */
 public class ConstantElementValue extends ElementValue
 {
-    public final int u1tag;
-    public       int u2constantValueIndex;
+    public final char u1tag;
+    public       int  u2constantValueIndex;
 
 
     /**
      * Creates an uninitialized ConstantElementValue.
      */
-    public ConstantElementValue(int u1tag)
+    public ConstantElementValue(char u1tag)
     {
         this.u1tag = u1tag;
     }
@@ -46,9 +46,9 @@ public class ConstantElementValue extends ElementValue
     /**
      * Creates an initialized ConstantElementValue.
      */
-    public ConstantElementValue(int u1tag,
-                                int u2elementNameIndex,
-                                int u2constantValueIndex)
+    public ConstantElementValue(char u1tag,
+                                int  u2elementNameIndex,
+                                int  u2constantValueIndex)
     {
         super(u2elementNameIndex);
 
@@ -59,7 +59,7 @@ public class ConstantElementValue extends ElementValue
 
     // Implementations for ElementValue.
 
-    public int getTag()
+    public char getTag()
     {
         return u1tag;
     }

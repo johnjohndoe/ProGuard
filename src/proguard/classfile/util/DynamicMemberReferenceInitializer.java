@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2013 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -52,18 +52,17 @@ public class DynamicMemberReferenceInitializer
 extends      SimplifiedVisitor
 implements   InstructionVisitor,
              ConstantVisitor,
-             AttributeVisitor,
              MemberVisitor
 {
     /*
-    private static       boolean DEBUG      = true;
+    private static       boolean DEBUG = true;
     /*/
-    private static final boolean DEBUG      = false;
+    private static final boolean DEBUG = false;
     //*/
 
     public static final int CLASS_INDEX       = InstructionSequenceMatcher.X;
     public static final int MEMBER_NAME_INDEX = InstructionSequenceMatcher.Y;
-    public static final int TYPE_CLASS_INDEX = InstructionSequenceMatcher.Z;
+    public static final int TYPE_CLASS_INDEX  = InstructionSequenceMatcher.Z;
 
     public static final int PARAMETER0_CLASS_INDEX = InstructionSequenceMatcher.A;
     public static final int PARAMETER1_CLASS_INDEX = InstructionSequenceMatcher.B;

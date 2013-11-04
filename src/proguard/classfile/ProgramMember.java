@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2012 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2013 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -53,7 +53,7 @@ public abstract class ProgramMember implements Member
 
 
     /**
-     * Creates an initialized ProgramMember. 
+     * Creates an initialized ProgramMember.
      */
     protected ProgramMember(int         u2accessFlags,
                             int         u2nameIndex,
@@ -66,34 +66,6 @@ public abstract class ProgramMember implements Member
         this.u2descriptorIndex = u2descriptorIndex;
         this.u2attributesCount = u2attributesCount;
         this.attributes        = attributes;
-    }
-
-
-    /**
-     * Returns the line number range of the given class member as "m:n",
-     * if it can find it, or <code>null</code> otherwise.
-     */
-    public String getLineNumberRange(Clazz clazz)
-    {
-        CodeAttribute codeAttribute =
-            (CodeAttribute)getAttribute(clazz, ClassConstants.ATTR_Code);
-        if (codeAttribute  == null)
-        {
-            return null;
-        }
-
-        LineNumberTableAttribute lineNumberTableAttribute =
-            (LineNumberTableAttribute)codeAttribute.getAttribute(clazz,
-                                                                 ClassConstants.ATTR_LineNumberTable);
-        if (lineNumberTableAttribute  == null)
-        {
-            return null;
-        }
-
-        return "" +
-               lineNumberTableAttribute.getLineNumber(0) +
-               ":" +
-               lineNumberTableAttribute.getLineNumber(Integer.MAX_VALUE);
     }
 
 
