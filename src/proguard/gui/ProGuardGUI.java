@@ -1,4 +1,4 @@
-/* $Id: ProGuardGUI.java,v 1.35.2.1 2006/01/16 22:57:55 eric Exp $
+/* $Id: ProGuardGUI.java,v 1.35.2.2 2006/06/07 22:36:52 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -93,6 +93,7 @@ public class ProGuardGUI extends JFrame
     private JCheckBox applyMappingCheckBox                     = new JCheckBox(msg("applyMapping"));
     private JCheckBox obfuscationDictionaryCheckBox            = new JCheckBox(msg("obfuscationDictionary"));
     private JCheckBox overloadAggressivelyCheckBox             = new JCheckBox(msg("overloadAggressively"));
+    private JCheckBox useUniqueClassMemberNamesCheckBox        = new JCheckBox(msg("useUniqueClassMemberNames"));
     private JCheckBox defaultPackageCheckBox                   = new JCheckBox(msg("defaultPackage"));
     private JCheckBox useMixedCaseClassNamesCheckBox           = new JCheckBox(msg("useMixedCaseClassNames"));
     private JCheckBox keepAttributesCheckBox                   = new JCheckBox(msg("keepAttributes"));
@@ -338,24 +339,25 @@ public class ProGuardGUI extends JFrame
         JPanel obfuscationOptionsPanel = new JPanel(layout);
         addBorder(obfuscationOptionsPanel, "options");
 
-        obfuscationOptionsPanel.add(obfuscateCheckBox,                constraintsLastStretch);
-        obfuscationOptionsPanel.add(printMappingCheckBox,             constraints);
-        obfuscationOptionsPanel.add(printMappingTextField,            constraintsStretch);
-        obfuscationOptionsPanel.add(printMappingBrowseButton,         constraintsLast);
-        obfuscationOptionsPanel.add(applyMappingCheckBox,             constraints);
-        obfuscationOptionsPanel.add(applyMappingTextField,            constraintsStretch);
-        obfuscationOptionsPanel.add(applyMappingBrowseButton,         constraintsLast);
-        obfuscationOptionsPanel.add(obfuscationDictionaryCheckBox,    constraints);
-        obfuscationOptionsPanel.add(obfuscationDictionaryTextField,   constraintsStretch);
-        obfuscationOptionsPanel.add(obfucationDictionaryBrowseButton, constraintsLast);
-        obfuscationOptionsPanel.add(overloadAggressivelyCheckBox,     constraintsLastStretch);
-        obfuscationOptionsPanel.add(defaultPackageCheckBox,           constraints);
-        obfuscationOptionsPanel.add(defaultPackageTextField,          constraintsLastStretch);
-        obfuscationOptionsPanel.add(useMixedCaseClassNamesCheckBox,   constraintsLastStretch);
-        obfuscationOptionsPanel.add(keepAttributesCheckBox,           constraints);
-        obfuscationOptionsPanel.add(keepAttributesTextField,          constraintsLastStretch);
-        obfuscationOptionsPanel.add(newSourceFileAttributeCheckBox,   constraints);
-        obfuscationOptionsPanel.add(newSourceFileAttributeTextField,  constraintsLastStretch);
+        obfuscationOptionsPanel.add(obfuscateCheckBox,                 constraintsLastStretch);
+        obfuscationOptionsPanel.add(printMappingCheckBox,              constraints);
+        obfuscationOptionsPanel.add(printMappingTextField,             constraintsStretch);
+        obfuscationOptionsPanel.add(printMappingBrowseButton,          constraintsLast);
+        obfuscationOptionsPanel.add(applyMappingCheckBox,              constraints);
+        obfuscationOptionsPanel.add(applyMappingTextField,             constraintsStretch);
+        obfuscationOptionsPanel.add(applyMappingBrowseButton,          constraintsLast);
+        obfuscationOptionsPanel.add(obfuscationDictionaryCheckBox,     constraints);
+        obfuscationOptionsPanel.add(obfuscationDictionaryTextField,    constraintsStretch);
+        obfuscationOptionsPanel.add(obfucationDictionaryBrowseButton,  constraintsLast);
+        obfuscationOptionsPanel.add(overloadAggressivelyCheckBox,      constraintsLastStretch);
+        obfuscationOptionsPanel.add(useUniqueClassMemberNamesCheckBox, constraintsLastStretch);
+        obfuscationOptionsPanel.add(defaultPackageCheckBox,            constraints);
+        obfuscationOptionsPanel.add(defaultPackageTextField,           constraintsLastStretch);
+        obfuscationOptionsPanel.add(useMixedCaseClassNamesCheckBox,    constraintsLastStretch);
+        obfuscationOptionsPanel.add(keepAttributesCheckBox,            constraints);
+        obfuscationOptionsPanel.add(keepAttributesTextField,           constraintsLastStretch);
+        obfuscationOptionsPanel.add(newSourceFileAttributeCheckBox,    constraints);
+        obfuscationOptionsPanel.add(newSourceFileAttributeTextField,   constraintsLastStretch);
 
         JPanel obfuscationPanel = new JPanel(layout);
 
@@ -844,6 +846,7 @@ public class ProGuardGUI extends JFrame
         applyMappingCheckBox                    .setSelected(configuration.applyMapping != null);
         obfuscationDictionaryCheckBox           .setSelected(configuration.obfuscationDictionary != null);
         overloadAggressivelyCheckBox            .setSelected(configuration.overloadAggressively);
+        useUniqueClassMemberNamesCheckBox       .setSelected(configuration.useUniqueClassMemberNames);
         defaultPackageCheckBox                  .setSelected(configuration.defaultPackage != null);
         useMixedCaseClassNamesCheckBox          .setSelected(configuration.useMixedCaseClassNames);
         keepAttributesCheckBox                  .setSelected(configuration.keepAttributes != null);
@@ -977,6 +980,7 @@ public class ProGuardGUI extends JFrame
         configuration.applyMapping                     = applyMappingCheckBox                    .isSelected() ? new File(applyMappingTextField                     .getText()) : null;
         configuration.obfuscationDictionary            = obfuscationDictionaryCheckBox           .isSelected() ? new File(obfuscationDictionaryTextField            .getText()) : null;
         configuration.overloadAggressively             = overloadAggressivelyCheckBox            .isSelected();
+        configuration.useUniqueClassMemberNames        = useUniqueClassMemberNamesCheckBox       .isSelected();
         configuration.defaultPackage                   = defaultPackageCheckBox                  .isSelected() ?          defaultPackageTextField                   .getText()  : null;
         configuration.useMixedCaseClassNames           = useMixedCaseClassNamesCheckBox          .isSelected();
         configuration.keepAttributes                   = keepAttributesCheckBox                  .isSelected() ? ListUtil.commaSeparatedList(keepAttributesTextField.getText()) : null;

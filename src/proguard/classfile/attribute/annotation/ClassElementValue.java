@@ -1,4 +1,4 @@
-/* $Id: ClassElementValue.java,v 1.3.2.1 2006/01/16 22:57:55 eric Exp $
+/* $Id: ClassElementValue.java,v 1.3.2.2 2006/10/14 12:33:22 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -22,6 +22,7 @@
 package proguard.classfile.attribute.annotation;
 
 import proguard.classfile.*;
+import proguard.classfile.visitor.ClassFileVisitor;
 
 import java.io.*;
 
@@ -48,6 +49,25 @@ public class ClassElementValue extends ElementValue
 
     protected ClassElementValue()
     {
+    }
+
+
+    /**
+     * Applies the given visitor to all referenced classes.
+     */
+    public void referencedClassesAccept(ClassFileVisitor classFileVisitor)
+    {
+        if (referencedClassFiles != null)
+        {
+            for (int index = 0; index < referencedClassFiles.length; index++)
+            {
+                ClassFile referencedClassFile = referencedClassFiles[index];
+                if (referencedClassFile != null)
+                {
+                    referencedClassFile.accept(classFileVisitor);
+                }
+            }
+        }
     }
 
 

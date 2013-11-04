@@ -1,4 +1,4 @@
-/* $Id: UnusedParameterCleaner.java,v 1.5.2.1 2006/01/16 22:57:56 eric Exp $
+/* $Id: UnusedParameterCleaner.java,v 1.5.2.2 2006/08/10 20:53:12 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -141,7 +141,7 @@ implements   InstructionVisitor,
         // Loop over all parameters.
         for (int index = 0; index < parameterSize; index++)
         {
-            if ((usedParameters & (1 << index)) == 0)
+            if ((usedParameters & (1L << index)) == 0)
             {
                 int stackIndex = parameterSize - index - 1;
 

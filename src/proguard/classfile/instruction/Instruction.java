@@ -1,4 +1,4 @@
-/* $Id: Instruction.java,v 1.24.2.1 2006/01/16 22:57:55 eric Exp $
+/* $Id: Instruction.java,v 1.24.2.2 2006/11/20 22:11:40 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -662,13 +662,18 @@ public abstract class Instruction
     /**
      * Shrinks this instruction to its shortest possible form.
      * @return this instruction.
+     * @throws IllegalArgumentException if the instruction can't be expanded
+     *                                  to the necessary size, e.g. if it
+     *                                  contains an offset that is too large.
      */
     public abstract Instruction shrink();
 
 
-
     /**
-     * Writes the Instruction back to the data in the byte array.
+     * Writes the Instruction at the given offset in the given code attribute.
+     * @throws IllegalArgumentException if the instruction can't be written out
+     *                                  in its current state, e.g. if it
+     *                                  contains an offset that is too large.
      */
     public final void write(CodeAttrInfo codeAttrInfo, int offset)
     {

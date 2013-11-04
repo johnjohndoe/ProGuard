@@ -102,13 +102,14 @@ its license can remain the same.
 
 <a name="jdk1.4">&nbsp;</a>
 <h3>Does <b>ProGuard</b> work with JDK1.4? JDK5.0? JDK6.0?</h3>
-<b>ProGuard</b> currently supports all JDKs up to 5.0. Class files compiled
-with JDK1.4 are targeted at JRE1.2 by default. Class files compiled with
-JDK5.0 may have additional attributes for supporting generics and annotations.
-The compiled class files have slightly different structures from older class
+Yes, <b>ProGuard</b> supports all JDKs up to and including 6.0. Class files
+compiled with JDK1.4 are targeted at JRE1.2 by default. Class files compiled
+with JDK5.0 may have additional attributes for generics and annotations. The
+compiled class files have slightly different structures from older class
 files. <b>ProGuard</b> handles all versions correctly.
 <p>
-The upcoming <b>ProGuard 4.0</b> will support JDK6.0.
+The upcoming <b>ProGuard 4.0</b> supports preverification, which improves the
+start-up performance in JDK6.0.
 
 <a name="j2me">&nbsp;</a>
 <h3>Does <b>ProGuard</b> work with J2ME?</h3>

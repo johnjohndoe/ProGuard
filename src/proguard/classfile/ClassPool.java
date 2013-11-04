@@ -1,4 +1,4 @@
-/* $Id: ClassPool.java,v 1.18.2.5 2006/05/06 13:09:50 eric Exp $
+/* $Id: ClassPool.java,v 1.18.2.6 2006/11/26 15:29:20 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -47,22 +47,11 @@ public class ClassPool
 
 
     /**
-     * Adds the given ClassFile to the class pool. If a class file of the same
-     * name is already present, it is left unchanged and the old class file is
-     * returned.
+     * Adds the given ClassFile to the class pool.
      */
-    public ClassFile addClass(ClassFile classFile)
+    public void addClass(ClassFile classFile)
     {
-        String name = classFile.getName();
-
-        ClassFile previousClassFile = (ClassFile)classFiles.put(name, classFile);
-        if (previousClassFile != null)
-        {
-            // We'll put the original one back.
-            classFiles.put(name, previousClassFile);
-        }
-
-        return previousClassFile;
+        classFiles.put(classFile.getName(), classFile);
     }
 
 

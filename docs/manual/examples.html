@@ -74,15 +74,18 @@ The access modifiers <code>public</code> and <code>static</code> are not
 really required in this case, since we know a priori that the specified class
 and method have the proper access flags. It just looks more familiar this way.
 <p>
-We're using the <code>-overloadaggressively</code>,
-<code>-defaultpackage</code>, and <code>-allowaccessmodification</code>
+We're using the <a
+href="usage.html#overloadaggressively"><code>-overloadaggressively</code></a>,
+<a href="usage.html#defaultpackage"><code>-defaultpackage</code></a>, and <a
+href="usage.html#allowaccessmodification"><code>-allowaccessmodification</code></a>
 options to shave off some extra bytes, but we could leave them out as well.
-The <code>-defaultpackage</code> directive moves all classes to the given
-package, in this case the root package. Only <code>proguard.ProGuard</code>
-keeps its original name.
+The <a href="usage.html#defaultpackage"><code>-defaultpackage</code></a>
+directive moves all classes to the given package, in this case the root
+package. Only <code>proguard.ProGuard</code> keeps its original name.
 <p>
-We're writing out an obfuscation mapping file with <code>-printmapping</code>,
-for de-obfuscating any stack traces later on, or for incremental obfuscation of
+We're writing out an obfuscation mapping file with <a
+href="usage.html#printmapping"><code>-printmapping</code></a>, for
+de-obfuscating any stack traces later on, or for incremental obfuscation of
 extensions.
 <p>
 In general, you might need a few additional directives for processing <a
@@ -144,7 +147,8 @@ classes</a>.
 <p>
 You must preverify your midlets <i>after</i> having processed them, using
 J2ME's <code>preverify</code> tool. Because this tool unpacks your processed
-jars, you should use ProGuard's <code>-dontusemixedcaseclassnames</code>
+jars, you should use ProGuard's <a
+href="usage.html#dontusemixedcaseclassnames"><code>-dontusemixedcaseclassnames</code></a>
 option on platforms with case-insensitive filing systems, such as Windows.
 <p>
 Please note the in-depth article <a
@@ -167,11 +171,14 @@ These options shrink, optimize, and obfuscate all public applications in
 }
 </pre>
 <p>
-Note the use of <code>-keepclasseswithmembers</code>. We don't want to preserve
-all classes, just all classes that have main methods, and those methods.
+Note the use of <a
+href="usage.html#keepclasseswithmembers"><code>-keepclasseswithmembers</code></a>.
+We don't want to preserve all classes, just all classes that have main
+methods, and those methods.
 <p>
-The <code>-printseeds</code> option prints out which classes exactly will
-be preserved, so we know for sure we're getting what we want.
+The <a href="usage.html#printseeds"><code>-printseeds</code></a> option prints
+out which classes exactly will be preserved, so we know for sure we're getting
+what we want.
 <p>
 If applicable, you should add directives for processing <a
 href="#native">native methods</a>, <a href="#enumerations">enumerations</a>,
@@ -193,8 +200,8 @@ These options shrink, optimize, and obfuscate all public applets in
 <p>
 We're simply keeping all classes that extend the <code>Applet</code> class.
 <p>
-Again, the <code>-printseeds</code> option prints out which applets exactly
-will be preserved.
+Again, the <a href="usage.html#printseeds"><code>-printseeds</code></a> option
+prints out which applets exactly will be preserved.
 <p>
 If applicable, you should add directives for processing <a
 href="#native">native methods</a>, <a href="#enumerations">enumerations</a>,
@@ -220,8 +227,8 @@ These options shrink, optimize, and obfuscate all public J2ME midlets in
 <p>
 We're simply keeping all classes that extend the <code>MIDlet</code> class.
 <p>
-And again, the <code>-printseeds</code> option prints out which midlets exactly
-will be preserved.
+And again, the <a href="usage.html#printseeds"><code>-printseeds</code></a>
+option prints out which midlets exactly will be preserved.
 <p>
 If applicable, you should add directives for processing <a
 href="#native">native methods</a>, <a href="#enumerations">enumerations</a>,
@@ -230,7 +237,8 @@ classes</a>.
 <p>
 You must preverify your midlets <i>after</i> having processed them, using
 J2ME's <code>preverify</code> tool. Because this tool unpacks your processed
-jars, you should use ProGuard's <code>-dontusemixedcaseclassnames</code>
+jars, you should use ProGuard's <a
+href="usage.html#dontusemixedcaseclassnames"><code>-dontusemixedcaseclassnames</code></a>
 option on platforms with case-insensitive filing systems, such as Windows.
 
 <a name="servlets">&nbsp;</a>
@@ -256,8 +264,8 @@ interface. We're using the <code>implements</code> keyword because it looks
 more familiar in this context, but it is equivalent to <code>extends</code>,
 as far as ProGuard is concerned.
 <p>
-And again, the <code>-printseeds</code> option prints out which servlets
-exactly will be preserved.
+And again, the <a href="usage.html#printseeds"><code>-printseeds</code></a>
+option prints out which servlets exactly will be preserved.
 <p>
 If applicable, you should add directives for processing <a
 href="#native">native methods</a>, <a href="#enumerations">enumerations</a>,
@@ -308,22 +316,24 @@ serialization code:
 <p>
 This configuration should preserve everything we'll ever want to access in the
 library. Only if there are any other non-public classes or methods that are
-invoked dynamically, they should be specified using additional
-<code>-keep</code> directives.
+invoked dynamically, they should be specified using additional <a
+href="usage.html#keep"><code>-keep</code></a> directives.
 <p>
-The <code>-keepclassmembernames</code> directive for the <code>class$</code>
-methods is not strictly necessary. These methods are inserted by the
-<code>javac</code> compiler and the <code>jikes</code> compiler respectively,
-to implement the <code>.class</code> construct. ProGuard will automatically
-detect them and deal with them, even when their names have been obfuscated.
-However, older versions of ProGuard and other obfuscators may rely on the
-original method names. It may therefore be helpful to preserve them, in case
-these other obfuscators are ever used for further obfuscation of the library.
+The <a
+href="usage.html#keepclassmembernames"><code>-keepclassmembernames</code></a>
+directive for the <code>class$</code> methods is not strictly necessary. These
+methods are inserted by the <code>javac</code> compiler and the
+<code>jikes</code> compiler respectively, to implement the <code>.class</code>
+construct. ProGuard will automatically detect them and deal with them, even
+when their names have been obfuscated. However, older versions of ProGuard and
+other obfuscators may rely on the original method names. It may therefore be
+helpful to preserve them, in case these other obfuscators are ever used for
+further obfuscation of the library.
 <p>
-We've added some directives for keeping the "Deprecated" attribute, for <a
-href="#stacktrace">useful stack traces</a>, for <a href="#native">native
-methods</a>, for <a href="#enumerations">enumerations</a>, for <a
-href="#serializable">serializable classes</a>, and for <a
+We've added some directives for keeping the "Deprecated" attribute, for
+producing <a href="#stacktrace">useful stack traces</a>, and for processing <a
+href="#native">native methods</a>, <a href="#enumerations">enumerations</a>,
+<a href="#serializable">serializable classes</a>, and <a
 href="#annotations">annotations</a>, which are all discussed in their
 respective examples.
 <p>
@@ -347,9 +357,10 @@ ensure that:
 }
 </pre>
 <p>
-Note the use of <code>-keepclasseswithmembernames</code>. We don't want to
-preserve all classes or all native methods; we just want to keep the relevant
-names from being obfuscated.
+Note the use of <a
+href="usage.html#keepclasseswithmembernames"><code>-keepclasseswithmembernames</code></a>.
+We don't want to preserve all classes or all native methods; we just want to
+keep the relevant names from being obfuscated.
 <p>
 ProGuard doesn't have your native code, so it can't automatically preserve the
 classes or class members that are invoked by the native code. These are entry
@@ -393,11 +404,12 @@ may require special attention:
 </pre>
 <p>
 
-    The <code>-keepclassmembers</code> option makes sure that any
-    serialization methods are kept. By using this directive instead of the
-    basic <code>-keep</code> directive, we're not forcing preservation of
-    <i>all</i> serializable classes, just preservation of the listed members
-    of classes that are actually used.
+    The <a
+    href="usage.html#keepclassmembers"><code>-keepclassmembers</code></a>
+    option makes sure that any serialization methods are kept. By using this
+    directive instead of the basic <code>-keep</code> directive, we're not
+    forcing preservation of <i>all</i> serializable classes, just preservation
+    of the listed members of classes that are actually used.
     <p>
 
 <li>Sometimes, the serialized data are stored, and read back later into newer
@@ -665,11 +677,12 @@ This configuration puts the processed contents of all jars inside
 <p>
 If you want to combine input jars (and/or wars, ears, zips, or directories)
 into output jars (and/or wars, ears, zips, or directories), you can group the
-<code>-injars</code> and <code>-outjars</code> options. For example:
+<a href="usage.html#injars"><code>-injars</code></a> and <a
+href="usage.html#outjars"><code>-outjars</code></a> options. For example:
 <pre>
--injars  base_in1.jar
--injars  base_in2.jar
--injars  base_in3.jar
+-injars base_in1.jar
+-injars base_in2.jar
+-injars base_in3.jar
 -outjars base_out.jar
 
 -injars  extra_in.jar
@@ -773,8 +786,9 @@ depend on it, e.g. the ProGuard GUI:
 <pre>
 -injars       proguardgui.jar
 -outjars      proguardgui_out.jar
+-injars       proguard.jar
+-outjars      proguard_out.jar
 -libraryjars  &lt;java.home&gt;/lib/rt.jar
--libraryjars  proguard.jar
 -applymapping proguard.map
 
 -keep public class proguard.gui.ProGuardGUI {
@@ -782,15 +796,38 @@ depend on it, e.g. the ProGuard GUI:
 }
 </pre>
 <p>
-We're reading both unprocessed jars: the new one as the input jar, and the old
-one as a library jar. The <code>-applymapping</code> option then makes sure
-the ProGuard part of the code gets the previously produced obfuscation
-mapping. The final application will consist of the obfuscated ProGuard jar and
-the additional obfuscated GUI jar.
+We're reading both unprocessed jars as input. Their processed contents will go
+to the respective output jars. The <a
+href="usage.html#applymapping"><code>-applymapping</code></a> option then
+makes sure the ProGuard part of the code gets the previously produced
+obfuscation mapping. The final application will consist of the obfuscated
+ProGuard jar and the additional obfuscated GUI jar.
+<p>
+The added code in this example is straightforward; it doesn't affect the
+original code. The <code>proguard_out.jar</code> will be identical to the one
+produced in the initial processing step. If you foresee adding more complex
+extensions to your code, you should specify the options <a
+href="usage.html#useuniqueclassmembernames"><code>-useuniqueclassmembernames</code></a>,
+<a href="usage.html#dontshrink"><code>-dontshrink</code></a>, and <a
+href="usage.html#dontoptimize"><code>-dontoptimize</code></a> <i>in the
+original processing step</i>. These options ensure that the obfuscated base
+jar will always remain usable without changes. You can then specify the base
+jar as a library jar:
+<pre>
+-injars       proguardgui.jar
+-outjars      proguardgui_out.jar
+-libraryjars  proguard.jar
+-libraryjars  &lt;java.home&gt;/lib/rt.jar
+-applymapping proguard.map
+
+-keep public class proguard.gui.ProGuardGUI {
+    public static void main(java.lang.String[]);
+}
+</pre>
 
 <a name="deadcode">&nbsp;</a>
 <h3>Finding dead code</h3>
-These options list unused fields and methods in the application
+These options list unused classes, fields, and methods in the application
 <code>mypackage.MyApplication</code>:
 <pre>
 -injars      in.jar
@@ -804,10 +841,21 @@ These options list unused fields and methods in the application
 }
 </pre>
 <p>
-We're not specifying an output jar, just printing out some results.
-<p>
-We're saving a little bit of time by skipping the optimization and obfuscation
+We're not specifying an output jar, just printing out some results. We're
+saving some processing time by skipping the optimization and obfuscation
 steps.
+<p>
+The java compiler inlines primitive constants (primitive <code>static
+final</code> fields). ProGuard would therefore list such fields as not being
+used in the class files that it analyzes, even if they <i>are</i> used in the
+source files. We can add a <a
+href="usage.html#keepclassmembers"><code>-keepclassmembers</code></a> option
+that keeps those fields a priori, in order to avoid listing them:
+<pre>
+-keepclassmembers class * {
+    static final % *;
+}
+</pre>
 
 <a name="structure">&nbsp;</a>
 <h3>Printing out the internal structure of class files</h3>

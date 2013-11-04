@@ -1,4 +1,4 @@
-/* $Id: ProGuardTask.java,v 1.32.2.1 2006/01/16 22:57:55 eric Exp $
+/* $Id: ProGuardTask.java,v 1.32.2.2 2006/06/07 22:36:52 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -139,6 +139,12 @@ public class ProGuardTask extends ConfigurationTask
     public void setOverloadaggressively(boolean overloadAggressively)
     {
         configuration.overloadAggressively = overloadAggressively;
+    }
+
+
+    public void setUseuniqueclassmembernames(boolean useUniqueClassMemberNames)
+    {
+        configuration.useUniqueClassMemberNames = useUniqueClassMemberNames;
     }
 
 

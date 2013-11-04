@@ -1,4 +1,4 @@
-/* $Id: ClassFilePrinter.java,v 1.31.2.1 2006/01/16 22:57:55 eric Exp $
+/* $Id: ClassFilePrinter.java,v 1.31.2.2 2006/11/20 22:10:50 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -77,10 +77,9 @@ public class ClassFilePrinter
     {
         println("_____________________________________________________________________");
         println(visitorInfo(programClassFile) + " CLASS: " + programClassFile.getName());
-        println("Access:        " + ClassUtil.externalClassAccessFlags(programClassFile.u2accessFlags) + "(" + Integer.toHexString(programClassFile.u2accessFlags) + ")");
         println("Minor version: " + Integer.toHexString(programClassFile.u2minorVersion));
         println("Major version: " + Integer.toHexString(programClassFile.u2majorVersion));
-        println("Access:        " + Integer.toHexString(programClassFile.u2accessFlags));
+        println("Access:        " + ClassUtil.externalClassAccessFlags(programClassFile.u2accessFlags) + "(" + Integer.toHexString(programClassFile.u2accessFlags) + ")");
         println("Superclass:    " + programClassFile.getSuperName());
         println();
 

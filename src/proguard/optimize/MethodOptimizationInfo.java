@@ -1,4 +1,4 @@
-/* $Id: MethodOptimizationInfo.java,v 1.4.2.1 2006/01/16 22:57:56 eric Exp $
+/* $Id: MethodOptimizationInfo.java,v 1.4.2.2 2006/06/07 22:36:52 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -99,13 +99,13 @@ public class MethodOptimizationInfo
 
     public static void setMethodOptimizationInfo(MethodInfo methodInfo)
     {
-        MethodInfoLinker.lastMethodInfo(methodInfo).setVisitorInfo(new MethodOptimizationInfo());
+        MethodInfoLinker.lastMemberInfo(methodInfo).setVisitorInfo(new MethodOptimizationInfo());
     }
 
 
     public static MethodOptimizationInfo getMethodOptimizationInfo(MethodInfo methodInfo)
     {
-        Object visitorInfo = MethodInfoLinker.lastMethodInfo(methodInfo).getVisitorInfo();
+        Object visitorInfo = MethodInfoLinker.lastMemberInfo(methodInfo).getVisitorInfo();
 
         return visitorInfo instanceof MethodOptimizationInfo ?
             (MethodOptimizationInfo)visitorInfo :

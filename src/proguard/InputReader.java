@@ -1,4 +1,4 @@
-/* $Id: InputReader.java,v 1.1.2.1 2006/03/26 14:30:14 eric Exp $
+/* $Id: InputReader.java,v 1.1.2.3 2006/11/26 15:29:20 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java bytecode.
  *
@@ -21,7 +21,8 @@
 package proguard;
 
 import proguard.classfile.ClassPool;
-import proguard.classfile.visitor.ClassPoolFiller;
+import proguard.classfile.util.WarningPrinter;
+import proguard.classfile.visitor.*;
 import proguard.io.*;
 
 import java.io.IOException;
@@ -59,10 +60,31 @@ public class InputReader
             throw new IOException("The input is empty. You have to specify one or more '-injars' options.");
         }
 
+        WarningPrinter warningPrinter = configuration.warn ?
+            new WarningPrinter(System.err) :
+            null;
+
+        WarningPrinter notePrinter = configuration.note ?
+            new WarningPrinter(System.out) :
+            null;
+
+        DuplicateClassFilePrinter duplicateClassFilePrinter = configuration.note ?
+            new DuplicateClassFilePrinter(notePrinter) :
+            null;
+
         // Read the program class files.
+        // Prepare a data entry reader to filter all classes,
+        // which are then decoded to classes by a class reader,
+        // which are then put in the class pool by a class pool filler.
         readInput("Reading program ",
                   configuration.programJars,
-                  createDataEntryClassPoolFiller(programClassPool, false));
+                  new ClassFileFilter(
+                  new ClassFileReader(false,
+                                      configuration.skipNonPublicLibraryClasses,
+                                      configuration.skipNonPublicLibraryClassMembers,
+                                      warningPrinter,
+                  new ClassFilePresenceFilter(programClassPool, duplicateClassFilePrinter,
+                  new ClassPoolFiller(programClassPool)))));
 
         // Check if we have at least some input classes.
         if (programClassPool.size() == 0)
@@ -73,30 +95,51 @@ public class InputReader
         // Read the library class files, if any.
         if (configuration.libraryJars != null)
         {
+            // Prepare a data entry reader to filter all classes,
+            // which are then decoded to classes by a class reader,
+            // which are then put in the class pool by a class pool filler.
             readInput("Reading library ",
                       configuration.libraryJars,
-                      createDataEntryClassPoolFiller(libraryClassPool, true));
+                      new ClassFileFilter(
+                      new ClassFileReader(true,
+                                          configuration.skipNonPublicLibraryClasses,
+                                          configuration.skipNonPublicLibraryClassMembers,
+                                          warningPrinter,
+                      new ClassFilePresenceFilter(programClassPool, duplicateClassFilePrinter,
+                      new ClassFilePresenceFilter(libraryClassPool, duplicateClassFilePrinter,
+                      new ClassPoolFiller(libraryClassPool))))));
         }
-    }
 
+        // Print out a summary of the notes, if necessary.
+        if (configuration.note)
+        {
+            int noteCount = notePrinter.getWarningCount();
+            if (noteCount > 0)
+            {
+                System.err.println("Note: there were " + noteCount +
+                                   " duplicate class definitions.");
+            }
+        }
 
-    /**
-     * Creates a DataEntryReader that will decode classes and put them in
-     * the given class pool.
-     */
-    private DataEntryReader createDataEntryClassPoolFiller(ClassPool classPool,
-                                                           boolean   isLibrary)
-    {
-        // Prepare a data entry reader to filter all classes,
-        // which are then decoded to classes by a class reader,
-        // which are then put in the class pool by a class pool filler.
-        return
-            new ClassFileFilter(
-            new ClassFileReader(isLibrary,
-                                configuration.skipNonPublicLibraryClasses,
-                                configuration.skipNonPublicLibraryClassMembers,
-                                configuration.note,
-            new ClassPoolFiller(classPool, configuration.note)));
+        // Print out a summary of the warnings, if necessary.
+        if (configuration.warn)
+        {
+            int warningCount = warningPrinter.getWarningCount();
+            if (warningCount > 0)
+            {
+                System.err.println("Warning: there were " + warningCount +
+                                   " classes in incorrectly named files.");
+                System.err.println("         You should make sure all file names correspond to their class names.");
+                System.err.println("         The directory hierarchies must correspond to the package hierarchies.");
+
+                if (!configuration.ignoreWarnings)
+                {
+                    System.err.println("         If you don't mind the mentioned classes not being written out,");
+                    System.err.println("         you could try your luck using the '-ignorewarnings' option.");
+                    throw new IOException("Please correct the above warnings first.");
+                }
+            }
+        }
     }
 
 

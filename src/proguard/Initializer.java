@@ -1,4 +1,4 @@
-/* $Id: Initializer.java,v 1.2.2.1 2006/03/26 14:30:14 eric Exp $
+/* $Id: Initializer.java,v 1.2.2.8 2006/12/11 21:57:29 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java bytecode.
  *
@@ -20,7 +20,7 @@
  */
 package proguard;
 
-import proguard.classfile.ClassPool;
+import proguard.classfile.*;
 import proguard.classfile.attribute.AllAttrInfoVisitor;
 import proguard.classfile.instruction.AllInstructionVisitor;
 import proguard.classfile.util.*;
@@ -60,105 +60,139 @@ public class Initializer
         int originalLibraryClassPoolSize = libraryClassPool.size();
 
         // Initialize the class hierarchy for program classes.
-        ClassFileHierarchyInitializer classFileHierarchyInitializer =
+        WarningPrinter hierarchyWarningPrinter = configuration.warn ?
+            new WarningPrinter(System.err) :
+            null;
+
+        programClassPool.classFilesAccept(
             new ClassFileHierarchyInitializer(programClassPool,
                                               libraryClassPool,
-                                              configuration.warn);
-
-        programClassPool.classFilesAccept(classFileHierarchyInitializer);
+                                              hierarchyWarningPrinter));
 
         // Initialize the class hierarchy for library classes.
-        ClassFileHierarchyInitializer classFileHierarchyInitializer2 =
+        libraryClassPool.classFilesAccept(
             new ClassFileHierarchyInitializer(programClassPool,
                                               libraryClassPool,
-                                              false);
-
-        libraryClassPool.classFilesAccept(classFileHierarchyInitializer2);
+                                              null));
 
         // Initialize the Class.forName and .class references.
-        ClassFileClassForNameReferenceInitializer classClassForNameReferenceInitializer =
-            new ClassFileClassForNameReferenceInitializer(programClassPool,
-                                                          libraryClassPool,
-                                                          configuration.note,
-                                                          createNoteExceptionMatcher(configuration.keep));
+        WarningPrinter classForNameNotePrinter = configuration.note ?
+            new WarningPrinter(System.out) :
+            null;
 
         programClassPool.classFilesAccept(
             new AllMethodVisitor(
             new AllAttrInfoVisitor(
-            new AllInstructionVisitor(classClassForNameReferenceInitializer))));
+            new AllInstructionVisitor(
+           new ClassFileClassForNameReferenceInitializer(programClassPool,
+                                                         libraryClassPool,
+                                                         classForNameNotePrinter,
+                                                         createNoteExceptionMatcher(configuration.keep))))));
 
-        // Initialize the class references from program class members and attributes.
-        ClassFileReferenceInitializer classFileReferenceInitializer =
+        // Initialize the class references from program class members and
+        // attributes.
+        WarningPrinter referenceWarningPrinter = configuration.warn ?
+            new WarningPrinter(System.err) :
+            null;
+
+        programClassPool.classFilesAccept(
             new ClassFileReferenceInitializer(programClassPool,
                                               libraryClassPool,
-                                              configuration.warn);
+                                              referenceWarningPrinter));
 
-        programClassPool.classFilesAccept(classFileReferenceInitializer);
-
-        // Reconstruct a library class pool with only those library classes
-        // whose hierarchies are referenced by the program classes.
-        libraryClassPool.clear();
-        programClassPool.classFilesAccept(
-            new ReferencedClassFileVisitor(
-            new LibraryClassFileFilter(
-            new ClassFileHierarchyTraveler(true, true, true, false,
-            new LibraryClassFileFilter(
-            new ClassPoolFiller(libraryClassPool, false))))));
+        if (!configuration.useUniqueClassMemberNames)
+        {
+            // Reconstruct a library class pool with only those library classes
+            // whose hierarchies are referenced by the program classes.
+            libraryClassPool.clear();
+            programClassPool.classFilesAccept(
+                new ReferencedClassFileVisitor(
+                new LibraryClassFileFilter(
+                new ClassFileHierarchyTraveler(true, true, true, false,
+                new LibraryClassFileFilter(
+                new ClassPoolFiller(libraryClassPool))))));
+        }
 
         // Initialize the class references from library class members.
-        ClassFileReferenceInitializer classReferenceInitializer2 =
+
+        libraryClassPool.classFilesAccept(
             new ClassFileReferenceInitializer(programClassPool,
-                                          libraryClassPool,
-                                          false);
+                                              libraryClassPool,
+                                              null));
 
-        libraryClassPool.classFilesAccept(classReferenceInitializer2);
-
-        int classForNameNoteCount = classClassForNameReferenceInitializer.getNoteCount();
-        if (classForNameNoteCount > 0)
+        // Print out a summary of the notes, if necessary.
+        if (configuration.note)
         {
-            System.err.println("Note: there were " + classForNameNoteCount +
-                               " class casts of dynamically created class instances.");
-            System.err.println("      You might consider explicitly keeping the mentioned classes and/or");
-            System.err.println("      their implementations (using '-keep').");
+            int classForNameNoteCount = classForNameNotePrinter.getWarningCount();
+            if (classForNameNoteCount > 0)
+            {
+                System.err.println("Note: there were " + classForNameNoteCount +
+                                   " class casts of dynamically created class instances.");
+                System.err.println("      You might consider explicitly keeping the mentioned classes and/or");
+                System.err.println("      their implementations (using '-keep').");
+            }
+
+            if (configuration.optimize ||
+                configuration.obfuscate)
+            {
+                // Check for Java 6 files.
+                ClassFileVersionCounter classFileVersionCounter =
+                    new ClassFileVersionCounter(ClassConstants.MAJOR_VERSION_MAX,
+                                                ClassConstants.MINOR_VERSION_MAX);
+
+                programClassPool.classFilesAccept(classFileVersionCounter);
+
+                int java6count = classFileVersionCounter.getCount();
+                if (java6count > 0)
+                {
+                    System.err.println("Note: there were " + java6count +
+                                       " Java 6 program classes.");
+                    System.err.println("      In order to obtain all of the improved start-up performance of Java 6,");
+                    System.err.println("      they should be preverified after having been optimized or obfuscated.");
+                    System.err.println("      Keep any eye on ProGuard version 4.0 for preverification support,");
+                    System.err.println("      at http://proguard.sourceforge.net/");
+                }
+            }
         }
 
-        int hierarchyWarningCount = classFileHierarchyInitializer.getWarningCount();
-        if (hierarchyWarningCount > 0)
+        // Print out a summary of the warnings, if necessary.
+        if (configuration.warn)
         {
-        // Check if we have at least some input classes.
-        if (programClassPool.size() == 0)
-        {
-            throw new IOException("The input doesn't contain any classes. Did you specify the proper '-injars' options?");
-        }
+            int hierarchyWarningCount = hierarchyWarningPrinter.getWarningCount();
+            if (hierarchyWarningCount > 0)
+            {
+                System.err.println("Warning: there were " + hierarchyWarningCount +
+                                   " unresolved references to superclasses or interfaces.");
+                System.err.println("         You may need to specify additional library jars (using '-libraryjars'),");
+                System.err.println("         or perhaps the '-dontskipnonpubliclibraryclasses' option.");
+            }
 
-            System.err.println("Warning: there were " + hierarchyWarningCount +
-                               " unresolved references to superclasses or interfaces.");
-            System.err.println("         You may need to specify additional library jars (using '-libraryjars'),");
-            System.err.println("         or perhaps the '-dontskipnonpubliclibraryclasses' option.");
-        }
+            int referenceWarningCount = referenceWarningPrinter.getWarningCount();
+            if (referenceWarningCount > 0)
+            {
+                System.err.println("Warning: there were " + referenceWarningCount +
+                                   " unresolved references to program class members.");
+                System.err.println("         Your input classes appear to be inconsistent.");
+                System.err.println("         You may need to recompile them and try again.");
+                System.err.println("         Alternatively, you may have to specify the options ");
+                System.err.println("         '-dontskipnonpubliclibraryclasses' and/or");
+                System.err.println("         '-dontskipnonpubliclibraryclassmembers'.");
+            }
 
-        int referenceWarningCount = classFileReferenceInitializer.getWarningCount();
-        if (referenceWarningCount > 0)
-        {
-            System.err.println("Warning: there were " + referenceWarningCount +
-                               " unresolved references to program class members.");
-            System.err.println("         Your input classes appear to be inconsistent.");
-            System.err.println("         You may need to recompile them and try again.");
-        }
-
-        if ((hierarchyWarningCount > 0 ||
-             referenceWarningCount > 0) &&
-            !configuration.ignoreWarnings)
-        {
-            System.err.println("         If you are sure the mentioned classes are not used anyway,");
-            System.err.println("         you could try your luck using the '-ignorewarnings' option.");
-            throw new IOException("Please correct the above warnings first.");
+            if ((hierarchyWarningCount > 0 ||
+                 referenceWarningCount > 0) &&
+                !configuration.ignoreWarnings)
+            {
+                System.err.println("         If you are sure the mentioned classes are not used anyway,");
+                System.err.println("         you could try your luck using the '-ignorewarnings' option.");
+                throw new IOException("Please correct the above warnings first.");
+            }
         }
 
         // Discard unused library classes.
         if (configuration.verbose)
         {
-            System.out.println("Removed unused library classes...");
+            System.out.println("Ignoring unused library classes...");
             System.out.println("  Original number of library classes: " + originalLibraryClassPoolSize);
             System.out.println("  Final number of library classes:    " + libraryClassPool.size());
         }

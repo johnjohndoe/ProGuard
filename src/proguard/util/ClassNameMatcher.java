@@ -1,4 +1,4 @@
-/* $Id: ClassNameMatcher.java,v 1.6 2005/11/05 19:29:25 eric Exp $
+/* $Id: ClassNameMatcher.java,v 1.6.2.1 2006/10/18 21:12:47 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -36,6 +36,11 @@ import proguard.classfile.ClassConstants;
  */
 public class ClassNameMatcher extends BasicMatcher
 {
+    private static final char[] CLASS_NAME_CHARACTERS = new char[]
+    {
+        ClassConstants.INTERNAL_SPECIAL_CHARACTER
+    };
+
     private static final char[] EXTENDED_CLASS_NAME_CHARACTERS = new char[]
     {
         ClassConstants.INTERNAL_PACKAGE_SEPARATOR
@@ -62,7 +67,7 @@ public class ClassNameMatcher extends BasicMatcher
     public ClassNameMatcher(String regularExpression)
     {
         super(regularExpression,
-              null,
+              CLASS_NAME_CHARACTERS,
               EXTENDED_CLASS_NAME_CHARACTERS,
               SPECIAL_PRIMITIVE_CHARACTERS);
     }

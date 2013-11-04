@@ -1,4 +1,4 @@
-/* $Id: ConfigurationWriter.java,v 1.18.2.2 2006/02/13 00:20:43 eric Exp $
+/* $Id: ConfigurationWriter.java,v 1.18.2.3 2006/06/07 22:36:52 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -140,6 +140,7 @@ public class ConfigurationWriter
         writeOption(ConfigurationConstants.APPLY_MAPPING_OPTION,                              configuration.applyMapping);
         writeOption(ConfigurationConstants.OBFUSCATION_DICTIONARY_OPTION,                     configuration.obfuscationDictionary);
         writeOption(ConfigurationConstants.OVERLOAD_AGGRESSIVELY_OPTION,                      configuration.overloadAggressively);
+        writeOption(ConfigurationConstants.USE_UNIQUE_CLASS_MEMBER_NAMES_OPTION,              configuration.useUniqueClassMemberNames);
         writeOption(ConfigurationConstants.DEFAULT_PACKAGE_OPTION,                            configuration.defaultPackage);
         writeOption(ConfigurationConstants.DONT_USE_MIXED_CASE_CLASS_NAMES_OPTION,            !configuration.useMixedCaseClassNames);
         writeOption(ConfigurationConstants.KEEP_ATTRIBUTES_OPTION,                            ListUtil.commaSeparatedString(configuration.keepAttributes));

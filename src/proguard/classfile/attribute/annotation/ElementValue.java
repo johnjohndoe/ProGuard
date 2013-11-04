@@ -1,4 +1,4 @@
-/* $Id: ElementValue.java,v 1.6.2.1 2006/01/16 22:57:55 eric Exp $
+/* $Id: ElementValue.java,v 1.6.2.2 2006/10/14 12:33:22 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,6 +21,7 @@
 package proguard.classfile.attribute.annotation;
 
 import proguard.classfile.*;
+import proguard.classfile.visitor.MemberInfoVisitor;
 
 import java.io.*;
 
@@ -43,9 +44,16 @@ public abstract class ElementValue implements VisitorAccepter
     public int u2elementName;
 
     /**
+     * An extra field pointing to the referenced ClassFile object.
+     * This field is typically filled out by the <code>{@link
+     * proguard.classfile.util.ClassReferenceInitializer}</code>.
+     */
+    public ClassFile referencedClassFile;
+
+    /**
      * An extra field pointing to the referenced <code>MethodInfo</code>
      * object, if applicable. This field is typically filled out by the
-     * <code>{@link ClassFileReferenceInitializer}</code>.
+     * <code>{@link proguard.classfile.util.ClassFileReferenceInitializer}</code>.
      */
     public MethodInfo referencedMethodInfo;
 
@@ -140,6 +148,17 @@ public abstract class ElementValue implements VisitorAccepter
      */
     public abstract void accept(ClassFile classFile, Annotation annotation, ElementValueVisitor elementValueVisitor);
 
+
+    /**
+     * Applies the given visitor to the referenced method.
+     */
+    public void referencedMethodInfoAccept(MemberInfoVisitor memberInfoVisitor)
+    {
+        if (referencedMethodInfo != null)
+        {
+            referencedMethodInfo.accept(referencedClassFile, memberInfoVisitor);
+        }
+    }
 
 
     // Implementations for VisitorAccepter.

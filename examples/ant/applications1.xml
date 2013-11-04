@@ -8,7 +8,7 @@
   <taskdef resource="proguard/ant/task.properties"
            classpath="lib/proguard.jar" />
 
-  <proguard configuration="../applications.pro" />
+  <proguard configuration="examples/applications.pro" />
 
 </target>
 

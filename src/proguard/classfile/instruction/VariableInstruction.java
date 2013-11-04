@@ -1,4 +1,4 @@
-/* $Id: VariableInstruction.java,v 1.20.2.1 2006/01/16 22:57:55 eric Exp $
+/* $Id: VariableInstruction.java,v 1.20.2.2 2006/11/20 22:11:40 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -31,9 +31,9 @@ import proguard.classfile.attribute.*;
  */
 public class VariableInstruction extends Instruction
 {
-    public boolean wide;
     public int     variableIndex;
     public int     constant;
+    public boolean wide;
 
 
     /**
@@ -56,7 +56,8 @@ public class VariableInstruction extends Instruction
         this.opcode        = opcode;
         this.variableIndex = variableIndex;
         this.constant      = constant;
-        this.wide          = mustBeWide();
+        this.wide          = requiredVariableIndexSize() > 2 ||
+                             requiredConstantSize() > 1;
     }
 
 
@@ -94,6 +95,7 @@ public class VariableInstruction extends Instruction
 
     public Instruction shrink()
     {
+        // First widen the instruction.
         switch (opcode)
         {
             case InstructionConstants.OP_ILOAD_0:
@@ -159,7 +161,8 @@ public class VariableInstruction extends Instruction
         }
 
         // Only make the instruction wide if necessary.
-        wide = mustBeWide();
+        wide = requiredVariableIndexSize() > 2 ||
+               requiredConstantSize()      > 1;
 
         return this;
     }
@@ -198,6 +201,16 @@ public class VariableInstruction extends Instruction
         int variableIndexSize = variableIndexSize();
         int constantSize      = constantSize();
 
+        if (requiredVariableIndexSize() > variableIndexSize)
+        {
+            throw new IllegalArgumentException("Instruction has invalid variable index size ("+this.toString(offset)+")");
+        }
+
+        if (requiredConstantSize() > constantSize)
+        {
+            throw new IllegalArgumentException("Instruction has invalid constant size ("+this.toString(offset)+")");
+        }
+
         writeValue(code, offset, variableIndex, variableIndexSize); offset += variableIndexSize;
         writeValue(code, offset, constant,      constantSize);
     }
@@ -232,20 +245,7 @@ public class VariableInstruction extends Instruction
     // Small utility methods.
 
     /**
-     * Returns whether this instruction must be wide due to its variable index
-     * and constant.
-     */
-    private boolean mustBeWide()
-    {
-        return variableIndex > 0xff ||
-               (opcode == InstructionConstants.OP_IINC ? (constant < -128 ||
-                                                          constant > 127) :
-                                                         constant > 255);
-    }
-
-
-    /**
-     * Returns the appropriate variable index size for this instruction.
+     * Returns the variable index size for this instruction.
      */
     private int variableIndexSize()
     {
@@ -259,11 +259,38 @@ public class VariableInstruction extends Instruction
 
 
     /**
-     * Returns the appropriate constant size for this instruction.
+     * Computes the required variable index size for this instruction's variable
+     * index.
+     */
+    private int requiredVariableIndexSize()
+    {
+        return (variableIndex &    0x3) == variableIndex ? 0 :
+               (variableIndex &   0xff) == variableIndex ? 1 :
+               (variableIndex & 0xffff) == variableIndex ? 2 :
+                                                           4;
+
+    }
+
+
+    /**
+     * Returns the constant size for this instruction.
      */
     private int constantSize()
     {
-        return opcode == InstructionConstants.OP_IINC ? (wide ? 2 : 1) :
-                                                        0;
+        return opcode != InstructionConstants.OP_IINC ? 0 :
+               wide                                   ? 2 :
+                                                        1;
+    }
+
+
+    /**
+     * Computes the required constant size for this instruction's constant.
+     */
+    private int requiredConstantSize()
+    {
+        return opcode != InstructionConstants.OP_IINC ? 0 :
+               constant << 24 >> 24 == constant       ? 1 :
+               constant << 16 >> 16 == constant       ? 2 :
+                                                        4;
     }
 }

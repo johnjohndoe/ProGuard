@@ -62,7 +62,7 @@ The sections below provide more details:
 <h2>Input/Output Options</h2>
 
 <dl>
-<dt><code><b>@</b></code><a href="#filename"><i>filename</i></a></dt>
+<dt><a name="at"><code><b>@</b></code></a><a href="#filename"><i>filename</i></a></dt>
 
 <dd>Short for '<code>-include</code> <i>filename</i>'.</dd>
 
@@ -301,7 +301,7 @@ The sections below provide more details:
 <dt><a name="allowaccessmodification"><code><b>-allowaccessmodification</b></code></a></dt>
 
 <dd>Specifies that the access modifiers of classes and class members may be
-    modified during processing. This can improve the results of the
+    broadened during processing. This can improve the results of the
     optimization step. For instance, when inlining a public getter, it may be
     necessary to make the accessed field public too. Although Java's binary
     compatibility specifications (cfr. <a href=
@@ -347,7 +347,10 @@ The sections below provide more details:
     mapping may refer to input classes as well as library classes. This option
     can be useful for <a href="examples.html#incremental">incremental
     obfuscation</a>, i.e. processing add-ons or small patches to an existing
-    piece of code. Only applicable when obfuscating.</dd>
+    piece of code. In such cases, you should consider whether you also need
+    the option <a
+    href="#useuniqueclassmembernames"><code><b>-useuniqueclassmembernames</b></code></a>.
+    Only applicable when obfuscating.</dd>
 
 <dt><a name="obfuscationdictionary"><code><b>-obfuscationdictionary</b></code></a>
     <a href="#filename"><i>filename</i></a></dt>
@@ -392,7 +395,7 @@ The sections below provide more details:
     <ul>
     <li>Sun's JDK 1.2.2 <code>javac</code> compiler produces an exception when
         compiling with such a library (cfr. <a href=
-        "http://developer.java.sun.com/developer/bugParade/bugs/4216736.html">Bug
+        "http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4216736">Bug
         #4216736</a>). You probably shouldn't use this option for processing
         libraries.
     <li>Sun's JRE 1.4 and later fail to serialize objects with overloaded
@@ -400,6 +403,30 @@ The sections below provide more details:
     <li>Sun's JRE 1.5 <code>pack200</code> tool reportedly has problems with
         overloaded class members.
     </ul></dd>
+
+<dt><a name="useuniqueclassmembernames"><code><b>-useuniqueclassmembernames</b></code></a></dt>
+
+<dd>Specifies to assign the same obfuscated names to class members that have
+    the same names, and different obfuscated names to class members that have
+    different names (for each given class member signature). Without the
+    option, more class members can be mapped to the same short names like 'a',
+    'b', etc. The option therefore increases the size of the resulting code
+    slightly, but it ensures that the saved obfuscation name mapping can
+    always be respected in subsequent incremental obfuscation steps.
+    <p>
+    For instance, consider two distinct interfaces containing methods with the
+    same name and signature. Without this option, these methods may get
+    different obfuscated names in a first obfuscation step. If a patch is then
+    added containing a class that implements both interfaces, ProGuard will
+    have to enforce the same method name for both methods in an incremental
+    obfuscation step. The original obfuscated code is changed, in order to
+    keep the resulting code consistent. With this option <i>in the initial
+    obfuscation step</i>, such renaming will never be necessary.
+    <p>
+    This option is only applicable when obfuscating. In fact, if you are
+    planning on performing incremental obfuscation, you probably want to avoid
+    shrinking and optimization altogether, since these step could remove or
+    modify parts of your code that are essential for later additions.</dd>
 
 <dt><a name="defaultpackage"><code><b>-defaultpackage</b></code></a>
     [<i>package_name</i>]</dt>
@@ -680,20 +707,20 @@ following table summarizes how they are related:
 
 <tr>
 <td>Classes and class members</td>
-<td bgcolor="#E0E0E0"><code>-keep</code></td>
-<td bgcolor="#E0E0E0"><code>-keepnames</code></td>
+<td bgcolor="#E0E0E0"><a href="#keep"><code>-keep</code></a></td>
+<td bgcolor="#E0E0E0"><a href="#keepnames"><code>-keepnames</code></a></td>
 </tr>
 
 <tr>
 <td>Class members only</td>
-<td bgcolor="#E0E0E0"><code>-keepclassmembers</code></td>
-<td bgcolor="#E0E0E0"><code>-keepclassmembernames</code></td>
+<td bgcolor="#E0E0E0"><a href="#keepclassmembers"><code>-keepclassmembers</code></a></td>
+<td bgcolor="#E0E0E0"><a href="#keepclassmembernames"><code>-keepclassmembernames</code></a></td>
 </tr>
 
 <tr>
 <td>Classes and class members, if class members present</td>
-<td bgcolor="#E0E0E0"><code>-keepclasseswithmembers</code></td>
-<td bgcolor="#E0E0E0"><code>-keepclasseswithmembernames</code></td>
+<td bgcolor="#E0E0E0"><a href="#keepclasseswithmembers"><code>-keepclasseswithmembers</code></a></td>
+<td bgcolor="#E0E0E0"><a href="#keepclasseswithmembernames"><code>-keepclasseswithmembernames</code></a></td>
 </tr>
 
 </table>

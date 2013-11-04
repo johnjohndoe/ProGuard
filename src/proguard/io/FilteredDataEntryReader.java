@@ -1,4 +1,4 @@
-/* $Id: FilteredDataEntryReader.java,v 1.3.2.1 2006/01/16 22:57:55 eric Exp $
+/* $Id: FilteredDataEntryReader.java,v 1.3.2.2 2006/11/26 15:29:20 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -78,19 +78,13 @@ public class FilteredDataEntryReader implements DataEntryReader
     public void read(DataEntry dataEntry)
     throws IOException
     {
-        if (dataEntryFilter.accepts(dataEntry))
+        DataEntryReader dataEntryReader = dataEntryFilter.accepts(dataEntry) ?
+            acceptedDataEntryReader :
+            rejectedDataEntryReader;
+
+        if (dataEntryReader != null)
         {
-            if (acceptedDataEntryReader != null)
-            {
-                acceptedDataEntryReader.read(dataEntry);
-            }
-        }
-        else
-        {
-            if (rejectedDataEntryReader != null)
-            {
-                rejectedDataEntryReader.read(dataEntry);
-            }
+            dataEntryReader.read(dataEntry);
         }
     }
 }

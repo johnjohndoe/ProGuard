@@ -1,4 +1,4 @@
-/* $Id: GotoCommonCodeReplacer.java,v 1.2.2.3 2006/02/13 00:20:43 eric Exp $
+/* $Id: GotoCommonCodeReplacer.java,v 1.2.2.5 2006/05/23 21:14:32 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -182,8 +182,8 @@ public class GotoCommonCodeReplacer implements InstructionVisitor
                 branchTargetFinder.isInstruction(newOffset2))
             {
                 // Are the offsets involved in some branches?
-                // Note that the preverifier also doesn't like
-                // initializer invocations to be moved around.
+                // Note that the preverifier doesn't like initializer
+                // invocations to be moved around.
                 // Also note that the preverifier doesn't like pop instructions
                 // that work on different operands.
                 if (branchTargetFinder.isBranchOrigin(newOffset1)   ||
@@ -198,7 +198,17 @@ public class GotoCommonCodeReplacer implements InstructionVisitor
                     break;
                 }
 
-                successfulDelta = delta;
+                // Make sure the new branch target was a branch target before,
+                // in order not to introduce new entries in the stack map table.
+                if (branchTargetFinder.isBranchTarget(newOffset2))
+                {
+                    successfulDelta = delta;
+                }
+
+                if (branchTargetFinder.isBranchTarget(newOffset1))
+                {
+                    break;
+                }
             }
         }
 
@@ -207,13 +217,14 @@ public class GotoCommonCodeReplacer implements InstructionVisitor
 
 
     /**
-     * Returns whether the given opcode represents a pop instruction
-     * (pop, pop2).
+     * Returns whether the given opcode represents a pop instruction that must
+     * get a consistent type (pop, pop2, arraylength).
      */
     private boolean isPop(byte opcode)
     {
-        return opcode == InstructionConstants.OP_POP ||
-               opcode == InstructionConstants.OP_POP2;
+        return opcode == InstructionConstants.OP_POP  ||
+               opcode == InstructionConstants.OP_POP2 ||
+               opcode == InstructionConstants.OP_ARRAYLENGTH;
     }
 
 

@@ -1,3 +1,4 @@
+
 <!doctype html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <html>
 <head>
@@ -42,31 +43,58 @@ collected since the previous release.
 <p>
 
 <font color="darkgrey">
-<h3><div>Upcoming</div> Version 4.0</h3>
+<h3><div>In alpha</div> Version 4.0</h3>
 <ul>
+<li>Added preverifier for Java 6 and Java Micro Edition, with new option
+    <code>-dontpreverify</code>.
+<li>Added new option <code>-target</code> to modify java version of processed
+    class files.
 <li>Made <code>-keep</code> options more orthogonal and flexible, with option
     modifiers <code>allowshrinking</code>, <code>allowoptimization</code>, and
     <code>allowobfuscation</code>.
 <li>Added support for configuration by means of annotations.
-<li>Now respecting naming rule for nested class names
-    (<code>EnclosingClass$InnerClass</code>), if <code>InnerClasses</code>
-    attributes or <code>EnclosingMethod</code> attributes are being kept.
-<li>Now also obfuscating package names, with new options
-    <code>-flattenpackagehierarchy</code> and <code>-repackageclasses</code>.
-<li>Improved making classes and class members public or protected.
-<li>Comparing modification times of input and output to avoid unnecessary
+<li>Improved shrinking of unused annotations.
+<li>Added check on modification times of input and output, to avoid unnecessary
     processing, with new option <code>-forceprocessing</code>.
+<li>Added new options <code>-flattenpackagehierarchy</code> and
+    <code>-repackageclasses</code> (replacing <code>-defaultpackage</code>) to
+    control obfuscation of packages names.
+<li>Now respecting naming rule for nested class names
+    (<code>EnclosingClass$InnerClass</code>) in obfuscation step, if
+    <code>InnerClasses</code> attributes or <code>EnclosingMethod</code>
+    attributes are being kept.
+<li>Added new inter-procedural optimizations: method inlining and propagation
+    of constant fields, constant arguments, and constant return values.
+<li>Added optimized local variable allocation.
+<li>Added many new peephole optimizations.
+<li>Improved making classes and class members public or protected.
 <li>Now printing notes on suspiciously unkept classes in parameters of
     specified methods.
-<li>Printing notes for class names that don't seem to be fully qualified.
-<li>Rewritten class file I/O code.
+<li>Now printing notes for class names that don't seem to be fully qualified.
 <li>Added support for uppercase filename extensions.
-<li>Now supporting Java 6 class files.
-<li>TODO: Finish up Java 6 preverifier, with new option
-    <code>-dontpreverify</code>.
+<li>Rewritten class file I/O code.
 <li>TODO: Update documentation and examples.
 </ul>
 </font>
+
+<h3><div>Dec 2006</div> Version 3.7</h3>
+<ul>
+<li>Now accepting Java 6 class files.
+<li>Fixed shrinking of partially used annotations.
+<li>Improved incremental obfuscation, with new option
+    <code>-useuniqueclassmembernames</code>.
+<li>Printing more information in case of conflicting configuration and input.
+<li>Fixed optimization of repeated array length instruction.
+<li>Fixed optimization of subsequent try/catch/finally blocks with return
+    statements.
+<li>Fixed optimization of complex stack operations.
+<li>Fixed optimization of simple infinite loops.
+<li>Fixed optimization of expressions with constant doubles.
+<li>Tuned optimization to improve size reduction after preverification.
+<li>Fixed overflows of offsets in long code blocks.
+<li>Now allowing class names containing dashes.
+<li>Updated documentation and examples.
+</ul>
 
 <h3><div>May 2006</div> Version 3.6</h3>
 <ul>

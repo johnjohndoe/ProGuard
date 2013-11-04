@@ -1,4 +1,4 @@
-/* $Id: MemberReferenceFixer.java,v 1.4.2.2 2006/03/28 22:03:59 eric Exp $
+/* $Id: MemberReferenceFixer.java,v 1.4.2.3 2006/10/14 12:33:22 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -450,7 +450,7 @@ implements   ClassFileVisitor,
         {
             // Does it have a new name or type?
             String methodName    = elementValue.getMethodName(classFile);
-            String newMethodName = referencedMemberInfo.getName(annotation.referencedClassFiles[0]);
+            String newMethodName = referencedMemberInfo.getName(elementValue.referencedClassFile);
             if (!methodName.equals(newMethodName))
             {
                 // Update the element name index.

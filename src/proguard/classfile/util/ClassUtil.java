@@ -1,4 +1,4 @@
-/* $Id: ClassUtil.java,v 1.25.2.2 2006/05/06 13:09:50 eric Exp $
+/* $Id: ClassUtil.java,v 1.25.2.3 2006/12/11 21:57:29 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -279,7 +279,7 @@ public class ClassUtil
         {
             internalClassType = internalTypeFromArrayType(internalClassType);
         }
-        
+
         return internalClassNameFromClassType(internalClassType);
     }
 

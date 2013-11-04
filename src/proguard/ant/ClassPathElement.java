@@ -1,4 +1,4 @@
-/* $Id: ClassPathElement.java,v 1.9.2.1 2006/01/16 22:57:55 eric Exp $
+/* $Id: ClassPathElement.java,v 1.9.2.2 2006/08/10 20:53:47 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -94,6 +94,21 @@ public class ClassPathElement extends Path
         {
             // Get the names of the files in this path.
             fileNames = list();
+        }
+
+        if (output)
+        {
+            if (fileNames.length != 1)
+            {
+                throw new BuildException("The <outjar> element must specify exactly one file or directory ["+fileNames.length+"]");
+            }
+        }
+        else
+        {
+            if (fileNames.length < 1)
+            {
+                throw new BuildException("The <injar> element must specify at least one file or directory");
+            }
         }
 
         for (int index = 0; index < fileNames.length; index++)

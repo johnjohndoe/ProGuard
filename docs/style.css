@@ -52,6 +52,11 @@ td
   padding: 8px;
 }
 
+a
+{
+  text-decoration: none;
+}
+
 img
 {
   border: none;

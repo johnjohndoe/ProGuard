@@ -1,4 +1,4 @@
-/* $Id: CpInstruction.java,v 1.20.2.1 2006/01/16 22:57:55 eric Exp $
+/* $Id: CpInstruction.java,v 1.20.2.2 2006/11/20 22:11:40 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -89,15 +89,22 @@ implements   CpInfoVisitor
 
     public Instruction shrink()
     {
-        if      (opcode == InstructionConstants.OP_LDC &&
-                 cpIndex > 0xff)
+        // Do we need a short index or a long index?
+        if (requiredCpIndexSize() == 1)
         {
-            opcode = InstructionConstants.OP_LDC_W;
+            // Can we replace the long instruction by a short instruction?
+            if (opcode == InstructionConstants.OP_LDC_W)
+            {
+                opcode = InstructionConstants.OP_LDC;
+            }
         }
-        else if (opcode == InstructionConstants.OP_LDC_W &&
-                 cpIndex <= 0xff)
+        else
         {
-            opcode = InstructionConstants.OP_LDC;
+            // Should we replace the short instruction by a long instruction?
+            if (opcode == InstructionConstants.OP_LDC)
+            {
+                opcode = InstructionConstants.OP_LDC_W;
+            }
         }
 
         return this;
@@ -118,7 +125,12 @@ implements   CpInfoVisitor
         int cpIndexSize  = cpIndexSize();
         int constantSize = constantSize();
 
-        writeValue(code, offset, cpIndex,  cpIndexSize);  offset += cpIndexSize;
+        if (requiredCpIndexSize() > cpIndexSize)
+        {
+            throw new IllegalArgumentException("Instruction has invalid constant index size ("+this.toString(offset)+")");
+        }
+
+        writeValue(code, offset, cpIndex,  cpIndexSize); offset += cpIndexSize;
         writeValue(code, offset, constant, constantSize);
     }
 
@@ -246,7 +258,7 @@ implements   CpInfoVisitor
     // Small utility methods.
 
     /**
-     * Computes the appropriate constant pool index size for this instruction.
+     * Returns the constant pool index size for this instruction.
      */
     private int cpIndexSize()
     {
@@ -256,12 +268,24 @@ implements   CpInfoVisitor
 
 
     /**
-     * Computes the appropriate constant size for this instruction.
+     * Returns the constant size for this instruction.
      */
     private int constantSize()
     {
         return opcode == InstructionConstants.OP_MULTIANEWARRAY  ? 1 :
                opcode == InstructionConstants.OP_INVOKEINTERFACE ? 2 :
                                                                    0;
+    }
+
+
+    /**
+     * Computes the required constant pool index size for this instruction's
+     * constant pool index.
+     */
+    private int requiredCpIndexSize()
+    {
+        return (cpIndex &   0xff) == cpIndex ? 1 :
+               (cpIndex & 0xffff) == cpIndex ? 2 :
+                                               4;
     }
 }

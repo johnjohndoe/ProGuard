@@ -23,7 +23,7 @@ edit the configuration and execute ProGuard through a few tabs:
 
 <table cellspacing="5" cellpadding="5">
 <tr><td class="button"><a href="#proguard">ProGuard</a></td>
-    <td>Load an existing configuration file.</td></tr>
+    <td>Optionally load an existing configuration file.</td></tr>
 <tr><td class="button"><a href="#inputoutput">Input/Output</a></td>
     <td>Specify the program jars and library jars.</td></tr>
 <tr><td class="button"><a href="#shrinking">Shrinking</a></td>
@@ -251,7 +251,7 @@ fields to keep.
     fields, based on their access modifiers.
 
 <li>The <b>Return type</b> text field takes the fully-qualified type of the
-    field or fields. The type can contain wild-cards if it is a class name.
+    field or fields. The type can contain wildcards.
 
 <li>The <b>Name</b> text field takes the name of the field or fields. The field
     name can contain wildcards.
@@ -266,14 +266,14 @@ and constraining methods to keep.
 <li>The <b>Access</b> selections allows to specify constraints on the method or
     methods, based on their access modifiers.
 
-<li>The <b>Return type</b> text field takes the fully-qualified type of the         method or methods. The type can contain wild-cards if it is a class name.
+<li>The <b>Return type</b> text field takes the fully-qualified type of the         method or methods. The type can contain wildcards.
 
 <li>The <b>Name</b> text field takes the name of the method or methods. The
     method name can contain wildcards.
 
 <li>The <b>Arguments</b> text field takes the comma-separated list of
     fully-qualified method arguments. Each of these arguments can contain
-    wildcards, if it is a class name.
+    wildcards.
 </ul>
 <p>
 
@@ -307,6 +307,7 @@ Corresponding configuration options:
 <li>-<a href="usage.html#applymapping">applymapping</a>
 <li>-<a href="usage.html#obfuscationdictionary">obfuscationdictionary</a>
 <li>-<a href="usage.html#overloadaggressively">overloadaggressively</a>
+<li>-<a href="usage.html#useuniqueclassmembernames">useuniqueclassmembernames</a>
 <li>-<a href="usage.html#defaultpackage">defaultpackage</a>
 <li>-<a href="usage.html#dontusemixedcaseclassnames">dontusemixedcaseclassnames</a>
 <li>-<a href="usage.html#keepattributes">keepattributes</a>

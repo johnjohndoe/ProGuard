@@ -1,4 +1,4 @@
-/* $Id: UsageMarker.java,v 1.46.2.2 2006/02/13 00:20:43 eric Exp $
+/* $Id: UsageMarker.java,v 1.46.2.3 2006/10/14 12:33:22 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -688,6 +688,9 @@ public class UsageMarker
     {
         markCpEntry(classFile, annotation.u2typeIndex);
 
+        // Mark the annotation class.
+        annotation.referencedClassFileAccept(this);
+
         // Mark the constant pool entries referenced by the element values.
         annotation.elementValuesAccept(classFile, this);
     }
@@ -700,6 +703,9 @@ public class UsageMarker
         if (constantElementValue.u2elementName != 0)
         {
             markCpEntry(classFile, constantElementValue.u2elementName);
+
+            // Mark the annotation method.
+            constantElementValue.referencedMethodInfoAccept(this);
         }
 
         markCpEntry(classFile, constantElementValue.u2constantValueIndex);
@@ -711,6 +717,9 @@ public class UsageMarker
         if (enumConstantElementValue.u2elementName != 0)
         {
             markCpEntry(classFile, enumConstantElementValue.u2elementName);
+
+            // Mark the annotation method.
+            enumConstantElementValue.referencedMethodInfoAccept(this);
         }
 
         markCpEntry(classFile, enumConstantElementValue.u2typeNameIndex);
@@ -723,10 +732,16 @@ public class UsageMarker
         if (classElementValue.u2elementName != 0)
         {
             markCpEntry(classFile, classElementValue.u2elementName);
+
+            // Mark the annotation method.
+            classElementValue.referencedMethodInfoAccept(this);
         }
 
         // Mark the referenced class constant pool entry.
         markCpEntry(classFile, classElementValue.u2classInfoIndex);
+
+        // Mark the referenced classes.
+        classElementValue.referencedClassesAccept(this);
     }
 
 
@@ -735,6 +750,9 @@ public class UsageMarker
         if (annotationElementValue.u2elementName != 0)
         {
             markCpEntry(classFile, annotationElementValue.u2elementName);
+
+            // Mark the annotation method.
+            annotationElementValue.referencedMethodInfoAccept(this);
         }
 
         // Mark the constant pool entries referenced by the annotation.
@@ -747,6 +765,9 @@ public class UsageMarker
         if (arrayElementValue.u2elementName != 0)
         {
             markCpEntry(classFile, arrayElementValue.u2elementName);
+
+            // Mark the annotation method.
+            arrayElementValue.referencedMethodInfoAccept(this);
         }
 
         // Mark the constant pool entries referenced by the element values.

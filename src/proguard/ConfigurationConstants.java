@@ -1,4 +1,4 @@
-/* $Id: ConfigurationConstants.java,v 1.12 2005/06/11 14:50:16 eric Exp $
+/* $Id: ConfigurationConstants.java,v 1.12.2.1 2006/06/07 22:36:52 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -58,6 +58,7 @@ class ConfigurationConstants
     public static final String APPLY_MAPPING_OPTION                              = "-applymapping";
     public static final String OBFUSCATION_DICTIONARY_OPTION                     = "-obfuscationdictionary";
     public static final String OVERLOAD_AGGRESSIVELY_OPTION                      = "-overloadaggressively";
+    public static final String USE_UNIQUE_CLASS_MEMBER_NAMES_OPTION              = "-useuniqueclassmembernames";
     public static final String DEFAULT_PACKAGE_OPTION                            = "-defaultpackage";
     public static final String DONT_USE_MIXED_CASE_CLASS_NAMES_OPTION            = "-dontusemixedcaseclassnames";
     public static final String KEEP_ATTRIBUTES_OPTION                            = "-keepattributes";

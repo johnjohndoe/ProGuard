@@ -1,4 +1,4 @@
-/* $Id: ProGuard.java,v 1.101.2.8 2006/05/13 22:38:32 eric Exp $
+/* $Id: ProGuard.java,v 1.101.2.13 2006/12/11 21:57:04 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -22,19 +22,13 @@
 package proguard;
 
 import proguard.classfile.ClassPool;
-import proguard.classfile.attribute.AllAttrInfoVisitor;
 import proguard.classfile.editor.ConstantPoolSorter;
-import proguard.classfile.instruction.AllInstructionVisitor;
-import proguard.classfile.util.*;
 import proguard.classfile.visitor.*;
-import proguard.io.*;
 import proguard.obfuscate.Obfuscator;
 import proguard.optimize.Optimizer;
 import proguard.shrink.Shrinker;
-import proguard.util.ClassNameListMatcher;
 
 import java.io.*;
-import java.util.*;
 
 /**
  * Tool for shrinking, optimizing, and obfuscating Java class files.
@@ -43,7 +37,7 @@ import java.util.*;
  */
 public class ProGuard
 {
-    public static final String VERSION = "ProGuard, version 3.6";
+    public static final String VERSION = "ProGuard, version 3.7";
 
     private Configuration configuration;
     private ClassPool     programClassPool = new ClassPool();
@@ -248,7 +242,7 @@ public class ProGuard
 
         if (configuration.verbose)
         {
-            System.out.println("Removed unused program classes and class elements...");
+            System.out.println("Removing unused program classes and class elements...");
             System.out.println("  Original number of program classes: " + originalProgramClassPoolSize);
             System.out.println("  Final number of program classes:    " + newProgramClassPoolSize);
         }

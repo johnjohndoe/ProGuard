@@ -1,4 +1,4 @@
-/* $Id: DoubleCpInfo.java,v 1.18.2.1 2006/01/16 22:57:55 eric Exp $
+/* $Id: DoubleCpInfo.java,v 1.18.2.2 2006/10/07 08:42:27 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -56,7 +56,7 @@ public class DoubleCpInfo extends CpInfo
      */
     public double getValue()
     {
-        return Double.longBitsToDouble(((long)u4highBytes << 32) | (long)u4lowBytes);
+        return Double.longBitsToDouble((long)u4highBytes << 32 | (u4lowBytes & 0xffffffffL));
     }
 
 

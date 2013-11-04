@@ -28,6 +28,11 @@ pre {
   background: #E0E0E0;
 }
 
+a
+{
+  text-decoration: none;
+}
+
 /* Settings for variable width code. */
 
 p.code {

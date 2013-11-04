@@ -1,4 +1,4 @@
-/* $Id: ClassFileClassForNameReferenceInitializer.java,v 1.17.2.2 2006/02/13 00:20:43 eric Exp $
+/* $Id: ClassFileClassForNameReferenceInitializer.java,v 1.17.2.3 2006/11/25 16:56:11 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -48,11 +48,8 @@ public class ClassFileClassForNameReferenceInitializer
 {
     private ClassPool            programClassPool;
     private ClassPool            libraryClassPool;
-    private boolean              note;
+    private WarningPrinter       notePrinter;
     private ClassNameListMatcher noteExceptionMatcher;
-
-    // Counter for notes.
-    private int noteCount;
 
     // Fields to remember the previous StringCpInfo and MethodRefCpInfo objects
     // while visiting all instructions (to find Class.forName, class$, and
@@ -66,39 +63,19 @@ public class ClassFileClassForNameReferenceInitializer
 
 
     /**
-     * Creates a new ClassFileClassForNameReferenceInitializer that prints notes.
-     */
-    public ClassFileClassForNameReferenceInitializer(ClassPool programClassPool,
-                                                     ClassPool libraryClassPool)
-    {
-        this(programClassPool, libraryClassPool, true, null);
-    }
-
-
-    /**
      * Creates a new ClassFileClassForNameReferenceInitializer that optionally
      * prints notes, with optional class specifications for which never to
      * print notes.
      */
     public ClassFileClassForNameReferenceInitializer(ClassPool            programClassPool,
                                                      ClassPool            libraryClassPool,
-                                                     boolean              note,
+                                                     WarningPrinter       notePrinter,
                                                      ClassNameListMatcher noteExceptionMatcher)
     {
         this.programClassPool     = programClassPool;
         this.libraryClassPool     = libraryClassPool;
-        this.note                 = note;
+        this.notePrinter          = notePrinter;
         this.noteExceptionMatcher = noteExceptionMatcher;
-    }
-
-
-    /**
-     * Returns the number of notes printed about occurrences of
-     * '<code>(SomeClass)Class.forName(variable).newInstance()</code>'.
-     */
-    public int getNoteCount()
-    {
-        return noteCount;
     }
 
 
@@ -281,16 +258,15 @@ public class ClassFileClassForNameReferenceInitializer
      */
     public void visitClassCpInfo(ClassFile classFile, ClassCpInfo classCpInfo)
     {
-        if (note &&
+        if (notePrinter != null &&
             (noteExceptionMatcher == null ||
              !noteExceptionMatcher.matches(classCpInfo.getName(classFile))))
         {
-            noteCount++;
-            System.err.println("Note: " +
-                               ClassUtil.externalClassName(classFile.getName()) +
-                               " calls '(" +
-                               ClassUtil.externalClassName(classCpInfo.getName(classFile)) +
-                               ")Class.forName(variable).newInstance()'");
+            notePrinter.print("Note: " +
+                                 ClassUtil.externalClassName(classFile.getName()) +
+                                 " calls '(" +
+                                 ClassUtil.externalClassName(classCpInfo.getName(classFile)) +
+                                 ")Class.forName(variable).newInstance()'");
         }
     }
 

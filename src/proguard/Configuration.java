@@ -1,4 +1,4 @@
-/* $Id: Configuration.java,v 1.17.2.1 2006/01/16 22:57:55 eric Exp $
+/* $Id: Configuration.java,v 1.17.2.2 2006/06/07 22:36:52 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -152,6 +152,11 @@ public class Configuration
      * Specifies whether to apply aggressive name overloading on class members.
      */
     public boolean   overloadAggressively        = false;
+
+    /**
+     * Specifies whether to generate globally unique class member names.
+     */
+    public boolean   useUniqueClassMemberNames   = false;
 
     /**
      * An optional default package to which all classes whose name is obfuscated

@@ -1,4 +1,4 @@
-/* $Id: MemberInfoNameConflictFilter.java,v 1.3.2.1 2006/01/16 22:57:56 eric Exp $
+/* $Id: MemberInfoNameConflictFilter.java,v 1.3.2.2 2006/11/25 16:56:11 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -30,7 +30,6 @@ import java.util.*;
  * <code>MemberInfoVisitor</code>, but only when the visited member has been
  * marked as having a conflicting name.
  *
- * @see MemberInfoLinker
  * @see MemberInfoObfuscator
  *
  * @author Eric Lafortune

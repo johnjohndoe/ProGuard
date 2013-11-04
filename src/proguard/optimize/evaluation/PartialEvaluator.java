@@ -1,4 +1,4 @@
-/* $Id: PartialEvaluator.java,v 1.37.2.4 2006/04/27 07:25:03 eric Exp $
+/* $Id: PartialEvaluator.java,v 1.37.2.5 2006/06/12 20:50:39 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -217,6 +217,26 @@ implements   ExceptionInfoVisitor,
 
 
     /**
+     * Returns whether the instruction at the given offset is the end of a
+     * subroutine.
+     */
+    public boolean isSubroutineEnd(int instructionOffset)
+    {
+        return branchTargetFinder.isSubroutineEnd(instructionOffset);
+    }
+
+
+    /**
+     * Returns the offset of the end of the subroutine that starts at the given
+     * offset.
+     */
+    public int subroutineEnd(int instructionOffset)
+    {
+        return branchTargetFinder.subroutineEnd(instructionOffset);
+    }
+
+
+    /**
      * Returns the value of the given variable before the given instruction
      * offset.
      */
@@ -225,8 +245,8 @@ implements   ExceptionInfoVisitor,
     {
         return variablesBefore[instructionOffset].load(variableIndex);
     }
-    
-    
+
+
     /**
      * Returns the value of the given variable after the given instruction
      * offset.
@@ -247,8 +267,8 @@ implements   ExceptionInfoVisitor,
     {
         return variablesBefore[instructionOffset].getStoredTraceValue(variableIndex).instructionOffsetValue();
     }
-    
-    
+
+
     /**
      * Returns the instruction offsets that set the value of the given variable
      * after the given instruction offset.
@@ -279,8 +299,8 @@ implements   ExceptionInfoVisitor,
     {
         return stacksBefore[instructionOffset].getTop(stackIndex);
     }
-    
-    
+
+
     /**
      * Returns the value of the given stack entry after the given instruction
      * offset.
@@ -301,8 +321,8 @@ implements   ExceptionInfoVisitor,
     {
         return stacksAfter[instructionOffset].getTopProducerValue(stackIndex).instructionOffsetValue();
     }
-    
-    
+
+
     /**
      * Returns the instruction offsets that set the value of the given stack
      * entry after the given instruction offset.
@@ -333,8 +353,8 @@ implements   ExceptionInfoVisitor,
     {
         return stacksBefore[instructionOffset].getTopConsumerValue(stackIndex).instructionOffsetValue();
     }
-    
-    
+
+
     /**
      * Returns the instruction offsets that use the value of the given stack
      * entry after the given instruction offset.
@@ -544,7 +564,7 @@ implements   ExceptionInfoVisitor,
                     variablesBefore[instructionOffset].initialize(variables);
                     stacksBefore[instructionOffset].copy(stack);
                 }
-                
+
                 // We'll execute in the generalized context, because it is
                 // the same as the current context.
                 generalizedContexts[instructionOffset] = true;
@@ -576,7 +596,7 @@ implements   ExceptionInfoVisitor,
                     // instruction.
                     variables.generalize(variablesBefore[instructionOffset]);
                     stack.generalize(stacksBefore[instructionOffset]);
-                
+
                     // We'll execute in the generalized context.
                     generalizedContexts[instructionOffset] = true;
                 }
@@ -892,7 +912,7 @@ implements   ExceptionInfoVisitor,
                 // We can't use the return value, because local generalization
                 // can be different a couple of times, with the global
                 // generalization being the same.
-                generalizedVariables.generalize(variablesAfter[index]);
+                generalizedVariables.generalize(variablesBefore[index]);
             }
         }
     }

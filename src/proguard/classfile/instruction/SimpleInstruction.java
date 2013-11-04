@@ -1,4 +1,4 @@
-/* $Id: SimpleInstruction.java,v 1.9.2.1 2006/01/16 22:57:55 eric Exp $
+/* $Id: SimpleInstruction.java,v 1.9.2.2 2006/11/20 22:11:40 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -77,19 +77,30 @@ public class SimpleInstruction extends Instruction
 
     public Instruction shrink()
     {
-        // Is this a sipush instruction that can be a bipush instruction?
-        if (opcode == InstructionConstants.OP_SIPUSH &&
-            constant << 24 >> 24 == constant)
-        {
-            opcode = InstructionConstants.OP_BIPUSH;
-        }
+        int requiredConstantSize = requiredConstantSize();
 
-        // Is this a bipush instruction that can be an iconst instruction?
-        if (opcode == InstructionConstants.OP_BIPUSH &&
-            constant >= -1 &&
-            constant <= 5)
+        // Is the (integer) constant size right?
+        if (opcode != InstructionConstants.OP_NEWARRAY &&
+            requiredConstantSize != constantSize())
         {
-            opcode = (byte)(InstructionConstants.OP_ICONST_0 + constant);
+            // Can we replace the integer push instruction?
+            switch (requiredConstantSize)
+            {
+                case 0:
+                    opcode = (byte)(InstructionConstants.OP_ICONST_0 + constant);
+                    break;
+
+                case 1:
+                    opcode = InstructionConstants.OP_BIPUSH;
+                    break;
+
+                case 2:
+                    opcode = InstructionConstants.OP_SIPUSH;
+                    break;
+
+                default:
+                    throw new IllegalArgumentException("Simple instruction can't be widened ("+this.toString()+")");
+            }
         }
 
         return this;
@@ -137,7 +148,14 @@ public class SimpleInstruction extends Instruction
 
     protected void writeInfo(byte[] code, int offset)
     {
-        writeValue(code, offset, constant, constantSize());
+        int constantSize = constantSize();
+
+        if (requiredConstantSize() > constantSize)
+        {
+            throw new IllegalArgumentException("Instruction has invalid constant size ("+this.toString(offset)+")");
+        }
+
+        writeValue(code, offset, constant, constantSize);
     }
 
 
@@ -170,7 +188,7 @@ public class SimpleInstruction extends Instruction
     // Small utility methods.
 
     /**
-     * Computes the appropriate constant size for this instruction.
+     * Returns the constant size for this instruction.
      */
     private int constantSize()
     {
@@ -178,5 +196,17 @@ public class SimpleInstruction extends Instruction
                opcode == InstructionConstants.OP_NEWARRAY ? 1 :
                opcode == InstructionConstants.OP_SIPUSH   ? 2 :
                                                             0;
+    }
+
+
+    /**
+     * Computes the required constant size for this instruction.
+     */
+    private int requiredConstantSize()
+    {
+        return constant >= -1 && constant <= 5  ? 0 :
+               constant << 24 >> 24 == constant ? 1 :
+               constant << 16 >> 16 == constant ? 2 :
+                                                  4;
     }
 }

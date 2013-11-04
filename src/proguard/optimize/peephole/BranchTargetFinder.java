@@ -1,4 +1,4 @@
-/* $Id: BranchTargetFinder.java,v 1.8.2.1 2006/01/16 22:57:56 eric Exp $
+/* $Id: BranchTargetFinder.java,v 1.8.2.2 2006/06/12 20:50:39 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -38,16 +38,20 @@ implements   AttrInfoVisitor,
              ExceptionInfoVisitor,
              CpInfoVisitor
 {
-    private static final byte INSTRUCTION       =  1;
-    private static final byte BRANCH_ORIGIN     =  2;
-    private static final byte BRANCH_TARGET     =  4;
-    private static final byte INITIALIZER       =  8;
-    private static final byte EXCEPTION_START   = 16;
-    private static final byte EXCEPTION_END     = 32;
-    private static final byte EXCEPTION_HANDLER = 64;
+    private static final short INSTRUCTION       =   1;
+    private static final short BRANCH_ORIGIN     =   2;
+    private static final short BRANCH_TARGET     =   4;
+//  private static final short AFTER_BRANCH      =   8;
+    private static final short EXCEPTION_START   =  16;
+    private static final short EXCEPTION_END     =  32;
+    private static final short EXCEPTION_HANDLER =  64;
+    private static final short SUBROUTINE_START  = 128;
+    private static final short SUBROUTINE_END    = 256;
+    private static final short INITIALIZER       = 512;
 
 
-    private byte[] instructionMarks;
+    private short[] instructionMarks;
+    private int[]   subroutineEnds;
 
     private boolean isInitializer;
 
@@ -59,7 +63,8 @@ implements   AttrInfoVisitor,
      */
     public BranchTargetFinder(int codeLength)
     {
-        instructionMarks = new byte[codeLength + 1];
+        instructionMarks = new short[codeLength + 1];
+        subroutineEnds   = new int[codeLength];
     }
 
 
@@ -138,6 +143,38 @@ implements   AttrInfoVisitor,
 
 
     /**
+     * Returns whether the instruction at the given offset is the start of a
+     * subroutine in the CodeAttribute that was visited most recently.
+     */
+    public boolean isSubroutineStart(int offset)
+    {
+        return (instructionMarks[offset] & SUBROUTINE_START) != 0;
+    }
+
+
+    /**
+     * Returns whether the instruction at the given offset is the end of a
+     * subroutine in the CodeAttribute that was visited most recently. Such an
+     * instruction is always a 'ret' instruction.
+     */
+    public boolean isSubroutineEnd(int offset)
+    {
+        return (instructionMarks[offset] & SUBROUTINE_END) != 0;
+    }
+
+
+    /**
+     * Returns the offset of the end of the subroutine that starts at the given
+     * offset, in the CodeAttribute that was visited most recently. Such an
+     * end is always at a 'ret' instruction.
+     */
+    public int subroutineEnd(int offset)
+    {
+        return subroutineEnds[offset];
+    }
+
+
+    /**
      * Returns whether the instruction at the given offset is the special
      * invocation of an instance initializer in the CodeAttrInfo that was
      * visited most recently.
@@ -172,31 +209,47 @@ implements   AttrInfoVisitor,
 
     public void visitCodeAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo)
     {
-        // Make sure there is a sufficiently large boolean array.
-        int length = codeAttrInfo.u4codeLength + 1;
-        if (instructionMarks.length < length)
+        // Make sure there are sufficiently large arrays.
+        int codeLength = codeAttrInfo.u4codeLength;
+        if (subroutineEnds.length < codeLength)
         {
-            // Create a new boolean array.
-            instructionMarks = new byte[length];
+            // Create a new arrays.
+            instructionMarks = new short[codeLength + 1];
+            subroutineEnds   = new int[codeLength];
         }
         else
         {
-            // Reset the boolean array.
-            for (int index = 0; index < length; index++)
+            // Reset the marks array.
+            for (int index = 0; index < codeLength; index++)
             {
                 instructionMarks[index] = 0;
             }
         }
 
-        // The first instruction and the end of the code are always branch targets.
-        instructionMarks[0]                         = BRANCH_TARGET;
-        instructionMarks[codeAttrInfo.u4codeLength] = BRANCH_TARGET;
+        // The first instruction and the end of the code are branch target
+        // sentinels.
+        instructionMarks[0]          = BRANCH_TARGET;
+        instructionMarks[codeLength] = BRANCH_TARGET;
 
         // Mark branch targets by going over all instructions.
         codeAttrInfo.instructionsAccept(classFile, methodInfo, this);
 
         // Mark branch targets in the exception table.
         codeAttrInfo.exceptionsAccept(classFile, methodInfo, this);
+
+        // Fill out the subroutine end array.
+        int subroutineEnd = codeLength - 1;
+        for (int index = codeLength - 1; index >= 0; index--)
+        {
+            // Remember the most recent subroutine end.
+            if (isSubroutineEnd(index))
+            {
+                subroutineEnd = index;
+            }
+
+            // Fill out the most recent subroutine end.
+            subroutineEnds[index] = subroutineEnd;
+        }
     }
 
 
@@ -207,9 +260,8 @@ implements   AttrInfoVisitor,
         // Mark the instruction.
         instructionMarks[offset] |= INSTRUCTION;
 
-        byte opcode = simpleInstruction.opcode;
-        if (opcode == InstructionConstants.OP_RET     ||
-            opcode == InstructionConstants.OP_IRETURN ||
+        short opcode = simpleInstruction.opcode;
+        if (opcode == InstructionConstants.OP_IRETURN ||
             opcode == InstructionConstants.OP_LRETURN ||
             opcode == InstructionConstants.OP_FRETURN ||
             opcode == InstructionConstants.OP_DRETURN ||
@@ -240,6 +292,12 @@ implements   AttrInfoVisitor,
     {
         // Mark the instruction.
         instructionMarks[offset] |= INSTRUCTION;
+
+        if (variableInstruction.opcode == InstructionConstants.OP_RET)
+        {
+            // Mark the branch origin.
+            instructionMarks[offset] |= BRANCH_ORIGIN | SUBROUTINE_END;
+        }
     }
 
 
@@ -250,6 +308,14 @@ implements   AttrInfoVisitor,
 
         // Mark the branch target.
         instructionMarks[offset + branchInstruction.branchOffset] |= BRANCH_TARGET;
+
+        byte opcode = branchInstruction.opcode;
+        if (opcode == InstructionConstants.OP_JSR ||
+            opcode == InstructionConstants.OP_JSR_W)
+        {
+            // Mark the subroutine start.
+            instructionMarks[offset + branchInstruction.branchOffset] |= SUBROUTINE_START;
+        }
     }
 
     public void visitTableSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, TableSwitchInstruction tableSwitchInstruction)

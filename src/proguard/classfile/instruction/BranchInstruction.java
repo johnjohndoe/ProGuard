@@ -1,4 +1,4 @@
-/* $Id: BranchInstruction.java,v 1.15.2.1 2006/01/16 22:57:55 eric Exp $
+/* $Id: BranchInstruction.java,v 1.15.2.2 2006/11/20 22:11:40 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -65,9 +65,10 @@ public class BranchInstruction extends Instruction
 
     public Instruction shrink()
     {
-        // Is this a wide branch that can be replaced by a normal branch?
-        if (branchOffset << 16 >> 16 == branchOffset)
+        // Do we need an ordinary branch or a wide branch?
+        if (requiredBranchOffsetSize() == 2)
         {
+            // Can we replace the wide branch by an ordinary branch?
             if      (opcode == InstructionConstants.OP_GOTO_W)
             {
                 opcode = InstructionConstants.OP_GOTO;
@@ -75,6 +76,22 @@ public class BranchInstruction extends Instruction
             else if (opcode == InstructionConstants.OP_JSR_W)
             {
                 opcode = InstructionConstants.OP_JSR;
+            }
+        }
+        else
+        {
+            // Can we replace the ordinary branch by a wide branch?
+            if      (opcode == InstructionConstants.OP_GOTO)
+            {
+                opcode = InstructionConstants.OP_GOTO_W;
+            }
+            else if (opcode == InstructionConstants.OP_JSR)
+            {
+                opcode = InstructionConstants.OP_JSR_W;
+            }
+            else
+            {
+                throw new IllegalArgumentException("Branch instruction can't be widened ("+this.toString()+")");
             }
         }
 
@@ -89,6 +106,11 @@ public class BranchInstruction extends Instruction
 
     protected void writeInfo(byte[] code, int offset)
     {
+        if (requiredBranchOffsetSize() > branchOffsetSize())
+        {
+            throw new IllegalArgumentException("Instruction has invalid branch offset size ("+this.toString(offset)+")");
+        }
+
         writeValue(code, offset, branchOffset, branchOffsetSize());
     }
 
@@ -122,12 +144,23 @@ public class BranchInstruction extends Instruction
     // Small utility methods.
 
     /**
-     * Computes the appropriate branch offset size for this instruction.
+     * Returns the branch offset size for this instruction.
      */
     private int branchOffsetSize()
     {
         return opcode == InstructionConstants.OP_GOTO_W ||
                opcode == InstructionConstants.OP_JSR_W  ? 4 :
                                                           2;
+    }
+
+
+    /**
+     * Computes the required branch offset size for this instruction's branch
+     * offset.
+     */
+    private int requiredBranchOffsetSize()
+    {
+        return branchOffset << 16 >> 16 == branchOffset ? 2 :
+                                                          4;
     }
 }

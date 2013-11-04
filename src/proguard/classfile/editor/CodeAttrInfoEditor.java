@@ -1,4 +1,4 @@
-/* $Id: CodeAttrInfoEditor.java,v 1.14.2.1 2006/01/16 22:57:55 eric Exp $
+/* $Id: CodeAttrInfoEditor.java,v 1.14.2.3 2006/11/20 22:11:40 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -49,9 +49,12 @@ public class CodeAttrInfoEditor
     /*private*/public Instruction[]    postInsertions;
     private boolean[]        deleted;
 
-    private int[]            instructionOffsetMap;
+    private int[]   instructionOffsetMap;
+    private int     newOffset;
+    private boolean lengthIncreased;
 
-    private StackSizeUpdater stackSizeUpdater;
+    private StackSizeUpdater  stackSizeUpdater;
+    private InstructionWriter instructionWriter = new InstructionWriter();
 
 
     /**
@@ -186,6 +189,22 @@ public class CodeAttrInfoEditor
 
 
     /**
+     * Remembers not to delete the instruction at the given offset.
+     * @param instructionOffset the offset of the instruction not to be deleted.
+     */
+    public void undeleteInstruction(int instructionOffset)
+    {
+        if (instructionOffset < 0 ||
+            instructionOffset >= codeLength)
+        {
+            throw new IllegalArgumentException("Invalid instruction offset ["+instructionOffset+"] in code with length ["+codeLength+"]");
+        }
+
+        deleted[instructionOffset] = false;
+    }
+
+
+    /**
      * Returns whether the instruction at the given offset has been modified
      * in any way.
      */
@@ -239,12 +258,15 @@ public class CodeAttrInfoEditor
         {
             // Simply overwrite the instructions.
             performSimpleReplacements(codeAttrInfo);
+
+            // Update the maximum stack size.
+            stackSizeUpdater.visitCodeAttrInfo(classFile, methodInfo, codeAttrInfo);
         }
         else
         {
             // Move and remap the instructions.
             codeAttrInfo.u4codeLength =
-                moveInstructions(classFile, methodInfo, codeAttrInfo);
+                updateInstructions(classFile, methodInfo, codeAttrInfo);
 
             // Remap the exception table.
             codeAttrInfo.exceptionsAccept(classFile, methodInfo, this);
@@ -256,14 +278,15 @@ public class CodeAttrInfoEditor
             codeAttrInfo.u2exceptionTableLength =
                  removeEmptyExceptions(codeAttrInfo.exceptionTable,
                                        codeAttrInfo.u2exceptionTableLength);
-        }
 
-        // Update the maximum stack size.
-        stackSizeUpdater.visitCodeAttrInfo(classFile, methodInfo, codeAttrInfo);
+            // Update the maximum stack size.
+            stackSizeUpdater.visitCodeAttrInfo(classFile, methodInfo, codeAttrInfo);
+
+            // Make sure instructions are widened if necessary.
+            instructionWriter.visitCodeAttrInfo(classFile, methodInfo, codeAttrInfo);
+        }
     }
 
-
-    // Implementations for LineNumberInfoVisitor.
 
     public void visitLineNumberTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LineNumberTableAttrInfo lineNumberTableAttrInfo)
     {
@@ -278,8 +301,6 @@ public class CodeAttrInfoEditor
     }
 
 
-    // Implementations for LocalVariableInfoVisitor.
-
     public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo)
     {
         // Remap all local variable table entries.
@@ -291,8 +312,6 @@ public class CodeAttrInfoEditor
                                       localVariableTableAttrInfo.u2localVariableTableLength);
     }
 
-
-    // Implementations for LocalVariableInfoVisitor.
 
     public void visitLocalVariableTypeTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeTableAttrInfo localVariableTypeTableAttrInfo)
     {
@@ -306,11 +325,308 @@ public class CodeAttrInfoEditor
     }
 
 
+    /**
+     * Checks if it is possible to modifies the given code without having to
+     * update any offsets.
+     * @param codeAttrInfo the code to be changed.
+     * @return the new code length.
+     */
+    private boolean canPerformSimpleReplacements(CodeAttrInfo codeAttrInfo)
+    {
+        if (inserted)
+        {
+            return false;
+        }
+
+        byte[] code       = codeAttrInfo.code;
+        int    codeLength = codeAttrInfo.u4codeLength;
+
+        // Go over all replacement instructions.
+        for (int offset = 0; offset < codeLength; offset++)
+        {
+            // Check if the replacement instruction, if any, has a different
+            // length than the original instruction.
+            Instruction replacementInstruction = replacements[offset];
+            if (replacementInstruction != null &&
+                replacementInstruction.length(offset) !=
+                    InstructionFactory.create(code, offset).length(offset))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+
+    /**
+     * Modifies the given code without updating any offsets.
+     * @param codeAttrInfo the code to be changed.
+     */
+    private void performSimpleReplacements(CodeAttrInfo codeAttrInfo)
+    {
+        int codeLength = codeAttrInfo.u4codeLength;
+
+        // Go over all replacement instructions.
+        for (int offset = 0; offset < codeLength; offset++)
+        {
+            // Overwrite the original instruction with the replacement
+            // instruction if any.
+            Instruction replacementInstruction = replacements[offset];
+            if (replacementInstruction != null)
+            {
+                replacementInstruction.write(codeAttrInfo, offset);
+            }
+        }
+    }
+
+
+    /**
+     * Modifies the given code based on the previously specified changes.
+     * @param classFile    the class file of the code to be changed.
+     * @param methodInfo   the method of the code to be changed.
+     * @param codeAttrInfo the code to be changed.
+     * @return the new code length.
+     */
+    private int updateInstructions(ClassFile    classFile,
+                                   MethodInfo   methodInfo,
+                                   CodeAttrInfo codeAttrInfo)
+    {
+        byte[] oldCode   = codeAttrInfo.code;
+        int    oldLength = codeAttrInfo.u4codeLength;
+
+        // Make sure there is a sufficiently large instruction offset map.
+        if (instructionOffsetMap == null ||
+            instructionOffsetMap.length < oldLength + 1)
+        {
+            instructionOffsetMap = new int[oldLength + 1];
+        }
+
+        // Fill out the instruction offset map.
+        int newLength = mapInstructions(oldCode,
+                                        oldLength);
+
+        // Create a new code array if necessary.
+        if (lengthIncreased)
+        {
+            codeAttrInfo.code = new byte[newLength];
+        }
+
+        // Prepare for possible widening of instructions.
+        instructionWriter.reset(newLength);
+
+        // Move the instructions into the new code array.
+        moveInstructions(classFile,
+                         methodInfo,
+                         codeAttrInfo,
+                         oldCode,
+                         oldLength);
+
+        // We can return the new length.
+        return newLength;
+    }
+
+
+    /**
+     * Fills out the instruction offset map for the given code block.
+     * @param oldCode   the instructions to be moved.
+     * @param oldLength the code length.
+     * @return the new code length.
+     */
+    private int mapInstructions(byte[] oldCode, int oldLength)
+    {
+        // Start mapping instructions at the beginning.
+        newOffset       = 0;
+        lengthIncreased = false;
+
+        int oldOffset = 0;
+        do
+        {
+            // Get the next instruction.
+            Instruction instruction = InstructionFactory.create(oldCode, oldOffset);
+
+            // Compute the mapping of the instruction.
+            mapInstruction(oldOffset, instruction);
+
+            oldOffset += instruction.length(oldOffset);
+
+            if (newOffset > oldOffset)
+            {
+                lengthIncreased = true;
+            }
+        }
+        while (oldOffset < oldLength);
+
+        // Also add an entry for the first offset after the code.
+        instructionOffsetMap[oldOffset] = newOffset;
+
+        return newOffset;
+    }
+
+
+    /**
+     * Fills out the instruction offset map for the given instruction.
+     * @param oldOffset   the instruction's old offset.
+     * @param instruction the instruction to be moved.
+     */
+    private void mapInstruction(int         oldOffset,
+                                Instruction instruction)
+    {
+        instructionOffsetMap[oldOffset] = newOffset;
+
+        // Account for the pre-inserted instruction, if any.
+        Instruction preInstruction = preInsertions[oldOffset];
+        if (preInstruction != null)
+        {
+            newOffset += preInstruction.length(newOffset);
+        }
+
+        // Account for the replacement instruction, or for the current
+        // instruction, if it shouldn't be  deleted.
+        Instruction replacementInstruction = replacements[oldOffset];
+        if (replacementInstruction != null)
+        {
+            newOffset += replacementInstruction.length(newOffset);
+        }
+        else if (!deleted[oldOffset])
+        {
+            // Note that the instruction's length may change at its new offset,
+            // e.g. if it is a switch instruction.
+            newOffset += instruction.length(newOffset);
+        }
+
+        // Account for the post-inserted instruction, if any.
+        Instruction postInstruction = postInsertions[oldOffset];
+        if (postInstruction != null)
+        {
+            newOffset += postInstruction.length(newOffset);
+        }
+    }
+
+
+    /**
+     * Moves the given code block to the new offsets.
+     * @param classFile    the class file of the code to be changed.
+     * @param methodInfo   the method of the code to be changed.
+     * @param codeAttrInfo the code to be changed.
+     * @param oldCode      the original code to be moved.
+     * @param oldLength    the original code length.
+     */
+    private void moveInstructions(ClassFile    classFile,
+                                  MethodInfo   methodInfo,
+                                  CodeAttrInfo codeAttrInfo,
+                                  byte[]       oldCode,
+                                  int          oldLength)
+    {
+        // Start writing instructions at the beginning.
+        newOffset = 0;
+
+        int oldOffset = 0;
+        do
+        {
+            // Get the next instruction.
+            Instruction instruction = InstructionFactory.create(oldCode, oldOffset);
+
+            // Move the instruction to its new offset.
+            moveInstruction(classFile,
+                            methodInfo,
+                            codeAttrInfo,
+                            oldOffset,
+                            instruction);
+
+            oldOffset += instruction.length(oldOffset);
+        }
+        while (oldOffset < oldLength);
+    }
+
+
+    /**
+     * Moves the given instruction to its new offset.
+     * @param classFile    the class file of the code to be changed.
+     * @param methodInfo   the method of the code to be changed.
+     * @param codeAttrInfo the code to be changed.
+     * @param oldOffset    the original instruction offset.
+     * @param instruction  the original instruction.
+     */
+    private void moveInstruction(ClassFile    classFile,
+                                 MethodInfo   methodInfo,
+                                 CodeAttrInfo codeAttrInfo,
+                                 int          oldOffset,
+                                 Instruction  instruction)
+    {
+        // Remap and insert the pre-inserted instruction, if any.
+        Instruction preInstruction = preInsertions[oldOffset];
+        if (preInstruction != null)
+        {
+            // Remap the instruction.
+            preInstruction.accept(classFile, methodInfo, codeAttrInfo, oldOffset, this);
+
+            newOffset += preInstruction.length(newOffset);
+        }
+
+        // Remap and insert the replacement instruction, or the current
+        // instruction, if it shouldn't be deleted.
+        Instruction replacementInstruction = replacements[oldOffset];
+        if (replacementInstruction != null)
+        {
+            // Remap the instruction.
+            replacementInstruction.accept(classFile, methodInfo, codeAttrInfo, oldOffset, this);
+
+            newOffset += replacementInstruction.length(newOffset);
+        }
+        else if (!deleted[oldOffset])
+        {
+            // Remap the instruction.
+            instruction.accept(classFile, methodInfo, codeAttrInfo, oldOffset, this);
+
+            newOffset += instruction.length(newOffset);
+        }
+
+        // Remap and insert the post-inserted instruction, if any.
+        Instruction postInstruction = postInsertions[oldOffset];
+        if (postInstruction != null)
+        {
+            // Remap the instruction.
+            postInstruction.accept(classFile, methodInfo, codeAttrInfo, oldOffset, this);
+
+            newOffset += postInstruction.length(newOffset);
+        }
+    }
+
+
     // Implementations for InstructionVisitor.
 
-    public void visitSimpleInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, SimpleInstruction simpleInstruction) {}
-    public void visitCpInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, CpInstruction cpInstruction) {}
-    public void visitVariableInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, VariableInstruction variableInstruction) {}
+    public void visitSimpleInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, SimpleInstruction simpleInstruction)
+    {
+        // Write out the instruction.
+        instructionWriter.visitSimpleInstruction(classFile,
+                                                 methodInfo,
+                                                 codeAttrInfo,
+                                                 newOffset,
+                                                 simpleInstruction);
+    }
+
+
+    public void visitCpInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, CpInstruction cpInstruction)
+    {
+        // Write out the instruction.
+        instructionWriter.visitCpInstruction(classFile,
+                                             methodInfo,
+                                             codeAttrInfo,
+                                             newOffset,
+                                             cpInstruction);
+    }
+
+
+    public void visitVariableInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, VariableInstruction variableInstruction)
+    {
+        // Write out the instruction.
+        instructionWriter.visitVariableInstruction(classFile,
+                                                   methodInfo,
+                                                   codeAttrInfo,
+                                                   newOffset,
+                                                   variableInstruction);
+    }
 
 
     public void visitBranchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, BranchInstruction branchInstruction)
@@ -318,6 +634,13 @@ public class CodeAttrInfoEditor
         // Adjust the branch offset.
         branchInstruction.branchOffset = remapBranchOffset(offset,
                                                            branchInstruction.branchOffset);
+
+        // Write out the instruction.
+        instructionWriter.visitBranchInstruction(classFile,
+                                                 methodInfo,
+                                                 codeAttrInfo,
+                                                 newOffset,
+                                                 branchInstruction);
     }
 
 
@@ -332,6 +655,13 @@ public class CodeAttrInfoEditor
                          tableSwitchInstruction.jumpOffsets,
                          tableSwitchInstruction.highCase -
                          tableSwitchInstruction.lowCase + 1);
+
+        // Write out the instruction.
+        instructionWriter.visitTableSwitchInstruction(classFile,
+                                                      methodInfo,
+                                                      codeAttrInfo,
+                                                      newOffset,
+                                                      tableSwitchInstruction);
     }
 
 
@@ -345,6 +675,13 @@ public class CodeAttrInfoEditor
         remapJumpOffsets(offset,
                          lookUpSwitchInstruction.jumpOffsets,
                          lookUpSwitchInstruction.jumpOffsetCount);
+
+        // Write out the instruction.
+        instructionWriter.visitLookUpSwitchInstruction(classFile,
+                                                       methodInfo,
+                                                       codeAttrInfo,
+                                                       newOffset,
+                                                       lookUpSwitchInstruction);
     }
 
 
@@ -392,238 +729,6 @@ public class CodeAttrInfoEditor
 
 
     // Small utility methods.
-
-    /**
-     * Checks if it is possible to modifies the given code without having to
-     * update any offsets.
-     *
-     * @param codeAttrInfo the code to be changed.
-     * @return the new code length.
-     */
-    private boolean canPerformSimpleReplacements(CodeAttrInfo codeAttrInfo)
-    {
-        if (inserted)
-        {
-            return false;
-        }
-
-        byte[] code       = codeAttrInfo.code;
-        int    codeLength = codeAttrInfo.u4codeLength;
-
-        // Go over all replacement instructions.
-        for (int offset = 0; offset < codeLength; offset++)
-        {
-            // Check if the replacement instruction, if any, has a different
-            // length than the original instruction.
-            Instruction replacementInstruction = replacements[offset];
-            if (replacementInstruction != null &&
-                replacementInstruction.length(offset) !=
-                    InstructionFactory.create(code, offset).length(offset))
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-
-    /**
-     * Modifies the given code without updating any offsets.
-     *
-     * @param codeAttrInfo the code to be changed.
-     */
-    private void performSimpleReplacements(CodeAttrInfo codeAttrInfo)
-    {
-        byte[] code       = codeAttrInfo.code;
-        int    codeLength = codeAttrInfo.u4codeLength;
-
-        // Go over all replacement instructions.
-        for (int offset = 0; offset < codeLength; offset++)
-        {
-            // Overwrite the original instruction with the replacement
-            // instruction if any.
-            Instruction replacementInstruction = replacements[offset];
-            if (replacementInstruction != null)
-            {
-                replacementInstruction.write(codeAttrInfo, offset);
-            }
-        }
-    }
-
-
-    /**
-     * Modifies the given code based on the previously specified changes.
-     *
-     * @param classFile    the class file of the code to be changed.
-     * @param methodInfo   the method of the code to be changed.
-     * @param codeAttrInfo the code to be changed.
-     * @return the new code length.
-     */
-    private int moveInstructions(ClassFile    classFile,
-                                 MethodInfo   methodInfo,
-                                 CodeAttrInfo codeAttrInfo)
-    {
-        byte[] oldCode   = codeAttrInfo.code;
-        int    oldLength = codeAttrInfo.u4codeLength;
-
-        // Make sure there is a sufficiently large instruction offset map.
-        if (instructionOffsetMap == null ||
-            instructionOffsetMap.length < oldLength + 1)
-        {
-            instructionOffsetMap = new int[oldLength + 1];
-        }
-
-        // Fill out the offset map that specifies the new instruction offsets,
-        // given their current instruction offsets, by going over the
-        // instructions, deleting and inserting instructions as specified.
-        int     oldOffset       = 0;
-        int     newOffset       = 0;
-        boolean lengthIncreased = false;
-        do
-        {
-            // Get the next instruction.
-            Instruction instruction = InstructionFactory.create(oldCode, oldOffset);
-
-            // Compute the mapping of the instruction.
-            newOffset = mapInstruction(instruction, oldOffset, newOffset);
-
-            oldOffset += instruction.length(oldOffset);
-
-            // Is the new instruction exceeding the available space?
-            if (newOffset > oldOffset)
-            {
-                // Remember to create a new code array later on.
-                lengthIncreased = true;
-            }
-        }
-        while (oldOffset < oldLength);
-
-        // Also add an entry for the first offset after the code.
-        instructionOffsetMap[oldOffset] = newOffset;
-
-        // Create a new code array if necessary.
-        if (lengthIncreased)
-        {
-            codeAttrInfo.code = new byte[newOffset];
-        }
-
-        // Now actually move the instructions based on this map.
-        oldOffset = 0;
-        do
-        {
-            // Get the next instruction.
-            Instruction instruction = InstructionFactory.create(oldCode, oldOffset);
-
-            // Move the instruction to its new offset.
-            moveInstruction(classFile, methodInfo, codeAttrInfo, oldOffset, instruction);
-
-            oldOffset += instruction.length(oldOffset);
-        }
-        while (oldOffset < oldLength);
-
-        return newOffset;
-    }
-
-
-    /**
-     * Fills out the instruction offset map for the given instruction with its
-     * new offset.
-     * @param instruction the instruction to be moved.
-     * @param oldOffset   the instruction's old offset.
-     * @param newOffset   the instruction's new offset.
-     * @return            the next new offset.
-     */
-    private int mapInstruction(Instruction instruction,
-                               int         oldOffset,
-                               int         newOffset)
-    {
-        instructionOffsetMap[oldOffset] = newOffset;
-
-        // Account for the pre-inserted instruction, if any.
-        Instruction preInstruction = preInsertions[oldOffset];
-        if (preInstruction != null)
-        {
-            newOffset += preInstruction.length(newOffset);
-        }
-
-        // Account for the replacement instruction, or for the current
-        // instruction, if it shouldn't be  deleted.
-        Instruction replacementInstruction = replacements[oldOffset];
-        if (replacementInstruction != null)
-        {
-            newOffset += replacementInstruction.length(newOffset);
-        }
-        else if (!deleted[oldOffset])
-        {
-            // Note that the instruction's length may change at its new offset,
-            // e.g. if it is a switch instruction.
-            newOffset += instruction.length(newOffset);
-        }
-
-        // Account for the post-inserted instruction, if any.
-        Instruction postInstruction = postInsertions[oldOffset];
-        if (postInstruction != null)
-        {
-            newOffset += postInstruction.length(newOffset);
-        }
-
-        return newOffset;
-    }
-
-
-    /**
-     * Moves the given instruction to its new offset.
-     */
-    private void moveInstruction(ClassFile    classFile,
-                                 MethodInfo   methodInfo,
-                                 CodeAttrInfo codeAttrInfo,
-                                 int          oldOffset,
-                                 Instruction  instruction)
-    {
-        int newOffset = remapInstructionOffset(oldOffset);
-
-        // Remap and insert the pre-inserted instruction, if any.
-        Instruction preInstruction = preInsertions[oldOffset];
-        if (preInstruction != null)
-        {
-            preInstruction.accept(classFile, methodInfo, codeAttrInfo, oldOffset, this);
-
-            preInstruction.write(codeAttrInfo, newOffset);
-
-            newOffset += preInstruction.length(newOffset);
-        }
-
-        // Remap and insert the replacment instruction, or the current
-        // instruction, if it shouldn't be deleted.
-        Instruction replacementInstruction = replacements[oldOffset];
-        if (replacementInstruction != null)
-        {
-            replacementInstruction.accept(classFile, methodInfo, codeAttrInfo, oldOffset, this);
-
-            replacementInstruction.write(codeAttrInfo, newOffset);
-
-            newOffset += replacementInstruction.length(newOffset);
-        }
-        else if (!deleted[oldOffset])
-        {
-            instruction.accept(classFile, methodInfo, codeAttrInfo, oldOffset, this);
-
-            instruction.write(codeAttrInfo, newOffset);
-
-            newOffset += instruction.length(newOffset);
-        }
-
-        // Remap and insert the post-inserted instruction, if any.
-        Instruction postInstruction = postInsertions[oldOffset];
-        if (postInstruction != null)
-        {
-            postInstruction.accept(classFile, methodInfo, codeAttrInfo, oldOffset, this);
-
-            postInstruction.write(codeAttrInfo, newOffset);
-        }
-    }
-
 
     /**
      * Adjusts the given jump offsets for the instruction at the given offset.

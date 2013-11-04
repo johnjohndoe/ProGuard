@@ -1,4 +1,4 @@
-/* $Id: MethodInfoLinker.java,v 1.2.2.1 2006/01/16 22:57:55 eric Exp $
+/* $Id: MethodInfoLinker.java,v 1.2.2.2 2006/06/07 22:36:52 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -26,12 +26,11 @@ import proguard.classfile.visitor.*;
 import java.util.*;
 
 /**
- * This ClassFileVisitor links all corresponding methods in the class hierarchies
- * of all visited class files. Visited class files are typically all class
- * files that are not being subclassed. Chains of links that have been created in
- * previous invocations are merged with new chains of links, in order to create
- * a consistent set of chains. Class initialization methods and constructors are
- * ignored.
+ * This ClassFileVisitor links all corresponding non-private methods in the class
+ * hierarchies of all visited classes. Visited classes are typically all class
+ * files that are not being subclassed. Chains of links that have been created
+ * in previous invocations are merged with new chains of links, in order to
+ * create a consistent set of chains.
  *
  * @author Eric Lafortune
  */
@@ -40,20 +39,22 @@ public class MethodInfoLinker
              MemberInfoVisitor
 {
     // An object that is reset and reused every time.
-    // The map: [class member name+descriptor - class member info]
-    private final Map methodInfoMap = new HashMap();
+    // The map: [class member name+' '+descriptor - class member info]
+    private final Map memberInfoMap = new HashMap();
 
 
     // Implementations for ClassFileVisitor.
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
-        // Collect all members in this class hierarchy.
+        // Collect all non-private members in this class hierarchy.
         programClassFile.hierarchyAccept(true, true, true, false,
-                                         new AllMemberInfoVisitor(this));
+            new AllMemberInfoVisitor(
+            new MemberInfoAccessFilter(0, ClassConstants.INTERNAL_ACC_PRIVATE,
+            this)));
 
         // Clean up for the next class hierarchy.
-        methodInfoMap.clear();
+        memberInfoMap.clear();
     }
 
 
@@ -66,43 +67,39 @@ public class MethodInfoLinker
 
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {
+        visitMemberInfo(programClassFile, programFieldInfo);
     }
 
 
     public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
     {
-        visitMethodInfo(programClassFile, programMethodInfo);
+        visitMemberInfo(programClassFile, programMethodInfo);
     }
 
 
     public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo)
     {
+        visitMemberInfo(libraryClassFile, libraryFieldInfo);
     }
 
 
     public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo)
     {
-        visitMethodInfo(libraryClassFile, libraryMethodInfo);
+        visitMemberInfo(libraryClassFile, libraryMethodInfo);
     }
 
 
     /**
-     * Links the given method into the chains of links. Class initialization
+     * Links the given member into the chains of links. Class initialization
      * methods and constructors are ignored.
      * @param classFile  the class file of the given method.
-     * @param methodInfo the method to be linked.
+     * @param memberInfo the method to be linked.
      */
-    private void visitMethodInfo(ClassFile classFile, MethodInfo methodInfo)
+    private void visitMemberInfo(ClassFile classFile, MemberInfo memberInfo)
     {
-        // Private methods don't have to be linked.
-        if ((methodInfo.getAccessFlags() & ClassConstants.INTERNAL_ACC_PRIVATE) != 0)
-        {
-            return;
-        }
-
         // Get the method's original name and descriptor.
-        String name       = methodInfo.getName(classFile);
-        String descriptor = methodInfo.getDescriptor(classFile);
+        String name       = memberInfo.getName(classFile);
+        String descriptor = memberInfo.getDescriptor(classFile);
 
         // Special cases: <clinit> and <init> are always kept unchanged.
         // We can ignore them here.
@@ -112,35 +109,35 @@ public class MethodInfoLinker
             return;
         }
 
-        // Get the last method in the chain.
-        MemberInfo thisLastMethodInfo = lastMethodInfo(methodInfo);
+        // Get the last member in the chain.
+        MemberInfo thisLastMemberInfo = lastMemberInfo(memberInfo);
 
-        // See if we've already come across a method with the same name and
+        // See if we've already come across a member with the same name and
         // descriptor.
-        String key = name + descriptor;
-        MethodInfo otherMethodInfo = (MethodInfo)methodInfoMap.get(key);
+        String key = name + ' ' + descriptor;
+        MemberInfo otherMemberInfo = (MemberInfo)memberInfoMap.get(key);
 
-        if (otherMethodInfo == null)
+        if (otherMemberInfo == null)
         {
-            // Store the new class method info in the map.
-            methodInfoMap.put(key, thisLastMethodInfo);
+            // Store the new class member info in the map.
+            memberInfoMap.put(key, thisLastMemberInfo);
         }
         else
         {
-            // Get the last method in the other chain.
-            MethodInfo otherLastMethodInfo = lastMethodInfo(otherMethodInfo);
+            // Get the last member in the other chain.
+            MemberInfo otherLastMemberInfo = lastMemberInfo(otherMemberInfo);
 
             // Check if both link chains aren't already ending in the same element.
-            if (!thisLastMethodInfo.equals(otherLastMethodInfo))
+            if (!thisLastMemberInfo.equals(otherLastMemberInfo))
             {
                 // Merge the two chains, with the library members last.
-                if (otherLastMethodInfo instanceof LibraryMemberInfo)
+                if (otherLastMemberInfo instanceof LibraryMemberInfo)
                 {
-                    thisLastMethodInfo.setVisitorInfo(otherLastMethodInfo);
+                    thisLastMemberInfo.setVisitorInfo(otherLastMemberInfo);
                 }
                 else
                 {
-                    otherLastMethodInfo.setVisitorInfo(thisLastMethodInfo);
+                    otherLastMemberInfo.setVisitorInfo(thisLastMemberInfo);
                 }
             }
         }
@@ -150,20 +147,20 @@ public class MethodInfoLinker
     // Small utility methods.
 
     /**
-     * Finds the last method in the linked list of related methods.
-     * @param methodInfo the given method.
-     * @return the last method in the linked list.
+     * Finds the last member in the linked list of related members.
+     * @param memberInfo the given member.
+     * @return the last member in the linked list.
      */
-    public static MethodInfo lastMethodInfo(MethodInfo methodInfo)
+    public static MemberInfo lastMemberInfo(MemberInfo memberInfo)
     {
-        MethodInfo lastMethodInfo = methodInfo;
-        while (lastMethodInfo.getVisitorInfo() != null &&
-               lastMethodInfo.getVisitorInfo() instanceof MethodInfo)
+        MemberInfo lastMemberInfo = memberInfo;
+        while (lastMemberInfo.getVisitorInfo() != null &&
+               lastMemberInfo.getVisitorInfo() instanceof MemberInfo)
         {
-            lastMethodInfo = (MethodInfo)lastMethodInfo.getVisitorInfo();
+            lastMemberInfo = (MemberInfo)lastMemberInfo.getVisitorInfo();
         }
 
-        return lastMethodInfo;
+        return lastMemberInfo;
     }
 
     /**

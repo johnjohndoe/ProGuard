@@ -1,4 +1,4 @@
-/* $Id: GPL.java,v 1.5.2.3 2006/04/12 07:05:39 eric Exp $
+/* $Id: GPL.java,v 1.5.2.5 2006/12/11 20:23:22 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java bytecode.
  *
@@ -159,6 +159,7 @@ public class GPL
     private static boolean isKnown(String packageName)
     {
         return packageName.startsWith("java")                   ||
+               packageName.startsWith("sun.reflect")            ||
                packageName.startsWith("proguard")               ||
                packageName.startsWith("org.apache.tools.ant")   ||
                packageName.startsWith("org.apache.tools.maven") ||

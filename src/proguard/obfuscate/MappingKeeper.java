@@ -1,4 +1,4 @@
-/* $Id: MappingKeeper.java,v 1.10.2.1 2006/01/16 22:57:56 eric Exp $
+/* $Id: MappingKeeper.java,v 1.10.2.2 2006/11/25 16:56:11 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,7 +21,7 @@
 package proguard.obfuscate;
 
 import proguard.classfile.*;
-import proguard.classfile.util.ClassUtil;
+import proguard.classfile.util.*;
 
 
 /**
@@ -32,7 +32,8 @@ import proguard.classfile.util.ClassUtil;
  */
 public class MappingKeeper implements MappingProcessor
 {
-    private ClassPool classPool;
+    private ClassPool      classPool;
+    private WarningPrinter warningPrinter;
 
     // A field acting as a parameter.
     private ClassFile classFile;
@@ -40,12 +41,16 @@ public class MappingKeeper implements MappingProcessor
 
     /**
      * Creates a new MappingKeeper.
-     * @param classPool the class pool in which class names and class member names
-     *                  have to be mapped.
+     * @param classPool      the class pool in which class names and class
+     *                       member names have to be mapped.
+     * @param warningPrinter the optional warning printer to which warnings
+     *                       can be printed.
      */
-    public MappingKeeper(ClassPool classPool)
+    public MappingKeeper(ClassPool      classPool,
+                         WarningPrinter warningPrinter)
     {
-        this.classPool = classPool;
+        this.classPool      = classPool;
+        this.warningPrinter = warningPrinter;
     }
 
 
@@ -60,9 +65,26 @@ public class MappingKeeper implements MappingProcessor
         classFile = classPool.getClass(name);
         if (classFile != null)
         {
-            // Make sure the mapping name will be kept.
             String newName = ClassUtil.internalClassName(newClassName);
 
+            // Print out a warning if the mapping conflicts with a name that
+            // was set before.
+            if (warningPrinter != null)
+            {
+                String currentNewName = ClassFileObfuscator.newClassName(classFile);
+                if (currentNewName != null &&
+                    !currentNewName.equals(newName))
+                {
+                    warningPrinter.print("Warning: " +
+                                         className +
+                                         " is not being kept as '" +
+                                         ClassUtil.externalClassName(currentNewName) +
+                                         "', but remapped to '" +
+                                         newClassName + "'");
+                }
+            }
+
+            // Make sure the mapping name will be kept.
             ClassFileObfuscator.setNewClassName(classFile, newName);
 
             // The class members have to be kept as well.
@@ -87,6 +109,22 @@ public class MappingKeeper implements MappingProcessor
             FieldInfo fieldInfo = classFile.findField(name, descriptor);
             if (fieldInfo != null)
             {
+                // Print out a warning if the mapping conflicts with a name that
+                // was set before.
+                if (warningPrinter != null)
+                {
+                    String currentNewName = MemberInfoObfuscator.newMemberName(fieldInfo);
+                    if (currentNewName != null &&
+                        !currentNewName.equals(newFieldName))
+                    {
+                        warningPrinter.print("Warning: " +
+                                             className +
+                                             ": field '" + fieldType + " " + fieldName +
+                                             "' is not being kept as '" + currentNewName +
+                                             "', but remapped to '" + newFieldName + "'");
+                    }
+                }
+
                 // Make sure the mapping name will be kept.
                 MemberInfoObfuscator.setFixedNewMemberName(fieldInfo, newFieldName);
             }
@@ -111,6 +149,22 @@ public class MappingKeeper implements MappingProcessor
             MethodInfo methodInfo = classFile.findMethod(name, descriptor);
             if (methodInfo != null)
             {
+                // Print out a warning if the mapping conflicts with a name that
+                // was set before.
+                if (warningPrinter != null)
+                {
+                    String currentNewName = MemberInfoObfuscator.newMemberName(methodInfo);
+                    if (currentNewName != null &&
+                        !currentNewName.equals(newMethodName))
+                    {
+                        warningPrinter.print("Warning: " +
+                                             className +
+                                             ": method '" + methodReturnType + " " + methodNameAndArguments +
+                                             "' is not being kept as '" + currentNewName +
+                                             "', but remapped to '" + newMethodName + "'");
+                    }
+                }
+
                 // Make sure the mapping name will be kept.
                 MemberInfoObfuscator.setFixedNewMemberName(methodInfo, newMethodName);
             }

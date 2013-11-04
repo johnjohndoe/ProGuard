@@ -1,4 +1,4 @@
-/* $Id: ClassConstants.java,v 1.25 2005/05/22 00:30:30 eric Exp $
+/* $Id: ClassConstants.java,v 1.25.2.2 2006/12/11 21:57:29 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -36,7 +36,7 @@ public interface ClassConstants
 
     public static final int MAJOR_VERSION_MIN = 45;
     public static final int MINOR_VERSION_MIN = 3;
-    public static final int MAJOR_VERSION_MAX = 49;
+    public static final int MAJOR_VERSION_MAX = 50;
     public static final int MINOR_VERSION_MAX = 0;
 
     public static final int INTERNAL_ACC_PUBLIC       = 0x0001;
@@ -141,6 +141,8 @@ public interface ClassConstants
 
     public static final char EXTERNAL_PACKAGE_SEPARATOR = '.';
     public static final char INTERNAL_PACKAGE_SEPARATOR = '/';
+
+    public static final char INTERNAL_SPECIAL_CHARACTER = '-';
 
     public static final char EXTERNAL_METHOD_ARGUMENTS_OPEN      = '(';
     public static final char EXTERNAL_METHOD_ARGUMENTS_CLOSE     = ')';

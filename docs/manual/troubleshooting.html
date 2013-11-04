@@ -44,17 +44,6 @@ ProGuard may print out some notes and non-fatal warnings:
     switch off these notes by specifying the <code>-dontnote</code>
     option.</dd>
 
-<dt><a name="unexpectedclass"><b>Note: class file ... unexpectedly contains class ...</b></a></dt>
-
-<dd>The given class file contains a definition for the given class, but the
-    directory name of the file doesn't correspond to the package name of the
-    class. ProGuard will accept the class definition, but the current
-    implementation will not write out the processed version. Please make sure
-    your input classes are packaged correctly. Notably, class files that are
-    in the <code>WEB-INF/classes</code> directory in a war should be packaged
-    in a jar and put in the <code>WEB-INF/lib</code> directory. You can switch
-    off these notes by specifying the <code>-dontnote</code> option.</dd>
-
 <dt><a name="duplicatezipentry"><b>Warning: can't write resource ... Duplicate zip entry</b></a></dt>
 
 <dd>Your input jars contain multiple resource files with the same name.
@@ -85,10 +74,7 @@ some more serious warnings:
     <code>java.util.zip.ZipConstants</code>, which is used as an interface
     class in some public classes, even though it is only package visible (in
     this case, the warning could also be ignored, because the class is not a
-    fundamental part of the class hierarchNotably,
-    class files that are in the <code>WEB-INF/classes</code> directory in a
-    war should be packaged in a jar and put in the <code>WEB-INF/lib</code>
-    directory.y).
+    fundamental part of the class hierarchy).
     <p>
     If you're missing a library and you're absolutely sure it isn't used
     anyway, you can try your luck with the <code>-ignorewarnings</code>
@@ -115,6 +101,56 @@ some more serious warnings:
     and refer to their package visible class members, then you should specify
     the <code>-dontskipnonpubliclibraryclassmembers</code> option.</dd>
 
+<dt><a name="unresolvedenclosingmethod"><b>Warning: can't find enclosing class/method</b></a></dt>
+
+<dd>If there are unresolved references to classes that are defined inside
+    methods in your input, once more, your class files are most likely
+    inconsistent. Possibly, some class file didn't get recompiled properly, or
+    some class file was left behind after its source file was removed. Try
+    removing all class files, recompiling them, zipping them up, and running
+    ProGuard again.</dd>
+
+<dt><a name="unexpectedclass"><b>Warning: class file ... unexpectedly contains class ...</b></a></dt>
+
+<dd>The given class file contains a definition for the given class, but the
+    directory name of the file doesn't correspond to the package name of the
+    class. ProGuard will accept the class definition, but the current
+    implementation will not write out the processed version. Please make sure
+    your input classes are packaged correctly. Notably, class files that are
+    in the <code>WEB-INF/classes</code> directory in a war should be packaged
+    in a jar and put in the <code>WEB-INF/lib</code> directory. If you don't
+    mind these classes not being written to the output, you can specify the
+    <code>-ignorewarnings</code> option, or even the <code>-dontwarn</code>
+    option.</dd>
+
+<dt><a name="mappingconflict1"><b>Warning: ... is not being kept as ..., but remapped to ...</b></a></dt>
+
+<dd>There is a conflict between a <code>-keep</code> option in the
+    configuration, and the mapping file, in the obfuscation step. The given
+    class name or class member name can't be kept by its original name, as
+    specified in the configuration, but it has to be mapped to the other given
+    name, as specified in the mapping file. You should adapt your
+    configuration or your mapping file to remove the conflict. Alternatively,
+    if you're sure the renaming won't hurt, you can specify the
+    <code>-ignorewarnings</code> option, or even the <code>-dontwarn</code>
+    option.</dd>
+
+<dt><a name="mappingconflict2"><b>Warning: field/method ... can't be mapped to ...</b></a></dt>
+
+<dd>There is a conflict between some new program code and the mapping file, in
+    the obfuscation step. The given class member can't be mapped to the given
+    name, because it would conflict with another class member that is already
+    being mapped to the same name. This can happen if you are performing
+    incremental obfuscation, applying an obfuscation mapping file from an
+    initial obfuscation step. For instance, some new class may have been added
+    that extends two existing classes, introducing a conflict in the name
+    space of its class members. If you're sure the class member receiving
+    another name than the one specified won't hurt, you can specify the
+    <code>-ignorewarnings</code> option, or even the <code>-dontwarn</code>
+    option. Note that you should always use the
+    <code>-useuniqueclassmembernames</code> option in the initial obfuscation
+    step, in order to reduce the risk of conflicts.</dd>
+
 <dt><a name="keep"><b>Error: You have to specify '-keep' options</b></a></dt>
 
 <dd>You either forgot to specify <code>-keep</code> options, or you mistyped
@@ -122,6 +158,14 @@ some more serious warnings:
     application, an applet, a servlet, a midlet,..., or any combination of
     these. Without the proper seed specifications, ProGuard would shrink,
     optimize, or obfuscate all class files away.</dd>
+
+
+<dt><a name="macosx"><b>Error: Can't read [</b>...<b>/lib/rt.jar] (No such file or directory)</b> (in MacOS X)</a></dt>
+
+<dd>In MacOS X, the run-time classes may be in a different place than on most
+    other platforms. You'll then have to adapt your configuration, replacing
+    the path <code>&lt;java.home&gt;/lib/rt.jar</code> by
+    <code>&lt;java.home&gt;/../Classes/classes.jar</code>.</dd>
 
 </dl>
 <p>
@@ -140,11 +184,16 @@ Should ProGuard crash while processing your application:
 
 <dt><a name="stackoverflowerror"><b>StackOverflowError</b></a></dt>
 
-<dd>You can try increasing the stack size of the Java virtual machine (with
-    the usual <code>-Xss</code> option). This error also seems to occur
-    occasionally when optimizing complex methods on Windows (surprisingly, not
-    on Linux). You can then work around it by using ProGuard's
-    <code>-dontoptimize</code> option.</dd>
+<dd>This error may occur when optimizing very complex methods on Windows
+    (surprisingly, not so easily on Linux). You can always work around it by
+    using ProGuard's <code>-dontoptimize</code> option. In theory, increasing
+    the stack size of the Java virtual machine (with the usual
+    <code>-Xss</code> option) should help too. In practice however, the
+    <code>-Xss</code> setting doesn't have any effect on the main thread, due
+    to <a
+    href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4362291">Sun Bug
+    #4362291</a>. As a result, this solution will only work when running
+    ProGuard in a different thread, e.g. from its GUI.</dd>
 
 <dt><a name="otherwise"><b>Otherwise...</b></a></dt>
 
@@ -217,6 +266,16 @@ might be several reasons:
     <code>-printseeds</code> option to see which elements are being kept
     exactly.</dd>
 
+<dt><a name="notobfuscated"><b>Variable names not being obfuscated</b></a></dt>
+
+<dd>If the names of the local variables and parameters in your obfuscated code
+    don't look obfuscated, because they suspiciously resemble the names of
+    their types, it's probably because the decompiler that you are using is
+    coming up with those names. ProGuard's obfuscation step does remove the
+    original names entirely, unless you explicitly keep the
+    <code>LocalVariableTable</code> or <code>LocalVariableTypeTable</code>
+    attributes.</dd>
+
 <dt><a name="stacktraces"><b>Stack traces without class names or line numbers</b></a></dt>
 
 <dd>If your stack traces don't contain any class names or lines numbers,
@@ -281,15 +340,21 @@ might be several reasons:
 <dd>You may have forgotten to sign your program jar <i>after</i> having
     processed it with ProGuard.</dd>
 
+<dt><a name="classcastexception"><b>ClassCastException: class not an enum</b></a></dt>
+
+<dd>You are probably processing enumeration types and calling
+    <code>EnumSet.allOf</code>. You should then make sure you're preserving
+    the <code>values()</code> method of the enumeration type, as shown in the
+    examples.</dd>
+
 <dt><a name="arraystoreexception"><b>ArrayStoreException: sun.reflect.annotation.EnumConstantNotPresentExceptionProxy</b></a></dt>
 
-<dd>You are probably processing annotations involving enumerations. You should
-    then preserve the <code>values()</code> method of the enumeration type, as
-    shown in the examples.</dd>
-
+<dd>You are probably processing annotations involving enumerations. Again, you
+    should make sure you're preserving the <code>values()</code> method of the
+    enumeration type, as shown in the examples.</dd>
 
 <dt><a name="nosuchfieldormethod"><b>Error: No Such Field or Method</b>,
-    <b>Error verifying method</b> (in J2ME emulator)</a></dt>
+    <b>Error verifying method</b> (in a J2ME emulator)</a></dt>
 
 <dd>If you get such a message in a Motorola or Sony Ericsson J2ME phone
     emulator, it's because these emulators don't like packageless classes

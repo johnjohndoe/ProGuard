@@ -1,4 +1,4 @@
-/* $Id: ClassPoolFiller.java,v 1.9.2.3 2006/11/26 15:29:20 eric Exp $
+/* $Id: DuplicateClassFilePrinter.java,v 1.1.2.1 2006/11/26 15:29:20 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -18,29 +18,29 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
-package proguard.classfile.visitor;
+package proguard;
 
+import proguard.classfile.visitor.ClassFileVisitor;
 import proguard.classfile.*;
 import proguard.classfile.util.*;
 
-
 /**
- * This ClassFileVisitor collects all the class files it visits in a given
- * class pool.
+ * This ClassFileVisitor writes out notes about the class files that it visits
+ * being duplicates.
  *
  * @author Eric Lafortune
  */
-public class ClassPoolFiller implements ClassFileVisitor
+public class DuplicateClassFilePrinter implements ClassFileVisitor
 {
-    private ClassPool classPool;
+    private WarningPrinter notePrinter;
 
 
     /**
-     * Creates a new ClassPoolFiller.
+     * Creates a new DuplicateClassFileVisitor.
      */
-    public ClassPoolFiller(ClassPool classPool)
+    public DuplicateClassFilePrinter(WarningPrinter notePrinter)
     {
-        this.classPool = classPool;
+        this.notePrinter = notePrinter;
     }
 
 
@@ -48,12 +48,14 @@ public class ClassPoolFiller implements ClassFileVisitor
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
-        classPool.addClass(programClassFile);
+        notePrinter.print("Note: duplicate definition of program class [" +
+                          ClassUtil.externalClassName(programClassFile.getName()) + "]");
     }
 
 
     public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
     {
-        classPool.addClass(libraryClassFile);
+        notePrinter.print("Note: duplicate definition of library class [" +
+                          ClassUtil.externalClassName(libraryClassFile.getName()) + "]");
     }
 }

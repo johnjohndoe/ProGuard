@@ -1,4 +1,4 @@
-/* $Id: NoSideEffectMethodMarker.java,v 1.5.2.2 2006/04/17 02:18:30 eric Exp $
+/* $Id: NoSideEffectMethodMarker.java,v 1.5.2.3 2006/06/07 22:36:52 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -69,7 +69,7 @@ public class NoSideEffectMethodMarker
         }
         else
         {
-            MethodInfoLinker.lastMethodInfo(methodInfo).setVisitorInfo(KEPT_BUT_NO_SIDE_EFFECTS);
+            MethodInfoLinker.lastMemberInfo(methodInfo).setVisitorInfo(KEPT_BUT_NO_SIDE_EFFECTS);
         }
     }
 
