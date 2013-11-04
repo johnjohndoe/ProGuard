@@ -1,4 +1,4 @@
-/* $Id: ParameterUsageMarker.java,v 1.4.2.2 2007/01/18 21:31:53 eric Exp $
+/* $Id: ParameterUsageMarker.java,v 1.4.2.3 2007/12/02 12:45:34 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -42,14 +42,16 @@ implements   MemberInfoVisitor
 
     public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
     {
+        int accessFlags = programMethodInfo.getAccessFlags();
+
         // Is this a native method?
-        if ((programMethodInfo.getAccessFlags() & ClassConstants.INTERNAL_ACC_NATIVE) != 0)
+        if ((accessFlags & ClassConstants.INTERNAL_ACC_NATIVE) != 0)
         {
             // All parameters can be considered as being used.
             long usedParameters = parameterMask(programClassFile, programMethodInfo);
 
             // Is this a non-static method?
-            if ((programMethodInfo.getAccessFlags() & ClassConstants.INTERNAL_ACC_STATIC) == 0)
+            if ((accessFlags & ClassConstants.INTERNAL_ACC_STATIC) == 0)
             {
                 // The 'this' parameter can be considered as being used too.
                 usedParameters = 1L | (usedParameters << 1);
@@ -59,32 +61,38 @@ implements   MemberInfoVisitor
             markUsedVariables(programMethodInfo, usedParameters);
         }
 
-        // Can the method have other implementations?
-        if (programClassFile.mayHaveImplementations(programMethodInfo))
+        // Is this a non-static method?
+        else if ((accessFlags & ClassConstants.INTERNAL_ACC_STATIC) == 0)
         {
-            // All implementations must at least keep the 'this' parameter too.
-            long usedParameters = 1L;
-
-            // Mark the parameters.
-            markUsedVariables(programMethodInfo, usedParameters);
-        }
-        // Is it an <init> method?
-        else if (programMethodInfo.getName(programClassFile).equals(ClassConstants.INTERNAL_METHOD_NAME_INIT))
-        {
-            // Instance initializers always require the 'this' parameter.
-            long usedParameters = 1L;
-
-            // Is there a name clash with some existing <init> method?
-            if (programClassFile.findMethod(ClassConstants.INTERNAL_METHOD_NAME_INIT,
-                                            ParameterShrinker.shrinkDescriptor(programClassFile,
-                                                                               programMethodInfo)) != null)
+            // Is the method synchronized or can it have other implementations?
+            if ((accessFlags & ClassConstants.INTERNAL_ACC_SYNCHRONIZED) != 0 ||
+                programClassFile.mayHaveImplementations(programMethodInfo))
             {
-                // The shrinking is off. Mark all parameters.
-                usedParameters |=  parameterMask(programClassFile, programMethodInfo) << 1;
+                // All implementations must at least keep the 'this' parameter too.
+                long usedParameters = 1L;
+
+                // Mark the parameters.
+                markUsedVariables(programMethodInfo, usedParameters);
             }
 
-            // Mark the parameters.
-            markUsedVariables(programMethodInfo, usedParameters);
+            // Is it an <init> method?
+            else if (programMethodInfo.getName(programClassFile).equals(ClassConstants.INTERNAL_METHOD_NAME_INIT))
+            {
+                // Instance initializers always require the 'this' parameter.
+                long usedParameters = 1L;
+
+                // Is there a name clash with some existing <init> method?
+                if (programClassFile.findMethod(ClassConstants.INTERNAL_METHOD_NAME_INIT,
+                                                ParameterShrinker.shrinkDescriptor(programClassFile,
+                                                                                   programMethodInfo)) != null)
+                {
+                    // The shrinking is off. Mark all parameters.
+                    usedParameters |=  parameterMask(programClassFile, programMethodInfo) << 1;
+                }
+
+                // Mark the parameters.
+                markUsedVariables(programMethodInfo, usedParameters);
+            }
         }
     }
 

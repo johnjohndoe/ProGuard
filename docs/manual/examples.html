@@ -591,6 +591,8 @@ Reportedly, the easiest way to handle RMI code is to process the code with
 ProGuard first and then invoke the <code>rmic</code> tool. If that is not
 possible, you may want to try something like this:
 <pre>
+-keepattributes Exceptions
+
 -keep interface * extends java.rmi.Remote {
     &lt;methods&gt;;
 }
@@ -603,6 +605,10 @@ possible, you may want to try something like this:
 The first directive keeps all your Remote interfaces and their methods. The
 second one keeps all the implementations, along with their particular RMI
 constructors, if any.
+<p>
+The <code>Exceptions</code> attribute has to be kept too, because the RMI
+handling code performs introspection to check whether the method signatures
+are compatible.
 
 <a name="stacktrace">&nbsp;</a>
 <h3>Producing useful obfuscated stack traces</h3>
@@ -848,15 +854,16 @@ We're not specifying an output jar, just printing out some results. We're
 saving some processing time by skipping the optimization and obfuscation
 steps.
 <p>
-The java compiler inlines primitive constants (primitive <code>static
-final</code> fields). ProGuard would therefore list such fields as not being
-used in the class files that it analyzes, even if they <i>are</i> used in the
-source files. We can add a <a
+The java compiler inlines primitive constants and String constants
+(<code>static final</code> fields). ProGuard would therefore list such fields
+as not being used in the class files that it analyzes, even if they <i>are</i>
+used in the source files. We can add a <a
 href="usage.html#keepclassmembers"><code>-keepclassmembers</code></a> option
-that keeps those fields a priori, in order to avoid listing them:
+that keeps those fields a priori, in order to avoid having them listed:
 <pre>
 -keepclassmembers class * {
-    static final % *;
+    static final %                *;
+    static final java.lang.String *;
 }
 </pre>
 

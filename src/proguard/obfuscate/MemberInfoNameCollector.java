@@ -1,4 +1,4 @@
-/* $Id: MemberInfoNameCollector.java,v 1.3.2.4 2007/01/18 21:31:52 eric Exp $
+/* $Id: MemberInfoNameCollector.java,v 1.3.2.5 2007/12/09 12:50:59 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -121,7 +121,7 @@ public class MemberInfoNameCollector implements MemberInfoVisitor
 
             // Isn't there another original name for this new name, or should
             // this original name get priority?
-            Object otherName = nameMap.get(newName);
+            String otherName = (String)nameMap.get(newName);
             if (otherName == null                                      ||
                 MemberInfoObfuscator.hasFixedNewMemberName(memberInfo) ||
                 name.compareTo(otherName) < 0)

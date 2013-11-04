@@ -1,4 +1,4 @@
-/* $Id: SideEffectMethodMarker.java,v 1.6.2.2 2007/01/18 21:31:53 eric Exp $
+/* $Id: SideEffectMethodMarker.java,v 1.6.2.3 2007/11/27 22:18:26 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -88,7 +88,9 @@ public class SideEffectMethodMarker
         {
             // Set the return value, in case the method doesn't have a code
             // attribute (a native method or an abstract method).
-            hasSideEffects = (programMethodInfo.getAccessFlags() & ClassConstants.INTERNAL_ACC_NATIVE) != 0;
+            hasSideEffects = (programMethodInfo.getAccessFlags() &
+                              (ClassConstants.INTERNAL_ACC_NATIVE |
+                               ClassConstants.INTERNAL_ACC_SYNCHRONIZED)) != 0;
 
             programMethodInfo.attributesAccept(programClassFile, this);
 

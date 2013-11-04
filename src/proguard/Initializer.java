@@ -1,4 +1,4 @@
-/* $Id: Initializer.java,v 1.2.2.11 2007/02/03 09:05:51 eric Exp $
+/* $Id: Initializer.java,v 1.2.2.12 2007/12/09 12:50:59 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java bytecode.
  *
@@ -149,7 +149,7 @@ public class Initializer
                                        " Java 6 program classes.");
                     System.err.println("      In order to obtain all of the improved start-up performance of Java 6,");
                     System.err.println("      they should be preverified after having been optimized or obfuscated.");
-                    System.err.println("      Keep any eye on ProGuard version 4.0 for preverification support,");
+                    System.err.println("      You should consider ProGuard version 4.0 for preverification support,");
                     System.err.println("      at http://proguard.sourceforge.net/");
                 }
             }

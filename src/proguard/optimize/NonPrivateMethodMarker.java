@@ -1,4 +1,4 @@
-/* $Id: NonPrivateMethodMarker.java,v 1.7.2.2 2007/01/18 21:31:53 eric Exp $
+/* $Id: NonPrivateMethodMarker.java,v 1.7.2.3 2007/11/27 22:30:16 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -92,7 +92,8 @@ public class NonPrivateMethodMarker
 
         // Is it refering to a method in another class file?
         if (referencedClassFile != null &&
-            !referencedClassFile.equals(classFile))
+            !referencedClassFile.equals(classFile) ||
+            !methodrefCpInfo.getClassName(classFile).equals(classFile.getName()))
         {
             // The referenced method can never be made private.
             methodrefCpInfo.referencedMemberInfoAccept(this);
