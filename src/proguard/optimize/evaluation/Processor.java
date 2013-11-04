@@ -1,4 +1,4 @@
-/* $Id: Processor.java,v 1.13.2.3 2007/01/18 21:31:53 eric Exp $
+/* $Id: Processor.java,v 1.13.2.5 2007/04/05 21:40:07 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -271,7 +271,18 @@ implements   InstructionVisitor,
                 break;
 
             case InstructionConstants.OP_LDIV:
-                stack.push(stack.lpop().divideOf(stack.lpop()));
+                try
+                {
+                    stack.push(stack.lpop().remainderOf(stack.lpop()));
+                }
+                catch (ArithmeticException ex)
+                {
+                    stack.push(LongValueFactory.create());
+                    // TODO: Forward ArithmeticExceptions.
+                    //stack.clear();
+                    //stack.push(valueFactory.createReference(false));
+                    //branchUnit.throwException();
+                }
                 break;
 
             case InstructionConstants.OP_FDIV:
@@ -298,7 +309,18 @@ implements   InstructionVisitor,
                 break;
 
             case InstructionConstants.OP_LREM:
-                stack.push(stack.lpop().remainderOf(stack.lpop()));
+                try
+                {
+                    stack.push(stack.lpop().remainderOf(stack.lpop()));
+                }
+                catch (ArithmeticException ex)
+                {
+                    stack.push(LongValueFactory.create());
+                    // TODO: Forward ArithmeticExceptions.
+                    //stack.clear();
+                    //stack.push(valueFactory.createReference(false));
+                    //branchUnit.throwException();
+                }
                 break;
 
             case InstructionConstants.OP_FREM:
@@ -518,6 +540,14 @@ implements   InstructionVisitor,
             case InstructionConstants.OP_LDC:
             case InstructionConstants.OP_LDC_W:
             case InstructionConstants.OP_LDC2_W:
+                Value cpValue = cpValue(classFile, cpIndex);
+                // The constant can be a class constant, which actually loads
+                // the java.lang.Class type.
+                stack.push(cpValue.computationalType() == Value.TYPE_REFERENCE ?
+                    ReferenceValueFactory.create(false) :
+                    cpValue);
+                break;
+
             case InstructionConstants.OP_GETSTATIC:
                 stack.push(cpValue(classFile, cpIndex));
                 break;
@@ -540,8 +570,8 @@ implements   InstructionVisitor,
             case InstructionConstants.OP_INVOKESPECIAL:
             case InstructionConstants.OP_INVOKESTATIC:
             case InstructionConstants.OP_INVOKEINTERFACE:
-                Value cpValue        = cpValue(classFile, cpIndex);
-                int   parameterCount = parameterCount(classFile, cpIndex);
+                cpValue = cpValue(classFile, cpIndex);
+                int parameterCount = parameterCount(classFile, cpIndex);
 
                 for (int counter = 0; counter < parameterCount; counter++)
                 {

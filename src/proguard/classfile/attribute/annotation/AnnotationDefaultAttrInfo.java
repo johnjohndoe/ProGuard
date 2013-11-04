@@ -26,7 +26,7 @@ import proguard.classfile.attribute.*;
 import java.io.*;
 
 /**
- * Representation of a runtime visible annotations attribute.
+ * Representation of an annotation default attribute.
  *
  * @author Eric Lafortune
  */
@@ -44,7 +44,7 @@ public class AnnotationDefaultAttrInfo extends AttrInfo
 
 
     /**
-     * Applies the given visitor to the default element values.
+     * Applies the given visitor to the default element value.
      */
     public void defaultValueAccept(ClassFile classFile, ElementValueVisitor elementValueVisitor)
     {

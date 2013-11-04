@@ -1,4 +1,4 @@
-/* $Id: MethodInvocationFixer.java,v 1.4.2.3 2007/01/18 21:31:51 eric Exp $
+/* $Id: MethodInvocationFixer.java,v 1.4.2.4 2007/04/05 21:40:54 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -261,7 +261,7 @@ implements   InstructionVisitor,
         // Remember the parameter size of interface methods.
         if (isInterfaceMethod)
         {
-            parameterSize = ClassUtil.internalMethodParameterSize(methodInfo.getDescriptor(classFile)) + 1 << 8;
+            parameterSize = (ClassUtil.internalMethodParameterSize(methodInfo.getDescriptor(classFile)) + 1) << 8;
         }
     }
 

@@ -424,6 +424,7 @@ may require special attention:
 
 -keepclassmembers class * implements java.io.Serializable {
     static final long serialVersionUID;
+    static final java.io.ObjectStreamField[] serialPersistentFields;
     !static !transient &lt;fields&gt;;
     private void writeObject(java.io.ObjectOutputStream);
     private void readObject(java.io.ObjectInputStream);
@@ -433,7 +434,8 @@ may require special attention:
 </pre>
 <p>
 
-    The <code>serialVersionUID</code> line makes sure that field is preserved.
+    The <code>serialVersionUID</code> and <code>serialPersistentFields</code>
+    lines makes sure those fields are preserved, if they are present.
     The <code>&lt;fields&gt;</code> line preserves all non-static,
     non-transient fields, with their original names. The introspection of the
     serialization process and the de-serialization process will then find
@@ -444,18 +446,19 @@ may require special attention:
     original code will then be hard to maintain, since the serial version UID
     is then computed from a list of features the serializable class. Changing
     the class ever so slightly may change the computed serial version UID. The
-    list of features is specified in the chapter on <a
-    href="http://java.sun.com/j2se/1.4/docs/guide/serialization/spec/class.html#wp4100">Stream
+    list of features is specified in the section on <a
+    href="http://java.sun.com/javase/6/docs/platform/serialization/spec/class.html#4100">Stream
     Unique Identifiers</a> of Sun's <a
-    href="http://java.sun.com/j2se/1.4/docs/guide/serialization/">Object
-    Serialization Guide</a>. The following directives should at least
-    partially ensure compatibility with the original classes
+    href="http://java.sun.com/javase/6/docs/platform/serialization/spec/serialTOC.html">Java
+    Object Serialization Specification</a>. The following directives should at
+    least partially ensure compatibility with the original classes:
 
 <pre>
 -keepnames class * implements java.io.Serializable
 
 -keepclassmembers class * implements java.io.Serializable {
     static final long serialVersionUID;
+    static final java.io.ObjectStreamField[] serialPersistentFields;
     !static !transient &lt;fields&gt;;
     !private &lt;fields&gt;;
     !private &lt;methods&gt;;

@@ -1,4 +1,4 @@
-/* $Id: VariableInstruction.java,v 1.20.2.3 2007/01/18 21:31:51 eric Exp $
+/* $Id: VariableInstruction.java,v 1.20.2.4 2007/05/22 21:39:12 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -56,8 +56,8 @@ public class VariableInstruction extends Instruction
         this.opcode        = opcode;
         this.variableIndex = variableIndex;
         this.constant      = constant;
-        this.wide          = requiredVariableIndexSize() > 2 ||
-                             requiredConstantSize() > 1;
+        this.wide          = requiredVariableIndexSize() > 1 ||
+                             requiredConstantSize()      > 1;
     }
 
 
@@ -161,7 +161,7 @@ public class VariableInstruction extends Instruction
         }
 
         // Only make the instruction wide if necessary.
-        wide = requiredVariableIndexSize() > 2 ||
+        wide = requiredVariableIndexSize() > 1 ||
                requiredConstantSize()      > 1;
 
         return this;

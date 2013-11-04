@@ -42,11 +42,10 @@ interest too, because they typically contain any less urgent bug fixes
 collected since the previous release.
 <p>
 
-<font color="darkgrey">
-<h3><div>In alpha</div> Version 4.0</h3>
+<h3><div>In beta</div> Version 4.0</h3>
 <ul>
-<li>Added preverifier for Java 6 and Java Micro Edition, with new option
-    <code>-dontpreverify</code>.
+<li>Added preverifier for Java 6 and Java Micro Edition, with new options
+    <code>-microedition</code> and <code>-dontpreverify</code>.
 <li>Added new option <code>-target</code> to modify java version of processed
     class files.
 <li>Made <code>-keep</code> options more orthogonal and flexible, with option
@@ -58,10 +57,12 @@ collected since the previous release.
     processing, with new option <code>-forceprocessing</code>.
 <li>Added new options <code>-flattenpackagehierarchy</code> and
     <code>-repackageclasses</code> (replacing <code>-defaultpackage</code>) to
-    control obfuscation of packages names.
+    control obfuscation of package names.
 <li>Added new options <code>-adaptresourcefilenames</code> and
     <code>-adaptresourcefilecontents</code>, with file filters, to update
     resource files corresponding to obfuscated class names.
+<li>Added detection of dynamically accessed fields and methods.
+<li>Now treating <code>Exceptions</code> attributes as optional.
 <li>Now respecting naming rule for nested class names
     (<code>EnclosingClass$InnerClass</code>) in obfuscation step, if
     <code>InnerClasses</code> attributes or <code>EnclosingMethod</code>
@@ -76,9 +77,32 @@ collected since the previous release.
 <li>Now printing notes for class names that don't seem to be fully qualified.
 <li>Added support for uppercase filename extensions.
 <li>Rewritten class file I/O code.
-<li>TODO: Update documentation and examples.
+<li>Updated documentation and examples.
 </ul>
-</font>
+Upgrade considerations:
+<ul>
+
+<li>Since ProGuard now treats the <code>Exceptions</code> attribute as
+    optional, you may have to specify <code>-keepattributes Exceptions</code>,
+    for instance when processing code that is to be used as a library.
+
+<li>ProGuard will now preverify code for Java Micro Edition, if you specify the
+    option <code>-microedition</code>. You then no longer need to process the
+    code with an external preverifier.
+
+<li>You should preferably specify <code>-repackageclasses</code> instead of the
+    old option name <code>-defaultpackage</code>.
+</ul>
+
+<h3><div>Jun 2007</div> Version 3.9</h3>
+<ul>
+<li>Fixed processing of .class constructs in Java 6.
+<li>Fixed repeated processing of .class constructs.
+<li>Fixed possible division by 0 in optimization step.
+<li>Fixed handling of variable instructions with variable indices larger than
+    255.
+<li>Updated documentation and examples.
+</ul>
 
 <h3><div>Mar 2007</div> Version 3.8</h3>
 <ul>
@@ -312,8 +336,8 @@ collected since the previous release.
 <li>Added tool to de-obfuscate stack traces.
 <li>Added options to print processing information to files.
 <li>Added option to rename source file attributes.
-<li>Fixed proce/home/eric/ProGuard/sf.htmlssing of implicitly used interfaces
-    targeted at JRE1.2 (the default in JDK1.4)
+<li>Fixed processing of implicitly used interfaces targeted at JRE1.2 (the
+    default in JDK1.4)
 <li>Fixed processing of configurations with negated access modifiers.
 <li>Fixed duplicate class entry bug.
 <li>Updated documentation and examples.
