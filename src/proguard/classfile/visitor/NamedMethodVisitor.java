@@ -1,4 +1,4 @@
-/* $Id: NamedMethodVisitor.java,v 1.5 2002/05/23 19:19:58 eric Exp $
+/* $Id: NamedMethodVisitor.java,v 1.6 2002/08/02 16:40:28 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -24,7 +24,7 @@ import proguard.classfile.*;
 
 
 /**
- * This class visits ProgramMemberInfo objects refering to methods, identified by
+ * This class visits ProgramMemberInfo objects referring to methods, identified by
  * a name and descriptor pair.
  *
  * @author Eric Lafortune

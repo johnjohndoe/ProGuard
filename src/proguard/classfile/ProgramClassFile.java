@@ -1,4 +1,4 @@
-/* $Id: ProgramClassFile.java,v 1.14 2002/07/04 16:16:58 eric Exp $
+/* $Id: ProgramClassFile.java,v 1.16 2002/07/30 17:27:35 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -23,6 +23,8 @@ package proguard.classfile;
 
 
 import proguard.classfile.visitor.*;
+import proguard.classfile.util.ClassUtil;
+
 import java.io.*;
 import java.util.*;
 
@@ -94,43 +96,36 @@ public class ProgramClassFile implements ClassFile
     {
         // Read and check the class file magic number.
         u4magic = din.readInt();
-
-        if (u4magic != ClassConstants.MAGIC)
-        {
-            throw new IOException("Invalid magic number in class file.");
-        }
+        ClassUtil.checkMagicNumber(u4magic);
 
         // Read and check the class file version numbers.
         u2minorVersion = din.readUnsignedShort();
         u2majorVersion = din.readUnsignedShort();
+        ClassUtil.checkVersionNumbers(u2majorVersion, u2minorVersion);
 
-        if (u2majorVersion < ClassConstants.MAJOR_VERSION_MIN ||
-            (u2majorVersion == ClassConstants.MAJOR_VERSION_MIN &&
-             u2minorVersion <  ClassConstants.MINOR_VERSION_MIN) ||
-            (u2majorVersion == ClassConstants.MAJOR_VERSION_MAX &&
-             u2minorVersion >  ClassConstants.MINOR_VERSION_MAX) ||
-            u2majorVersion > ClassConstants.MAJOR_VERSION_MAX)
-        {
-            throw new IOException("Unsupported version number ["+u2majorVersion+"."+u2minorVersion+"] for class file format.");
-        }
-
+        // Read the constant pool.
         u2constantPoolCount = din.readUnsignedShort();
         constantPool        = new CpInfo[u2constantPoolCount];
-        // Fill the constant pool, recalling the zero entry
-        // is not persisted, nor are the entries following a Long or Double
+
+        // Fill the constant pool. The zero entry is not used, nor are the
+        // entries following a Long or Double.
         for (int i = 1; i < u2constantPoolCount; i++)
         {
             constantPool[i] = CpInfo.create(din);
-            if ((constantPool[i] instanceof LongCpInfo) ||
-                (constantPool[i] instanceof DoubleCpInfo))
+            int tag = constantPool[i].getTag();
+            if (tag == ClassConstants.CONSTANT_Long ||
+                tag == ClassConstants.CONSTANT_Double)
             {
                 i++;
             }
         }
 
-        u2accessFlags     = din.readUnsignedShort();
-        u2thisClass       = din.readUnsignedShort();
-        u2superClass      = din.readUnsignedShort();
+        // Read the access flags, class name, and super class name.
+        u2accessFlags = din.readUnsignedShort();
+        u2thisClass   = din.readUnsignedShort();
+        u2superClass  = din.readUnsignedShort();
+
+        // Read the interfaces.
         u2interfacesCount = din.readUnsignedShort();
         u2interfaces      = new int[u2interfacesCount];
         for (int i = 0; i < u2interfacesCount; i++)
@@ -138,6 +133,7 @@ public class ProgramClassFile implements ClassFile
             u2interfaces[i] = din.readUnsignedShort();
         }
 
+        // Read the fields.
         u2fieldsCount = din.readUnsignedShort();
         fields        = new ProgramFieldInfo[u2fieldsCount];
         for (int i = 0; i < u2fieldsCount; i++)
@@ -145,6 +141,7 @@ public class ProgramClassFile implements ClassFile
             fields[i] = ProgramFieldInfo.create(din, this);
         }
 
+        // Read the methods.
         u2methodsCount = din.readUnsignedShort();
         methods        = new ProgramMethodInfo[u2methodsCount];
         for (int i = 0; i < u2methodsCount; i++)
@@ -152,6 +149,7 @@ public class ProgramClassFile implements ClassFile
             methods[i] = ProgramMethodInfo.create(din, this);
         }
 
+        // Read the attributes.
         u2attributesCount = din.readUnsignedShort();
         attributes        = new AttrInfo[u2attributesCount];
         for (int i = 0; i < u2attributesCount; i++)

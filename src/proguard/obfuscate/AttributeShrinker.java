@@ -1,4 +1,4 @@
-/* $Id: AttributeShrinker.java,v 1.6 2002/05/23 19:19:58 eric Exp $
+/* $Id: AttributeShrinker.java,v 1.7 2002/07/28 16:57:22 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -102,7 +102,7 @@ public class AttributeShrinker
 
     // Implementations for AttrInfoVisitor
 
-    public void visitAttrInfo(ClassFile classFile, AttrInfo attrInfo) {}
+    public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo) {}
     public void visitConstantValueAttrInfo(ClassFile classFile, ConstantValueAttrInfo constantValueAttrInfo) {}
     public void visitExceptionsAttrInfo(ClassFile classFile, ExceptionsAttrInfo exceptionsAttrInfo) {}
     public void visitInnerClassesAttrInfo(ClassFile classFile, InnerClassesAttrInfo innerClassesAttrInfo) {}

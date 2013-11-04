@@ -1,4 +1,4 @@
-/* $Id: RefCpInfo.java,v 1.10 2002/05/23 21:21:12 eric Exp $
+/* $Id: RefCpInfo.java,v 1.11 2002/07/28 15:56:58 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -33,7 +33,7 @@ import java.util.*;
  * @author Mark Welsh
  * @author Eric Lafortune
  */
-abstract public class RefCpInfo extends CpInfo
+public abstract class RefCpInfo extends CpInfo
 {
     public int u2classIndex;
     public int u2nameAndTypeIndex;
@@ -55,34 +55,8 @@ abstract public class RefCpInfo extends CpInfo
     public ProgramMemberInfo referencedMemberInfo;
 
 
-    protected RefCpInfo(int tag)
+    protected RefCpInfo()
     {
-        super(tag);
-    }
-
-
-    /**
-     * Lets the referenced class file accept the given visitor.
-     */
-    public void referencedClassAccept(ClassFileVisitor classFileVisitor)
-    {
-        if (referencedClassFile != null)
-        {
-            referencedClassFile.accept(classFileVisitor);
-        }
-    }
-
-
-    /**
-     * Lets the referenced class member accept the given visitor.
-     */
-    public void referencedMemberInfoAccept(MemberInfoVisitor memberInfoVisitor)
-    {
-        if (referencedMemberInfo != null)
-        {
-            referencedMemberInfo.accept(referencedClassFile,
-                                        memberInfoVisitor);
-        }
     }
 
 
@@ -134,21 +108,43 @@ abstract public class RefCpInfo extends CpInfo
         return classFile.getCpTypeString(u2nameAndTypeIndex);
     }
 
-    /**
-     * Reads the 'info' data following the u1tag byte.
-     */
+
+    // Implementations for CpInfo
+
     protected void readInfo(DataInput din) throws IOException
     {
         u2classIndex = din.readUnsignedShort();
         u2nameAndTypeIndex = din.readUnsignedShort();
     }
 
-    /**
-     * Writes the 'info' data following the u1tag byte.
-     */
     protected void writeInfo(DataOutput dout) throws IOException
     {
         dout.writeShort(u2classIndex);
         dout.writeShort(u2nameAndTypeIndex);
+    }
+
+
+    /**
+     * Lets the referenced class file accept the given visitor.
+     */
+    public void referencedClassAccept(ClassFileVisitor classFileVisitor)
+    {
+        if (referencedClassFile != null)
+        {
+            referencedClassFile.accept(classFileVisitor);
+        }
+    }
+
+
+    /**
+     * Lets the referenced class member accept the given visitor.
+     */
+    public void referencedMemberInfoAccept(MemberInfoVisitor memberInfoVisitor)
+    {
+        if (referencedMemberInfo != null)
+        {
+            referencedMemberInfo.accept(referencedClassFile,
+                                        memberInfoVisitor);
+        }
     }
 }

@@ -1,4 +1,4 @@
-/* $Id: CpInfo.java,v 1.9 2002/07/04 16:16:58 eric Exp $
+/* $Id: CpInfo.java,v 1.14 2002/08/02 16:40:28 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -32,10 +32,22 @@ import java.util.*;
  * @author Mark Welsh
  * @author Eric Lafortune
  */
-abstract public class CpInfo implements VisitorAccepter
+public abstract class CpInfo implements VisitorAccepter
 {
-    public int u1tag;
-    //private byte info[];
+    // Shared copies of constant pool objects, to avoid creating a lot of objects.
+    private static final IntegerCpInfo            integerCpInfo            = new IntegerCpInfo();
+    private static final FloatCpInfo              floatCpInfo              = new FloatCpInfo();
+    private static final LongCpInfo               longCpInfo               = new LongCpInfo();
+    private static final DoubleCpInfo             doubleCpInfo             = new DoubleCpInfo();
+    private static final StringCpInfo             stringCpInfo             = new StringCpInfo();
+    private static final FieldrefCpInfo           fieldrefCpInfo           = new FieldrefCpInfo();
+    private static final MethodrefCpInfo          methodrefCpInfo          = new MethodrefCpInfo();
+    private static final InterfaceMethodrefCpInfo interfaceMethodrefCpInfo = new InterfaceMethodrefCpInfo();
+    private static final NameAndTypeCpInfo        nameAndTypeCpInfo        = new NameAndTypeCpInfo();
+
+
+    //public int  u1tag;
+    //public byte info[];
 
     /**
      * An extra field in which visitors can store information.
@@ -46,49 +58,62 @@ abstract public class CpInfo implements VisitorAccepter
     /**
      * Creates a new CpInfo from the data passed.
      *
-     * @throws IOException if class file is corrupt or incomplete
+     * @throws IOException if the class file is corrupt or incomplete.
      */
     public static CpInfo create(DataInput din) throws IOException
     {
         // Instantiate based on tag byte
-        CpInfo ci = null;
-        int type = din.readUnsignedByte();
-        switch (type)
+        CpInfo cpInfo = null;
+        int u1tag = din.readUnsignedByte();
+        switch (u1tag)
         {
-        case ClassConstants.CONSTANT_Utf8:               ci = new Utf8CpInfo();              break;
-        case ClassConstants.CONSTANT_Integer:            ci = new IntegerCpInfo();           break;
-        case ClassConstants.CONSTANT_Float:              ci = new FloatCpInfo();             break;
-        case ClassConstants.CONSTANT_Long:               ci = new LongCpInfo();              break;
-        case ClassConstants.CONSTANT_Double:             ci = new DoubleCpInfo();            break;
-        case ClassConstants.CONSTANT_Class:              ci = new ClassCpInfo();             break;
-        case ClassConstants.CONSTANT_String:             ci = new StringCpInfo();            break;
-        case ClassConstants.CONSTANT_Fieldref:           ci = new FieldrefCpInfo();          break;
-        case ClassConstants.CONSTANT_Methodref:          ci = new MethodrefCpInfo();         break;
-        case ClassConstants.CONSTANT_InterfaceMethodref: ci = new InterfaceMethodrefCpInfo();break;
-        case ClassConstants.CONSTANT_NameAndType:        ci = new NameAndTypeCpInfo();       break;
-        default: throw new IOException("Unknown constant type ["+type+"] in constant pool.");
+        case ClassConstants.CONSTANT_Utf8:               cpInfo = new Utf8CpInfo();              break;
+        case ClassConstants.CONSTANT_Integer:            cpInfo = new IntegerCpInfo();           break;
+        case ClassConstants.CONSTANT_Float:              cpInfo = new FloatCpInfo();             break;
+        case ClassConstants.CONSTANT_Long:               cpInfo = new LongCpInfo();              break;
+        case ClassConstants.CONSTANT_Double:             cpInfo = new DoubleCpInfo();            break;
+        case ClassConstants.CONSTANT_Class:              cpInfo = new ClassCpInfo();             break;
+        case ClassConstants.CONSTANT_String:             cpInfo = new StringCpInfo();            break;
+        case ClassConstants.CONSTANT_Fieldref:           cpInfo = new FieldrefCpInfo();          break;
+        case ClassConstants.CONSTANT_Methodref:          cpInfo = new MethodrefCpInfo();         break;
+        case ClassConstants.CONSTANT_InterfaceMethodref: cpInfo = new InterfaceMethodrefCpInfo();break;
+        case ClassConstants.CONSTANT_NameAndType:        cpInfo = new NameAndTypeCpInfo();       break;
+        default: throw new IOException("Unknown constant type ["+u1tag+"] in constant pool.");
         }
-        ci.readInfo(din);
-        return ci;
-    }
-
-
-    protected CpInfo(int tag)
-    {
-        u1tag = tag;
-    }
-
-
-    public int getTag()
-    {
-        return u1tag;
+        cpInfo.readInfo(din);
+        return cpInfo;
     }
 
 
     /**
-     * Reads the 'info' data following the u1tag byte; override this in subclasses.
+     * Creates a new CpInfo from the data passed, for UTF-8 and Class constant
+     * pool entries, or returns a shared object, for all other entries.
+     *
+     * @throws IOException if the class file is corrupt or incomplete.
      */
-    abstract protected void readInfo(DataInput din) throws IOException;
+    public static CpInfo createOrShare(DataInput din) throws IOException
+    {
+        // Instantiate based on tag byte
+        CpInfo cpInfo = null;
+        int u1tag = din.readUnsignedByte();
+        switch (u1tag)
+        {
+        case ClassConstants.CONSTANT_Utf8:               cpInfo = new Utf8CpInfo();         break;
+        case ClassConstants.CONSTANT_Integer:            cpInfo = integerCpInfo;            break;
+        case ClassConstants.CONSTANT_Float:              cpInfo = floatCpInfo;              break;
+        case ClassConstants.CONSTANT_Long:               cpInfo = longCpInfo;               break;
+        case ClassConstants.CONSTANT_Double:             cpInfo = doubleCpInfo;             break;
+        case ClassConstants.CONSTANT_Class:              cpInfo = new ClassCpInfo();        break;
+        case ClassConstants.CONSTANT_String:             cpInfo = stringCpInfo;             break;
+        case ClassConstants.CONSTANT_Fieldref:           cpInfo = fieldrefCpInfo;           break;
+        case ClassConstants.CONSTANT_Methodref:          cpInfo = methodrefCpInfo;          break;
+        case ClassConstants.CONSTANT_InterfaceMethodref: cpInfo = interfaceMethodrefCpInfo; break;
+        case ClassConstants.CONSTANT_NameAndType:        cpInfo = nameAndTypeCpInfo;        break;
+        default: throw new IOException("Unknown constant type ["+u1tag+"] in constant pool.");
+        }
+        cpInfo.readInfo(din);
+        return cpInfo;
+    }
 
 
     /**
@@ -96,14 +121,29 @@ abstract public class CpInfo implements VisitorAccepter
      */
     public void write(DataOutput dout) throws IOException
     {
-        dout.writeByte(u1tag);
+        dout.writeByte(getTag());
         writeInfo(dout);
     }
 
+
+    // Abstract methods to be implemented by extensions.
+
     /**
-     * Writes the 'info' data following the u1tag byte; override this in subclasses.
+     * Returns the class pool info tag that specifies the entry type.
      */
-    abstract protected void writeInfo(DataOutput dout) throws IOException;
+    public abstract int getTag();
+
+
+    /**
+     * Reads the 'info' data following the u1tag byte.
+     */
+    protected abstract void readInfo(DataInput din) throws IOException;
+
+
+    /**
+     * Writes the 'info' data following the u1tag byte.
+     */
+    protected abstract void writeInfo(DataOutput dout) throws IOException;
 
 
     /**

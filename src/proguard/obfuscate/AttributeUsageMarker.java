@@ -1,4 +1,4 @@
-/* $Id: AttributeUsageMarker.java,v 1.8 2002/05/23 19:19:58 eric Exp $
+/* $Id: AttributeUsageMarker.java,v 1.9 2002/07/28 16:57:22 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -180,14 +180,14 @@ public class AttributeUsageMarker
 
     // Implementations for AttrInfoVisitor
 
-    public void visitAttrInfo(ClassFile classFile, AttrInfo attrInfo)
+    public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo)
     {
         if (keepAllAttributes ||
             keepAllUnknownAttributes ||
             (keepUnknownAttributes != null &&
-             keepUnknownAttributes.contains(attrInfo.getAttributeName(classFile))))
+             keepUnknownAttributes.contains(unknownAttrInfo.getAttributeName(classFile))))
         {
-            markAsUsed(attrInfo);
+            markAsUsed(unknownAttrInfo);
         }
     }
 

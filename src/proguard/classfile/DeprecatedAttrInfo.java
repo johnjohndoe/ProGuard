@@ -1,4 +1,4 @@
-/* $Id: DeprecatedAttrInfo.java,v 1.6 2002/05/12 14:29:08 eric Exp $
+/* $Id: DeprecatedAttrInfo.java,v 1.7 2002/07/28 16:57:22 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -33,26 +33,29 @@ import java.util.*;
  */
 public class DeprecatedAttrInfo extends AttrInfo
 {
+    private static final int CONSTANT_FIELD_SIZE = 0;
 
 
-    protected DeprecatedAttrInfo(int attrNameIndex, int attrLength)
+    protected DeprecatedAttrInfo()
     {
-        super(attrNameIndex, attrLength);
     }
 
-    /**
-     * Reads the data following the header.
-     */
-    protected void readInfo(DataInput din, ClassFile cf) throws IOException {}
 
-    /**
-     * Exports data following the header to a DataOutput stream.
-     */
-    public void writeInfo(DataOutput dout) throws IOException {}
+    // Implementations for AttrInfo
 
-    /**
-     * Accepts the given visitor.
-     */
+    protected int getAttrInfoLength()
+    {
+        return CONSTANT_FIELD_SIZE;
+    }
+
+    protected void readInfo(DataInput din, ClassFile cf) throws IOException
+    {
+    }
+
+    protected void writeInfo(DataOutput dout) throws IOException
+    {
+    }
+
     public void accept(ClassFile classFile, AttrInfoVisitor attrInfoVisitor)
     {
         attrInfoVisitor.visitDeprecatedAttrInfo(classFile, this);

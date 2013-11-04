@@ -1,4 +1,4 @@
-/* $Id: LongCpInfo.java,v 1.7 2002/07/04 16:16:58 eric Exp $
+/* $Id: LongCpInfo.java,v 1.8 2002/07/28 15:56:58 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -39,30 +39,28 @@ public class LongCpInfo extends CpInfo
 
     protected LongCpInfo()
     {
-        super(ClassConstants.CONSTANT_Long);
     }
 
-    /**
-     * Reads the 'info' data following the u1tag byte.
-     */
+
+    // Implementations for CpInfo
+
+    public int getTag()
+    {
+        return ClassConstants.CONSTANT_Long;
+    }
+
     protected void readInfo(DataInput din) throws IOException
     {
         u4highBytes = din.readInt();
         u4lowBytes = din.readInt();
     }
 
-    /**
-     * Writes the 'info' data following the u1tag byte.
-     */
     protected void writeInfo(DataOutput dout) throws IOException
     {
         dout.writeInt(u4highBytes);
         dout.writeInt(u4lowBytes);
     }
 
-    /**
-     * Accepts the given visitor.
-     */
     public void accept(ClassFile classFile, CpInfoVisitor cpInfoVisitor)
     {
         cpInfoVisitor.visitLongCpInfo(classFile, this);

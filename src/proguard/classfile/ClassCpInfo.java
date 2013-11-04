@@ -1,4 +1,4 @@
-/* $Id: ClassCpInfo.java,v 1.8 2002/07/04 16:16:58 eric Exp $
+/* $Id: ClassCpInfo.java,v 1.9 2002/07/28 15:56:58 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -48,7 +48,6 @@ public class ClassCpInfo extends CpInfo
 
     protected ClassCpInfo()
     {
-        super(ClassConstants.CONSTANT_Class);
     }
 
 
@@ -68,6 +67,7 @@ public class ClassCpInfo extends CpInfo
         u2nameIndex = index;
     }
 
+
     /**
      * Returns the name.
      */
@@ -76,25 +76,24 @@ public class ClassCpInfo extends CpInfo
         return classFile.getCpString(u2nameIndex);
     }
 
-    /**
-     * Reads the 'info' data following the u1tag byte.
-     */
+
+    // Implementations for CpInfo
+
+    public int getTag()
+    {
+        return ClassConstants.CONSTANT_Class;
+    }
+
     protected void readInfo(DataInput din) throws IOException
     {
         u2nameIndex = din.readUnsignedShort();
     }
 
-    /**
-     * Writes the 'info' data following the u1tag byte.
-     */
     protected void writeInfo(DataOutput dout) throws IOException
     {
         dout.writeShort(u2nameIndex);
     }
 
-    /**
-     * Accepts the given visitor.
-     */
     public void accept(ClassFile classFile, CpInfoVisitor cpInfoVisitor)
     {
         cpInfoVisitor.visitClassCpInfo(classFile, this);

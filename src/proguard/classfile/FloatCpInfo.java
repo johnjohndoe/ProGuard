@@ -1,4 +1,4 @@
-/* $Id: FloatCpInfo.java,v 1.7 2002/07/04 16:16:58 eric Exp $
+/* $Id: FloatCpInfo.java,v 1.8 2002/07/28 15:56:58 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -38,28 +38,26 @@ public class FloatCpInfo extends CpInfo
 
     protected FloatCpInfo()
     {
-        super(ClassConstants.CONSTANT_Float);
     }
 
-    /**
-     * Reads the 'info' data following the u1tag byte.
-     */
+
+    // Implementations for CpInfo
+
+    public int getTag()
+    {
+        return ClassConstants.CONSTANT_Float;
+    }
+
     protected void readInfo(DataInput din) throws IOException
     {
         u4bytes = din.readInt();
     }
 
-    /**
-     * Writes the 'info' data following the u1tag byte.
-     */
     protected void writeInfo(DataOutput dout) throws IOException
     {
         dout.writeInt(u4bytes);
     }
 
-    /**
-     * Accepts the given visitor.
-     */
     public void accept(ClassFile classFile, CpInfoVisitor cpInfoVisitor)
     {
         cpInfoVisitor.visitFloatCpInfo(classFile, this);

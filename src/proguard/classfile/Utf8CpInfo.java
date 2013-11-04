@@ -1,4 +1,4 @@
-/* $Id: Utf8CpInfo.java,v 1.8 2002/07/04 16:16:58 eric Exp $
+/* $Id: Utf8CpInfo.java,v 1.11 2002/08/02 16:40:28 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -26,7 +26,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Representation of a 'UTF8' entry in the ConstantPool.
+ * Representation of a 'UTF-8' entry in the ConstantPool.
  *
  * @author Mark Welsh
  * @author Eric Lafortune
@@ -37,72 +37,79 @@ public class Utf8CpInfo extends CpInfo
     private static final byte   NULL_BYTE1 = (byte)0xc0;
     private static final byte   NULL_BYTE2 = (byte)0x80;
 
+    // There are a lot of Utf8CpInfo objects, so we're optimising their storage.
+    // Initially, we're storing the UTF-8 bytes in a byte array.
+    // When the corresponding String is requested, we ditch the array and just
+    // store the String.
 
-    // We're just keeping the String.
     //private int u2length;
-    //private byte[] bytes;
+    private byte[] bytes;
 
-    public String utf8string;
+    private String utf8string;
 
 
     protected Utf8CpInfo()
     {
-        super(ClassConstants.CONSTANT_Utf8);
     }
 
     /**
-     * Constructor used when appending fresh Utf8 entries to the constant pool.
+     * Constructor used when appending fresh UTF-8 entries to the constant pool.
      */
-    public Utf8CpInfo(String s)
+    public Utf8CpInfo(String utf8string)
     {
-        this();
-
-        utf8string = s;
+        this.bytes      = null;
+        this.utf8string = utf8string;
     }
 
     /**
-     * Returns UTF8 data as a String.
+     * Returns UTF-8 data as a String.
      */
     public String getString()
     {
+        try
+        {
+            switchToStringRepresentation();
+        }
+        catch (UnsupportedEncodingException ex)
+        {
+        }
+
         return utf8string;
     }
 
     /**
-     * Sets UTF8 data as String.
+     * Sets UTF-8 data as String.
      */
-    public void setString(String s) throws Exception
+    public void setString(String utf8String) throws Exception
     {
-        utf8string = s;
+        this.bytes      = null;
+        this.utf8string = utf8String;
     }
 
-    /**
-     * Reads the 'info' data following the u1tag byte.
-     */
+
+    // Implementations for CpInfo
+
+    public int getTag()
+    {
+        return ClassConstants.CONSTANT_Utf8;
+    }
+
     protected void readInfo(DataInput din) throws IOException
     {
-        int    u2length = din.readUnsignedShort();
-        byte[] bytes    = new byte[u2length];
+        int u2length = din.readUnsignedShort();
+        bytes = new byte[u2length];
         din.readFully(bytes);
-
-        utf8string = new String(bytes, ENCODING);
     }
 
-    /**
-     * Writes the 'info' data following the u1tag byte.
-     */
     protected void writeInfo(DataOutput dout) throws IOException
     {
-        byte[] bytes    = modifiedUtf8(utf8string.getBytes(ENCODING));
+        byte[] bytes    = getByteArrayRepresentation();
         int    u2length = bytes.length;
 
         dout.writeShort(u2length);
         dout.write(bytes);
     }
 
-    /**
-     * Accepts the given visitor.
-     */
     public void accept(ClassFile classFile, CpInfoVisitor cpInfoVisitor)
     {
         cpInfoVisitor.visitUtf8CpInfo(classFile, this);
@@ -110,12 +117,34 @@ public class Utf8CpInfo extends CpInfo
 
 
     /**
-     * Transforms Utf8 bytes to the slightly modified Utf8 representation that
+     * Switches to a String representation of the UTF-8 data.
+     */
+    private void switchToStringRepresentation() throws UnsupportedEncodingException
+    {
+        if (utf8string == null)
+        {
+            utf8string = new String(bytes, ENCODING);
+            bytes = null;
+        }
+    }
+
+
+    /**
+     * Transforms UTF-8 bytes to the slightly modified UTF-8 representation that
      * is used by class files.
      */
-    private byte[] modifiedUtf8(byte[] bytes)
+    private byte[] getByteArrayRepresentation() throws UnsupportedEncodingException
     {
-        int length = bytes.length;
+        // Do we still have the byte array representation?
+        if (bytes != null)
+        {
+            // Then return that one.
+            return bytes;
+        }
+
+        // Otherwise reconstruct it from the String representation.
+        byte[] bytes  = utf8string.getBytes(ENCODING);
+        int    length = bytes.length;
 
         // Check for embedded null bytes.
         int count = 0;

@@ -1,4 +1,4 @@
-/* $Id: LibraryAttrInfo.java,v 1.6 2002/07/04 16:16:58 eric Exp $
+/* $Id: LibraryAttrInfo.java,v 1.7 2002/07/30 17:09:40 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -31,10 +31,8 @@ import java.util.*;
  * @author Mark Welsh
  * @author Eric Lafortune
  */
-public class LibraryAttrInfo //extends AttrInfo
+public class LibraryAttrInfo
 {
-
-
     /**
      * Skips LibraryAttrInfo from the data passed.
      *
@@ -44,12 +42,7 @@ public class LibraryAttrInfo //extends AttrInfo
     {
         // Instantiate based on attribute name
         int u2attrNameIndex = din.readUnsignedShort();
-        int u4attrLength = din.readInt();
+        int u4attrLength    = din.readInt();
         din.skipBytes(u4attrLength);
-    }
-
-    private LibraryAttrInfo()
-    {
-        //super(null, 0, 0);
     }
 }

@@ -1,4 +1,4 @@
-/* $Id: KeepCommand.java,v 1.10 2002/07/13 12:55:40 eric Exp $
+/* $Id: KeepCommand.java,v 1.11 2002/08/02 16:40:28 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -94,7 +94,7 @@ public class KeepCommand implements Command
      *                                 obfuscation, but the may be removed in
      *                                 the shrinking phase.
      *                                 If false, they will be kept from
-     *                                 srinking and obfuscation alike.
+     *                                 shrinking and obfuscation alike.
      */
     public KeepCommand(int     requiredSetAccessFlags,
                        int     requiredUnsetAccessFlags,

@@ -1,4 +1,4 @@
-/* $Id: MethodrefCpInfo.java,v 1.10 2002/07/04 16:16:58 eric Exp $
+/* $Id: MethodrefCpInfo.java,v 1.12 2002/08/02 16:40:28 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -26,24 +26,25 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Representation of a 'methodref' entry in the ConstantPool.
+ * Representation of a 'method reference' entry in the ConstantPool.
  *
  * @author Mark Welsh
  * @author Eric Lafortune
  */
 public class MethodrefCpInfo extends RefCpInfo
 {
-
-
     protected MethodrefCpInfo()
     {
-        super(ClassConstants.CONSTANT_Methodref);
     }
 
 
-    /**
-     * Accepts the given visitor.
-     */
+    // Implementations for CpInfo
+
+    public int getTag()
+    {
+        return ClassConstants.CONSTANT_Methodref;
+    }
+
     public void accept(ClassFile classFile, CpInfoVisitor cpInfoVisitor)
     {
         cpInfoVisitor.visitMethodrefCpInfo(classFile, this);

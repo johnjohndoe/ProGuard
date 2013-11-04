@@ -1,4 +1,4 @@
-/* $Id: ClassFilePrinter.java,v 1.8 2002/05/23 19:19:57 eric Exp $
+/* $Id: ClassFilePrinter.java,v 1.9 2002/07/28 16:57:22 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -280,7 +280,7 @@ public class ClassFilePrinter
     // Note that attributes are typically only referenced once, so we don't
     // test if they are marked already.
 
-    public void visitAttrInfo(ClassFile classFile, AttrInfo attrInfo)
+    public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo)
     {
         // Just ignore unknown attributes.
     }

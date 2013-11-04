@@ -1,4 +1,4 @@
-/* $Id: ClassFileRenamer.java,v 1.12 2002/07/10 16:13:48 eric Exp $
+/* $Id: ClassFileRenamer.java,v 1.14 2002/08/05 16:59:28 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -214,7 +214,7 @@ public class ClassFileRenamer
     // Small utility methods.
 
     /**
-     * Finds and exisiting NameAndTypeCpInfo class pool entry, or creates a new one,
+     * Finds and existing NameAndTypeCpInfo class pool entry, or creates a new one,
      * for the given name and type.
      * @return the constant pool index of the Utf8CpInfo.
      */
@@ -259,7 +259,7 @@ public class ClassFileRenamer
 
 
     /**
-     * Finds and exisiting Utf8CpInfo class pool entry, or creates a new one,
+     * Finds and existing Utf8CpInfo class pool entry, or creates a new one,
      * for the given string.
      * @return the constant pool index of the Utf8CpInfo.
      */

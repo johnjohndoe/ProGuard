@@ -1,4 +1,4 @@
-/* $Id: MemberObfuscator.java,v 1.12 2002/05/29 15:58:14 eric Exp $
+/* $Id: MemberObfuscator.java,v 1.13 2002/07/30 18:10:57 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -99,8 +99,9 @@ implements ClassFileVisitor,
                     String name = newMemberName(memberInfo);
                     if (name != null)
                     {
-                        // Only deal with it if it's not <init>.
-                        if (!name.equals(ClassConstants.INIT))
+                        // Only deal with it if it's not <clinit> or <init>.
+                        if (!(name.equals(ClassConstants.INTERNAL_METHOD_NAME_CLINIT) ||
+                              name.equals(ClassConstants.INTERNAL_METHOD_NAME_INIT)))
                         {
                             // Is this name already being used by another method
                             // in this name space?
@@ -185,13 +186,21 @@ implements ClassFileVisitor,
 
     public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
     {
-        // Special case: <init> is always kept unchanged, irrespective of the
-        // descriptor.
-        if (programMethodInfo.getName(programClassFile).equals(ClassConstants.INIT))
+        String name = programMethodInfo.getName(programClassFile);
+
+        // Special case: <clinit> is always kept unchanged.
+        if (name.equals(ClassConstants.INTERNAL_METHOD_NAME_CLINIT))
+        {
+            return;
+        }
+
+        // Special case: <init> is always kept unchanged,
+        // irrespective of the descriptor.
+        if (name.equals(ClassConstants.INTERNAL_METHOD_NAME_INIT))
         {
             // The descriptor may have to be updated later on though,
             // so we mark the method name as if it is new.
-            setNewMemberName(programMethodInfo, ClassConstants.INIT);
+            setNewMemberName(programMethodInfo, ClassConstants.INTERNAL_METHOD_NAME_INIT);
             return;
         }
 
@@ -282,9 +291,11 @@ implements ClassFileVisitor,
 
     public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo)
     {
-        // Special case: <init> is always kept unchanged, irrespective of the
-        // descriptor. We can ignore it here.
-        if (libraryMethodInfo.getName(libraryClassFile).equals(ClassConstants.INIT))
+        // Special cases: <clinit> and <init> are always kept unchanged.
+        // We can ignore them here.
+        String name = libraryMethodInfo.getName(libraryClassFile);
+        if (name.equals(ClassConstants.INTERNAL_METHOD_NAME_CLINIT) ||
+            name.equals(ClassConstants.INTERNAL_METHOD_NAME_INIT))
         {
             return;
         }

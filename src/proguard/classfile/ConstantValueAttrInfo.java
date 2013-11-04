@@ -1,4 +1,4 @@
-/* $Id: ConstantValueAttrInfo.java,v 1.6 2002/05/12 14:29:08 eric Exp $
+/* $Id: ConstantValueAttrInfo.java,v 1.7 2002/07/28 16:57:22 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -33,33 +33,34 @@ import java.util.*;
  */
 public class ConstantValueAttrInfo extends AttrInfo
 {
+    private static final int CONSTANT_FIELD_SIZE = 2;
+
+
     public int u2constantValueIndex;
 
 
-    protected ConstantValueAttrInfo(int attrNameIndex, int attrLength)
+    protected ConstantValueAttrInfo()
     {
-        super(attrNameIndex, attrLength);
     }
 
-    /**
-     * Reads the data following the header.
-     */
+
+    // Implementations for AttrInfo
+
+    protected int getAttrInfoLength()
+    {
+        return CONSTANT_FIELD_SIZE;
+    }
+
     protected void readInfo(DataInput din, ClassFile cf) throws IOException
     {
         u2constantValueIndex = din.readUnsignedShort();
     }
 
-    /**
-     * Exports data following the header to a DataOutput stream.
-     */
-    public void writeInfo(DataOutput dout) throws IOException
+    protected void writeInfo(DataOutput dout) throws IOException
     {
         dout.writeShort(u2constantValueIndex);
     }
 
-    /**
-     * Accepts the given visitor.
-     */
     public void accept(ClassFile classFile, AttrInfoVisitor attrInfoVisitor)
     {
         attrInfoVisitor.visitConstantValueAttrInfo(classFile, this);

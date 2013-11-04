@@ -1,4 +1,4 @@
-/* $Id: InnerClassesAttrInfo.java,v 1.6 2002/05/12 14:29:08 eric Exp $
+/* $Id: InnerClassesAttrInfo.java,v 1.7 2002/07/28 16:57:22 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -33,26 +33,17 @@ import java.util.*;
  */
 public class InnerClassesAttrInfo extends AttrInfo
 {
-    public static final int CONSTANT_FIELD_SIZE = 2;
+    private static final int CONSTANT_FIELD_SIZE = 2;
 
 
     public int                u2numberOfClasses;
     public InnerClassesInfo[] classes;
 
 
-    protected InnerClassesAttrInfo(int attrNameIndex, int attrLength)
+    protected InnerClassesAttrInfo()
     {
-        super(attrNameIndex, attrLength);
     }
 
-    /**
-     * Returns the length in bytes of the attribute.
-     */
-    protected int getAttrInfoLength()
-    {
-        return CONSTANT_FIELD_SIZE +
-               u2numberOfClasses * InnerClassesInfo.CONSTANT_FIELD_SIZE;
-    }
 
     /**
      * Returns the array of inner classes data.
@@ -62,9 +53,15 @@ public class InnerClassesAttrInfo extends AttrInfo
         return classes;
     }
 
-    /**
-     * Reads the data following the header.
-     */
+
+    // Implementations for AttrInfo
+
+    protected int getAttrInfoLength()
+    {
+        return CONSTANT_FIELD_SIZE +
+               u2numberOfClasses * InnerClassesInfo.CONSTANT_FIELD_SIZE;
+    }
+
     protected void readInfo(DataInput din, ClassFile cf) throws IOException
     {
         u2numberOfClasses = din.readUnsignedShort();
@@ -75,10 +72,7 @@ public class InnerClassesAttrInfo extends AttrInfo
         }
     }
 
-    /**
-     * Exports data following the header to a DataOutput stream.
-     */
-    public void writeInfo(DataOutput dout) throws IOException
+    protected void writeInfo(DataOutput dout) throws IOException
     {
         dout.writeShort(u2numberOfClasses);
         for (int i = 0; i < u2numberOfClasses; i++)
@@ -87,13 +81,11 @@ public class InnerClassesAttrInfo extends AttrInfo
         }
     }
 
-    /**
-     * Accepts the given visitor.
-     */
     public void accept(ClassFile classFile, AttrInfoVisitor attrInfoVisitor)
     {
         attrInfoVisitor.visitInnerClassesAttrInfo(classFile, this);
     }
+
 
     /**
      * Applies the given visitor to all inner classes.

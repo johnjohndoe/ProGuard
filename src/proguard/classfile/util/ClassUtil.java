@@ -1,4 +1,4 @@
-/* $Id: ClassUtil.java,v 1.8 2002/05/27 17:05:56 eric Exp $
+/* $Id: ClassUtil.java,v 1.10 2002/07/30 18:10:57 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -38,6 +38,40 @@ public class ClassUtil
 
     private static final InternalTypeEnumeration internalTypeEnumeration = new InternalTypeEnumeration();
     private static final ExternalTypeEnumeration externalTypeEnumeration = new ExternalTypeEnumeration();
+
+
+    /**
+     * Checks whether the given class file magic number is correct.
+     * @param magicNumber the magic number.
+     * @throws IOException when the magic number is incorrect.
+     */
+    public static void checkMagicNumber(int magicNumber) throws IOException
+    {
+        if (magicNumber != ClassConstants.MAGIC)
+        {
+            throw new IOException("Invalid magic number ["+Integer.toHexString(magicNumber)+"] in class file.");
+        }
+    }
+
+
+    /**
+     * Checks whether the given class file version numbers are supported.
+     * @param majorVersionNumber the major version number.
+     * @param minorVersionNumber the minor version number.
+     * @throws IOException when the version is not supported.
+     */
+    public static void checkVersionNumbers(int majorVersionNumber, int minorVersionNumber) throws IOException
+    {
+        if (majorVersionNumber < ClassConstants.MAJOR_VERSION_MIN ||
+            (majorVersionNumber == ClassConstants.MAJOR_VERSION_MIN &&
+             minorVersionNumber <  ClassConstants.MINOR_VERSION_MIN) ||
+            (majorVersionNumber == ClassConstants.MAJOR_VERSION_MAX &&
+             minorVersionNumber >  ClassConstants.MINOR_VERSION_MAX) ||
+            majorVersionNumber > ClassConstants.MAJOR_VERSION_MAX)
+        {
+            throw new IOException("Unsupported version number ["+majorVersionNumber+"."+minorVersionNumber+"] for class file format.");
+        }
+    }
 
 
     /**
@@ -609,7 +643,7 @@ public class ClassUtil
                                                           String internalMethodName,
                                                           String internalMethodDescriptor)
     {
-        return internalMethodName.equals(ClassConstants.INIT) ?
+        return internalMethodName.equals(ClassConstants.INTERNAL_METHOD_NAME_INIT) ?
                     (ClassUtil.externalShortClassName(
                      ClassUtil.externalClassName(internalClassName))) :
                     (ClassUtil.externalMethodReturnType(internalMethodDescriptor) +

@@ -1,4 +1,4 @@
-/* $Id: LibraryMemberInfo.java,v 1.11 2002/05/23 19:19:57 eric Exp $
+/* $Id: LibraryMemberInfo.java,v 1.12 2002/07/30 17:09:40 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -33,6 +33,10 @@ import java.util.*;
  */
 abstract public class LibraryMemberInfo implements VisitorAccepter
 {
+    private static final int ACC_VISIBLE = ClassConstants.INTERNAL_ACC_PUBLIC |
+                                           ClassConstants.INTERNAL_ACC_PROTECTED;
+
+
     public int    u2accessFlags;
     public String name;
     public String descriptor;
@@ -58,19 +62,32 @@ abstract public class LibraryMemberInfo implements VisitorAccepter
      */
     protected void read(DataInput din, CpInfo[] constantPool) throws IOException
     {
-            u2accessFlags     = din.readUnsignedShort();
+        // Read the access flags.
+        u2accessFlags = din.readUnsignedShort();
+
+        // Read the name and descriptor indices.
         int u2nameIndex       = din.readUnsignedShort();
         int u2descriptorIndex = din.readUnsignedShort();
+
+        // Store the actual name and descriptor.
+        name       = ((Utf8CpInfo)constantPool[u2nameIndex]).getString();
+        descriptor = ((Utf8CpInfo)constantPool[u2descriptorIndex]).getString();
+
+        // Skip the attributes.
         int u2attributesCount = din.readUnsignedShort();
         for (int i = 0; i < u2attributesCount; i++)
         {
             LibraryAttrInfo.skip(din);
         }
+    }
 
-        // Store the actual fields.
 
-        name       = ((Utf8CpInfo)constantPool[u2nameIndex]).getString();
-        descriptor = ((Utf8CpInfo)constantPool[u2descriptorIndex]).getString();
+    /**
+     * Returns whether this library member is visible to the outside world.
+     */
+    boolean isVisible()
+    {
+        return (u2accessFlags & ACC_VISIBLE) != 0;
     }
 
 

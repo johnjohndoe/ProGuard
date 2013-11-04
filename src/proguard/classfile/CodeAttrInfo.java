@@ -1,4 +1,4 @@
-/* $Id: CodeAttrInfo.java,v 1.9 2002/07/04 16:16:58 eric Exp $
+/* $Id: CodeAttrInfo.java,v 1.10 2002/07/28 16:57:22 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -36,7 +36,7 @@ import java.util.*;
  */
 public class CodeAttrInfo extends AttrInfo
 {
-    public static final int CONSTANT_FIELD_SIZE = 12;
+    private static final int CONSTANT_FIELD_SIZE = 12;
 
 
     public int             u2maxStack;
@@ -49,14 +49,31 @@ public class CodeAttrInfo extends AttrInfo
     public AttrInfo[]      attributes;
 
 
-    protected CodeAttrInfo(int attrNameIndex, int attrLength)
+    protected CodeAttrInfo()
     {
-        super(attrNameIndex, attrLength);
     }
 
+
     /**
-     * Returns the length in bytes of the attribute.
+     * Returns the (first) attribute with the given name.
      */
+    public AttrInfo getAttribute(ClassFile classFile, String name)
+    {
+        for (int i = 0; i < u2attributesCount; i++)
+        {
+            AttrInfo attribute = attributes[i];
+            if (attribute.getAttributeName(classFile).equals(name))
+            {
+                return attribute;
+            }
+        }
+
+        return null;
+    }
+
+
+    // Implementations for AttrInfo
+
     protected int getAttrInfoLength()
     {
         int length = CONSTANT_FIELD_SIZE + u4codeLength +
@@ -68,9 +85,6 @@ public class CodeAttrInfo extends AttrInfo
         return length;
     }
 
-    /**
-     * Reads the data following the header.
-     */
     protected void readInfo(DataInput din, ClassFile cf) throws IOException
     {
         u2maxStack = din.readUnsignedShort();
@@ -92,10 +106,7 @@ public class CodeAttrInfo extends AttrInfo
         }
     }
 
-    /**
-     * Exports data following the header to a DataOutput stream.
-     */
-    public void writeInfo(DataOutput dout) throws IOException
+    protected void writeInfo(DataOutput dout) throws IOException
     {
         dout.writeShort(u2maxStack);
         dout.writeShort(u2maxLocals);
@@ -113,30 +124,11 @@ public class CodeAttrInfo extends AttrInfo
         }
     }
 
-    /**
-     * Returns the (first) attribute with the given name.
-     */
-    public AttrInfo getAttribute(ClassFile classFile, String name)
-    {
-        for (int i = 0; i < u2attributesCount; i++)
-        {
-            AttrInfo attribute = attributes[i];
-            if (attribute.getAttributeName(classFile).equals(name))
-            {
-                return attribute;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Accepts the given visitor.
-     */
     public void accept(ClassFile classFile, AttrInfoVisitor attrInfoVisitor)
     {
         attrInfoVisitor.visitCodeAttrInfo(classFile, this);
     }
+
 
     /**
      * Applies the given instruction visitor to all instructions.

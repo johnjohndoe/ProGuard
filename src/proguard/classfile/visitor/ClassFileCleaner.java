@@ -1,4 +1,4 @@
-/* $Id: ClassFileCleaner.java,v 1.6 2002/05/23 19:19:57 eric Exp $
+/* $Id: ClassFileCleaner.java,v 1.7 2002/07/28 16:57:22 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -167,9 +167,9 @@ public class ClassFileCleaner
     // Note that attributes are typically only referenced once, so we don't
     // test if they are marked already.
 
-    public void visitAttrInfo(ClassFile classFile, AttrInfo attrInfo)
+    public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo)
     {
-        clean(attrInfo);
+        clean(unknownAttrInfo);
     }
 
 

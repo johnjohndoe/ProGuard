@@ -1,4 +1,4 @@
-/* $Id: Utf8Shrinker.java,v 1.7 2002/05/23 19:19:58 eric Exp $
+/* $Id: Utf8Shrinker.java,v 1.10 2002/08/04 13:12:19 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -28,7 +28,7 @@ import java.util.*;
 
 
 /**
- * This ClassFileVisitor removes Utf8 constant pool entries
+ * This ClassFileVisitor removes UTF-8 constant pool entries
  * that are not marked as being used.
  *
  * @see Utf8UsageMarker
@@ -204,10 +204,10 @@ public class Utf8Shrinker
 
     // Implementations for AttrInfoVisitor
 
-    public void visitAttrInfo(ClassFile classFile, AttrInfo attrInfo)
+    public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo)
     {
-        attrInfo.u2attrNameIndex =
-            remapCpIndex(attrInfo.u2attrNameIndex);
+        unknownAttrInfo.u2attrNameIndex =
+            remapCpIndex(unknownAttrInfo.u2attrNameIndex);
 
         // There's not much else we can do with unknown attributes.
     }
@@ -360,7 +360,7 @@ public class Utf8Shrinker
     // Small utility methods.
 
     /**
-     * Removes all Utf8 entries that are not marked as being used
+     * Removes all UTF-8 entries that are not marked as being used
      * from the given constant pool.
      * @return the new number of entries.
      */

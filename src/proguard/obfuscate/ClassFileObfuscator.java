@@ -1,4 +1,4 @@
-/* $Id: ClassFileObfuscator.java,v 1.6 2002/05/22 17:22:58 eric Exp $
+/* $Id: ClassFileObfuscator.java,v 1.7 2002/08/02 16:40:28 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -30,7 +30,7 @@ import java.util.*;
 /**
  * This <code>ClassFileVisitor</code> comes up with obfuscated names for the
  * class files it visits, and for their class members. The actual renaming is
- * done afterwards.
+ * done afterward.
  *
  * @see ClassFileRenamer
  *

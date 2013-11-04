@@ -1,4 +1,4 @@
-/* $Id: InterfaceMethodrefCpInfo.java,v 1.12 2002/08/02 16:40:28 eric Exp $
+/* $Id: UnknownAttrInfo.java,v 1.1 2002/07/28 16:57:22 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -21,32 +21,48 @@
  */
 package proguard.classfile;
 
+
 import proguard.classfile.visitor.*;
 import java.io.*;
 import java.util.*;
 
 /**
- * Representation of a 'interface method reference' entry in the ConstantPool.
+ * Representation of an unknown attribute.
  *
- * @author Mark Welsh
  * @author Eric Lafortune
  */
-public class InterfaceMethodrefCpInfo extends RefCpInfo
+public class UnknownAttrInfo extends AttrInfo
 {
-    protected InterfaceMethodrefCpInfo()
+    public int  u4attrLength;
+    public byte info[];
+
+
+    protected UnknownAttrInfo(int attrLength)
     {
+        u4attrLength = attrLength;
     }
 
 
-    // Implementations for CpInfo
+    // Implementations for AttrInfo
 
-    public int getTag()
+    protected int getAttrInfoLength()
     {
-        return ClassConstants.CONSTANT_InterfaceMethodref;
+        return u4attrLength;
     }
 
-    public void accept(ClassFile classFile, CpInfoVisitor cpInfoVisitor)
+    protected void readInfo(DataInput din, ClassFile cf) throws IOException
     {
-        cpInfoVisitor.visitInterfaceMethodrefCpInfo(classFile, this);
+        info = new byte[u4attrLength];
+        din.readFully(info);
+    }
+
+    protected void writeInfo(DataOutput dout) throws IOException
+    {
+        dout.write(info);
+    }
+
+    public void accept(ClassFile classFile, AttrInfoVisitor attrInfoVisitor)
+    {
+        attrInfoVisitor.visitUnknownAttrInfo(classFile, this);
     }
 }

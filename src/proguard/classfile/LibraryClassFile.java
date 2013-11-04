@@ -1,4 +1,4 @@
-/* $Id: LibraryClassFile.java,v 1.15 2002/07/04 16:16:58 eric Exp $
+/* $Id: LibraryClassFile.java,v 1.17 2002/07/30 17:27:34 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -23,6 +23,8 @@ package proguard.classfile;
 
 
 import proguard.classfile.visitor.*;
+import proguard.classfile.util.ClassUtil;
+
 import java.io.*;
 import java.util.*;
 
@@ -36,6 +38,13 @@ import java.util.*;
  */
 public class LibraryClassFile implements ClassFile
 {
+    // Some objects and arrays that can be reused.
+    private static LibraryClassFile    reusableLibraryClassFile;
+    private static CpInfo[]            reusableConstantPool;
+    private static LibraryFieldInfo[]  reusableFields;
+    private static LibraryMethodInfo[] reusableMethods;
+
+
     public int                 u2accessFlags;
     public String              thisClassName;
     public String              superClassName;
@@ -78,9 +87,15 @@ public class LibraryClassFile implements ClassFile
      */
     public static LibraryClassFile create(DataInput din) throws IOException
     {
-        LibraryClassFile cf = new LibraryClassFile();
-        cf.read(din);
-        return cf;
+        // See if we have to create a new library class file object.
+        if (reusableLibraryClassFile == null ||
+            reusableLibraryClassFile.isVisible())
+        {
+            reusableLibraryClassFile = new LibraryClassFile();
+        }
+
+        reusableLibraryClassFile.read(din);
+        return reusableLibraryClassFile;
     }
 
 
@@ -90,92 +105,134 @@ public class LibraryClassFile implements ClassFile
     // Import the class data to internal representation.
     private void read(DataInput din) throws IOException
     {
-        // Read the class file
-        int u4magic        = din.readInt();
+        // Read and check the class file magic number.
+        int u4magic = din.readInt();
+        ClassUtil.checkMagicNumber(u4magic);
+
+        // Read and check the class file version numbers.
         int u2minorVersion = din.readUnsignedShort();
         int u2majorVersion = din.readUnsignedShort();
+        ClassUtil.checkVersionNumbers(u2majorVersion, u2minorVersion);
 
-        // Check this is a valid classfile that we can handle
-        if (u4magic != ClassConstants.MAGIC)
-        {
-            throw new IOException("Invalid magic number in class file.");
-        }
-        if (u2majorVersion < ClassConstants.MAJOR_VERSION_MIN ||
-            (u2majorVersion == ClassConstants.MAJOR_VERSION_MIN &&
-             u2minorVersion <  ClassConstants.MINOR_VERSION_MIN) ||
-            (u2majorVersion == ClassConstants.MAJOR_VERSION_MAX &&
-             u2minorVersion >  ClassConstants.MINOR_VERSION_MAX) ||
-            u2majorVersion > ClassConstants.MAJOR_VERSION_MAX)
-        {
-            throw new IOException("Unsupported version number ["+u2majorVersion+"."+u2minorVersion+"] for class file format.");
-        }
+        // Read the constant pool.
+        int u2constantPoolCount = din.readUnsignedShort();
 
-        int      u2constantPoolCount = din.readUnsignedShort();
-        CpInfo[] constantPool        = new CpInfo[u2constantPoolCount];
+        // Make sure there's sufficient space in the reused constant pool array.
+        if (reusableConstantPool == null ||
+            reusableConstantPool.length < u2constantPoolCount)
+        {
+            reusableConstantPool = new CpInfo[u2constantPoolCount];
+        }
 
         // Fill the constant pool. The zero entry is not used, nor are the
         // entries following a Long or Double.
         for (int i = 1; i < u2constantPoolCount; i++)
         {
-            constantPool[i] = CpInfo.create(din);
-            if ((constantPool[i] instanceof LongCpInfo) ||
-                (constantPool[i] instanceof DoubleCpInfo))
+            reusableConstantPool[i] = CpInfo.createOrShare(din);
+            int tag = reusableConstantPool[i].getTag();
+            if (tag == ClassConstants.CONSTANT_Long ||
+                tag == ClassConstants.CONSTANT_Double)
             {
                 i++;
             }
         }
 
-            u2accessFlags = din.readUnsignedShort();
-        int u2thisClass   = din.readUnsignedShort();
-        int u2superClass  = din.readUnsignedShort();
+        // Stop parsing this library class file if it's not public anyway.
+        u2accessFlags = din.readUnsignedShort();
+        if (!isVisible())
+        {
+            return;
+        }
 
-        // Store the actual fields.
+        // Read the class and super class indices.
+        int u2thisClass  = din.readUnsignedShort();
+        int u2superClass = din.readUnsignedShort();
 
-        thisClassName  = toName(constantPool, u2thisClass);
+        // Store their actual names.
+        thisClassName  = toName(reusableConstantPool, u2thisClass);
         superClassName = (u2superClass == 0) ? null :
-                         toName(constantPool, u2superClass);
+                         toName(reusableConstantPool, u2superClass);
 
+        // Read the interface indices.
         int u2interfacesCount = din.readUnsignedShort();
 
+        // Store their actual names.
         interfaceNames = new String[u2interfacesCount];
-
         for (int i = 0; i < u2interfacesCount; i++)
         {
             int u2interface = din.readUnsignedShort();
-            interfaceNames[i] = toName(constantPool, u2interface);
+            interfaceNames[i] = toName(reusableConstantPool, u2interface);
         }
 
+        // Read the fields.
         int u2fieldsCount = din.readUnsignedShort();
-        fields = new LibraryFieldInfo[u2fieldsCount];
+
+        // Make sure there's sufficient space in the reused fields array.
+        if (reusableFields == null ||
+            reusableFields.length < u2fieldsCount)
+        {
+            reusableFields = new LibraryFieldInfo[u2fieldsCount];
+        }
+
+        int visibleFieldsCount = 0;
         for (int i = 0; i < u2fieldsCount; i++)
         {
-            LibraryFieldInfo field = LibraryFieldInfo.create(din, constantPool);
+            LibraryFieldInfo field = LibraryFieldInfo.create(din, reusableConstantPool);
 
             // Only store fields that are visible.
-            if ((field.u2accessFlags & ClassConstants.INTERNAL_ACC_PRIVATE) == 0)
+            if (field.isVisible())
             {
-                fields[i] = field;
+                reusableFields[visibleFieldsCount++] = field;
             }
         }
 
+        // Copy the visible fields into a fields array of the right size.
+        fields = new LibraryFieldInfo[visibleFieldsCount];
+        System.arraycopy(reusableFields, 0, fields, 0, visibleFieldsCount);
+
+
+        // Read the methods.
         int u2methodsCount = din.readUnsignedShort();
-        methods = new LibraryMethodInfo[u2methodsCount];
+
+        // Make sure there's sufficient space in the reused methods array.
+        if (reusableMethods == null ||
+            reusableMethods.length < u2methodsCount)
+        {
+            reusableMethods = new LibraryMethodInfo[u2methodsCount];
+        }
+
+        int visibleMethodsCount = 0;
         for (int i = 0; i < u2methodsCount; i++)
         {
-            LibraryMethodInfo method = LibraryMethodInfo.create(din, constantPool);
+            LibraryMethodInfo method = LibraryMethodInfo.create(din, reusableConstantPool);
 
             // Only store methods that are visible.
-            if ((method.u2accessFlags & ClassConstants.INTERNAL_ACC_PRIVATE) == 0)
+            if (method.isVisible())
             {
-                methods[i] = method;
+                reusableMethods[visibleMethodsCount++] = method;
             }
         }
 
+        // Copy the visible methods into a methods array of the right size.
+        methods = new LibraryMethodInfo[visibleMethodsCount];
+        System.arraycopy(reusableMethods, 0, methods, 0, visibleMethodsCount);
+
+
+        // Skip the attributes.
         int u2attributesCount = din.readUnsignedShort();
         for (int i = 0; i < u2attributesCount; i++)
         {
             LibraryAttrInfo.skip(din);
         }
+    }
+
+
+    /**
+     * Returns whether this library class file is visible to the outside world.
+     */
+    boolean isVisible()
+    {
+        return (u2accessFlags & ClassConstants.INTERNAL_ACC_PUBLIC) != 0;
     }
 
 

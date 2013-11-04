@@ -1,4 +1,4 @@
-/* $Id: ProGuard.java,v 1.18 2002/07/13 16:55:21 eric Exp $
+/* $Id: ProGuard.java,v 1.20 2002/08/02 16:40:28 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -38,7 +38,7 @@ import java.util.*;
  */
 public class ProGuard
 {
-    public static final String VERSION = "ProGuard, version 1.1";
+    public static final String VERSION = "ProGuard, version 1.2";
 
     private CompoundCommand commands         = new CompoundCommand();
     private ProGuardOptions options          = new ProGuardOptions();
@@ -74,7 +74,7 @@ public class ProGuard
 
 
     /**
-     * Performs the intialization phase.
+     * Performs the initialization phase.
      */
     private void initialize()
     {
@@ -87,15 +87,24 @@ public class ProGuard
         executeCommands(Command.PHASE_INITIALIZE);
 
         // Initialize the cross-references between all class files.
-        ClassFileInitializer initializer =
-            new ClassFileInitializer(programClassPool,
-                                     libraryClassPool,
-                                     options.warn,
-                                     options.note);
 
-        programClassPool.classFilesAccept(initializer);
+        // First the class file hierarchy.
+        ClassFileHierarchyInitializer hierarchyInitializer =
+            new ClassFileHierarchyInitializer(programClassPool,
+                                              libraryClassPool,
+                                              options.warn);
 
-        int noteCount = initializer.getNoteCount();
+        programClassPool.classFilesAccept(hierarchyInitializer);
+
+        // Then the class item references.
+        ClassFileReferenceInitializer referenceInitializer =
+            new ClassFileReferenceInitializer(programClassPool,
+                                              options.warn,
+                                              options.note);
+
+        programClassPool.classFilesAccept(referenceInitializer);
+
+        int noteCount = referenceInitializer.getNoteCount();
         if (noteCount > 0)
         {
             System.err.println("Note: there were " + noteCount +
@@ -104,7 +113,7 @@ public class ProGuard
             System.err.println("      their implementations.");
         }
 
-        int classFileWarningCount = initializer.getClassFileWarningCount();
+        int classFileWarningCount = hierarchyInitializer.getWarningCount();
         if (classFileWarningCount > 0)
         {
             System.err.println("Warning: there were " + classFileWarningCount +
@@ -112,7 +121,7 @@ public class ProGuard
             System.err.println("         You may need to specify additional library jars.");
         }
 
-        int memberWarningCount = initializer.getMemberWarningCount();
+        int memberWarningCount = referenceInitializer.getWarningCount();
         if (memberWarningCount > 0)
         {
             System.err.println("Warning: there were " + memberWarningCount +
@@ -130,6 +139,7 @@ public class ProGuard
             System.exit(-1);
         }
 
+        // Discard unused library classes.
         if (options.verbose)
         {
                     System.out.println("Removing unused library classes...");
@@ -189,6 +199,7 @@ public class ProGuard
             System.out.println("=== End of unused classes, fields, and methods ===");
         }
 
+        // Discard unused program classes.
         if (options.verbose)
         {
             System.out.println("Removing unused program classes and class elements...");

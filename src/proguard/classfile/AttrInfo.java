@@ -1,4 +1,4 @@
-/* $Id: AttrInfo.java,v 1.9 2002/07/04 16:16:58 eric Exp $
+/* $Id: AttrInfo.java,v 1.12 2002/08/05 16:59:28 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -33,14 +33,14 @@ import java.util.*;
  * @author Mark Welsh
  * @author Eric Lafortune
  */
-public class AttrInfo implements VisitorAccepter
+public abstract class AttrInfo implements VisitorAccepter
 {
-    public static final int CONSTANT_FIELD_SIZE = 6;
+    protected static final int CONSTANT_FIELD_SIZE = 6;
 
 
-    public int  u2attrNameIndex;
-    public int  u4attrLength;
-    public byte info[];
+    public int u2attrNameIndex;
+    //public int  u4attrLength;
+    //public byte info[];
 
     /**
      * An extra field in which visitors can store information.
@@ -56,56 +56,31 @@ public class AttrInfo implements VisitorAccepter
     public static AttrInfo create(DataInput din, ClassFile cf) throws IOException
     {
         // Instantiate based on attribute name
-        AttrInfo ai = null;
-        int attrNameIndex = din.readUnsignedShort();
-        int attrLength = din.readInt();
-        String attrName = cf.getCpString(attrNameIndex);
-        ai = attrName.equals(ClassConstants.ATTR_Code)               ? (AttrInfo)new CodeAttrInfo(              attrNameIndex, attrLength):
-             attrName.equals(ClassConstants.ATTR_ConstantValue)      ? (AttrInfo)new ConstantValueAttrInfo(     attrNameIndex, attrLength):
-             attrName.equals(ClassConstants.ATTR_Deprecated)         ? (AttrInfo)new DeprecatedAttrInfo(        attrNameIndex, attrLength):
-             attrName.equals(ClassConstants.ATTR_Exceptions)         ? (AttrInfo)new ExceptionsAttrInfo(        attrNameIndex, attrLength):
-             attrName.equals(ClassConstants.ATTR_LineNumberTable)    ? (AttrInfo)new LineNumberTableAttrInfo(   attrNameIndex, attrLength):
-             attrName.equals(ClassConstants.ATTR_SourceFile)         ? (AttrInfo)new SourceFileAttrInfo(        attrNameIndex, attrLength):
-             attrName.equals(ClassConstants.ATTR_LocalVariableTable) ? (AttrInfo)new LocalVariableTableAttrInfo(attrNameIndex, attrLength):
-             attrName.equals(ClassConstants.ATTR_InnerClasses)       ? (AttrInfo)new InnerClassesAttrInfo(      attrNameIndex, attrLength):
-             attrName.equals(ClassConstants.ATTR_Synthetic)          ? (AttrInfo)new SyntheticAttrInfo(         attrNameIndex, attrLength):
-                                                                       (AttrInfo)new AttrInfo(                  attrNameIndex, attrLength);
+        int u2attrNameIndex = din.readUnsignedShort();
+        int u4attrLength    = din.readInt();
+        String attrName = cf.getCpString(u2attrNameIndex);
+        AttrInfo attrInfo =
+            attrName.equals(ClassConstants.ATTR_Code)               ? (AttrInfo)new CodeAttrInfo():
+            attrName.equals(ClassConstants.ATTR_ConstantValue)      ? (AttrInfo)new ConstantValueAttrInfo():
+            attrName.equals(ClassConstants.ATTR_Deprecated)         ? (AttrInfo)new DeprecatedAttrInfo():
+            attrName.equals(ClassConstants.ATTR_Exceptions)         ? (AttrInfo)new ExceptionsAttrInfo():
+            attrName.equals(ClassConstants.ATTR_LineNumberTable)    ? (AttrInfo)new LineNumberTableAttrInfo():
+            attrName.equals(ClassConstants.ATTR_SourceFile)         ? (AttrInfo)new SourceFileAttrInfo():
+            attrName.equals(ClassConstants.ATTR_LocalVariableTable) ? (AttrInfo)new LocalVariableTableAttrInfo():
+            attrName.equals(ClassConstants.ATTR_InnerClasses)       ? (AttrInfo)new InnerClassesAttrInfo():
+            attrName.equals(ClassConstants.ATTR_Synthetic)          ? (AttrInfo)new SyntheticAttrInfo():
+                                                                      (AttrInfo)new UnknownAttrInfo(u4attrLength);
 
-        ai.readInfo(din, cf);
-        return ai;
+        attrInfo.u2attrNameIndex = u2attrNameIndex;
+        attrInfo.readInfo(din, cf);
+        return attrInfo;
     }
 
 
-    protected AttrInfo(int attrNameIndex, int attrLength)
+    protected AttrInfo()
     {
-        u2attrNameIndex = attrNameIndex;
-        u4attrLength = attrLength;
     }
 
-    /**
-     * Returns the length in bytes of the attribute; over-ride this in sub-classes.
-     */
-    protected int getAttrInfoLength()
-    {
-        return u4attrLength;
-    }
-
-    /**
-     * Returns the String name of the attribute; over-ride this in sub-classes.
-     */
-    public String getAttributeName(ClassFile classFile)
-    {
-        return classFile.getCpString(u2attrNameIndex);
-    }
-
-    /**
-     * Reads the data following the header; over-ride this in sub-classes.
-     */
-    protected void readInfo(DataInput din, ClassFile cf) throws IOException
-    {
-        info = new byte[u4attrLength];
-        din.readFully(info);
-    }
 
     /**
      * Exports the representation to a DataOutput stream.
@@ -117,21 +92,40 @@ public class AttrInfo implements VisitorAccepter
         writeInfo(dout);
     }
 
+
     /**
-     * Exports data following the header to a DataOutput stream; over-ride this in sub-classes.
+     * Returns the String name of the attribute; over-ride this in sub-classes.
      */
-    public void writeInfo(DataOutput dout) throws IOException
+    public String getAttributeName(ClassFile classFile)
     {
-        dout.write(info);
+        return classFile.getCpString(u2attrNameIndex);
     }
+
+
+    // Abstract methods to be implemented by extensions.
+
+    /**
+     * Returns the length in bytes of the attribute.
+     */
+    protected abstract int getAttrInfoLength();
+
+
+    /**
+     * Reads the data following the header.
+     */
+    protected abstract void readInfo(DataInput din, ClassFile cf) throws IOException;
+
+
+    /**
+     * Exports data following the header to a DataOutput stream.
+     */
+    protected abstract void writeInfo(DataOutput dout) throws IOException;
+
 
     /**
      * Accepts the given visitor.
      */
-    public void accept(ClassFile classFile, AttrInfoVisitor attrInfoVisitor)
-    {
-        attrInfoVisitor.visitAttrInfo(classFile, this);
-    }
+    public abstract void accept(ClassFile classFile, AttrInfoVisitor attrInfoVisitor);
 
 
     // Implementations for VisitorAccepter

@@ -1,4 +1,4 @@
-/* $Id: NameAndTypeCpInfo.java,v 1.8 2002/07/04 16:16:58 eric Exp $
+/* $Id: NameAndTypeCpInfo.java,v 1.10 2002/08/02 16:40:28 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -28,7 +28,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Representation of a 'nameandtype' entry in the ConstantPool.
+ * Representation of a 'name and type' entry in the ConstantPool.
  *
  * @author Mark Welsh
  * @author Eric Lafortune
@@ -50,7 +50,6 @@ public class NameAndTypeCpInfo extends CpInfo implements Cloneable
 
     protected NameAndTypeCpInfo()
     {
-        super(ClassConstants.CONSTANT_NameAndType);
     }
 
 
@@ -117,27 +116,26 @@ public class NameAndTypeCpInfo extends CpInfo implements Cloneable
         return classFile.getCpString(u2descriptorIndex);
     }
 
-    /**
-     * Reads the 'info' data following the u1tag byte.
-     */
+
+    // Implementations for CpInfo
+
+    public int getTag()
+    {
+        return ClassConstants.CONSTANT_NameAndType;
+    }
+
     protected void readInfo(DataInput din) throws IOException
     {
         u2nameIndex = din.readUnsignedShort();
         u2descriptorIndex = din.readUnsignedShort();
     }
 
-    /**
-     * Writes the 'info' data following the u1tag byte.
-     */
     protected void writeInfo(DataOutput dout) throws IOException
     {
         dout.writeShort(u2nameIndex);
         dout.writeShort(u2descriptorIndex);
     }
 
-    /**
-     * Accepts the given visitor.
-     */
     public void accept(ClassFile classFile, CpInfoVisitor cpInfoVisitor)
     {
         cpInfoVisitor.visitNameAndTypeCpInfo(classFile, this);

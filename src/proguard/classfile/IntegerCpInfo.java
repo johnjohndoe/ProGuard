@@ -1,4 +1,4 @@
-/* $Id: IntegerCpInfo.java,v 1.7 2002/07/04 16:16:58 eric Exp $
+/* $Id: IntegerCpInfo.java,v 1.8 2002/07/28 15:56:58 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -38,28 +38,25 @@ public class IntegerCpInfo extends CpInfo
 
     protected IntegerCpInfo()
     {
-        super(ClassConstants.CONSTANT_Integer);
     }
 
-    /**
-     * Reads the 'info' data following the u1tag byte.
-     */
+    // Implementations for CpInfo
+
+    public int getTag()
+    {
+        return ClassConstants.CONSTANT_Integer;
+    }
+
     protected void readInfo(DataInput din) throws IOException
     {
         u4bytes = din.readInt();
     }
 
-    /**
-     * Writes the 'info' data following the u1tag byte.
-     */
     protected void writeInfo(DataOutput dout) throws IOException
     {
         dout.writeInt(u4bytes);
     }
 
-    /**
-     * Accepts the given visitor.
-     */
     public void accept(ClassFile classFile, CpInfoVisitor cpInfoVisitor)
     {
         cpInfoVisitor.visitIntegerCpInfo(classFile, this);

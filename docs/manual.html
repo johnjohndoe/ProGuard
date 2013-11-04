@@ -98,10 +98,16 @@ java proguard.ProGuard @myconfig.pro -printusage -printmapping
 In a configuration file, a <code><b>#</b></code> sign and all remaining
 characters on that line are ignored, allowing you to add comments.
 <p>
-Extra whitespace between words is ignored. Options can be grouped arbitrarily
-in arguments on the command line and in lines in configuration files. This
-means that you can quote any section of command line options to avoid shell
-expansion.
+Extra whitespace between words and delimiters is ignored. To specify file
+names with spaces or special characters, or more exotically, to specify empty
+class names, words can be quoted with single or double quotes. Note that the
+quotes may need to be escaped when used on the command line of Unix systems,
+to avoid gobbling by the shell.
+<p>
+Options can be grouped arbitrarily in arguments on the command line and in
+lines in configuration files. This means that you can quote any arbitrary
+section of command line options, to avoid shell expansion of special
+characters, for instance.
 <p>
 The order of  the options is irrelevant. They can be abbreviated to their first
 unique characters.
@@ -115,7 +121,7 @@ The following table lists all supported options.
 </tr>
 <tr>
 <td valign="top"><code><b>-include</b></code> <i>filename</i></td>
-<td>Recursively parses and returns commands from the given file
+<td>Recursively reads configuration commands from the given file
     <i>filename</i>.</td>
 </tr>
 <tr>
@@ -198,7 +204,7 @@ The following table lists all supported options.
     <code>LocalVariableTable</code>, <code>SourceFile</code>,
     <code>Deprecated</code>, and <code>Synthetic</code>. The
     <code>InnerClasses</code> attribute name can be specified as well,
-    refering to the source name part of this attribute.</td>
+    referring to the source name part of this attribute.</td>
 </tr>
 <tr>
 <td valign="top"><code><b>-printseeds</b></code></td>
@@ -211,8 +217,9 @@ The following table lists all supported options.
 </tr>
 <tr>
 <td valign="top"><code><b>-printusage</b></code></td>
-<td>Specifies to list dead code of the input class files.
-    Only applicable when shrinking.</td>
+<td>Specifies to list dead code of the input class files. For example, you can
+    <a href="#deadcode">list the unused code of an application</a>. Only
+    applicable when shrinking.</td>
 </tr>
 <tr>
 <td valign="top"><code><b>-printmapping</b></code></td>
@@ -229,9 +236,9 @@ The following table lists all supported options.
 <tr>
 <td valign="top"><code><b>-dump</b></code></td>
 <td>Specifies to write out the internal structure of the class files, after
-    any processing. For just writing out the contents of a given jar file,
-    don't forget to provide the <code>-dontshrink</code> and
-    <code>-dontobfuscate</code> options.</td>
+    any processing. For example, you may want to <a href="#structure">write
+    out the contents of a given jar file</a>, without shrinking or obfuscating
+    it first.</td>
 </tr>
 <tr>
 <td valign="top"><code><b>-ignorewarnings</b></code></td>
@@ -272,9 +279,9 @@ The following table lists all supported options.
 <tr>
 <td valign="top"><code><b>-overloadaggressively</b></code></td>
 <td>Specifies to apply aggressive overloading while obfuscating. Multiple
-    fields and methods can then get the same names, as long as their return
-    types are different (not just their arguments, in the case of methods).
-    This option can make the output jar even smaller (and less
+    fields and methods can then get the same names, as long as their arguments
+    and return types are different (not just their arguments, in the case of
+    methods). This option can make the output jar even smaller (and less
     comprehensible). Only applicable when obfuscating.
     <p>
     Note that the resulting class files fall within the Java bytecode
@@ -300,7 +307,7 @@ The following table lists all supported options.
     processing libraries.</td>
 </tr>
 <tr>
-<td valign="top"><code><b>-defaultpackage</b> <i>package_name</i></code></td>
+<td valign="top"><code><b>-defaultpackage</b></code> <i>package_name</i></td>
 <td>Specifies to repackage all class files that are renamed into the single
     given package. This option can make the output jar even smaller (and less
     comprehensible). Only applicable when obfuscating.
@@ -317,10 +324,11 @@ The following table lists all supported options.
 </tr>
 </table>
 <p>
-In the above table, file names and jar names can contain system properties
-delimited by '<b>&lt;</b>' and '<b>&gt;</b>', e.g.
-"<code>&lt;java.home&gt;</code>". The system property is automatically replaced
-by its value.
+In the above table, <i>filename</i> and <i>jarname</i> can contain system
+properties delimited by '<b>&lt;</b>' and '<b>&gt;</b>', e.g.
+"<code>&lt;java.home&gt;</code>". The system property is automatically
+replaced by its value. File names and jar names with special characters like
+spaces and parentheses should be quoted with single or double quotes.
 <p>
 Furthermore, <i>class_specification</i> refers to a template of classes and
 class members. The corresponding options are only applied to classes and class
@@ -356,15 +364,16 @@ enough. Square brackets "[]" mean that something is optional. Ellipsis dots
 indicates a choice between alternatives. Non-bold parentheses "()" just group
 parts of the specification that belong together.
 <p>
-Class names must be specified in full, e.g. <code>java.lang.String</code>.
-The wildcard class name <code><b>*</b></code> refers to any class.
+Every <i>classname</i> must be specified in full, e.g.
+<code>java.lang.String</code>. The wildcard class name <code><b>*</b></code>
+refers to any class.
 
 <p>
-The <code>extends</code> and <code>implements</code> specifications
-are typically used to restrict wildcard classes. They are currently equivalent,
-specifying that only classes extending or implementing the given class qualify.
-Note that the given class itself is not included in this set. If required, it
-should be specified in a separate option.
+The <code><b>extends</b></code> and <code><b>implements</b></code>
+specifications are typically used to restrict wildcard classes. They are
+currently equivalent, specifying that only classes extending or implementing
+the given class qualify. Note that the given class itself is not included in
+this set. If required, it should be specified in a separate option.
 
 <p>
 Fields and methods are specified much like in Java, except that method
@@ -430,15 +439,16 @@ case at least one of them has to be set (e.g. at least <code>public</code>
 
 <li>ProGuard automatically detects <code>Class.forName</code> and
     <code>.class</code> constructs with constant classes. There is one caveat,
-    however. The javac compiler compiles <code>.class</code> to a static
+    however, when processing libraries that are to be used as such after
+    obfuscation. The javac compiler compiles <code>.class</code> to a static
     method, <code>class$(String)</code>. This method calls
     <code>Class.forName</code> and returns a <code>Class</code> object,
     catching some exceptions along the way. ProGuard detects occurrences of
-    the method. However, if the code has been obfuscated before and is now
-    being used as a library, the <code>class$</code> method may have received
-    a different name, thus escaping ProGuard's attention. In order to avoid
-    this, the name of this method should be preserved when obfuscating
-    libraries, as illustrated in this <a href="#library">example</a>.
+    the method. However, if you're using an obfuscated library, the
+    <code>class$</code> method may have received a different name, thus
+    escaping ProGuard's attention. The simple solution is to preserve the name
+    of this method when obfuscating libraries, as illustrated in this <a
+    href="#library">example</a>.
     <p>
 
 <li>ProGuard may not handle obfuscation marker interfaces as expected. If you
@@ -499,7 +509,7 @@ really required in this case, since we know a priori that the specified class
 and method have the proper access flags. It just looks more familiar this way.
 <p>
 We're using the <code>-overloadaggressively</code> and
-<code>-defaultpackage</code> options to squeeze out some extra bytes, but we
+<code>-defaultpackage</code> options to shave off some extra bytes, but we
 could leave them out as well. The <code>-defaultpackage</code> directive moves
 all classes to the given package. Only <code>proguard.ProGuard</code> keeps
 its original name.
@@ -577,7 +587,7 @@ classes:
     public static void main(java.lang.String[]);
 }
 
--keepclassnames class * implements java.io.Serializable
+-keepnames class * implements java.io.Serializable
 
 -keepclassmembers class * implements java.io.Serializable {
     static final long serialVersionUID;
@@ -589,7 +599,7 @@ classes:
 </pre>
 </td></tr></table>
 <p>
-The <code>-keepclassnames</code> option makes sure that any serializable
+The <code>-keepnames</code> option makes sure that any serializable
 classes that are preserved also keep their names. This way, the processed code
 remains backward compatible with the original code.
 <p>
@@ -643,7 +653,7 @@ code:
     static Class class$(java.lang.String);
 }
 
--keepclassnames class * implements java.io.Serializable
+-keepnames class * implements java.io.Serializable
 
 -keepclassmembers class * implements java.io.Serializable {
     static final long serialVersionUID;
@@ -655,7 +665,7 @@ code:
 </pre>
 </td></tr></table>
 <p>
-This configuration should preserve everything we'll ever want to acces in the
+This configuration should preserve everything we'll ever want to access in the
 library. Only if there are any other non-public classes or methods that are
 invoked dynamically, they should be specified using additional
 <code>-keep</code> directives.
@@ -731,7 +741,7 @@ ProGuard may terminate with warnings in a couple of cases:
 <ul>
 <li>If there are <b>unresolved references to superclasses or interfaces</b>,
     you most likely forgot to specify an essential library. At least the Java
-    run-time library should be specified. Furthermore: all libraries with
+    run-time library should be specified. Furthermore, all libraries with
     classes or interfaces that are extended or implemented by classes in your
     input jars should be specified. If you're missing a library and you're
     absolutely sure it isn't used anyway, you can try your luck with the
@@ -773,9 +783,9 @@ might be several reasons:
     manually to the output jars or to some support jars.
     <p>
 
-<li>Perhaps there's a bug in ProGuard (gasp!). If so, please contact me,
-    preferably with the simplest example on which you can find ProGuard to
-    fail.
+<li>If you get an <code><b>AbstractMethodError</b></code>, perhaps there's a
+    bug in ProGuard (gasp!). If so, please contact me, preferably with the
+    simplest example on which you can find ProGuard to fail.
 </ul>
 <p>
 

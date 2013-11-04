@@ -1,4 +1,4 @@
-/* $Id: LineNumberTableAttrInfo.java,v 1.6 2002/05/12 14:29:08 eric Exp $
+/* $Id: LineNumberTableAttrInfo.java,v 1.7 2002/07/28 16:57:22 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -33,53 +33,22 @@ import java.util.*;
  */
 public class LineNumberTableAttrInfo extends AttrInfo
 {
-    public static final int CONSTANT_FIELD_SIZE = 2;
+    private static final int CONSTANT_FIELD_SIZE = 2;
 
 
     public int              u2lineNumberTableLength;
     public LineNumberInfo[] lineNumberTable;
 
 
-    protected LineNumberTableAttrInfo(int attrNameIndex, int attrLength)
+    protected LineNumberTableAttrInfo()
     {
-        super(attrNameIndex, attrLength);
     }
+
 
     /**
-     * Returns the length in bytes of the attribute.
+     * Returns the line number corresponding to the given byte code program
+     * counter.
      */
-    protected int getAttrInfoLength()
-    {
-        return CONSTANT_FIELD_SIZE +
-               u2lineNumberTableLength * LineNumberInfo.CONSTANT_FIELD_SIZE;
-    }
-
-    /**
-     * Reads the data following the header.
-     */
-    protected void readInfo(DataInput din, ClassFile cf) throws IOException
-    {
-        u2lineNumberTableLength = din.readUnsignedShort();
-        lineNumberTable = new LineNumberInfo[u2lineNumberTableLength];
-        for (int i = 0; i < u2lineNumberTableLength; i++)
-        {
-            lineNumberTable[i] = LineNumberInfo.create(din);
-        }
-    }
-
-    /**
-     * Exports data following the header to a DataOutput stream.
-     */
-    public void writeInfo(DataOutput dout) throws IOException
-    {
-        dout.writeShort(u2lineNumberTableLength);
-        for (int i = 0; i < u2lineNumberTableLength; i++)
-        {
-            lineNumberTable[i].write(dout);
-        }
-    }
-
-
     public int getLineNumber(int pc)
     {
         for (int i = u2lineNumberTableLength-1 ; i >= 0 ; i--)
@@ -97,13 +66,38 @@ public class LineNumberTableAttrInfo extends AttrInfo
     }
 
 
-    /**
-     * Accepts the given visitor.
-     */
+    // Implementations for AttrInfo
+
+    protected int getAttrInfoLength()
+    {
+        return CONSTANT_FIELD_SIZE +
+               u2lineNumberTableLength * LineNumberInfo.CONSTANT_FIELD_SIZE;
+    }
+
+    protected void readInfo(DataInput din, ClassFile cf) throws IOException
+    {
+        u2lineNumberTableLength = din.readUnsignedShort();
+        lineNumberTable = new LineNumberInfo[u2lineNumberTableLength];
+        for (int i = 0; i < u2lineNumberTableLength; i++)
+        {
+            lineNumberTable[i] = LineNumberInfo.create(din);
+        }
+    }
+
+    protected void writeInfo(DataOutput dout) throws IOException
+    {
+        dout.writeShort(u2lineNumberTableLength);
+        for (int i = 0; i < u2lineNumberTableLength; i++)
+        {
+            lineNumberTable[i].write(dout);
+        }
+    }
+
     public void accept(ClassFile classFile, AttrInfoVisitor attrInfoVisitor)
     {
         attrInfoVisitor.visitLineNumberTableAttrInfo(classFile, this);
     }
+
 
     /**
      * Applies the given visitor to all line numbers.

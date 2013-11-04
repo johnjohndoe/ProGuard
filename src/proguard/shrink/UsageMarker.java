@@ -1,4 +1,4 @@
-/* $Id: UsageMarker.java,v 1.10 2002/07/04 16:16:58 eric Exp $
+/* $Id: UsageMarker.java,v 1.13 2002/08/01 17:12:40 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -117,7 +117,7 @@ public class UsageMarker
             {
                 // Give the interfaces preliminary marks.
                 programClassFile.accept(
-                    new ClassFileUpDownTraveler(true, false, true, false,
+                    new ClassFileUpDownTraveler(false, false, true, false,
                                                 interfaceUsageMarker));
             }
             else
@@ -131,7 +131,14 @@ public class UsageMarker
 
             // Note that the <clinit> method and the parameterless <init> method
             // are 'overridden' from the ones in java.lang.Object, and therefore
-            // always marked as being used.
+            // always marked as being used. Well, not always, unfortunately.
+            // The MIDP run-time jar midpapi.zip has a version of java.lang.Object
+            // without a <clinit> method. So we'll explicitly mark it before
+            // processing the methods.
+
+            programClassFile.methodAccept(this,
+                                          ClassConstants.INTERNAL_METHOD_NAME_CLINIT,
+                                          ClassConstants.INTERNAL_METHOD_TYPE_CLINIT);
 
             // Process all fields and methods that have already been marked as
             // possibly used.
@@ -277,7 +284,7 @@ public class UsageMarker
                 // hierarchy. Library class methods are supposed to be used by
                 // default, so we don't want to loose their redefinitions.
                 libraryClassFile.accept(
-                    new ClassFileUpDownTraveler(true, false, false, true,
+                    new ClassFileUpDownTraveler(false, false, false, true,
                         new NamedMethodVisitor(this,
                                                libraryMethodInfo.getName(libraryClassFile),
                                                libraryMethodInfo.getDescriptor(libraryClassFile))));
@@ -380,13 +387,23 @@ public class UsageMarker
 
             if (recurse)
             {
-                // Mark the referenced method itself, in all classes up and
-                // down the class hierarchy.
+                // Mark the referenced interface method itself.
+                interfaceMethodrefCpInfo.referencedMemberInfoAccept(this);
+
+                // Mark the all implementations of the method.
+                // First go to all concrete classes of the interface.
+                // From there, travel up and down the class hierarchy to mark
+                // the method.
+                //
+                // This way, we're also catching retro-fitted interfaces, where
+                // a class's implementation of an interface method is hiding
+                // higher up its class hierarchy.
                 interfaceMethodrefCpInfo.referencedClassAccept(
-                    new ClassFileUpDownTraveler(true, true, false, true,
-                        new NamedMethodVisitor(this,
-                                               interfaceMethodrefCpInfo.getName(classFile),
-                                               interfaceMethodrefCpInfo.getType(classFile))));
+                    new ConcreteClassFileDownTraveler(
+                        new ClassFileUpDownTraveler(true, true, false, true,
+                            new NamedMethodVisitor(this,
+                                                   interfaceMethodrefCpInfo.getName(classFile),
+                                                   interfaceMethodrefCpInfo.getType(classFile)))));
             }
         }
     }
@@ -403,10 +420,13 @@ public class UsageMarker
 
             if (recurse)
             {
-                // Mark the referenced method itself, in all classes down the
-                // class hierarchy.
+                // Mark the referenced method itself.
+                methodrefCpInfo.referencedMemberInfoAccept(this);
+
+                // Mark the all overriding implementations of the method,
+                // down the class hierarchy.
                 methodrefCpInfo.referencedClassAccept(
-                    new ClassFileUpDownTraveler(true, false, false, true,
+                    new ClassFileUpDownTraveler(false, false, false, true,
                         new NamedMethodVisitor(this,
                                                methodrefCpInfo.getName(classFile),
                                                methodrefCpInfo.getType(classFile))));
@@ -454,12 +474,12 @@ public class UsageMarker
     // Note that attributes are typically only referenced once, so we don't
     // test if they have been marked already.
 
-    public void visitAttrInfo(ClassFile classFile, AttrInfo attrInfo)
+    public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo)
     {
         // This is the best we can do for unknown attributes.
-        markAsUsed(attrInfo);
+        markAsUsed(unknownAttrInfo);
 
-        markCpEntry(classFile, attrInfo.u2attrNameIndex);
+        markCpEntry(classFile, unknownAttrInfo.u2attrNameIndex);
     }
 
 

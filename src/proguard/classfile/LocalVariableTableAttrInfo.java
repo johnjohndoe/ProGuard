@@ -1,4 +1,4 @@
-/* $Id: LocalVariableTableAttrInfo.java,v 1.6 2002/05/12 14:29:08 eric Exp $
+/* $Id: LocalVariableTableAttrInfo.java,v 1.7 2002/07/28 16:57:22 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -33,26 +33,17 @@ import java.util.*;
  */
 public class LocalVariableTableAttrInfo extends AttrInfo
 {
-    public static final int CONSTANT_FIELD_SIZE = 2;
+    private static final int CONSTANT_FIELD_SIZE = 2;
 
 
     public int                 u2localVariableTableLength;
     public LocalVariableInfo[] localVariableTable;
 
 
-    protected LocalVariableTableAttrInfo(int attrNameIndex, int attrLength)
+    protected LocalVariableTableAttrInfo()
     {
-        super(attrNameIndex, attrLength);
     }
 
-    /**
-     * Returns the length in bytes of the attribute.
-     */
-    protected int getAttrInfoLength()
-    {
-        return CONSTANT_FIELD_SIZE +
-               u2localVariableTableLength * LocalVariableInfo.CONSTANT_FIELD_SIZE;
-    }
 
     /**
      * Returns the array of local variable table entries.
@@ -62,9 +53,15 @@ public class LocalVariableTableAttrInfo extends AttrInfo
         return localVariableTable;
     }
 
-    /**
-     * Reads the data following the header.
-     */
+
+    // Implementations for AttrInfo
+
+    protected int getAttrInfoLength()
+    {
+        return CONSTANT_FIELD_SIZE +
+               u2localVariableTableLength * LocalVariableInfo.CONSTANT_FIELD_SIZE;
+    }
+
     protected void readInfo(DataInput din, ClassFile cf) throws IOException
     {
         u2localVariableTableLength = din.readUnsignedShort();
@@ -75,10 +72,7 @@ public class LocalVariableTableAttrInfo extends AttrInfo
         }
     }
 
-    /**
-     * Exports data following the header to a DataOutput stream.
-     */
-    public void writeInfo(DataOutput dout) throws IOException
+    protected void writeInfo(DataOutput dout) throws IOException
     {
         dout.writeShort(u2localVariableTableLength);
         for (int i = 0; i < u2localVariableTableLength; i++)
@@ -87,13 +81,11 @@ public class LocalVariableTableAttrInfo extends AttrInfo
         }
     }
 
-    /**
-     * Accepts the given visitor.
-     */
     public void accept(ClassFile classFile, AttrInfoVisitor attrInfoVisitor)
     {
         attrInfoVisitor.visitLocalVariableTableAttrInfo(classFile, this);
     }
+
 
     /**
      * Applies the given visitor to all local variables.

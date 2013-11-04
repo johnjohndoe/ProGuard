@@ -9,17 +9,68 @@
 
 <center><h2>Downloads</h2></center>
 
-<b>Proguard</b> is distributed under the GNU Lesser General Public License.
+<b>Proguard</b> is distributed under the GNU General Public License.
 Please refer to the <a href="license.html">license page</a> for more details.
 <p>
-<b>Proguard</b> is written in Java and requires a Java 2 runtime environment.
+<b>Proguard</b> is written in Java. It requires a Java 2 runtime environment.
 <p>
 You can download the latest release (containing the program jar,
-documentation, examples, and source code) from the <a
-href="http://sourceforge.net/project/showfiles.php?group_id=54750"
-target="sourceforge">download section</a> at <a
+documentation, examples, and source code) from this location:
+<p>
+<center><a href="http://sourceforge.net/project/showfiles.php?group_id=54750"
+target="sourceforge">Download section</a> (at <a
 href="http://sourceforge.net/projects/proguard/"
-target="sourceforge">SourceForge</a>.
+target="sourceforge">SourceForge</a>)</center>
+<p>
+
+If you're still working with an older version of <b>Proguard</b>, check out
+the summary of changes below, to see if you're missing something essential.
+Better look at the up-to-date <a
+href="http://proguard.sourceforge.net/downloads.html">on-line version</a> if
+you're reading a local copy of this page.
+<p>
+
+<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
+<h3>Version 1.2</h3>
+</td></tr></table>
+<ul>
+<li>Improved speed.
+<li>Fixed processing of classes targeted at JRE1.2 (the default in JDK1.4)
+    with references to their own subclasses.
+<li>Fixed processing of static initializers in J2ME MIDP applications.
+<li>Fixed processing of retrofitted interfaces (again).
+<li>More flexible handling of white space in configuration.
+<li>Updated documentation.
+</ul>
+
+<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
+<h3>Version 1.1</h3>
+</td></tr></table>
+<ul>
+<li>Added automatic detection of <code>Class.forName("MyClass")</code>,
+    <code>MyClass.class</code>, and
+    <code>(MyClass)Class.forName(variable).newInstance()</code> constructs.
+    This greatly simplifies configuration.
+<li>Added options to keep class names and class member names without affecting
+    any shrinking. They are mostly useful for native methods and serializable
+    classes.
+<li>Fixed processing of retrofitted interfaces, like:
+    <pre>
+    class A     { m() {...} }
+    interface I { m();      }
+    class B extends A implements I
+    </pre>
+<li>Added handling of missing/invalid manifest file in input jar.
+<li>Updated documentation and examples.
+</ul>
+
+<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
+<h3>Version 1.0</h3>
+</td></tr></table>
+<ul>
+<li>First public release, based on class parsing code from Mark Welch's
+    <b>RetroGuard</b>.
+</ul>
 
 <hr>
 <adress>

@@ -1,4 +1,4 @@
-/* $Id: AttrInfoVisitor.java,v 1.4 2002/05/12 13:33:41 eric Exp $
+/* $Id: AttrInfoVisitor.java,v 1.5 2002/07/28 16:57:22 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -31,8 +31,7 @@ import proguard.classfile.*;
  */
 public interface AttrInfoVisitor
 {
-    public void visitAttrInfo(                  ClassFile classFile, AttrInfo                   attrInfo);
-
+    public void visitUnknownAttrInfo(           ClassFile classFile, UnknownAttrInfo            unknownAttrInfo);
     public void visitInnerClassesAttrInfo(      ClassFile classFile, InnerClassesAttrInfo       innerClassesAttrInfo);
     public void visitConstantValueAttrInfo(     ClassFile classFile, ConstantValueAttrInfo      constantValueAttrInfo);
     public void visitExceptionsAttrInfo(        ClassFile classFile, ExceptionsAttrInfo         exceptionsAttrInfo);

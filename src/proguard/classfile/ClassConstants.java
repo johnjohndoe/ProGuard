@@ -1,4 +1,4 @@
-/* $Id: ClassConstants.java,v 1.9 2002/07/13 16:55:21 eric Exp $
+/* $Id: ClassConstants.java,v 1.10 2002/07/30 18:10:57 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -91,9 +91,6 @@ public interface ClassConstants
     public static final String ATTR_Deprecated          = "Deprecated";
     public static final String ATTR_Synthetic           = "Synthetic";
 
-    public static final String INIT   = "<init>";
-    public static final String CLINIT = "<clinit>";
-
     public static final char EXTERNAL_PACKAGE_SEPARATOR = '.';
     public static final char INTERNAL_PACKAGE_SEPARATOR = '/';
 
@@ -107,6 +104,10 @@ public interface ClassConstants
     public static final String INTERNAL_NAME_JAVA_LANG_OBJECT = "java/lang/Object";
     public static final String INTERNAL_TYPE_JAVA_LANG_OBJECT = "Ljava/lang/Object;";
     public static final String INTERNAL_PACKAGE_JAVA_LANG     = "java/lang/";
+
+    public static final String INTERNAL_METHOD_NAME_INIT   = "<init>";
+    public static final String INTERNAL_METHOD_NAME_CLINIT = "<clinit>";
+    public static final String INTERNAL_METHOD_TYPE_CLINIT = "()V";
 
     public static final String INTERNAL_CLASS_NAME_JAVA_LANG_CLASS = "java/lang/Class";
     public static final String INTERNAL_METHOD_NAME_CLASS_FOR_NAME = "forName";

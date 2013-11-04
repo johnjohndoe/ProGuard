@@ -1,4 +1,4 @@
-/* $Id: ClassFileShrinker.java,v 1.7 2002/05/23 19:19:58 eric Exp $
+/* $Id: ClassFileShrinker.java,v 1.8 2002/07/28 16:57:22 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -238,10 +238,10 @@ public class ClassFileShrinker
 
     // Implementations for AttrInfoVisitor
 
-    public void visitAttrInfo(ClassFile classFile, AttrInfo attrInfo)
+    public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo)
     {
-        attrInfo.u2attrNameIndex =
-            remapCpIndex(attrInfo.u2attrNameIndex);
+        unknownAttrInfo.u2attrNameIndex =
+            remapCpIndex(unknownAttrInfo.u2attrNameIndex);
 
         // There's not much else we can do with unknown attributes.
     }

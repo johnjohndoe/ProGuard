@@ -1,4 +1,4 @@
-/* $Id: ExceptionsAttrInfo.java,v 1.6 2002/05/12 14:29:08 eric Exp $
+/* $Id: ExceptionsAttrInfo.java,v 1.7 2002/07/28 16:57:22 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -33,29 +33,25 @@ import java.util.*;
  */
 public class ExceptionsAttrInfo extends AttrInfo
 {
-    public static final int CONSTANT_FIELD_SIZE = 2;
+    private static final int CONSTANT_FIELD_SIZE = 2;
 
 
     public int   u2numberOfExceptions;
     public int[] u2exceptionIndexTable;
 
 
-    protected ExceptionsAttrInfo(int attrNameIndex, int attrLength)
+    protected ExceptionsAttrInfo()
     {
-        super(attrNameIndex, attrLength);
     }
 
-    /**
-     * Returns the length in bytes of the attribute.
-     */
+
+    // Implementations for AttrInfo
+
     protected int getAttrInfoLength()
     {
         return CONSTANT_FIELD_SIZE + 2 * u2numberOfExceptions;
     }
 
-    /**
-     * Reads the data following the header.
-     */
     protected void readInfo(DataInput din, ClassFile cf) throws IOException
     {
         u2numberOfExceptions = din.readUnsignedShort();
@@ -66,10 +62,7 @@ public class ExceptionsAttrInfo extends AttrInfo
         }
     }
 
-    /**
-     * Exports data following the header to a DataOutput stream.
-     */
-    public void writeInfo(DataOutput dout) throws IOException
+    protected void writeInfo(DataOutput dout) throws IOException
     {
         dout.writeShort(u2numberOfExceptions);
         for (int i = 0; i < u2numberOfExceptions; i++)
@@ -78,14 +71,16 @@ public class ExceptionsAttrInfo extends AttrInfo
         }
     }
 
-    /**
-     * Accepts the given visitor.
-     */
     public void accept(ClassFile classFile, AttrInfoVisitor attrInfoVisitor)
     {
         attrInfoVisitor.visitExceptionsAttrInfo(classFile, this);
     }
 
+
+    /**
+     * Applies the given constant pool visitor to all exception class pool info
+     * entries.
+     */
     public void exceptionEntriesAccept(ProgramClassFile programClassFile, CpInfoVisitor cpInfoVisitor)
     {
         for (int i = 0; i < u2numberOfExceptions; i++)

@@ -1,4 +1,4 @@
-/* $Id: WordReader.java,v 1.3 2002/05/12 10:51:38 eric Exp $
+/* $Id: WordReader.java,v 1.5 2002/08/09 16:44:55 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -30,6 +30,11 @@ import java.io.*;
  */
 public abstract class WordReader
 {
+    private static final String JAR_SEPARATOR_KEY = "path.separator";
+    private static final char   JAR_SEPARATOR     =
+       System.getProperties().getProperty(JAR_SEPARATOR_KEY).charAt(0);
+
+
     private WordReader includeWordReader;
     private String     currentLine;
     private int        currentIndex;
@@ -51,6 +56,8 @@ public abstract class WordReader
 
     public String nextWord() throws IOException
     {
+        currentWord = null;
+
         // See if we have an included reader to produce a word.
         if (includeWordReader != null)
         {
@@ -96,14 +103,42 @@ public abstract class WordReader
 
         // Find the word starting at the current index.
         int startIndex = currentIndex;
-        if (isDelimiter(currentLine.charAt(startIndex)))
+        int endIndex;
+
+        char startChar = currentLine.charAt(startIndex);
+
+        if (isDelimiter(startChar))
         {
             // The next word is a single delimiting character.
-            currentIndex++;
+            endIndex = ++currentIndex;
+        }
+        else if (isQuote(startChar))
+        {
+            // The next word is starting with a quote character.
+            // Skip the opening quote.
+            startIndex++;
+
+            // The next word is a quoted character string.
+            // Find the closing quote.
+            do
+            {
+                currentIndex++;
+
+                if (currentIndex == currentLine.length())
+                {
+                    currentWord = currentLine.substring(startIndex-1, currentIndex);
+                    throw new IOException("Missing closing quote for "+locationDescription());
+                }
+            }
+            while (currentLine.charAt(currentIndex) != startChar);
+
+            endIndex = currentIndex++;
         }
         else
         {
-            // The next word is an actual character string.
+            // The next word is a simple character string.
+            // Find the end of the line, the first delimiter, or the first
+            // white space.
             while (currentIndex < currentLine.length())
             {
                 char currentCharacter = currentLine.charAt(currentIndex);
@@ -115,10 +150,12 @@ public abstract class WordReader
 
                 currentIndex++;
             }
+
+            endIndex = currentIndex;
         }
 
         // Remember and return the parsed word.
-        currentWord = currentLine.substring(startIndex, currentIndex);
+        currentWord = currentLine.substring(startIndex, endIndex);
 
         return currentWord;
     }
@@ -151,6 +188,14 @@ public abstract class WordReader
                character == '(' ||
                character == ')' ||
                character == ',' ||
-               character == ';';
+               character == ';' ||
+               character == JAR_SEPARATOR;
+    }
+
+
+    private boolean isQuote(char character)
+    {
+        return character == '\'' ||
+               character == '"';
     }
 }

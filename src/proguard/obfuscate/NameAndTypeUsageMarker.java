@@ -1,4 +1,4 @@
-/* $Id: NameAndTypeUsageMarker.java,v 1.4 2002/05/12 13:33:42 eric Exp $
+/* $Id: NameAndTypeUsageMarker.java,v 1.5 2002/08/02 16:40:29 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -95,7 +95,7 @@ public class NameAndTypeUsageMarker
     // Small utility methods.
 
     /**
-     * Marks the given Utf8 constant pool entry of the given class.
+     * Marks the given UTF-8 constant pool entry of the given class.
      */
     private void markNameAndTypeCpEntry(ClassFile classFile, int index)
     {

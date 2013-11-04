@@ -1,4 +1,4 @@
-/* $Id: FieldrefCpInfo.java,v 1.10 2002/07/04 16:16:58 eric Exp $
+/* $Id: FieldrefCpInfo.java,v 1.12 2002/08/02 16:40:28 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -26,24 +26,25 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Representation of a 'fieldref' entry in the ConstantPool.
+ * Representation of a 'field reference' entry in the ConstantPool.
  *
  * @author Mark Welsh
  * @author Eric Lafortune
  */
 public class FieldrefCpInfo extends RefCpInfo
 {
-
-
     protected FieldrefCpInfo()
     {
-        super(ClassConstants.CONSTANT_Fieldref);
     }
 
 
-    /**
-     * Accepts the given visitor.
-     */
+    // Implementations for CpInfo
+
+    public int getTag()
+    {
+        return ClassConstants.CONSTANT_Fieldref;
+    }
+
     public void accept(ClassFile classFile, CpInfoVisitor cpInfoVisitor)
     {
         cpInfoVisitor.visitFieldrefCpInfo(classFile, this);

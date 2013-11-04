@@ -1,4 +1,4 @@
-/* $Id: CommandParser.java,v 1.16 2002/07/18 17:03:33 eric Exp $
+/* $Id: CommandParser.java,v 1.17 2002/07/30 18:10:57 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -508,12 +508,12 @@ public class CommandParser
 
                     // Is the type actually a constructor?
                     if (OPEN_ARGUMENTS_KEYWORD.equals(nextWord) &&
-                        (type.equals(ClassConstants.INIT) ||
+                        (type.equals(ClassConstants.INTERNAL_METHOD_NAME_INIT) ||
                          type.equals(externalClassName) ||
                          type.equals(ClassUtil.externalShortClassName(externalClassName))))
                     {
                         type = ClassConstants.EXTERNAL_TYPE_VOID;
-                        name = ClassConstants.INIT;
+                        name = ClassConstants.INTERNAL_METHOD_NAME_INIT;
                     }
                     else
                     {

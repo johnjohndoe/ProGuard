@@ -1,4 +1,4 @@
-/* $Id: Utf8UsageMarker.java,v 1.6 2002/05/23 19:19:58 eric Exp $
+/* $Id: Utf8UsageMarker.java,v 1.9 2002/08/04 13:12:19 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -27,7 +27,7 @@ import java.util.*;
 
 
 /**
- * This ClassFileVisitor marks all Utf8 constant pool entries that are
+ * This ClassFileVisitor marks all UTF-8 constant pool entries that are
  * being used in the classes it visits.
  *
  * @see Utf8Shrinker
@@ -42,7 +42,7 @@ public class Utf8UsageMarker
              InnerClassesInfoVisitor,
              LocalVariableInfoVisitor
 {
-    // A visitor info flag to indicate the Utf8 constant pool entry is being used.
+    // A visitor info flag to indicate the UTF-8 constant pool entry is being used.
     private static final Object USED = new Object();
 
 
@@ -50,14 +50,14 @@ public class Utf8UsageMarker
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
-        // Mark the Utf8 entries referenced by all other constant pool entries.
+        // Mark the UTF-8 entries referenced by all other constant pool entries.
         programClassFile.constantPoolEntriesAccept(this);
 
-        // Mark the Utf8 entries referenced by all fields and methods.
+        // Mark the UTF-8 entries referenced by all fields and methods.
         programClassFile.fieldsAccept(this);
         programClassFile.methodsAccept(this);
 
-        // Mark the Utf8 entries referenced by all attributes.
+        // Mark the UTF-8 entries referenced by all attributes.
         programClassFile.attributesAccept(this);
     }
 
@@ -83,11 +83,11 @@ public class Utf8UsageMarker
 
     private void visitMemberInfo(ProgramClassFile programClassFile, ProgramMemberInfo programMemberInfo)
     {
-        // Mark the name and descriptor Utf8 entries.
+        // Mark the name and descriptor UTF-8 entries.
         markCpUtf8Entry(programClassFile, programMemberInfo.u2nameIndex);
         markCpUtf8Entry(programClassFile, programMemberInfo.u2descriptorIndex);
 
-        // Mark the Utf8 entries referenced by all attributes.
+        // Mark the UTF-8 entries referenced by all attributes.
         programMemberInfo.attributesAccept(programClassFile, this);
     }
 
@@ -129,10 +129,10 @@ public class Utf8UsageMarker
 
     // Implementations for AttrInfoVisitor
 
-    public void visitAttrInfo(ClassFile classFile, AttrInfo attrInfo)
+    public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo)
     {
         // This is the best we can do for unknown attributes.
-        markCpUtf8Entry(classFile, attrInfo.u2attrNameIndex);
+        markCpUtf8Entry(classFile, unknownAttrInfo.u2attrNameIndex);
     }
 
 
@@ -221,7 +221,7 @@ public class Utf8UsageMarker
     // Small utility methods.
 
     /**
-     * Marks the given Utf8 constant pool entry of the given class.
+     * Marks the given UTF-8 constant pool entry of the given class.
      */
     private void markCpUtf8Entry(ClassFile classFile, int index)
     {

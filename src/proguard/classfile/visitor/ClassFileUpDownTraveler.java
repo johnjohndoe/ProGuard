@@ -1,4 +1,4 @@
-/* $Id: ClassFileUpDownTraveler.java,v 1.7 2002/05/19 16:02:12 eric Exp $
+/* $Id: ClassFileUpDownTraveler.java,v 1.8 2002/08/01 17:12:40 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -24,9 +24,9 @@ import proguard.classfile.*;
 
 
 /**
- * This <code>ClassFileVisitor</code> lets a given
- * <code>ClassFileVisitor</code> optionally travel to the visited class,
- * its super classes, its interfaces, and its subclasses.
+ * This <code>ClassFileVisitor</code> lets a given <code>ClassFileVisitor</code>
+ * optionally travel to the visited class, its superclass, its interfaces, and
+ * its subclasses.
  *
  * @author Eric Lafortune
  */
@@ -47,13 +47,13 @@ public class ClassFileUpDownTraveler
 
     /**
      * Creates a new ClassFileUpDownTraveler.
-     * @param visitThisClass   Specifies whether to visit the originally visited
+     * @param visitThisClass   specifies whether to visit the originally visited
      *                         classes.
-     * @param visitSuperClass  Specifies whether to visit the super classes of
+     * @param visitSuperClass  specifies whether to visit the super classes of
      *                         the visited classes.
-     * @param visitInterfaces  Specifies whether to visit the interfaces of
+     * @param visitInterfaces  specifies whether to visit the interfaces of
      *                         the visited classes.
-     * @param visitSubclasses  Specifies whether to visit the subclasses of
+     * @param visitSubclasses  specifies whether to visit the subclasses of
      *                         the visited classes.
      * @param classFileVisitor the <code>ClassFileVisitor</code> to
      *                         which visits will be delegated.
