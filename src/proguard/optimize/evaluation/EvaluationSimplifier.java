@@ -1739,8 +1739,8 @@ implements   AttributeVisitor,
                 value == 1L)
             {
                 replacePushInstruction(offset,
-                                       (byte)(InstructionConstants.OP_LCONST_0 + value),
-                                       0);
+                                       InstructionConstants.OP_LCONST_0,
+                                       (int)value);
             }
         }
     }
@@ -1761,8 +1761,8 @@ implements   AttributeVisitor,
                 value == 2f)
             {
                 replacePushInstruction(offset,
-                                       (byte)(InstructionConstants.OP_FCONST_0 + value),
-                                       0);
+                                       InstructionConstants.OP_FCONST_0,
+                                       (int)value);
             }
         }
     }
@@ -1782,8 +1782,8 @@ implements   AttributeVisitor,
                 value == 1.0)
             {
                 replacePushInstruction(offset,
-                                       (byte)(InstructionConstants.OP_DCONST_0 + value),
-                                       0);
+                                       InstructionConstants.OP_DCONST_0,
+                                       (int)value);
             }
         }
     }
