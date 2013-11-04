@@ -1,4 +1,4 @@
-/* $Id: LongCpInfo.java,v 1.6 2002/05/12 14:29:08 eric Exp $
+/* $Id: LongCpInfo.java,v 1.7 2002/07/04 16:16:58 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -39,7 +39,7 @@ public class LongCpInfo extends CpInfo
 
     protected LongCpInfo()
     {
-        super(CONSTANT_Long);
+        super(ClassConstants.CONSTANT_Long);
     }
 
     /**

@@ -1,4 +1,4 @@
-/* $Id: ProGuard.java,v 1.16 2002/05/28 16:00:25 eric Exp $
+/* $Id: ProGuard.java,v 1.18 2002/07/13 16:55:21 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -38,7 +38,7 @@ import java.util.*;
  */
 public class ProGuard
 {
-    public static final String VERSION = "ProGuard, version 1.0";
+    public static final String VERSION = "ProGuard, version 1.1";
 
     private CompoundCommand commands         = new CompoundCommand();
     private ProGuardOptions options          = new ProGuardOptions();
@@ -90,28 +90,43 @@ public class ProGuard
         ClassFileInitializer initializer =
             new ClassFileInitializer(programClassPool,
                                      libraryClassPool,
-                                     options.warn);
+                                     options.warn,
+                                     options.note);
 
         programClassPool.classFilesAccept(initializer);
 
+        int noteCount = initializer.getNoteCount();
+        if (noteCount > 0)
+        {
+            System.err.println("Note: there were " + noteCount +
+                               " class casts of dynamically created class instances.");
+            System.err.println("      You might consider explicitly keeping the mentioned classes and/or");
+            System.err.println("      their implementations.");
+        }
+
         int classFileWarningCount = initializer.getClassFileWarningCount();
-        int memberWarningCount = initializer.getMemberWarningCount();
         if (classFileWarningCount > 0)
         {
             System.err.println("Warning: there were " + classFileWarningCount +
                                " unresolved references to superclasses or interfaces");
+            System.err.println("         You may need to specify additional library jars.");
         }
 
+        int memberWarningCount = initializer.getMemberWarningCount();
         if (memberWarningCount > 0)
         {
             System.err.println("Warning: there were " + memberWarningCount +
                                " unresolved references to program class members");
+            System.err.println("         Your input class files appear to be inconsistent.");
+            System.err.println("         You may need to recompile them and try again.");
         }
 
-        if (!options.ignoreWarnings &&
-            (classFileWarningCount > 0 ||
-             memberWarningCount > 0))
+        if ((classFileWarningCount > 0 ||
+             memberWarningCount > 0) &&
+            !options.ignoreWarnings)
         {
+            System.err.println("         If you are sure the mentioned classes are not used anyway,");
+            System.err.println("         you could try your luck using the '-ignorewarnings' option.");
             System.exit(-1);
         }
 

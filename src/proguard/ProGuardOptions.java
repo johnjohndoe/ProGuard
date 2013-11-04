@@ -1,4 +1,4 @@
-/* $Id: ProGuardOptions.java,v 1.3 2002/05/19 16:50:22 eric Exp $
+/* $Id: ProGuardOptions.java,v 1.4 2002/07/13 16:55:21 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -35,6 +35,7 @@ public class ProGuardOptions
     public boolean  dump;
     public boolean  ignoreWarnings;
     public boolean  warn      = true;
+    public boolean  note      = true;
     public boolean  shrink    = true;
     public boolean  obfuscate = true;
     public boolean  overloadAggressively;

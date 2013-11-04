@@ -1,4 +1,4 @@
-/* $Id: LibraryClassFile.java,v 1.14 2002/05/23 21:21:12 eric Exp $
+/* $Id: LibraryClassFile.java,v 1.15 2002/07/04 16:16:58 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -244,6 +244,11 @@ public class LibraryClassFile implements ClassFile
     {
         // This may be java/lang/Object, in which case there is no super.
         return superClassName;
+    }
+
+    public int getCpTag(int cpIndex)
+    {
+        return -1;
     }
 
     public String getCpString(int cpIndex)

@@ -1,4 +1,4 @@
-/* $Id: CommandParser.java,v 1.13 2002/05/20 10:12:01 eric Exp $
+/* $Id: CommandParser.java,v 1.16 2002/07/18 17:03:33 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -36,29 +36,32 @@ import java.util.*;
  */
 public class CommandParser
 {
-    private static final String COMMAND_PREFIX          = "-";
-    private static final String AT_DIRECTIVE            = "@";
-    private static final String INCLUDE_DIRECTIVE       = "-include";
-    private static final String VERBOSE_COMMAND         = "-verbose";
-    private static final String PRINT_SEEDS_COMMAND     = "-printseeds";
-    private static final String PRINT_USAGE_COMMAND     = "-printusage";
-    private static final String PRINT_MAPPING_COMMAND   = "-printmapping";
-    private static final String DUMP_COMMAND            = "-dump";
-    private static final String IGNORE_WARNINGS_COMMAND = "-ignorewarnings";
-    private static final String DONT_WARN_COMMAND       = "-dontwarn";
-    private static final String DONT_SHRINK_COMMAND     = "-dontshrink";
-    private static final String DONT_OBFUSCATE_COMMAND  = "-dontobfuscate";
-    private static final String OVERLOAD_COMMAND        = "-overloadaggressively";
-    private static final String LIBRARYJARS_COMMAND     = "-libraryjars";
-    private static final String INJARS_COMMAND          = "-injars";
-    private static final String OUTJAR_COMMAND          = "-outjar";
-    private static final String KEEP_COMMAND            = "-keep";
+    private static final String COMMAND_PREFIX                    = "-";
+    private static final String AT_DIRECTIVE                      = "@";
+    private static final String INCLUDE_DIRECTIVE                 = "-include";
+    private static final String VERBOSE_COMMAND                   = "-verbose";
+    private static final String PRINT_SEEDS_COMMAND               = "-printseeds";
+    private static final String PRINT_USAGE_COMMAND               = "-printusage";
+    private static final String PRINT_MAPPING_COMMAND             = "-printmapping";
+    private static final String DUMP_COMMAND                      = "-dump";
+    private static final String IGNORE_WARNINGS_COMMAND           = "-ignorewarnings";
+    private static final String DONT_WARN_COMMAND                 = "-dontwarn";
+    private static final String DONT_NOTE_COMMAND                 = "-dontnote";
+    private static final String DONT_SHRINK_COMMAND               = "-dontshrink";
+    private static final String DONT_OBFUSCATE_COMMAND            = "-dontobfuscate";
+    private static final String OVERLOAD_COMMAND                  = "-overloadaggressively";
+    private static final String LIBRARYJARS_COMMAND               = "-libraryjars";
+    private static final String INJARS_COMMAND                    = "-injars";
+    private static final String OUTJAR_COMMAND                    = "-outjar";
+    private static final String KEEP_COMMAND                      = "-keep";
     private static final String KEEP_CLASS_MEMBERS_COMMAND        = "-keepclassmembers";
     private static final String KEEP_CLASSES_WITH_MEMBERS_COMMAND = "-keepclasseswithmembers";
-    private static final String KEEP_ATTRIBUTES_COMMAND = "-keepattributes";
-    private static final String DONTSHRINK_COMMAND      = "-dontshrink";
-    private static final String DONTOBFUSCATE_COMMAND   = "-dontobfuscate";
-    private static final String DEFAULT_PACKAGE_COMMAND = "-defaultpackage";
+    private static final String KEEP_NAMES_COMMAND                = "-keepnames";
+    private static final String KEEP_CLASS_MEMBER_NAMES_COMMAND   = "-keepclassmembernames";
+    private static final String KEEP_ATTRIBUTES_COMMAND           = "-keepattributes";
+    private static final String DONTSHRINK_COMMAND                = "-dontshrink";
+    private static final String DONTOBFUSCATE_COMMAND             = "-dontobfuscate";
+    private static final String DEFAULT_PACKAGE_COMMAND           = "-defaultpackage";
 
     private static final String ANY_ATTRIBUTE_KEYWORD       = "*";
     private static final String ATTRIBUTE_SEPARATOR_KEYWORD = ",";
@@ -139,9 +142,11 @@ public class CommandParser
 
             // See if it's a command.
             Command command =
-                KEEP_COMMAND                     .startsWith(nextWord) ? (Command)parseKeepCommand(true, false)  :
-                KEEP_CLASS_MEMBERS_COMMAND       .startsWith(nextWord) ? (Command)parseKeepCommand(false, false) :
-                KEEP_CLASSES_WITH_MEMBERS_COMMAND.startsWith(nextWord) ? (Command)parseKeepCommand(false, true)  :
+                KEEP_COMMAND                     .startsWith(nextWord) ? (Command)parseKeepCommand(true,  false, false) :
+                KEEP_CLASS_MEMBERS_COMMAND       .startsWith(nextWord) ? (Command)parseKeepCommand(false, false, false) :
+                KEEP_CLASSES_WITH_MEMBERS_COMMAND.startsWith(nextWord) ? (Command)parseKeepCommand(false, true,  false) :
+                KEEP_NAMES_COMMAND               .startsWith(nextWord) ? (Command)parseKeepCommand(true,  false, true)  :
+                KEEP_CLASS_MEMBER_NAMES_COMMAND  .startsWith(nextWord) ? (Command)parseKeepCommand(false, false, true)  :
                 LIBRARYJARS_COMMAND              .startsWith(nextWord) ? (Command)parseInJarsCommand(true)       :
                 INJARS_COMMAND                   .startsWith(nextWord) ? (Command)parseInJarsCommand(false)      :
                 OUTJAR_COMMAND                   .startsWith(nextWord) ? (Command)parseOutJarCommand()           :
@@ -164,6 +169,7 @@ public class CommandParser
             else if (DUMP_COMMAND           .startsWith(nextWord)) options.dump = true;
             else if (IGNORE_WARNINGS_COMMAND.startsWith(nextWord)) options.ignoreWarnings = true;
             else if (DONT_WARN_COMMAND      .startsWith(nextWord)) options.warn = false;
+            else if (DONT_NOTE_COMMAND      .startsWith(nextWord)) options.note = false;
             else if (DONT_SHRINK_COMMAND    .startsWith(nextWord)) options.shrink = false;
             else if (DONT_OBFUSCATE_COMMAND .startsWith(nextWord)) options.obfuscate = false;
             else if (OVERLOAD_COMMAND       .startsWith(nextWord)) options.overloadAggressively = true;
@@ -172,7 +178,7 @@ public class CommandParser
                                                                    readNextWordAfterwards = false;}
             else
             {
-                throw new ParseException("Unknown command "+ reader.locationDescription());
+                throw new ParseException("Unknown command " + reader.locationDescription());
             }
 
             if (readNextWordAfterwards)
@@ -289,7 +295,8 @@ public class CommandParser
 
 
     private Command parseKeepCommand(boolean markClassFiles,
-                                     boolean markClassFilesConditionally)
+                                     boolean markClassFilesConditionally,
+                                     boolean onlyKeepNames)
     throws ParseException, IOException
     {
         // Parse the class flag specification part, if any.
@@ -389,7 +396,8 @@ public class CommandParser
                                                   extendsClassName,
                                                   asClassName,
                                                   markClassFiles,
-                                                  markClassFilesConditionally);
+                                                  markClassFilesConditionally,
+                                                  onlyKeepNames);
 
 
         // Now modify this KeepCommand, for keeping any class members.

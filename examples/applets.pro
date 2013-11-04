@@ -8,11 +8,16 @@
 -injars      in.jar
 -outjar      out.jar
 
+
 # Preserve all public applets, and print out which ones.
 
 -keep public class * extends java.applet.Applet
 
+
+# Print out a list of what we're preserving.
+
 -printseeds
+
 
 # Some jars may contain more items that need to be preserved, e.g.:
 # -keep public class mypackage.MyClass

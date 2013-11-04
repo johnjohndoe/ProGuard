@@ -1,4 +1,4 @@
-/* $Id: CpInfo.java,v 1.8 2002/05/16 19:04:27 eric Exp $
+/* $Id: CpInfo.java,v 1.9 2002/07/04 16:16:58 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -32,7 +32,7 @@ import java.util.*;
  * @author Mark Welsh
  * @author Eric Lafortune
  */
-abstract public class CpInfo implements VisitorAccepter, ClassConstants
+abstract public class CpInfo implements VisitorAccepter
 {
     public int u1tag;
     //private byte info[];
@@ -55,17 +55,17 @@ abstract public class CpInfo implements VisitorAccepter, ClassConstants
         int type = din.readUnsignedByte();
         switch (type)
         {
-        case CONSTANT_Utf8:               ci = new Utf8CpInfo();              break;
-        case CONSTANT_Integer:            ci = new IntegerCpInfo();           break;
-        case CONSTANT_Float:              ci = new FloatCpInfo();             break;
-        case CONSTANT_Long:               ci = new LongCpInfo();              break;
-        case CONSTANT_Double:             ci = new DoubleCpInfo();            break;
-        case CONSTANT_Class:              ci = new ClassCpInfo();             break;
-        case CONSTANT_String:             ci = new StringCpInfo();            break;
-        case CONSTANT_Fieldref:           ci = new FieldrefCpInfo();          break;
-        case CONSTANT_Methodref:          ci = new MethodrefCpInfo();         break;
-        case CONSTANT_InterfaceMethodref: ci = new InterfaceMethodrefCpInfo();break;
-        case CONSTANT_NameAndType:        ci = new NameAndTypeCpInfo();       break;
+        case ClassConstants.CONSTANT_Utf8:               ci = new Utf8CpInfo();              break;
+        case ClassConstants.CONSTANT_Integer:            ci = new IntegerCpInfo();           break;
+        case ClassConstants.CONSTANT_Float:              ci = new FloatCpInfo();             break;
+        case ClassConstants.CONSTANT_Long:               ci = new LongCpInfo();              break;
+        case ClassConstants.CONSTANT_Double:             ci = new DoubleCpInfo();            break;
+        case ClassConstants.CONSTANT_Class:              ci = new ClassCpInfo();             break;
+        case ClassConstants.CONSTANT_String:             ci = new StringCpInfo();            break;
+        case ClassConstants.CONSTANT_Fieldref:           ci = new FieldrefCpInfo();          break;
+        case ClassConstants.CONSTANT_Methodref:          ci = new MethodrefCpInfo();         break;
+        case ClassConstants.CONSTANT_InterfaceMethodref: ci = new InterfaceMethodrefCpInfo();break;
+        case ClassConstants.CONSTANT_NameAndType:        ci = new NameAndTypeCpInfo();       break;
         default: throw new IOException("Unknown constant type ["+type+"] in constant pool.");
         }
         ci.readInfo(din);
@@ -78,16 +78,41 @@ abstract public class CpInfo implements VisitorAccepter, ClassConstants
         u1tag = tag;
     }
 
+
+    public int getTag()
+    {
+        return u1tag;
+    }
+
+
     /**
-     * Reads the 'info' data following the u1tag byte; over-ride this in sub-classes.
+     * Reads the 'info' data following the u1tag byte; override this in subclasses.
      */
     abstract protected void readInfo(DataInput din) throws IOException;
+
+
+    /**
+     * Exports the representation to a DataOutput stream.
+     */
+    public void write(DataOutput dout) throws IOException
+    {
+        dout.writeByte(u1tag);
+        writeInfo(dout);
+    }
+
+    /**
+     * Writes the 'info' data following the u1tag byte; override this in subclasses.
+     */
+    abstract protected void writeInfo(DataOutput dout) throws IOException;
 
 
     /**
      * Accepts the given visitor.
      */
     public abstract void accept(ClassFile classFile, CpInfoVisitor cpInfoVisitor);
+
+
+    // Implementations for VisitorAccepter
 
     public Object getVisitorInfo()
     {
@@ -98,20 +123,4 @@ abstract public class CpInfo implements VisitorAccepter, ClassConstants
     {
         this.visitorInfo = visitorInfo;
     }
-
-
-    /**
-     * Exports the representation to a DataOutput stream.
-     */
-    public void write(DataOutput dout) throws IOException
-    {
-        if (dout == null) throw new IOException("No output stream was provided.");
-        dout.writeByte(u1tag);
-        writeInfo(dout);
-    }
-
-    /**
-     * Writes the 'info' data following the u1tag byte; over-ride this in sub-classes.
-     */
-    abstract protected void writeInfo(DataOutput dout) throws IOException;
 }

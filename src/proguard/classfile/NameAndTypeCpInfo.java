@@ -1,4 +1,4 @@
-/* $Id: NameAndTypeCpInfo.java,v 1.7 2002/05/16 18:46:44 eric Exp $
+/* $Id: NameAndTypeCpInfo.java,v 1.8 2002/07/04 16:16:58 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -50,7 +50,7 @@ public class NameAndTypeCpInfo extends CpInfo implements Cloneable
 
     protected NameAndTypeCpInfo()
     {
-        super(CONSTANT_NameAndType);
+        super(ClassConstants.CONSTANT_NameAndType);
     }
 
 

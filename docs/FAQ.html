@@ -57,10 +57,10 @@ names, method names, and line numbers given in exception stack traces.
 <h3>Does <b>ProGuard</b> work with JDK1.4?</h3>
 </td></tr></table>
 <p>
-Yes. Class files compiled with the <code>javac</code> compiler of JDK1.4 have
-a slightly different structure than class files compiled with earlier versions
-of the compiler. The new class files fall within the specifications, so they
-will run on most virtual machines, but they may trip some obfuscators.
+Yes. Class files compiled with the <code>javac</code> compiler of JDK1.4 are
+targeted at JRE 1.2 by default. These class files have a slightly different
+structure than before. The new class files fall within the specifications, so
+they will run on most virtual machines, but they may trip some obfuscators.
 <b>ProGuard</b> handles both class file structures correctly.
 
 <p>
@@ -69,10 +69,18 @@ will run on most virtual machines, but they may trip some obfuscators.
 <h3>Does <b>ProGuard</b> handle <code>Class.forName</code> calls?</h3>
 </td></tr></table>
 <p>
-Not automatically. For the moment, you will have to specify classes that are
-created dynamically using one of the <code>-keep</code> options. The
-template-based configuration can make life a bit easier here -- please refer
-to the <a href="manual.html">User Manual</a>.
+Yes. As of version 1.1, <b>ProGuard</b> automatically handles
+<code>Class.forName("SomeClass")</code> and <code>SomeClass.class</code>
+constructs. The referenced classes are preserved in the shrinking phase, and
+the string arguments are properly replaced in the obfuscation phase.
+<p>
+With variable string arguments, it's generally not possible to determine their
+possible values (they might be read from a configuration file, for instance).
+However, <b>ProGuard</b> will note constructs like
+"<code>(SomeClass)Class.forName(variable).newInstance()</code>". These might
+be an indication that the class or interface <code>SomeClass</code> and/or its
+implementations may need to be preserved. The user can adapt his configuration
+accordingly.
 
 <p>
 <a name="resource">&nbsp;</a>

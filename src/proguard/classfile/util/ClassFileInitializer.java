@@ -1,4 +1,4 @@
-/* $Id: ClassFileInitializer.java,v 1.8 2002/05/23 21:21:12 eric Exp $
+/* $Id: ClassFileInitializer.java,v 1.11 2002/07/13 16:55:21 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -21,6 +21,7 @@
 package proguard.classfile.util;
 
 import proguard.classfile.*;
+import proguard.classfile.instruction.*;
 import proguard.classfile.visitor.*;
 
 import java.util.*;
@@ -34,7 +35,9 @@ import java.util.*;
 public class ClassFileInitializer
   implements ClassFileVisitor,
              MemberInfoVisitor,
-             CpInfoVisitor
+             CpInfoVisitor,
+             AttrInfoVisitor,
+             InstructionVisitor
 {
     // A visitor info flag to indicate the visitor accepter has been initialized.
     private static final Object INITIALIZED = new Object();
@@ -43,12 +46,24 @@ public class ClassFileInitializer
     private ClassPool programClassPool;
     private ClassPool libraryClassPool;
     private boolean   warn;
+    private boolean   note;
     private int       classFileWarningCount;
     private int       memberWarningCount;
+    private int       noteCount;
 
     // A field acting as a parameter to the visitProgramClassFile and
     // visitLibraryClassFile methods.
     private ClassFile subclass;
+
+    // Helper class for checking whether refernced methods are Class.forName,...
+    private MyClassForNameFinder classForNameFinder = new MyClassForNameFinder();
+
+    // Fields to remember the previous StringCpInfo and MethodRefCpInfo objects
+    // while visiting all instructions (to find Class.forName, class$, and
+    // Class.newInstance invocations, and possible class casts afterwards).
+    private int ldcStringCpIndex              = -1;
+    private int invokestaticMethodRefCpIndex  = -1;
+    private int invokevirtualMethodRefCpIndex = -1;
 
 
     /**
@@ -58,7 +73,7 @@ public class ClassFileInitializer
     public ClassFileInitializer(ClassPool programClassPool,
                                 ClassPool libraryClassPool)
     {
-        this(programClassPool, libraryClassPool, true);
+        this(programClassPool, libraryClassPool, true, true);
     }
 
 
@@ -68,11 +83,13 @@ public class ClassFileInitializer
      */
     public ClassFileInitializer(ClassPool programClassPool,
                                 ClassPool libraryClassPool,
-                                boolean   warn)
+                                boolean   warn,
+                                boolean   note)
     {
         this.programClassPool = programClassPool;
         this.libraryClassPool = libraryClassPool;
         this.warn             = warn;
+        this.note             = note;
     }
 
 
@@ -93,6 +110,16 @@ public class ClassFileInitializer
     public int getMemberWarningCount()
     {
         return memberWarningCount;
+    }
+
+
+    /**
+     * Returns the number of notes printed about occurrences of
+     * '<code>(SomeClass)Class.forName(variable).newInstance()</code>'.
+     */
+    public int getNoteCount()
+    {
+        return noteCount;
     }
 
 
@@ -226,6 +253,9 @@ public class ClassFileInitializer
     {
         programMemberInfo.referencedClassFiles =
             findReferencedClassFiles(programMemberInfo.getDescriptor(programClassFile));
+
+      // Initialize the attributes.
+      programMemberInfo.attributesAccept(programClassFile, this);
     }
 
 
@@ -353,6 +383,222 @@ public class ClassFileInitializer
     {
         nameAndTypeCpInfo.referencedClassFiles =
             findReferencedClassFiles(nameAndTypeCpInfo.getType(classFile));
+    }
+
+
+    // Implementations for AttrInfoVisitor
+
+    public void visitAttrInfo(ClassFile classFile, AttrInfo attrInfo) {}
+    public void visitInnerClassesAttrInfo(ClassFile classFile, InnerClassesAttrInfo innerClassesAttrInfo) {}
+    public void visitConstantValueAttrInfo(ClassFile classFile, ConstantValueAttrInfo constantValueAttrInfo) {}
+    public void visitExceptionsAttrInfo(ClassFile classFile, ExceptionsAttrInfo exceptionsAttrInfo) {}
+    public void visitLineNumberTableAttrInfo(ClassFile classFile, LineNumberTableAttrInfo lineNumberTableAttrInfo) {}
+    public void visitLocalVariableTableAttrInfo(ClassFile classFile, LocalVariableTableAttrInfo localVariableTableAttrInfo) {}
+    public void visitSourceFileAttrInfo(ClassFile classFile, SourceFileAttrInfo sourceFileAttrInfo) {}
+    public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo) {}
+    public void visitSyntheticAttrInfo(ClassFile classFile, SyntheticAttrInfo syntheticAttrInfo) {}
+
+
+    public void visitCodeAttrInfo(ClassFile classFile, CodeAttrInfo codeAttrInfo)
+    {
+        codeAttrInfo.instructionsAccept(classFile, this);
+    }
+
+
+    // Implementations for InstructionVisitor
+
+    public void visitInstruction(ClassFile classFile, Instruction instruction)
+    {
+        // Just ignore generic instructions and reset the constant pool indices.
+        ldcStringCpIndex              = -1;
+        invokestaticMethodRefCpIndex  = -1;
+        invokevirtualMethodRefCpIndex = -1;
+    }
+
+
+    public void visitCpInstruction(ClassFile classFile, CpInstruction cpInstruction)
+    {
+        int currentCpIndex = cpInstruction.getCpIndex();
+
+        switch (cpInstruction.getOpcode())
+        {
+            case Instruction.OP_LDC:
+            case Instruction.OP_LDC_WIDE:
+                // Are we loading a constant String?
+                int currentCpTag = classFile.getCpTag(currentCpIndex);
+                if (currentCpTag == ClassConstants.CONSTANT_String)
+                {
+                    // Remember it; it might be the argument of Class.forName.
+                    ldcStringCpIndex = currentCpIndex;
+                }
+                invokestaticMethodRefCpIndex  = -1;
+                invokevirtualMethodRefCpIndex = -1;
+                break;
+
+            case Instruction.OP_INVOKESTATIC:
+                // Are we invoking a static method that might have a constant
+                // String argument?
+                if (ldcStringCpIndex > 0)
+                {
+                    classForNameFinder.reset();
+                    // First check whether the method reference points to Class.forName.
+                    classFile.constantPoolEntryAccept(classForNameFinder, currentCpIndex);
+                    // Then fill out the class file reference in the String, if applicable.
+                    classFile.constantPoolEntryAccept(classForNameFinder, ldcStringCpIndex);
+
+                    invokestaticMethodRefCpIndex = -1;
+                }
+                else
+                {
+                    // Just remember it; it might still be a Class.forName.
+                    invokestaticMethodRefCpIndex = currentCpIndex;
+                }
+
+                ldcStringCpIndex              = -1;
+                invokevirtualMethodRefCpIndex = -1;
+                break;
+
+            case Instruction.OP_INVOKEVIRTUAL:
+                // Are we invoking a virtual method right after a static method?
+                if (invokestaticMethodRefCpIndex > 0)
+                {
+                    // Remember it; it might be Class.newInstance after a Class.forName.
+                    invokevirtualMethodRefCpIndex = currentCpIndex;
+                }
+                else
+                {
+                    invokestaticMethodRefCpIndex  = -1;
+                    invokevirtualMethodRefCpIndex = -1;
+                }
+
+                ldcStringCpIndex = -1;
+                break;
+
+            case Instruction.OP_CHECKCAST:
+                // Are we checking a cast right after a static method and a
+                // virtual method?
+                if (invokestaticMethodRefCpIndex  > 0 &&
+                    invokevirtualMethodRefCpIndex > 0)
+                {
+                    classForNameFinder.reset();
+                    // First check whether the first method reference points to Class.forName.
+                    classFile.constantPoolEntryAccept(classForNameFinder, invokestaticMethodRefCpIndex);
+                    // Then check whether the second method reference points to Class.newInstance.
+                    classFile.constantPoolEntryAccept(classForNameFinder, invokevirtualMethodRefCpIndex);
+                    // Then figure out which class is being cast to.
+                    classFile.constantPoolEntryAccept(classForNameFinder, currentCpIndex);
+                }
+
+                ldcStringCpIndex              = -1;
+                invokestaticMethodRefCpIndex  = -1;
+                invokevirtualMethodRefCpIndex = -1;
+                break;
+
+            default:
+                // Nothing interesting; just forget about previous indices.
+                ldcStringCpIndex              = -1;
+                invokestaticMethodRefCpIndex  = -1;
+                invokevirtualMethodRefCpIndex = -1;
+                break;
+        }
+    }
+
+
+    /**
+     * This CpInfoVisitor is designed to visit one or two method references first,
+     * and then a string or a class reference.
+     * If the method reference is Class.forName or .class, the class file
+     * reference of the string is filled out.
+     * If the method reference is Class.forName and then Class.newInstance,
+     * a note of it is made.
+     */
+    private class MyClassForNameFinder implements CpInfoVisitor
+    {
+        private boolean isClassForNameInvocation;
+        private boolean isDotClassInvocation;
+        private boolean isClassForNameInstanceInvocation;
+
+        public void reset()
+        {
+            isClassForNameInvocation         = false;
+            isDotClassInvocation             = false;
+            isClassForNameInstanceInvocation = false;
+        }
+
+
+        public void visitIntegerCpInfo(ClassFile classFile, IntegerCpInfo integerCpInfo) {}
+        public void visitLongCpInfo(ClassFile classFile, LongCpInfo longCpInfo) {}
+        public void visitFloatCpInfo(ClassFile classFile, FloatCpInfo floatCpInfo) {}
+        public void visitDoubleCpInfo(ClassFile classFile, DoubleCpInfo doubleCpInfo) {}
+        public void visitUtf8CpInfo(ClassFile classFile, Utf8CpInfo utf8CpInfo) {}
+        public void visitFieldrefCpInfo(ClassFile classFile, FieldrefCpInfo fieldrefCpInfo) {}
+        public void visitInterfaceMethodrefCpInfo(ClassFile classFile, InterfaceMethodrefCpInfo interfaceMethodrefCpInfo) {}
+        public void visitNameAndTypeCpInfo(ClassFile classFile, NameAndTypeCpInfo nameAndTypeCpInfo) {}
+
+
+        public void visitMethodrefCpInfo(ClassFile classFile, MethodrefCpInfo methodrefCpInfo)
+        {
+            String className  = methodrefCpInfo.getClassName(classFile);
+            String methodName = methodrefCpInfo.getName(classFile);
+            String methodType = methodrefCpInfo.getType(classFile);
+
+            // Is it a reference to Class.newInstance, following a reference to
+            // Class.forName?
+            isClassForNameInstanceInvocation =
+                isClassForNameInvocation                                              &&
+                className .equals(ClassConstants.INTERNAL_CLASS_NAME_JAVA_LANG_CLASS) &&
+                methodName.equals(ClassConstants.INTERNAL_METHOD_NAME_NEW_INSTANCE)   &&
+                methodType.equals(ClassConstants.INTERNAL_METHOD_TYPE_NEW_INSTANCE);
+
+            // Is it a reference to Class.forName?
+            isClassForNameInvocation =
+                className .equals(ClassConstants.INTERNAL_CLASS_NAME_JAVA_LANG_CLASS) &&
+                methodName.equals(ClassConstants.INTERNAL_METHOD_NAME_CLASS_FOR_NAME) &&
+                methodType.equals(ClassConstants.INTERNAL_METHOD_TYPE_CLASS_FOR_NAME);
+
+            // Is it a reference to .class?
+            // Note that .class is implemented as "static Class class$(String)".
+            isDotClassInvocation =
+                className .equals(classFile.getName())                           &&
+                methodName.equals(ClassConstants.INTERNAL_METHOD_NAME_DOT_CLASS) &&
+                methodType.equals(ClassConstants.INTERNAL_METHOD_TYPE_DOT_CLASS);
+        }
+
+
+        public void visitStringCpInfo(ClassFile classFile, StringCpInfo stringCpInfo)
+        {
+            if (isClassForNameInvocation ||
+                isDotClassInvocation)
+            {
+                // Find and initialize the corresponding class file, and save a
+                // reference to it.
+                String externalClassName = stringCpInfo.getString(classFile);
+                String internalClassName = ClassUtil.internalClassName(externalClassName);
+
+                stringCpInfo.referencedClassFile =
+                    findAndInitializeClassFile(classFile,
+                                               internalClassName,
+                                               programClassPool,
+                                               null);
+            }
+        }
+
+
+        public void visitClassCpInfo(ClassFile classFile, ClassCpInfo classCpInfo)
+        {
+            if (isClassForNameInstanceInvocation)
+            {
+                if (note)
+                {
+                    noteCount++;
+                    System.err.println("Note: " +
+                                       ClassUtil.externalClassName(classFile.getName()) +
+                                       " calls '(" +
+                                       ClassUtil.externalClassName(classCpInfo.getName(classFile)) +
+                                       ")Class.forName(variable).newInstance()'");
+                }
+            }
+        }
     }
 
 

@@ -1,4 +1,4 @@
-/* $Id: AttrInfo.java,v 1.8 2002/05/16 19:04:27 eric Exp $
+/* $Id: AttrInfo.java,v 1.9 2002/07/04 16:16:58 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -112,7 +112,6 @@ public class AttrInfo implements VisitorAccepter
      */
     public final void write(DataOutput dout) throws IOException
     {
-        if (dout == null) throw new IOException("No output stream was provided.");
         dout.writeShort(u2attrNameIndex);
         dout.writeInt(getAttrInfoLength());
         writeInfo(dout);

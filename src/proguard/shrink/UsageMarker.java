@@ -1,4 +1,4 @@
-/* $Id: UsageMarker.java,v 1.9 2002/05/23 19:19:58 eric Exp $
+/* $Id: UsageMarker.java,v 1.10 2002/07/04 16:16:58 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -331,6 +331,13 @@ public class UsageMarker
             markAsUsed(stringCpInfo);
 
             markCpEntry(classFile, stringCpInfo.u2stringIndex);
+
+            if (recurse)
+            {
+                // Mark the referenced class, if the string is being used in
+                // a Class.forName construct.
+                stringCpInfo.referencedClassAccept(this);
+            }
         }
     }
 
@@ -364,34 +371,45 @@ public class UsageMarker
 
     public void visitInterfaceMethodrefCpInfo(ClassFile classFile, InterfaceMethodrefCpInfo interfaceMethodrefCpInfo)
     {
-        visitAnyMethodrefCpInfo(classFile, interfaceMethodrefCpInfo);
+        if (!isUsed(interfaceMethodrefCpInfo))
+        {
+            markAsUsed(interfaceMethodrefCpInfo);
+
+            markCpEntry(classFile, interfaceMethodrefCpInfo.u2classIndex);
+            markCpEntry(classFile, interfaceMethodrefCpInfo.u2nameAndTypeIndex);
+
+            if (recurse)
+            {
+                // Mark the referenced method itself, in all classes up and
+                // down the class hierarchy.
+                interfaceMethodrefCpInfo.referencedClassAccept(
+                    new ClassFileUpDownTraveler(true, true, false, true,
+                        new NamedMethodVisitor(this,
+                                               interfaceMethodrefCpInfo.getName(classFile),
+                                               interfaceMethodrefCpInfo.getType(classFile))));
+            }
+        }
     }
 
 
     public void visitMethodrefCpInfo(ClassFile classFile, MethodrefCpInfo methodrefCpInfo)
     {
-        visitAnyMethodrefCpInfo(classFile, methodrefCpInfo);
-    }
-
-
-    private void visitAnyMethodrefCpInfo(ClassFile classFile, RefCpInfo refCpInfo)
-    {
-        if (!isUsed(refCpInfo))
+        if (!isUsed(methodrefCpInfo))
         {
-            markAsUsed(refCpInfo);
+            markAsUsed(methodrefCpInfo);
 
-            markCpEntry(classFile, refCpInfo.u2classIndex);
-            markCpEntry(classFile, refCpInfo.u2nameAndTypeIndex);
+            markCpEntry(classFile, methodrefCpInfo.u2classIndex);
+            markCpEntry(classFile, methodrefCpInfo.u2nameAndTypeIndex);
 
             if (recurse)
             {
                 // Mark the referenced method itself, in all classes down the
                 // class hierarchy.
-                refCpInfo.referencedClassAccept(
+                methodrefCpInfo.referencedClassAccept(
                     new ClassFileUpDownTraveler(true, false, false, true,
                         new NamedMethodVisitor(this,
-                                               refCpInfo.getName(classFile),
-                                               refCpInfo.getType(classFile))));
+                                               methodrefCpInfo.getName(classFile),
+                                               methodrefCpInfo.getType(classFile))));
             }
         }
     }

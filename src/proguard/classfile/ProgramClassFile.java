@@ -1,4 +1,4 @@
-/* $Id: ProgramClassFile.java,v 1.13 2002/05/23 21:21:12 eric Exp $
+/* $Id: ProgramClassFile.java,v 1.14 2002/07/04 16:16:58 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -195,7 +195,6 @@ public class ProgramClassFile implements ClassFile
      */
     public void write(DataOutput dout) throws IOException
     {
-        if (dout == null) throw new IOException("No output stream was provided.");
         dout.writeInt(u4magic);
         dout.writeShort(u2minorVersion);
         dout.writeShort(u2majorVersion);
@@ -286,6 +285,11 @@ public class ProgramClassFile implements ClassFile
     public String getSuperName()
     {
         return u2superClass == 0 ? null : getCpClassNameString(u2superClass);
+    }
+
+    public int getCpTag(int cpIndex)
+    {
+        return constantPool[cpIndex].getTag();
     }
 
     public String getCpString(int cpIndex)

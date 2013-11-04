@@ -1,4 +1,4 @@
-/* $Id: KeepCommand.java,v 1.9 2002/05/23 19:19:57 eric Exp $
+/* $Id: KeepCommand.java,v 1.10 2002/07/13 12:55:40 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -52,10 +52,12 @@ public class KeepCommand implements Command
     // The main class pool visitor.
     private ClassPoolVisitor             classPoolMarker;
 
-    // Flags and counters to check how many class members are being visited,
-    // if class files and class members are being marked conditionally.
+    // Properties that define the behavior of this Command.
     private String                       extendsClassName;
     private boolean                      markConditionally;
+    private boolean                      onlyKeepNames;
+
+    // Flags and counters to check how many class members are being visited.
     private boolean                      countingMembers;
     private int                          memberCounter;
     private int                          memberVisitCounter;
@@ -75,26 +77,37 @@ public class KeepCommand implements Command
      * @param asClassName              the new name that the class should get.
      *                                 A value of null specifies the original
      *                                 name.
-     * @param markClassFiles           Specifies whether to mark the class files.
+     * @param markClassFiles           specifies whether to mark the class files.
      *                                 If false, only class members are marked.
      *                                 If true, the class files are marked as
      *                                 well.
-     * @param markConditionally        Specifies whether to mark the class files
+     * @param markConditionally        specifies whether to mark the class files
      *                                 and class members conditionally.
      *                                 If true, class files and class members
      *                                 are marked, on the condition that all
      *                                 specified class members are present.
+     * @param onlyKeepNames            specifies whether the class files and class
+     *                                 members need to be kept from obfuscation
+     *                                 only.
+     *                                 If true, the specified class class files
+     *                                 and class members will be kept from
+     *                                 obfuscation, but the may be removed in
+     *                                 the shrinking phase.
+     *                                 If false, they will be kept from
+     *                                 srinking and obfuscation alike.
      */
-    public KeepCommand(int         requiredSetAccessFlags,
-                       int         requiredUnsetAccessFlags,
-                       String      className,
-                       String      extendsClassName,
-                       String      asClassName,
-                       boolean     markClassFiles,
-                       boolean     markConditionally)
+    public KeepCommand(int     requiredSetAccessFlags,
+                       int     requiredUnsetAccessFlags,
+                       String  className,
+                       String  extendsClassName,
+                       String  asClassName,
+                       boolean markClassFiles,
+                       boolean markConditionally,
+                       boolean onlyKeepNames)
     {
         this.extendsClassName  = extendsClassName;
         this.markConditionally = markConditionally;
+        this.onlyKeepNames     = onlyKeepNames;
 
         // The visitor is a multi-class file visitor that is empty initially.
         // Visitors to mark class files and class members will be added in a
@@ -313,6 +326,11 @@ public class KeepCommand implements Command
     private void executeCheckingPhase(ClassPool programClassPool,
                                       ClassPool libraryClassPool)
     {
+        if (onlyKeepNames)
+        {
+            return;
+        }
+
         // Print the class(es) and class member(s).
         SimpleClassFilePrinter printer = new SimpleClassFilePrinter();
         variableClassFileVisitor.setClassFileVisitor(printer);
@@ -334,6 +352,11 @@ public class KeepCommand implements Command
     private void executeShrinkingPhase(ClassPool programClassPool,
                                        ClassPool libraryClassPool)
     {
+        if (onlyKeepNames)
+        {
+            return;
+        }
+
         UsageMarker usageMarker = new UsageMarker();
 
         // Mark the class(es) and class member(s) as being used.

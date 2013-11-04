@@ -1,0 +1,37 @@
+ProGuard, Java class file shrinker and obfuscator
+=================================================
+
+Release 1.1:
+-----------
+
+- Added automatic detection of Class.forName("MyClass"), MyClass.class, and
+  (MyClass)Class.forName(variable).newInstance() constructs. This greatly
+  simplifies configuration.
+
+- Added options to keep class names and class member names without affecting
+  any shrinking. They are mostly useful for native methods and serializable
+  classes.
+
+- Fixed processing of retrofitted interfaces:
+
+    class A { m() {...} }
+    interface I { m(); }
+    class B extends A implements I
+
+  A class is extended for the sole purpose of tagging on an interface.
+  That's pretty twisted. In a perfect world, interfaces are written first,
+  to provide some specifications. Classes then implement these interfaces.
+  However, retrofitting is allowed in Java, and ProGuard now handles it
+  correctly.
+
+- Added handling of missing/invalid manifest file in input jar.
+  Thanks to Oliver Retzl for finding and fixing this one.
+
+- Updated documentation and examples. Thanks to Thorsten Heit, Stephan Zehrer,
+  and Karsten Lentzsch for the helpful remarks and discussions.
+
+
+Release 1.0:
+-----------
+
+This was the first public release.

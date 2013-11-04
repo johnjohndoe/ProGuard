@@ -10,6 +10,7 @@
 -injars      in.jar
 -outjar      out.jar
 
+
 # Preserve all public classes, and their public and protected fields and
 # methods.
 
@@ -17,23 +18,27 @@
     public protected *;
 }
 
-# Preserve all native methods.
 
--keepclassmembers class * {
+# Preserve all native method names and .class method names.
+
+-keepclassmembernames class * {
     native <methods>;
+    static Class class$(java.lang.String);
 }
 
-# Preserve all serialization members.
+
+# Preserve all serializable class names for backward compatibility with any
+# previously saved serialization data.
+
+-keepnames class * implements java.io.Serializable
+
+# Explicitly preserve all serialization members. The Serializable interface
+# is only a marker interface, so it wouldn't save them.
 
 -keepclassmembers class * implements java.io.Serializable {
+    static final long serialVersionUID;
     private void writeObject(java.io.ObjectOutputStream);
     private void readObject(java.io.ObjectInputStream);
     Object writeReplace();
     Object readResolve();
-    static final long serialVersionUID;
 }
-
-# Some jars may contain more items that need to be preserved, e.g.:
-# -keep public class mypackage.MyClass
-# -keep public interface mypackage.MyInterface
-# -keep public class * implements mypackage.MyInterface

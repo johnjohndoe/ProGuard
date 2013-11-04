@@ -1,4 +1,4 @@
-/* $Id: InterfaceMethodrefCpInfo.java,v 1.9 2002/05/23 21:21:12 eric Exp $
+/* $Id: InterfaceMethodrefCpInfo.java,v 1.10 2002/07/04 16:16:58 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -37,7 +37,7 @@ public class InterfaceMethodrefCpInfo extends RefCpInfo
 
     protected InterfaceMethodrefCpInfo()
     {
-        super(CONSTANT_InterfaceMethodref);
+        super(ClassConstants.CONSTANT_InterfaceMethodref);
     }
 
 

@@ -1,4 +1,4 @@
-/* $Id: LibraryMethodInfo.java,v 1.7 2002/05/23 21:21:12 eric Exp $
+/* $Id: LibraryMethodInfo.java,v 1.8 2002/07/04 16:16:58 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -42,7 +42,6 @@ public class LibraryMethodInfo extends LibraryMemberInfo implements MethodInfo
      */
     public static LibraryMethodInfo create(DataInput din, CpInfo[] constantPool) throws IOException
     {
-        if (din == null) throw new IOException("No input stream was provided.");
         LibraryMethodInfo mi = new LibraryMethodInfo();
         mi.read(din, constantPool);
         return mi;

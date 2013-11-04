@@ -1,4 +1,4 @@
-/* $Id: ShortCpInstruction.java,v 1.5 2002/05/19 16:57:37 eric Exp $
+/* $Id: ShortCpInstruction.java,v 1.6 2002/07/04 16:16:58 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -31,7 +31,9 @@ import java.io.*;
  *
  * @author Eric Lafortune
  */
-public class ShortCpInstruction extends Instruction implements CpInstruction
+public class ShortCpInstruction
+     extends GenericInstruction
+  implements CpInstruction
 {
 
     public int getCpIndex()

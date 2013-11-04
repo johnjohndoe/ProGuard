@@ -1,4 +1,4 @@
-/* $Id: ProgramMemberInfo.java,v 1.13 2002/05/23 19:19:57 eric Exp $
+/* $Id: ProgramMemberInfo.java,v 1.14 2002/07/04 16:16:58 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -139,7 +139,6 @@ abstract public class ProgramMemberInfo implements MemberInfo
      */
     public void write(DataOutput dout) throws IOException
     {
-        if (dout == null) throw new IOException("No output stream was provided.");
         dout.writeShort(u2accessFlags);
         dout.writeShort(u2nameIndex);
         dout.writeShort(u2descriptorIndex);

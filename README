@@ -1,0 +1,14 @@
+ProGuard, Java class file shrinker and obfuscator
+=================================================
+
+This distribution contains the following directories:
+
+- lib      : the main proguard.jar
+- docs     : the complete documentation, licenses, etc. in html format
+- examples : some example configuration files
+- src      : the source code
+
+The best place to start is docs/index.html
+Enjoy!
+
+Copyright (c) 2002 Eric Lafortune

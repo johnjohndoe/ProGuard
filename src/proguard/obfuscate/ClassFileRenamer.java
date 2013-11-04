@@ -1,4 +1,4 @@
-/* $Id: ClassFileRenamer.java,v 1.10 2002/05/23 19:19:58 eric Exp $
+/* $Id: ClassFileRenamer.java,v 1.12 2002/07/10 16:13:48 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -142,9 +142,24 @@ public class ClassFileRenamer
     public void visitLongCpInfo(ClassFile classFile, LongCpInfo longCpInfo) {}
     public void visitFloatCpInfo(ClassFile classFile, FloatCpInfo floatCpInfo) {}
     public void visitDoubleCpInfo(ClassFile classFile, DoubleCpInfo doubleCpInfo) {}
-    public void visitStringCpInfo(ClassFile classFile, StringCpInfo stringCpInfo) {}
     public void visitUtf8CpInfo(ClassFile classFile, Utf8CpInfo utf8CpInfo) {}
     public void visitNameAndTypeCpInfo(ClassFile classFile, NameAndTypeCpInfo nameAndTypeCpInfo) {}
+
+    public void visitStringCpInfo(ClassFile classFile, StringCpInfo stringCpInfo)
+    {
+        // If the string is being used in a Class.forName construct, the new
+        // class name can be retrieved from the referenced ClassFile.
+        String newClassName = newClassName(stringCpInfo.getString(classFile),
+                                           stringCpInfo.referencedClassFile);
+        if (newClassName != null)
+        {
+            String newExternalClassName = ClassUtil.externalClassName(newClassName);
+
+            // Refer to a new Utf8 entry.
+            stringCpInfo.u2stringIndex =
+                createUtf8CpInfo((ProgramClassFile)classFile, newExternalClassName);
+        }
+    }
 
     public void visitClassCpInfo(ClassFile classFile, ClassCpInfo classCpInfo)
     {
@@ -153,6 +168,7 @@ public class ClassFileRenamer
                                            classCpInfo.referencedClassFile);
         if (newClassName != null)
         {
+            // Refer to a new Utf8 entry.
             classCpInfo.u2nameIndex =
                 createUtf8CpInfo((ProgramClassFile)classFile, newClassName);
         }

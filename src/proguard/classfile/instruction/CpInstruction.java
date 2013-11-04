@@ -1,4 +1,4 @@
-/* $Id: CpInstruction.java,v 1.3 2002/05/12 13:33:41 eric Exp $
+/* $Id: CpInstruction.java,v 1.4 2002/07/04 16:16:58 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -31,7 +31,7 @@ import java.io.*;
  *
  * @author Eric Lafortune
  */
-public interface CpInstruction
+public interface CpInstruction extends Instruction
 {
     /**
      * Gets the instruction's constant pool index.

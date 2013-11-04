@@ -1,4 +1,4 @@
-/* $Id: CodeAttrInfo.java,v 1.8 2002/05/16 19:04:27 eric Exp $
+/* $Id: CodeAttrInfo.java,v 1.9 2002/07/04 16:16:58 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -148,7 +148,7 @@ public class CodeAttrInfo extends AttrInfo
         while (index < u4codeLength)
         {
             // Note that the instruction is only volatile.
-            Instruction instruction = Instruction.create(code, index);
+            Instruction instruction = GenericInstruction.create(code, index);
             int length = instruction.getLength();
             instruction.accept(classFile, instructionVisitor);
             index += length;
@@ -160,7 +160,7 @@ public class CodeAttrInfo extends AttrInfo
      */
     public void instructionAccept(ClassFile classFile, InstructionVisitor instructionVisitor, int index)
     {
-        Instruction instruction = Instruction.create(code, index);
+        Instruction instruction = GenericInstruction.create(code, index);
         instruction.accept(classFile, instructionVisitor);
     }
 

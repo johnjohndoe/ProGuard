@@ -1,4 +1,4 @@
-/* $Id: ClassCpInfo.java,v 1.7 2002/05/16 18:46:43 eric Exp $
+/* $Id: ClassCpInfo.java,v 1.8 2002/07/04 16:16:58 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -48,7 +48,7 @@ public class ClassCpInfo extends CpInfo
 
     protected ClassCpInfo()
     {
-        super(CONSTANT_Class);
+        super(ClassConstants.CONSTANT_Class);
     }
 
 

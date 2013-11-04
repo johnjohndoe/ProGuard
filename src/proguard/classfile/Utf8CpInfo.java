@@ -1,4 +1,4 @@
-/* $Id: Utf8CpInfo.java,v 1.7 2002/05/13 16:56:56 eric Exp $
+/* $Id: Utf8CpInfo.java,v 1.8 2002/07/04 16:16:58 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -47,7 +47,7 @@ public class Utf8CpInfo extends CpInfo
 
     protected Utf8CpInfo()
     {
-        super(CONSTANT_Utf8);
+        super(ClassConstants.CONSTANT_Utf8);
     }
 
     /**

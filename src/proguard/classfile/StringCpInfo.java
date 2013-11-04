@@ -1,4 +1,4 @@
-/* $Id: StringCpInfo.java,v 1.6 2002/05/12 14:29:08 eric Exp $
+/* $Id: StringCpInfo.java,v 1.7 2002/07/04 16:16:58 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -35,10 +35,27 @@ public class StringCpInfo extends CpInfo
 {
     public int u2stringIndex;
 
+    /**
+     * An extra field pointing to the referenced ClassFile object, if this
+     * string is being used in Class.forName() or .class constructs.
+     * This field is filled out by the <code>{@link
+     * proguard.classfile.util.ClassFileInitializer ClassFileInitializer}</code>.
+     * References to library class files are not filled out.
+     */
+    public ClassFile referencedClassFile;
+
 
     protected StringCpInfo()
     {
-        super(CONSTANT_String);
+        super(ClassConstants.CONSTANT_String);
+    }
+
+    /**
+     * Returns the string value.
+     */
+    public String getString(ClassFile classFile)
+    {
+        return classFile.getCpString(u2stringIndex);
     }
 
     /**
@@ -63,5 +80,17 @@ public class StringCpInfo extends CpInfo
     public void accept(ClassFile classFile, CpInfoVisitor cpInfoVisitor)
     {
         cpInfoVisitor.visitStringCpInfo(classFile, this);
+    }
+
+
+    /**
+     * Lets the referenced class file accept the given visitor.
+     */
+    public void referencedClassAccept(ClassFileVisitor classFileVisitor)
+    {
+        if (referencedClassFile != null)
+        {
+            referencedClassFile.accept(classFileVisitor);
+        }
     }
 }

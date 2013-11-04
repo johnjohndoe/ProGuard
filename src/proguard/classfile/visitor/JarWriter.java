@@ -1,4 +1,4 @@
-/* $Id: JarWriter.java,v 1.3 2002/05/12 13:33:41 eric Exp $
+/* $Id: JarWriter.java,v 1.4 2002/07/18 17:03:33 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -29,7 +29,9 @@ import java.util.jar.*;
 
 /**
  * This ClassFileVisitor can write all ProgramClassFile objects it visits to a
- * given jar file.
+ * given jar file. The jar file name must be set and the <code>open</code> method
+ * must be called before visiting. The <code>close</code> method must be called
+ * after visiting. The manifest and comment properties can optionally be set.
  *
  * @author Eric Lafortune
  */
@@ -82,13 +84,19 @@ public class JarWriter implements ClassFileVisitor
 
     public void open() throws IOException
     {
-        jarOutputStream = new JarOutputStream(
-                          new BufferedOutputStream(
-                          new FileOutputStream(
-                          new File(jarFileName))),
-                          manifest);
+        OutputStream outputStream =
+            new BufferedOutputStream(
+            new FileOutputStream(
+            new File(jarFileName)));
 
-        jarOutputStream.setComment(comment);
+        jarOutputStream = manifest != null ?
+            new JarOutputStream(outputStream, manifest) :
+            new JarOutputStream(outputStream);
+
+        if (comment != null)
+        {
+            jarOutputStream.setComment(comment);
+        }
     }
 
 

@@ -1,4 +1,4 @@
-/* $Id: ClassFile.java,v 1.10 2002/05/23 21:21:12 eric Exp $
+/* $Id: ClassFile.java,v 1.11 2002/07/04 16:16:58 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -48,6 +48,11 @@ public interface ClassFile extends VisitorAccepter
      * null if this class represents java.lang.Object.
      */
     public String getSuperName();
+
+    /**
+     * Returns the tag value of the CpEntry at the specified index.
+     */
+    public int getCpTag(int cpIndex);
 
     /**
      * Returns the String value of the StringCpEntry at the specified index.
