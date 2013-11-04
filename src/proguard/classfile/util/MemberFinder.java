@@ -1,8 +1,8 @@
-/* $Id: MemberFinder.java,v 1.7 2005/06/11 13:21:35 eric Exp $
+/* $Id: MemberFinder.java,v 1.7.2.2 2006/01/16 22:57:55 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2006 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -44,9 +44,12 @@ public class MemberFinder
      * Finds the field with the given name and descriptor in the given
      * class file or its hierarchy.
      */
-    public FieldInfo findField(ClassFile classFile, String name, String descriptor)
+    public FieldInfo findField(ClassFile referencingClassFile,
+                               ClassFile classFile,
+                               String    name,
+                               String    descriptor)
     {
-        return (FieldInfo)findMember(classFile, name, descriptor, true);
+        return (FieldInfo)findMember(referencingClassFile, classFile, name, descriptor, true);
     }
 
 
@@ -54,9 +57,12 @@ public class MemberFinder
      * Finds the method with the given name and descriptor in the given
      * class file or its hierarchy.
      */
-    public MethodInfo findMethod(ClassFile classFile, String name, String descriptor)
+    public MethodInfo findMethod(ClassFile referencingClassFile,
+                                 ClassFile classFile, 
+                                 String    name, 
+                                 String    descriptor)
     {
-        return (MethodInfo)findMember(classFile, name, descriptor, false);
+        return (MethodInfo)findMember(referencingClassFile, classFile, name, descriptor, false);
     }
 
 
@@ -64,37 +70,27 @@ public class MemberFinder
      * Finds the class member with the given name and descriptor in the given
      * class file or its hierarchy.
      */
-    public MemberInfo findMember(ClassFile classFile,
+    public MemberInfo findMember(ClassFile referencingClassFile,
+                                 ClassFile classFile,
                                  String    name,
                                  String    descriptor,
                                  boolean   isField)
     {
-        // For efficiency, first see if we can find the method in the
-        // referenced class itself.
-        this.classFile  = classFile;
-        this.memberInfo = isField ?
-            (MemberInfo)classFile.findField(name, descriptor) :
-            (MemberInfo)classFile.findMethod(name, descriptor);
-
-        if (memberInfo == null)
+        // Organize a search in the hierarchy of superclasses and interfaces.
+        // The class member may be in a different class, if the code was
+        // compiled with "-target 1.2" or higher (the default in JDK 1.4).
+        try
         {
-            // We didn't find the method yet. Organize a search in the hierarchy
-            // of superclasses and interfaces. This can happen with classes
-            // compiled with "-target 1.2" or higher (the default in JDK 1.4).
-            try
-            {
-                this.classFile  = null;
-                this.memberInfo = null;
-                classFile.hierarchyAccept(false, true, true, false,
-                                          isField ?
-                                              (ClassFileVisitor)new NamedFieldVisitor(name, descriptor,
-                                                                new MemberInfoAccessFilter(0, ClassConstants.INTERNAL_ACC_PRIVATE, this)) :
-                                              (ClassFileVisitor)new NamedMethodVisitor(name, descriptor,
-                                                                new MemberInfoAccessFilter(0, ClassConstants.INTERNAL_ACC_PRIVATE, this)));
-            }
-            catch (MemberFoundException ex)
-            {
-            }
+            this.classFile  = null;
+            this.memberInfo = null;
+            classFile.hierarchyAccept(true, true, true, false, isField ?
+                (ClassFileVisitor)new NamedFieldVisitor(name, descriptor,
+                                  new MemberInfoClassFileAccessFilter(referencingClassFile, this)) :
+                (ClassFileVisitor)new NamedMethodVisitor(name, descriptor,
+                                  new MemberInfoClassFileAccessFilter(referencingClassFile, this)));
+        }
+        catch (MemberFoundException ex)
+        {
         }
 
         return memberInfo;

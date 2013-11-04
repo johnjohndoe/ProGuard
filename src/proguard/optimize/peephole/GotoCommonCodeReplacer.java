@@ -1,8 +1,8 @@
-/* $Id: GotoCommonCodeReplacer.java,v 1.2 2005/10/04 21:00:11 eric Exp $
+/* $Id: GotoCommonCodeReplacer.java,v 1.2.2.2 2006/01/16 22:57:56 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2006 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -184,13 +184,16 @@ public class GotoCommonCodeReplacer implements InstructionVisitor
                 // Are the offsets involved in some branches?
                 // Note that the preverifier also doesn't like
                 // initializer invocations to be moved around.
-                if (branchTargetFinder.isBranchOrigin(newOffset1)         ||
-                    branchTargetFinder.isBranchTarget(newOffset1)         ||
-                    branchTargetFinder.isExceptionStart(newOffset1)       ||
-                    branchTargetFinder.isExceptionEnd(newOffset1)         ||
-                    branchTargetFinder.isInitializer(newOffset1)          ||
+                // Also note that the preverifier doesn't like pop instructions
+                // that work on different operands.
+                if (branchTargetFinder.isBranchOrigin(newOffset1)   ||
+                    branchTargetFinder.isBranchTarget(newOffset1)   ||
+                    branchTargetFinder.isExceptionStart(newOffset1) ||
+                    branchTargetFinder.isExceptionEnd(newOffset1)   ||
+                    branchTargetFinder.isInitializer(newOffset1)    ||
                     branchTargetFinder.isExceptionStart(newOffset2) ||
-                    branchTargetFinder.isExceptionEnd(newOffset2))
+                    branchTargetFinder.isExceptionEnd(newOffset2)   ||
+                    isPop(code[newOffset1]))
                 {
                     break;
                 }
@@ -202,7 +205,18 @@ public class GotoCommonCodeReplacer implements InstructionVisitor
         return successfulDelta;
     }
 
-    
+
+    /**
+     * Returns whether the given opcode represents a pop instruction
+     * (pop, pop2).
+     */
+    private boolean isPop(byte opcode)
+    {
+        return opcode == InstructionConstants.OP_POP ||
+               opcode == InstructionConstants.OP_POP2;
+    }
+
+
     /**
      * Returns the whether there is a boundary of an exception block between
      * the given offsets (including both). 

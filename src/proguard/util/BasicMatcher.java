@@ -1,4 +1,4 @@
-/* $Id: BasicMatcher.java,v 1.7 2005/05/22 00:23:31 eric Exp $
+/* $Id: BasicMatcher.java,v 1.8 2005/11/05 19:29:25 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,7 +21,6 @@
 package proguard.util;
 
 import java.util.*;
-
 
 /**
  * This StringMatcher tests whether strings match a given regular

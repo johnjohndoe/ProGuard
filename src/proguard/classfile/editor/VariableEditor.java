@@ -1,8 +1,8 @@
-/* $Id: VariableEditor.java,v 1.5 2005/09/11 22:15:22 eric Exp $
+/* $Id: VariableEditor.java,v 1.5.2.2 2006/01/16 22:57:55 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2006 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -161,6 +161,10 @@ public class VariableEditor
                 !deleted[oldVariableIndex])
             {
                 variableMap[oldVariableIndex] = newVariableIndex++;
+            }
+            else
+            {
+                variableMap[oldVariableIndex] = -1;
             }
         }
 

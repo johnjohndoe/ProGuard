@@ -1,8 +1,8 @@
-/* $Id: ClassFileReferenceFixer.java,v 1.4 2005/06/25 22:07:51 eric Exp $
+/* $Id: ClassFileReferenceFixer.java,v 1.4.2.2 2006/01/16 22:57:55 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2006 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -43,7 +43,23 @@ public class ClassFileReferenceFixer
              AnnotationVisitor,
              ElementValueVisitor
 {
+    private boolean ensureUniqueMemberNames;
+
+
     private ConstantPoolEditor constantPoolEditor = new ConstantPoolEditor();
+
+
+    /**
+     * Creates a new ClassFileReferenceFixer.
+     * @param ensureUniqueMemberNames specifies whether class members whose
+     *                                descriptor changes should get new, unique
+     *                                names, in order to avoid naming conflicts
+     *                                with similar methods.
+     */
+    public ClassFileReferenceFixer(boolean ensureUniqueMemberNames)
+    {
+        this.ensureUniqueMemberNames = ensureUniqueMemberNames;
+    }
 
 
     // Implementations for ClassFileVisitor.
@@ -84,6 +100,15 @@ public class ClassFileReferenceFixer
             // Update the descriptor.
             programFieldInfo.u2descriptorIndex =
                 constantPoolEditor.addUtf8CpInfo(programClassFile, newDescriptor);
+
+            // Update the name, if requested.
+            if (ensureUniqueMemberNames)
+            {
+                String name    = programFieldInfo.getName(programClassFile);
+                String newName = newUniqueMemberName(name, descriptor);
+                programFieldInfo.u2nameIndex =
+                    constantPoolEditor.addUtf8CpInfo(programClassFile, newName);
+            }
         }
 
         // Fix the attributes.
@@ -103,6 +128,15 @@ public class ClassFileReferenceFixer
             // Update the descriptor.
             programMethodInfo.u2descriptorIndex =
                 constantPoolEditor.addUtf8CpInfo(programClassFile, newDescriptor);
+
+            // Update the name, if requested.
+            if (ensureUniqueMemberNames)
+            {
+                String name    = programMethodInfo.getName(programClassFile);
+                String newName = newUniqueMemberName(name, descriptor);
+                programMethodInfo.u2nameIndex =
+                    constantPoolEditor.addUtf8CpInfo(programClassFile, newName);
+            }
         }
 
         // Fix the attributes.
@@ -460,6 +494,19 @@ public class ClassFileReferenceFixer
         }
 
         return newDescriptorBuffer.toString();
+    }
+
+
+    /**
+     * Returns a new unique class member name, based on the given name and
+     * descriptor.
+     */
+    private String newUniqueMemberName(String name, String descriptor)
+    {
+        // TODO: Avoid duplicate constructors.
+        return name.equals(ClassConstants.INTERNAL_METHOD_NAME_INIT) ?
+            ClassConstants.INTERNAL_METHOD_NAME_INIT :
+            name + '$' + Long.toHexString(Math.abs((descriptor).hashCode()));
     }
 
 

@@ -1,8 +1,8 @@
-/* $Id: ProGuard.java,v 1.101 2005/10/22 11:53:39 eric Exp $
+/* $Id: ProGuard.java,v 1.101.2.2 2006/01/16 22:57:55 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2006 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -43,7 +43,7 @@ import java.util.*;
  */
 public class ProGuard
 {
-    public static final String VERSION = "ProGuard, version 3.4";
+    public static final String VERSION = "ProGuard, version 3.5";
 
     private Configuration configuration;
     private ClassPool     programClassPool = new ClassPool();

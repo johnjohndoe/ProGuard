@@ -1,4 +1,4 @@
-/* $Id: ClassNameListMatcher.java,v 1.5 2004/08/15 12:39:30 eric Exp $
+/* $Id: ClassNameListMatcher.java,v 1.6 2005/11/05 19:29:25 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,7 +21,6 @@
 package proguard.util;
 
 import java.util.List;
-
 
 /**
  * This StringMatcher tests whether internal class names match any

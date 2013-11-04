@@ -1,8 +1,8 @@
-/* $Id: ConfigurationParser.java,v 1.25 2005/08/21 20:25:33 eric Exp $
+/* $Id: ConfigurationParser.java,v 1.26.2.1 2006/01/16 22:57:55 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2006 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -801,7 +801,7 @@ public class ConfigurationParser
                 // Read a comma (or a different word).
                 readNextWord();
             }
-            
+
             if (!ConfigurationConstants.ARGUMENT_SEPARATOR_KEYWORD.equals(nextWord))
             {
                 break;

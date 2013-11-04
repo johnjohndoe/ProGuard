@@ -34,6 +34,11 @@ th
   padding: 4px;
 }
 
+tr.disappeared td
+{
+  background: #EEEEEE;
+}
+
 td
 {
   background: #EEEEFF;

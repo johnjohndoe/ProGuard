@@ -85,8 +85,13 @@ the virtual machine on which the code is executed. Simple virtual machines may
 benefit more than advanced virtual machines with sophisticated JIT compilers.
 At the very least, your bytecode may become a bit smaller.
 <p>
-A notable optimization that isn't supported yet is the inlining of constant
-fields that are not marked as final.
+Some notable optimizations that aren't supported yet:
+<ul>
+<li>Inlining of constant fields that are not marked as final.
+<li>Inlining of other methods than getters and setters.
+<li>Moving constant expressions out of loops.
+<li>Optimizations that require escape analysis.
+</ul>
 
 <a name="commercial">&nbsp;</a>
 <h3>Can I use <b>ProGuard</b> to process my commercial application?</h3>
@@ -196,7 +201,7 @@ Manual</a> for more details.
 
 <hr>
 <address>
-Copyright &copy; 2002-2005
+Copyright &copy; 2002-2006
 <a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>

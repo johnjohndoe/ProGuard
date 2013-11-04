@@ -1,8 +1,8 @@
-/* $Id: EvaluationSimplifier.java,v 1.4 2005/10/22 11:55:29 eric Exp $
+/* $Id: EvaluationSimplifier.java,v 1.4.2.2 2006/01/16 22:57:56 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2006 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -920,20 +920,31 @@ implements   MemberInfoVisitor,
                         }
                         else if (isNecessaryProducer(producerOffset))
                         {
-                            // Make sure the pushed value is popped again.
-                            Instruction pushInstruction = InstructionFactory.create(codeAttrInfo.code,
-                                                                                    producerOffset);
+                            // Look at the consumers of this producer. We know
+                            // the producer can't be a dup/swap instructions,
+                            // so its consumers can be retrieved from the top
+                            // stack entry.
+                            InstructionOffsetValue topConsumerOffsets =
+                                partialEvaluator.stackTopConsumerOffsets(producerOffset,
+                                                                         0);
 
-                            // If there is another consumer, then leave it to
-                            // the dup instruction to fix the stack.
-                            if (!containsConsumer(producerOffset + 1,
-                                                  consumerOffset,
-                                                  producerOffset))
+                            // Check if the consumer has been cleared because
+                            // of an unused parameter, or if the producer is
+                            // pointing directly to this consumer.
+                            // In those cases, we must pop the value.
+                            // Otherwise leave it to the fixed intermediary
+                            // dup/swap instruction to fix the stack.
+                            if (topConsumerOffsets.instructionOffsetCount() == 0 ||
+                                topConsumerOffsets.contains(consumerOffset))
                             {
                                 if (DEBUG_ANALYSIS) System.out.println("    Popping value right after "+producerOffset+", due to push at "+producerOffset);
 
-                                // Pop it right after the instruction that pushes it
-                                // (or after the dup instruction that still uses it).
+                                // Make sure the pushed value is popped again.
+                                Instruction pushInstruction = InstructionFactory.create(codeAttrInfo.code,
+                                                                                        producerOffset);
+
+                                // Pop it right after the instruction that
+                                // pushes it.
                                 decreaseStackSize(producerOffset,
                                                   pushInstruction.stackPushCount(classFile),
                                                   false, false);
@@ -943,33 +954,6 @@ implements   MemberInfoVisitor,
                 }
             }
         }
-    }
-
-
-    /**
-     * Returns the last offset of the necessary instruction that depends on the
-     * stack result of the instruction at the given index.
-     * @param startOffset    the start offset in the search.
-     * @param endOffset      the end offset in the search.
-     * @param producerOffset the offset of the instruction that pushes
-     *                              a result onto the stack.
-     * @return the last offset of the necessary instruction that uses the
-     *         above result.
-     */
-    private boolean containsConsumer(int startOffset,
-                                     int endOffset,
-                                     int producerOffset)
-    {
-        for (int consumerOffset = startOffset; consumerOffset < endOffset; consumerOffset++)
-        {
-            if (isNecessaryConsumer(consumerOffset)   &&
-                partialEvaluator.stackProducerOffsets(consumerOffset).contains(producerOffset))
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
 

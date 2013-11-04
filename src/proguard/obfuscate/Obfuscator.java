@@ -1,8 +1,8 @@
-/* $Id: Obfuscator.java,v 1.2 2005/07/30 12:14:27 eric Exp $
+/* $Id: Obfuscator.java,v 1.2.2.2 2006/01/16 22:57:56 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2006 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -239,8 +239,8 @@ public class Obfuscator
         libraryClassPool.classFilesAccept(new ClassFileRenamer());
 
         // Update all references to these new names.
-        programClassPool.classFilesAccept(new ClassFileReferenceFixer());
-        libraryClassPool.classFilesAccept(new ClassFileReferenceFixer());
+        programClassPool.classFilesAccept(new ClassFileReferenceFixer(false));
+        libraryClassPool.classFilesAccept(new ClassFileReferenceFixer(false));
         programClassPool.classFilesAccept(new MemberReferenceFixer(1024));
 
         // Make package visible elements public, if necessary.

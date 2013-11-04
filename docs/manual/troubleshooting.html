@@ -171,7 +171,14 @@ errors, it's usually for a single reason:
     <code>preverify</code> tool always unpacks the jars, so class files with
     similar lower-case and upper-case names overwrite each other. You can use
     ProGuard's <code>-dontusemixedcaseclassnames</code> option to work around
-    this problem.</dd>
+    this problem.
+    <p>
+    If the above doesn't help, there is probably a bug in the optimization step
+    of ProGuard. Make sure you are using the latest version. You should be able
+    to work around the problem by using the <code>-dontoptimize</code> option.
+    You can check the bug database to see if it is a known problem (often with
+    a fix). Otherwise, please report it, preferably with the simplest example
+    on which you can find ProGuard to fail.</dd>
 
 </dl>
 <p>
@@ -240,7 +247,8 @@ might be several reasons:
     method in using the <code>-keep</code> option, e.g. "<code>-keep class
     mypackage.MyClass { void myMethod(); }</code>".</dd>
 
-<dt><a name="nullpointerexception"><b>NullPointerException</b> (or missing resources, icons, sounds,...)</a></dt>
+<dt><a name="missingresourceexception"><b>MissingResourceException</b> or
+    <b>NullPointerException</b></a></dt>
 
 <dd>Your processed code may be unable to find some resource files. ProGuard
     currently simply copies resource files over from the input jars to the
@@ -248,7 +256,8 @@ might be several reasons:
     <code>-defaultpackage</code> option, the package names of some classes may
     have changed, and along with them, the directory in which they look for
     their resource files. It's better not to use this option in these
-    circumstances.</dd>
+    circumstances. Also note that directory entries in jar files aren't copied
+    at all.</dd>
 
 <dt><a name="invalidclassexception2"><b>InvalidClassException</b>,
     <b>class loading error</b>, or
@@ -319,20 +328,21 @@ might be several reasons:
     please report it, preferably with the simplest example on which you can
     find ProGuard to fail.</dd>
 
-<dt><a name="verifyerror"><b>VerifyError: Unable to pop operand off an empty
-    stack</b></a></dt>
+<dt><a name="verifyerror"><b>VerifyError</b></a></dt>
 
 <dd>Verification errors when executing a program are almost certainly the
     result of a bug in the optimization step of ProGuard. Make sure you are
     using the latest version. You should be able to work around the problem by
-    using the <code>-dontoptimize</code> option. Please report it, preferably
-    with the simplest example on which you can find ProGuard to fail.</dd>
+    using the <code>-dontoptimize</code> option. You can check the bug database
+    to see if it is a known problem (often with a fix). Otherwise, please
+    report it, preferably with the simplest example on which you can find
+    ProGuard to fail.</dd>
 
 </dl>
 
 <hr>
 <address>
-Copyright &copy; 2002-2005
+Copyright &copy; 2002-2006
 <a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>

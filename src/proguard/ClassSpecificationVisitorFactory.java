@@ -1,4 +1,4 @@
-/* $Id: ClassSpecificationVisitorFactory.java,v 1.6 2005/08/21 20:25:33 eric Exp $
+/* $Id: ClassSpecificationVisitorFactory.java,v 1.7 2005/11/05 19:29:02 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -353,6 +353,7 @@ public class ClassSpecificationVisitorFactory
     {
         return string != null &&
             (string.indexOf('*') >= 0 ||
-             string.indexOf('?') >= 0);
+             string.indexOf('?') >= 0 ||
+             string.indexOf(',') >= 0);
     }
 }

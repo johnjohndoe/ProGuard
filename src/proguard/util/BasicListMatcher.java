@@ -1,4 +1,4 @@
-/* $Id: BasicListMatcher.java,v 1.7 2004/08/15 12:39:30 eric Exp $
+/* $Id: BasicListMatcher.java,v 1.8 2005/11/05 19:29:25 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -22,7 +22,6 @@ package proguard.util;
 
 import java.util.*;
 
-
 /**
  * This StringMatcher tests whether strings match an entry in a given list of
  * regular expressions. The list is given as a comma-separated string or as a
@@ -33,7 +32,7 @@ import java.util.*;
  * negator or not.
  * <p>
  * The individual regular expression matching is delegated to a StringMatcher
- * that is created by the {@link #createBasicMatcher(String}} method. If it is
+ * that is created by the {@link #createBasicMatcher(String)} method. If it is
  * not overridden, this method returns a BasicMatcher.
  *
  * @see BasicMatcher

@@ -24,6 +24,7 @@ Some typical useful configurations:
 <li><a href="#serializable">Processing serializable classes</a>
 <li><a href="#beans">Processing bean classes</a>
 <li><a href="#annotations">Processing annotations</a>
+<li><a href="#componentui">Processing ComponentUI classes</a>
 <li><a href="#rmi">Processing RMI code</a>
 <li><a href="#stacktrace">Producing useful obfuscated stack traces</a>
 <li><a href="#multiple">Processing multiple applications at once</a>
@@ -526,6 +527,21 @@ will have to be preserved as well:
 -keepattributes EnclosingMethod
 </pre>
 
+<a name="componentui">&nbsp;</a>
+<h3>Processing ComponentUI classes</h3>
+Swing UI look and feels are implemented as extensions of the
+<code>ComponentUI</code> class. For some reason, these have to contain a
+static method <code>createUI</code>, which the Swing API invokes using
+introspection. You should therefore always preserve the method as an entry
+point, for instance like this:
+<pre>
+-keep class * extends javax.swing.plaf.ComponentUI {
+    public static javax.swing.plaf.ComponentUI createUI(javax.swing.JComponent);
+}
+</pre>
+<p>
+This directive also keeps the classes themselves.
+
 <a name="rmi">&nbsp;</a>
 <h3>Processing RMI code</h3>
 Reportedly, the easiest way to handle RMI code is to process the code with
@@ -676,7 +692,7 @@ processing the input jar at all.
 
 <hr>
 <address>
-Copyright &copy; 2002-2005
+Copyright &copy; 2002-2006
 <a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>

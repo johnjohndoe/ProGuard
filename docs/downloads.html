@@ -34,6 +34,43 @@ updates with sub-minor version numbers. These versions are typically released
 shortly after their parent versions, for applying emergency fixes.
 <p>
 
+<font color="darkgrey">
+<h3>Version 4.0 (upcoming)</h3>
+<ul>
+<li>Made <code>-keep</code> options more orthogonal and flexible, with option
+    modifiers <code>allowshrinking</code>, <code>allowoptimization</code>, and
+    <code>allowobfuscation</code>.
+<li>Added support for configuration by means of annotations.
+<li>Now respecting naming rule for nested class names
+    (<code>EnclosingClass$InnerClass</code>), if <code>InnerClasses</code>
+    attribute is being kept.
+<li>Now also obfuscating package names, with new options
+    <code>-flattenpackagehierarchy</code> and <code>-repackageclasses</code>.
+<li>Improved making public or protected of classes and class members.
+<li>Comparing modification times of input and output to avoid unnecessary
+    processing, with new option <code>-forceprocessing</code>.
+<li>Rewrote class file I/O code.
+<li>Added support for uppercase filename extensions.
+<li>Now supporting Java 6 class files.
+<li>TODO: Add Java 6 preverifier, with new option <code>-preverify</code>.
+<li>TODO: Update documentation and examples.
+</ul>
+</font>
+
+<h3>Version 3.5</h3>
+<ul>
+<li>Fixed obfuscation of class members with complex visibility.
+<li>Fixed optimization bugs causing stack verification errors.
+<li>Fixed optimization bug causing overridden methods to be finalized.
+<li>Fixed optimization bug causing abstract method errors for retro-fitted
+    library methods.
+<li>Fixed optimization bug evaluating code with constant long values.
+<li>Fixed bug in updating of optional local variable table attributes and local
+    variable type table attributes after optimization.
+<li>Fixed interpretation of comma-separated class names without wildcards.
+<li>Updated documentation and examples.
+</ul>
+
 <h3>Version 3.4</h3>
 <ul>
 <li>Extended optimizations: removing duplicate code within methods.
@@ -252,7 +289,7 @@ shortly after their parent versions, for applying emergency fixes.
 
 <hr>
 <address>
-Copyright &copy; 2002-2005
+Copyright &copy; 2002-2006
 <a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 
