@@ -1,4 +1,4 @@
-/* $Id: EvaluationSimplifier.java,v 1.4.2.2 2006/01/16 22:57:56 eric Exp $
+/* $Id: EvaluationSimplifier.java,v 1.4.2.9 2006/04/17 00:34:44 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -277,7 +277,8 @@ implements   MemberInfoVisitor,
                                                 nextOffset);
 
             // Mark the producers on which this instruction depends.
-            if (isNecessaryConsumer(offset))
+            if (isNecessary[offset] &&
+                !isSimplified[offset])
             {
                 nextOffset = markProducers(offset,
                                            nextOffset);
@@ -324,33 +325,38 @@ implements   MemberInfoVisitor,
         offset = codeLength - 1;
         do
         {
-            if (partialEvaluator.isTraced(offset) &&
-                !isDupOrSwap(codeAttrInfo.code[offset]))
+            if (partialEvaluator.isTraced(offset))
             {
-                // Make sure the stack is always consistent at this offset.
-                fixStackConsistency(classFile,
-                                    codeAttrInfo,
-                                    offset);
-            }
+                Instruction instruction = InstructionFactory.create(codeAttrInfo.code,
+                                                                    offset);
 
-            offset--;
-        }
-        while (offset >= 0);
-        if (DEBUG_ANALYSIS) System.out.println();
-
-
-        // Fix dup/swap instructions where necessary, to keep the stack consistent.
-        if (DEBUG_ANALYSIS) System.out.println("Dup/swap marking and fixing:");
-
-        offset = codeLength - 1;
-        do
-        {
-            if (partialEvaluator.isTraced(offset) &&
-                isDupOrSwap(codeAttrInfo.code[offset]))
-            {
-                // Make sure any dup/swap instructions are always consistent at this offset.
-                fixDupInstruction(codeAttrInfo,
-                                  offset);
+                if (isNecessary[offset])
+                {
+                    // Make sure any pushing instructions are always consistent
+                    // after this offset.
+                    fixPushInstruction(classFile,
+                                       codeAttrInfo,
+                                       offset,
+                                       instruction);
+                }
+                else
+                {
+                    // Make sure any dup/swap instructions are always consistent
+                    // at this offset.
+                    fixDupInstruction(classFile,
+                                      codeAttrInfo,
+                                      offset,
+                                      instruction);
+                }
+                
+                if (!isNecessary[offset])
+                {
+                    // Make sure the stack is always consistent before this offset.
+                    fixPopInstruction(classFile,
+                                      codeAttrInfo,
+                                      offset,
+                                      instruction);
+                }
             }
 
             offset--;
@@ -433,7 +439,7 @@ implements   MemberInfoVisitor,
                 if (DEBUG_ANALYSIS) System.out.println(offset +",");
 
                 // Figure out what kind of initialization value has to be stored.
-                int pushComputationalType = partialEvaluator.variableValue(offset, variableIndex).computationalType();
+                int pushComputationalType = partialEvaluator.variableValueAfter(offset, variableIndex).computationalType();
                 increaseStackSize(offset, pushComputationalType, false);
             }
 
@@ -840,133 +846,58 @@ implements   MemberInfoVisitor,
 
 
     /**
-     * Inserts pop instructions where necessary, in order to make sure the
-     * stack is consistent at the given index.
-     * @param classFile      the class file that is being checked.
+     * Pops the stack after the given necessary instruction, if it pushes an
+     * entry that is not used at all.
+     * @param classFile      the class that is being checked.
      * @param codeAttrInfo   the code that is being checked.
-     * @param consumerOffset the offset of the consumer instruction.
+     * @param producerOffset the offset of the instruction.
+     * @param instruction    the instruction.
      */
-    private void fixStackConsistency(ClassFile    classFile,
-                                     CodeAttrInfo codeAttrInfo,
-                                     int          consumerOffset)
+    private void fixPushInstruction(ClassFile    classFile,
+                                    CodeAttrInfo codeAttrInfo,
+                                    int          producerOffset,
+                                    Instruction  instruction)
     {
-        // See if we have any values pushed on the stack that we aren't using.
-        InstructionOffsetValue producerOffsets = partialEvaluator.unusedProducerOffsets(consumerOffset);
-
-        // This includes all values if the popping instruction isn't necessary at all.
-        boolean isNotNecessary = !isNecessaryConsumer(consumerOffset);
-        if (isNotNecessary)
+        int pushCount = instruction.stackPushCount(classFile);
+        if (pushCount > 0)
         {
-            producerOffsets = producerOffsets.generalize(partialEvaluator.stackProducerOffsets(consumerOffset)).instructionOffsetValue();
-        }
-
-        // Do we have any pushing instructions?
-        if (producerOffsets.instructionOffsetCount() > 0)
-        {
-            // Is this instruction really popping any values?
-            // Note that method invocations have their original pop counts,
-            // including any unused parameters.
-            Instruction popInstruction = InstructionFactory.create(codeAttrInfo.code,
-                                                                   consumerOffset);
-            int popCount = popInstruction.stackPopCount(classFile);
-            if (popCount > 0)
+            boolean stackEntryPresent0 = isStackEntryNecessaryAfter(producerOffset, 0, false);
+            
+            if (!stackEntryPresent0)
             {
-                // Can we pop all values at the popping instruction?
-                if (isNotNecessary &&
-                    popCount <= 6  &&
-                    isAllNecessary(producerOffsets))
+                if (instruction.opcode != InstructionConstants.OP_JSR &&
+                    instruction.opcode != InstructionConstants.OP_JSR_W)
                 {
-                    // Is the popping instruction a simple pop or pop2 instruction?
-                    byte popOpcode = popInstruction.opcode;
-                    if (popOpcode == InstructionConstants.OP_POP ||
-                        popOpcode == InstructionConstants.OP_POP2)
-                    {
-                        if (DEBUG_ANALYSIS) System.out.println("  Popping value again at "+popInstruction.toString(consumerOffset)+" (pushed at all "+producerOffsets.instructionOffsetCount()+" offsets)");
-
-                        // Simply mark the pop or pop2 instruction.
-                        isNecessary[consumerOffset] = true;
-                    }
-                    else
-                    {
-                        if (DEBUG_ANALYSIS) System.out.println("  Popping value instead of "+popInstruction.toString(consumerOffset)+" (pushed at all "+producerOffsets.instructionOffsetCount()+" offsets)");
-
-                        // Make sure the pushed value is popped again,
-                        // right before this instruction.
-                        decreaseStackSize(consumerOffset, popCount, true, isNotNecessary);
-                    }
+                    // Make sure the pushed value is popped again,
+                    // right after this instruction.
+                    decreaseStackSize(producerOffset, pushCount, false, false);
+                    
+                    if (DEBUG_ANALYSIS) System.out.println("  Popping unused value right after "+instruction.toString(producerOffset));
                 }
-                else if (isAnyNecessary(producerOffsets))
+                else
                 {
-                    // Pop the values right after the pushing instructions.
-                    if (DEBUG_ANALYSIS) System.out.println("  Popping value somewhere before "+consumerOffset+" (pushed at some of "+producerOffsets.instructionOffsetCount()+" offsets):");
-
-                    // Go over all stack pushing instructions.
-                    int producerCount = producerOffsets.instructionOffsetCount();
-                    for (int producerIndex = 0; producerIndex < producerCount; producerIndex++)
-                    {
-                        // Has the push instruction been marked?
-                        int producerOffset = producerOffsets.instructionOffset(producerIndex);
-                        if (producerOffset == PartialEvaluator.AT_METHOD_ENTRY)
-                        {
-                            Instruction pushInstruction = InstructionFactory.create(codeAttrInfo.code,
-                                                                                    producerOffset);
-
-                            if (DEBUG_ANALYSIS) System.out.println("    Popping value at start of method");
-
-                            // Pop it right at the beginning of the method.
-                            decreaseStackSize(0,
-                                              pushInstruction.stackPushCount(classFile),
-                                              true, false);
-                        }
-                        else if (isNecessaryProducer(producerOffset))
-                        {
-                            // Look at the consumers of this producer. We know
-                            // the producer can't be a dup/swap instructions,
-                            // so its consumers can be retrieved from the top
-                            // stack entry.
-                            InstructionOffsetValue topConsumerOffsets =
-                                partialEvaluator.stackTopConsumerOffsets(producerOffset,
-                                                                         0);
-
-                            // Check if the consumer has been cleared because
-                            // of an unused parameter, or if the producer is
-                            // pointing directly to this consumer.
-                            // In those cases, we must pop the value.
-                            // Otherwise leave it to the fixed intermediary
-                            // dup/swap instruction to fix the stack.
-                            if (topConsumerOffsets.instructionOffsetCount() == 0 ||
-                                topConsumerOffsets.contains(consumerOffset))
-                            {
-                                if (DEBUG_ANALYSIS) System.out.println("    Popping value right after "+producerOffset+", due to push at "+producerOffset);
-
-                                // Make sure the pushed value is popped again.
-                                Instruction pushInstruction = InstructionFactory.create(codeAttrInfo.code,
-                                                                                        producerOffset);
-
-                                // Pop it right after the instruction that
-                                // pushes it.
-                                decreaseStackSize(producerOffset,
-                                                  pushInstruction.stackPushCount(classFile),
-                                                  false, false);
-                            }
-                        }
-                    }
+                    // Replace the jsr instruction by a simple branch instruction.
+                    replaceBranchInstruction(producerOffset, instruction);
                 }
             }
         }
     }
-
-
+    
+    
     /**
      * Marks the specified instruction if it is a required dup/swap instruction,
      * replacing it by an appropriate variant if necessary.
-     * @param codeAttrInfo the code that is being checked.
-     * @param offset       the offset of the instruction.
+     * @param classFile      the class that is being checked.
+     * @param codeAttrInfo   the code that is being checked.
+     * @param producerOffset the offset of the instruction.
+     * @param instruction    the instruction.
      */
-    private void fixDupInstruction(CodeAttrInfo codeAttrInfo,
-                                   int          offset)
+    private void fixDupInstruction(ClassFile    classFile,
+                                   CodeAttrInfo codeAttrInfo,
+                                   int          producerOffset,
+                                   Instruction  instruction)
     {
-        byte    oldOpcode = codeAttrInfo.code[offset];
+        byte    oldOpcode = instruction.opcode;
         byte    newOpcode = 0;
         boolean present   = false;
 
@@ -975,8 +906,8 @@ implements   MemberInfoVisitor,
         {
             case InstructionConstants.OP_DUP:
             {
-                boolean stackEntryPresent0 = isStackEntryPresent(offset, 0);
-                boolean stackEntryPresent1 = isStackEntryPresent(offset, 1);
+                boolean stackEntryPresent0 = isStackEntryNecessaryAfter(producerOffset, 0, false);
+                boolean stackEntryPresent1 = isStackEntryNecessaryAfter(producerOffset, 1, false);
 
                 // Should either the original element or the copy be present?
                 if (stackEntryPresent0 ||
@@ -995,9 +926,9 @@ implements   MemberInfoVisitor,
             }
             case InstructionConstants.OP_DUP_X1:
             {
-                boolean stackEntryPresent0 = isStackEntryPresent(offset, 0);
-                boolean stackEntryPresent1 = isStackEntryPresent(offset, 1);
-                boolean stackEntryPresent2 = isStackEntryPresent(offset, 2);
+                boolean stackEntryPresent0 = isStackEntryNecessaryAfter(producerOffset, 0, false);
+                boolean stackEntryPresent1 = isStackEntryNecessaryAfter(producerOffset, 1, false);
+                boolean stackEntryPresent2 = isStackEntryNecessaryAfter(producerOffset, 2, false);
 
                 // Should either the original element or the copy be present?
                 if (stackEntryPresent0 ||
@@ -1028,10 +959,10 @@ implements   MemberInfoVisitor,
             }
             case InstructionConstants.OP_DUP_X2:
             {
-                boolean stackEntryPresent0 = isStackEntryPresent(offset, 0);
-                boolean stackEntryPresent1 = isStackEntryPresent(offset, 1);
-                boolean stackEntryPresent2 = isStackEntryPresent(offset, 2);
-                boolean stackEntryPresent3 = isStackEntryPresent(offset, 3);
+                boolean stackEntryPresent0 = isStackEntryNecessaryAfter(producerOffset, 0, false);
+                boolean stackEntryPresent1 = isStackEntryNecessaryAfter(producerOffset, 1, false);
+                boolean stackEntryPresent2 = isStackEntryNecessaryAfter(producerOffset, 2, false);
+                boolean stackEntryPresent3 = isStackEntryNecessaryAfter(producerOffset, 3, false);
 
                 // Should either the original element or the copy be present?
                 if (stackEntryPresent0 ||
@@ -1067,8 +998,8 @@ implements   MemberInfoVisitor,
             }
             case InstructionConstants.OP_DUP2:
             {
-                boolean stackEntriesPresent01 = isStackEntriesPresent(offset, 0, 1);
-                boolean stackEntriesPresent23 = isStackEntriesPresent(offset, 2, 3);
+                boolean stackEntriesPresent01 = isStackEntriesNecessaryAfter(producerOffset, 0, 1, false);
+                boolean stackEntriesPresent23 = isStackEntriesNecessaryAfter(producerOffset, 2, 3, false);
 
                 // Should either the original element or the copy be present?
                 if (stackEntriesPresent01 ||
@@ -1087,9 +1018,9 @@ implements   MemberInfoVisitor,
             }
             case InstructionConstants.OP_DUP2_X1:
             {
-                boolean stackEntriesPresent01 = isStackEntriesPresent(offset, 0, 1);
-                boolean stackEntryPresent2    = isStackEntryPresent(offset, 2);
-                boolean stackEntriesPresent34 = isStackEntriesPresent(offset, 3, 4);
+                boolean stackEntriesPresent01 = isStackEntriesNecessaryAfter(producerOffset, 0, 1, false);
+                boolean stackEntryPresent2    = isStackEntryNecessaryAfter(producerOffset, 2, false);
+                boolean stackEntriesPresent34 = isStackEntriesNecessaryAfter(producerOffset, 3, 4, false);
 
                 // Should either the original element or the copy be present?
                 if (stackEntriesPresent01 ||
@@ -1119,10 +1050,10 @@ implements   MemberInfoVisitor,
             }
             case InstructionConstants.OP_DUP2_X2:
             {
-                boolean stackEntriesPresent01 = isStackEntriesPresent(offset, 0, 1);
-                boolean stackEntryPresent2    = isStackEntryPresent(offset, 2);
-                boolean stackEntryPresent3    = isStackEntryPresent(offset, 3);
-                boolean stackEntriesPresent45 = isStackEntriesPresent(offset, 4, 5);
+                boolean stackEntriesPresent01 = isStackEntriesNecessaryAfter(producerOffset, 0, 1, false);
+                boolean stackEntryPresent2    = isStackEntryNecessaryAfter(producerOffset, 2, false);
+                boolean stackEntryPresent3    = isStackEntryNecessaryAfter(producerOffset, 3, false);
+                boolean stackEntriesPresent45 = isStackEntriesNecessaryAfter(producerOffset, 4, 5, false);
 
                 // Should either the original element or the copy be present?
                 if (stackEntriesPresent01 ||
@@ -1153,8 +1084,8 @@ implements   MemberInfoVisitor,
             }
             case InstructionConstants.OP_SWAP:
             {
-                boolean stackEntryPresent0 = isStackEntryPresent(offset, 0);
-                boolean stackEntryPresent1 = isStackEntryPresent(offset, 1);
+                boolean stackEntryPresent0 = isStackEntryNecessaryAfter(producerOffset, 0, false);
+                boolean stackEntryPresent1 = isStackEntryNecessaryAfter(producerOffset, 1, false);
 
                 // Will either element be present?
                 if (stackEntryPresent0 ||
@@ -1177,28 +1108,71 @@ implements   MemberInfoVisitor,
         if (present)
         {
             // Mark that the instruction is necessary.
-            isNecessary[offset] = true;
+            isNecessary[producerOffset] = true;
 
             if      (newOpcode == 0)
             {
                 // Delete the instruction.
-                codeAttrInfoEditor.deleteInstruction(offset);
+                codeAttrInfoEditor.deleteInstruction(producerOffset);
 
-                if (DEBUG_ANALYSIS) System.out.println("  Marking but deleting instruction at ["+offset+"]");
+                if (DEBUG_ANALYSIS) System.out.println("  Marking but deleting instruction at ["+producerOffset+"]");
             }
             else if (newOpcode == oldOpcode)
             {
                 // Leave the instruction unchanged.
-                if (DEBUG_ANALYSIS) System.out.println("  Marking unchanged instruction at ["+offset+"]");
+                if (DEBUG_ANALYSIS) System.out.println("  Marking unchanged instruction at ["+producerOffset+"]");
             }
             else
             {
                 // Replace the instruction.
                 Instruction replacementInstruction = new SimpleInstruction(newOpcode);
-                codeAttrInfoEditor.replaceInstruction(offset,
-                                                      replacementInstruction);
+                codeAttrInfoEditor.replaceInstruction(producerOffset,
+                                                       replacementInstruction);
 
-                if (DEBUG_ANALYSIS) System.out.println("  Replacing instruction at ["+offset+"] by "+replacementInstruction.toString());
+                if (DEBUG_ANALYSIS) System.out.println("  Replacing instruction at ["+producerOffset+"] by "+replacementInstruction.toString());
+            }
+        }
+    }
+
+
+    /**
+     * Pops the stack before the given unnecessary instruction, if the stack
+     * contains an entry that it would have popped.
+     * @param classFile      the class that is being checked.
+     * @param codeAttrInfo   the code that is being checked.
+     * @param consumerOffset the offset of the consumer instruction.
+     * @param instruction    the instruction.
+     */
+    private void fixPopInstruction(ClassFile    classFile,
+                                   CodeAttrInfo codeAttrInfo,
+                                   int          consumerOffset,
+                                   Instruction  instruction)
+    {
+        int popCount = instruction.stackPopCount(classFile);
+        if (popCount > 0)
+        {
+            if (partialEvaluator.stackProducerOffsets(consumerOffset).contains(PartialEvaluator.AT_CATCH_ENTRY) ||
+                isStackEntryNecessaryBefore(consumerOffset, 0, false) &&
+                !isStackEntryNecessaryBefore(consumerOffset, 0, true))
+            {
+                // Is the consumer a simple pop or pop2 instruction?
+                byte popOpcode = instruction.opcode;
+                if (popOpcode == InstructionConstants.OP_POP ||
+                    popOpcode == InstructionConstants.OP_POP2)
+                {
+                    if (DEBUG_ANALYSIS) System.out.println("  Popping value again at "+instruction.toString(consumerOffset));
+
+                    // Simply mark the pop or pop2 instruction.
+                    isNecessary[consumerOffset] = true;
+                }
+                else
+                {
+                    if (DEBUG_ANALYSIS) System.out.println("  Popping value instead of "+instruction.toString(consumerOffset));
+
+                    // Make sure the pushed value is popped again,
+                    // right before this instruction.
+                    decreaseStackSize(consumerOffset, popCount, true, true);
+                }
             }
         }
     }
@@ -1477,7 +1451,19 @@ implements   MemberInfoVisitor,
 
     public void visitBranchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, BranchInstruction branchInstruction)
     {
-        replaceBranchInstruction(offset, branchInstruction);
+        switch (branchInstruction.opcode)
+        {
+            case InstructionConstants.OP_GOTO:
+            case InstructionConstants.OP_GOTO_W:
+            case InstructionConstants.OP_JSR:
+            case InstructionConstants.OP_JSR_W:
+                // Don't replace unconditional branches.
+                break;
+
+            default:
+                replaceBranchInstruction(offset, branchInstruction);
+                break;
+        }
     }
 
 
@@ -1501,7 +1487,7 @@ implements   MemberInfoVisitor,
      */
     private void replaceIntegerPushInstruction(int offset, Instruction instruction)
     {
-        Value pushedValue = partialEvaluator.stackTopValue(offset, 0);
+        Value pushedValue = partialEvaluator.stackTopValueAfter(offset, 0);
         if (pushedValue.isSpecific())
         {
             int value = pushedValue.integerValue().value();
@@ -1521,7 +1507,7 @@ implements   MemberInfoVisitor,
      */
     private void replaceLongPushInstruction(int offset, Instruction instruction)
     {
-        Value pushedValue = partialEvaluator.stackTopValue(offset, 0);
+        Value pushedValue = partialEvaluator.stackTopValueAfter(offset, 0);
         if (pushedValue.isSpecific())
         {
             long value = pushedValue.longValue().value();
@@ -1542,7 +1528,7 @@ implements   MemberInfoVisitor,
      */
     private void replaceFloatPushInstruction(int offset, Instruction instruction)
     {
-        Value pushedValue = partialEvaluator.stackTopValue(offset, 0);
+        Value pushedValue = partialEvaluator.stackTopValueAfter(offset, 0);
         if (pushedValue.isSpecific())
         {
             float value = pushedValue.floatValue().value();
@@ -1564,7 +1550,7 @@ implements   MemberInfoVisitor,
      */
     private void replaceDoublePushInstruction(int offset, Instruction instruction)
     {
-        Value pushedValue = partialEvaluator.stackTopValue(offset, 0);
+        Value pushedValue = partialEvaluator.stackTopValueAfter(offset, 0);
         if (pushedValue.isSpecific())
         {
             double value = pushedValue.doubleValue().value();
@@ -1585,7 +1571,7 @@ implements   MemberInfoVisitor,
      */
     private void replaceReferencePushInstruction(int offset, Instruction instruction)
     {
-        Value pushedValue = partialEvaluator.stackTopValue(offset, 0);
+        Value pushedValue = partialEvaluator.stackTopValueAfter(offset, 0);
         if (pushedValue.isSpecific())
         {
             ReferenceValue value = pushedValue.referenceValue();
@@ -1637,11 +1623,7 @@ implements   MemberInfoVisitor,
 
             // Is there exactly one branch target (not from a goto or jsr)?
             if (branchTargets != null &&
-                branchTargets.instructionOffsetCount() == 1      &&
-                instruction.opcode != InstructionConstants.OP_GOTO   &&
-                instruction.opcode != InstructionConstants.OP_GOTO_W &&
-                instruction.opcode != InstructionConstants.OP_JSR    &&
-                instruction.opcode != InstructionConstants.OP_JSR_W)
+                branchTargets.instructionOffsetCount() == 1)
             {
                 // Is it branching to the next instruction?
                 int branchOffset = branchTargets.instructionOffset(0) - offset;
@@ -1654,7 +1636,7 @@ implements   MemberInfoVisitor,
                 }
                 else
                 {
-                    // Replace the branch instruction by a simple branch instrucion.
+                    // Replace the branch instruction by a simple branch instruction.
                     Instruction replacementInstruction =
                         new BranchInstruction(InstructionConstants.OP_GOTO_W,
                                               branchOffset).shrink();
@@ -1663,6 +1645,9 @@ implements   MemberInfoVisitor,
 
                     codeAttrInfoEditor.replaceInstruction(offset,
                                                           replacementInstruction);
+
+                    // Mark that the instruction has been simplified.
+                    isSimplified[offset] = true;
 
                     // Visit the instruction, if required.
                     if (extraBranchInstructionVisitor != null)
@@ -1751,44 +1736,6 @@ implements   MemberInfoVisitor,
 
 
     /**
-     * Returns whether the given opcode represents a dup or swap instruction
-     * (dup, dup_x1, dup_x2, dup2, dup2_x1, dup2_x1, swap).
-     */
-    private boolean isDupOrSwap(byte opcode) {
-        return opcode >= InstructionConstants.OP_DUP &&
-               opcode <= InstructionConstants.OP_SWAP;
-    }
-
-
-    /**
-     * Returns whether the given stack entry is present after execution of the
-     * instruction at the given offset.
-     */
-    private boolean isStackEntriesPresent(int instructionOffset, int stackIndex1, int stackIndex2)
-    {
-        boolean present1 = isStackEntryPresent(instructionOffset, stackIndex1);
-        boolean present2 = isStackEntryPresent(instructionOffset, stackIndex2);
-
-        if (present1 ^ present2)
-        {
-            throw new IllegalArgumentException("Can't handle partial use of dup2 instructions");
-        }
-
-        return present1 || present2;
-    }
-
-
-    /**
-     * Returns whether the given stack entry is present after execution of the
-     * instruction at the given offset.
-     */
-    private boolean isStackEntryPresent(int instructionOffset, int stackIndex)
-    {
-        return isAnyNecessary(partialEvaluator.stackTopConsumerOffsets(instructionOffset, stackIndex));
-    }
-
-
-    /**
      * Returns whether the given variable is ever referenced (stored) by an
      * instruction that is marked as necessary.
      */
@@ -1797,11 +1744,12 @@ implements   MemberInfoVisitor,
     {
         int codeLength = codeAttrInfo.u4codeLength;
 
-        for (int consumerOffset = 0; consumerOffset < codeLength; consumerOffset++)
+        for (int offset = 0; offset < codeLength; offset++)
         {
-            if (isNecessaryConsumer(consumerOffset)                                   &&
-                partialEvaluator.variableValue(consumerOffset, variableIndex) != null &&
-                isAnyNecessary(partialEvaluator.variableProducerOffsets(consumerOffset, variableIndex)))
+            if (isNecessary[offset]   &&
+                !isSimplified[offset] &&
+                partialEvaluator.variableValueBefore(offset, variableIndex) != null &&
+                isVariableNecessaryBefore(offset, variableIndex, false))
             {
                 return true;
             }
@@ -1812,30 +1760,71 @@ implements   MemberInfoVisitor,
 
 
     /**
-     * Returns whether any of the instructions at the given offsets are marked as
-     * necessary.
+     * Returns whether the given variable is present before execution of the
+     * instruction at the given offset.
      */
-    private boolean isAnyNecessary(InstructionOffsetValue offsets)
+    private boolean isVariableNecessaryBefore(int     instructionOffset, 
+                                              int     variableIndex, 
+                                              boolean all)
     {
-        return isNecessary(offsets, false);
+        return isNecessary(partialEvaluator.variableProducerOffsetsBefore(instructionOffset, variableIndex), 
+                           true,
+                           all);
     }
 
 
     /**
-     * Returns whether all of the instructions at the given offsets are marked as
-     * necessary.
+     * Returns whether the given stack entry is present after execution of the
+     * instruction at the given offset.
      */
-    private boolean isAllNecessary(InstructionOffsetValue offsets)
+    private boolean isStackEntriesNecessaryAfter(int instructionOffset, int stackIndex1, int stackIndex2, boolean all)
     {
-        return isNecessary(offsets, true);
+        boolean present1 = isStackEntryNecessaryAfter(instructionOffset, stackIndex1, all);
+        boolean present2 = isStackEntryNecessaryAfter(instructionOffset, stackIndex2, all);
+
+        if (present1 ^ present2)
+        {
+            throw new IllegalArgumentException("Can't handle partial use of dup2 instructions");
+        }
+
+        return present1 || present2;
+    }
+    
+    
+    /**
+     * Returns whether the given stack entry is present before execution of the
+     * instruction at the given offset.
+     */
+    private boolean isStackEntryNecessaryBefore(int     instructionOffset,
+                                                int     stackIndex,
+                                                boolean all)
+    {
+        return isNecessary(partialEvaluator.stackTopConsumerOffsetsBefore(instructionOffset, stackIndex), 
+                           false,
+                           all);
+    }
+    
+    
+    /**
+     * Returns whether the given stack entry is present after execution of the
+     * instruction at the given offset.
+     */
+    private boolean isStackEntryNecessaryAfter(int     instructionOffset, 
+                                               int     stackIndex, 
+                                               boolean all)
+    {
+        return isNecessary(partialEvaluator.stackTopConsumerOffsetsAfter(instructionOffset, stackIndex), 
+                           false,
+                           all);
     }
 
 
     /**
-     * Returns whether any of the instructions at the given offsets are marked as
-     * necessary.
+     * Returns whether any or all of the instructions at the given offsets are
+     * marked as necessary.
      */
     private boolean isNecessary(InstructionOffsetValue offsets,
+                                boolean                producer,
                                 boolean                all)
     {
         int offsetCount = offsets.instructionOffsetCount();
@@ -1844,34 +1833,12 @@ implements   MemberInfoVisitor,
         {
             int offset = offsets.instructionOffset(offsetIndex);
 
-            if (all ^ isNecessaryProducer(offset))
+            if (all ^ (isNecessary[offset] && (producer || !isSimplified[offset])))
             {
                 return !all;
             }
         }
 
         return all;
-    }
-
-
-    /**
-     * Returns whether the instructions at the given offset is marked as
-     * necessary, as a producer.
-     */
-    private boolean isNecessaryProducer(int producerOffset)
-    {
-        return producerOffset == PartialEvaluator.AT_METHOD_ENTRY ||
-               isNecessary[producerOffset];
-    }
-
-
-    /**
-     * Returns whether the instructions at the given offset is marked as
-     * necessary, as a consumer.
-     */
-    private boolean isNecessaryConsumer(int consumerOffset)
-    {
-        return isNecessary[consumerOffset] &&
-               !isSimplified[consumerOffset];
     }
 }

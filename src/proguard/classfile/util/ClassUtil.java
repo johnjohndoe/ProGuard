@@ -1,4 +1,4 @@
-/* $Id: ClassUtil.java,v 1.25.2.1 2006/01/16 22:57:55 eric Exp $
+/* $Id: ClassUtil.java,v 1.25.2.2 2006/05/06 13:09:50 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -206,7 +206,7 @@ public class ClassUtil
 
     /**
      * Returns whether the given internal type is a plain class type
-     * (not an array type).
+     * (including an array type of a plain class type).
      * @param internalType the internal type,
      *                     e.g. "<code>Ljava/lang/Object;</code>".
      * @return <code>true</code> if the given type is a class type,
@@ -216,7 +216,7 @@ public class ClassUtil
     {
         int length = internalType.length();
         return length > 1 &&
-               internalType.charAt(0)        == ClassConstants.INTERNAL_TYPE_CLASS_START &&
+//             internalType.charAt(0)        == ClassConstants.INTERNAL_TYPE_CLASS_START &&
                internalType.charAt(length-1) == ClassConstants.INTERNAL_TYPE_CLASS_END;
     }
 
@@ -238,21 +238,28 @@ public class ClassUtil
 
 
     /**
-     * Returns the internal class name of a given internal class type.
+     * Returns the internal class name of a given internal class type
+     * (including an array type). Types involving primitive types are returned
+     * unchanged.
      * @param internalClassType the internal class type,
-     *                          e.g. "<code>Ljava/lang/Object;</code>".
+     *                          e.g. "<code>[Ljava/lang/Object;</code>",
+     *                               "<code>Ljava/lang/Object;</code>", or
+     *                               "<code>java/lang/Object</code>".
      * @return the internal class name,
      *                          e.g. "<code>java/lang/Object</code>".
      */
     public static String internalClassNameFromClassType(String internalClassType)
     {
-        return internalClassType.substring(1, internalClassType.length()-1);
+        return isInternalClassType(internalClassType) ?
+            internalClassType.substring(internalClassType.indexOf(ClassConstants.INTERNAL_TYPE_CLASS_START)+1,
+                                        internalClassType.length()-1) :
+            internalClassType;
     }
 
 
     /**
-     * Returns the internal class name of any given internal type, disregarding
-     * array prefixes.
+     * Returns the internal class name of any given internal descriptor type,
+     * disregarding array prefixes.
      * @param internalClassType the internal class type,
      *                          e.g. "<code>Ljava/lang/Object;</code>" or
      *                               "<code>[[I</code>".
@@ -262,23 +269,18 @@ public class ClassUtil
      */
     public static String internalClassNameFromType(String internalClassType)
     {
+        if (!isInternalClassType(internalClassType))
+        {
+            return null;
+        }
+
         // Is it an array type?
         if (isInternalArrayType(internalClassType))
         {
             internalClassType = internalTypeFromArrayType(internalClassType);
-
-            // Is the array of a non-primitive type?
-            if (isInternalClassType(internalClassType))
-            {
-                internalClassType = internalClassNameFromClassType(internalClassType);
-            }
-            else
-            {
-                internalClassType = null;//ClassConstants.INTERNAL_NAME_JAVA_LANG_OBJECT;
-            }
         }
-
-        return internalClassType;
+        
+        return internalClassNameFromClassType(internalClassType);
     }
 
 

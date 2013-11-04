@@ -1,4 +1,4 @@
-/* $Id: ClassSpecification.java,v 1.4.2.1 2006/01/16 22:57:55 eric Exp $
+/* $Id: ClassSpecification.java,v 1.4.2.2 2006/04/09 08:55:53 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -85,11 +85,11 @@ public class ClassSpecification implements Cloneable
      *                                 specified class members are present.
      */
     public ClassSpecification(int     requiredSetAccessFlags,
-                               int     requiredUnsetAccessFlags,
-                               String  className,
-                               String  extendsClassName,
-                               boolean markClassFiles,
-                               boolean markConditionally)
+                              int     requiredUnsetAccessFlags,
+                              String  className,
+                              String  extendsClassName,
+                              boolean markClassFiles,
+                              boolean markConditionally)
     {
         this(requiredSetAccessFlags,
              requiredUnsetAccessFlags,
@@ -126,12 +126,12 @@ public class ClassSpecification implements Cloneable
      * @param comments                 provides optional comments on this option.
      */
     public ClassSpecification(int     requiredSetAccessFlags,
-                               int     requiredUnsetAccessFlags,
-                               String  className,
-                               String  extendsClassName,
-                               boolean markClassFiles,
-                               boolean markConditionally,
-                               String  comments)
+                              int     requiredUnsetAccessFlags,
+                              String  className,
+                              String  extendsClassName,
+                              boolean markClassFiles,
+                              boolean markConditionally,
+                              String  comments)
     {
         this.requiredSetAccessFlags   = requiredSetAccessFlags;
         this.requiredUnsetAccessFlags = requiredUnsetAccessFlags;

@@ -1,4 +1,4 @@
-/* $Id: ClassFileClassForNameReferenceInitializer.java,v 1.17.2.1 2006/01/16 22:57:55 eric Exp $
+/* $Id: ClassFileClassForNameReferenceInitializer.java,v 1.17.2.2 2006/02/13 00:20:43 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -109,29 +109,29 @@ public class ClassFileClassForNameReferenceInitializer
         // Nothing interesting; just forget any stored indices.
         clearConstantPoolIndices();
     }
-    
-    
+
+
     public void visitBranchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, BranchInstruction branchInstruction)
     {
         // Nothing interesting; just forget any stored indices.
         clearConstantPoolIndices();
     }
-    
-    
+
+
     public void visitTableSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, TableSwitchInstruction tableSwitchInstruction)
     {
         // Nothing interesting; just forget any stored indices.
         clearConstantPoolIndices();
     }
-    
-    
+
+
     public void visitLookUpSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, LookUpSwitchInstruction lookUpSwitchInstruction)
     {
         // Nothing interesting; just forget any stored indices.
         clearConstantPoolIndices();
     }
-    
-    
+
+
     public void visitVariableInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, VariableInstruction variableInstruction)
     {
 
@@ -296,7 +296,7 @@ public class ClassFileClassForNameReferenceInitializer
 
 
     // Small utility methods.
-    
+
     /**
      * Clears all references to the constant pool.
      */
@@ -306,8 +306,8 @@ public class ClassFileClassForNameReferenceInitializer
         invokestaticMethodRefCpIndex  = -1;
         invokevirtualMethodRefCpIndex = -1;
     }
-    
-    
+
+
     /**
      * Returns the class with the given name, either for the program class pool
      * or from the library class pool, or <code>null</code> if it can't be found.

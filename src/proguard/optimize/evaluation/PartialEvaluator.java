@@ -1,4 +1,4 @@
-/* $Id: PartialEvaluator.java,v 1.37.2.1 2006/01/16 22:57:56 eric Exp $
+/* $Id: PartialEvaluator.java,v 1.37.2.4 2006/04/27 07:25:03 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -47,7 +47,7 @@ implements   ExceptionInfoVisitor,
     private static final int INITIAL_CODE_LENGTH = 1024;
     private static final int INITIAL_VALUE_COUNT = 32;
 
-    //private static final int MAXIMUM_EVALUATION_COUNT = 100;
+    private static final int MAXIMUM_EVALUATION_COUNT = 5;
 
     public static final int AT_METHOD_ENTRY = -1;
     public static final int AT_CATCH_ENTRY  = -1;
@@ -60,8 +60,11 @@ implements   ExceptionInfoVisitor,
     private InstructionOffsetValue[] unusedProducerValues = new InstructionOffsetValue[INITIAL_CODE_LENGTH];
     private InstructionOffsetValue[] branchOriginValues   = new InstructionOffsetValue[INITIAL_CODE_LENGTH];
     private InstructionOffsetValue[] branchTargetValues   = new InstructionOffsetValue[INITIAL_CODE_LENGTH];
-    private TracedVariables[]        vars                 = new TracedVariables[INITIAL_CODE_LENGTH];
-    private TracedStack[]            stacks               = new TracedStack[INITIAL_CODE_LENGTH];
+    private TracedVariables[]        variablesBefore      = new TracedVariables[INITIAL_CODE_LENGTH];
+    private TracedStack[]            stacksBefore         = new TracedStack[INITIAL_CODE_LENGTH];
+    private TracedVariables[]        variablesAfter       = new TracedVariables[INITIAL_CODE_LENGTH];
+    private TracedStack[]            stacksAfter          = new TracedStack[INITIAL_CODE_LENGTH];
+    private boolean[]                generalizedContexts  = new boolean[INITIAL_CODE_LENGTH];
     private int[]                    evaluationCounts     = new int[INITIAL_CODE_LENGTH];
     private int[]                    initializedVariables = new int[INITIAL_CODE_LENGTH];
     private boolean                  evaluateExceptions;
@@ -84,6 +87,10 @@ implements   ExceptionInfoVisitor,
                           CodeAttrInfo codeAttrInfo,
                           Variables    parameters)
     {
+//        DEBUG = DEBUG_RESULTS =
+//            classFile.getName().equals("abc/Def") &&
+//            methodInfo.getName(classFile).equals("abc");
+
         // Initialize the reusable arrays and variables.
         initializeVariables(codeAttrInfo, parameters);
 
@@ -151,8 +158,8 @@ implements   ExceptionInfoVisitor,
                         System.out.println("     has overall been branching to "+branchTargets);
                     }
 
-                    System.out.println("     Vars:  "+vars[offset]);
-                    System.out.println("     Stack: "+stacks[offset]);
+                    System.out.println("     Vars:  "+variablesAfter[offset]);
+                    System.out.println("     Stack: "+stacksAfter[offset]);
                 }
 
                 offset += instruction.length(offset);
@@ -210,24 +217,46 @@ implements   ExceptionInfoVisitor,
 
 
     /**
-     * Returns the variable value at the given instruction offset and variable
-     * index.
+     * Returns the value of the given variable before the given instruction
+     * offset.
      */
-    public Value variableValue(int instructionOffset,
-                               int variableIndex)
+    public Value variableValueBefore(int instructionOffset,
+                                     int variableIndex)
     {
-        return vars[instructionOffset].load(variableIndex);
+        return variablesBefore[instructionOffset].load(variableIndex);
+    }
+    
+    
+    /**
+     * Returns the value of the given variable after the given instruction
+     * offset.
+     */
+    public Value variableValueAfter(int instructionOffset,
+                                    int variableIndex)
+    {
+        return variablesAfter[instructionOffset].load(variableIndex);
     }
 
 
     /**
-     * Returns the instruction offsets that set the variable value at at the given
-     * instruction offset and variable index.
+     * Returns the instruction offsets that set the value of the given variable
+     * before the given instruction offset.
      */
-    public InstructionOffsetValue variableProducerOffsets(int instructionOffset,
-                                                          int variableIndex)
+    public InstructionOffsetValue variableProducerOffsetsBefore(int instructionOffset,
+                                                                int variableIndex)
     {
-        return vars[instructionOffset].getStoredTraceValue(variableIndex).instructionOffsetValue();
+        return variablesBefore[instructionOffset].getStoredTraceValue(variableIndex).instructionOffsetValue();
+    }
+    
+    
+    /**
+     * Returns the instruction offsets that set the value of the given variable
+     * after the given instruction offset.
+     */
+    public InstructionOffsetValue variableProducerOffsetsAfter(int instructionOffset,
+                                                               int variableIndex)
+    {
+        return variablesAfter[instructionOffset].getStoredTraceValue(variableIndex).instructionOffsetValue();
     }
 
 
@@ -242,23 +271,46 @@ implements   ExceptionInfoVisitor,
 
 
     /**
-     * Returns the stack value at the given instruction offset and stack index.
+     * Returns the value of the given stack entry before the given instruction
+     * offset.
      */
-    public Value stackTopValue(int instructionOffset,
-                               int stackIndex)
+    public Value stackTopValueBefore(int instructionOffset,
+                                     int stackIndex)
     {
-        return stacks[instructionOffset].getTop(stackIndex);
+        return stacksBefore[instructionOffset].getTop(stackIndex);
+    }
+    
+    
+    /**
+     * Returns the value of the given stack entry after the given instruction
+     * offset.
+     */
+    public Value stackTopValueAfter(int instructionOffset,
+                                    int stackIndex)
+    {
+        return stacksAfter[instructionOffset].getTop(stackIndex);
     }
 
 
     /**
-     * Returns the instruction offsets that set the stack value at at the given
-     * instruction offset and stack index.
+     * Returns the instruction offsets that set the value of the given stack
+     * entry before the given instruction offset.
      */
-    public InstructionOffsetValue stackTopProducerOffsets(int instructionOffset,
-                                                          int stackIndex)
+    public InstructionOffsetValue stackTopProducerOffsetsBefore(int instructionOffset,
+                                                                int stackIndex)
     {
-        return stacks[instructionOffset].getTopProducerValue(stackIndex).instructionOffsetValue();
+        return stacksAfter[instructionOffset].getTopProducerValue(stackIndex).instructionOffsetValue();
+    }
+    
+    
+    /**
+     * Returns the instruction offsets that set the value of the given stack
+     * entry after the given instruction offset.
+     */
+    public InstructionOffsetValue stackTopProducerOffsetsAfter(int instructionOffset,
+                                                               int stackIndex)
+    {
+        return stacksAfter[instructionOffset].getTopProducerValue(stackIndex).instructionOffsetValue();
     }
 
 
@@ -273,13 +325,24 @@ implements   ExceptionInfoVisitor,
 
 
     /**
-     * Returns the instruction offsets that use the stack value at at the given
-     * instruction offset and stack index.
+     * Returns the instruction offsets that use the value of the given stack
+     * entry before the given instruction offset.
      */
-    public InstructionOffsetValue stackTopConsumerOffsets(int instructionOffset,
-                                                          int stackIndex)
+    public InstructionOffsetValue stackTopConsumerOffsetsBefore(int instructionOffset,
+                                                               int stackIndex)
     {
-        return stacks[instructionOffset].getTopConsumerValue(stackIndex).instructionOffsetValue();
+        return stacksBefore[instructionOffset].getTopConsumerValue(stackIndex).instructionOffsetValue();
+    }
+    
+    
+    /**
+     * Returns the instruction offsets that use the value of the given stack
+     * entry after the given instruction offset.
+     */
+    public InstructionOffsetValue stackTopConsumerOffsetsAfter(int instructionOffset,
+                                                               int stackIndex)
+    {
+        return stacksAfter[instructionOffset].getTopConsumerValue(stackIndex).instructionOffsetValue();
     }
 
 
@@ -415,11 +478,11 @@ implements   ExceptionInfoVisitor,
             }
 
             // Compute the stack index of the uninitialized object.
-            int stackIndex = stacks[offset].size();
+            int stackIndex = stacksAfter[offset].size();
 
             // Get the (first and presumably only) offset of the instruction
             // that put it there. This is typically a dup instruction.
-            int newOffset = stacks[previousOffset].getBottomProducerValue(stackIndex).instructionOffsetValue().instructionOffset(0);
+            int newOffset = stacksAfter[previousOffset].getBottomProducerValue(stackIndex).instructionOffsetValue().instructionOffset(0);
 
             // Add a reverse dependency. The source instruction depends on
             // the initializer instruction, thus making sure that the latter
@@ -463,17 +526,69 @@ implements   ExceptionInfoVisitor,
         // Evaluate the subsequent instructions.
         while (true)
         {
-            // Maintain a generalized trace instruction offset.
+            // Maintain a generalized local variable frame and stack at this
+            // instruction offset, before execution.
             int evaluationCount = evaluationCounts[instructionOffset]++;
             if (evaluationCount == 0)
             {
-                varProducerValues[instructionOffset]    = InstructionOffsetValueFactory.create();
-                stackProducerValues[instructionOffset]  = InstructionOffsetValueFactory.create();
-                unusedProducerValues[instructionOffset] = InstructionOffsetValueFactory.create();
+                // First time we're passing by this instruction.
+                if (variablesBefore[instructionOffset] == null)
+                {
+                    // There's not even a context at this index yet.
+                    variablesBefore[instructionOffset] = new TracedVariables(variables);
+                    stacksBefore[instructionOffset]    = new TracedStack(stack);
+                }
+                else
+                {
+                    // Reuse the context objects at this index.
+                    variablesBefore[instructionOffset].initialize(variables);
+                    stacksBefore[instructionOffset].copy(stack);
+                }
+                
+                // We'll execute in the generalized context, because it is
+                // the same as the current context.
+                generalizedContexts[instructionOffset] = true;
+            }
+            else
+            {
+                // Merge in the current context.
+                boolean variablesChanged = variablesBefore[instructionOffset].generalize(variables);
+                boolean stackChanged     = stacksBefore[instructionOffset].generalize(stack);
+
+                // Bail out if the current context is the same as last time.
+                if (!variablesChanged &&
+                    !stackChanged     &&
+                    generalizedContexts[instructionOffset])
+                {
+                    if (DEBUG) System.out.println("Repeated variables, stack, and branch targets");
+
+                    break;
+                }
+
+                // See if this instruction has been evaluated an excessive number
+                // of times.
+                if (evaluationCount >= MAXIMUM_EVALUATION_COUNT)
+                {
+
+                    // Continue, but generalize the current context.
+                    // Note that the most recent variable values have to remain
+                    // last in the generalizations, for the sake of the ret
+                    // instruction.
+                    variables.generalize(variablesBefore[instructionOffset]);
+                    stack.generalize(stacksBefore[instructionOffset]);
+                
+                    // We'll execute in the generalized context.
+                    generalizedContexts[instructionOffset] = true;
+                }
+                else
+                {
+                    // We'll execute in the current context.
+                    generalizedContexts[instructionOffset] = false;
+                }
             }
 
             // Remember this instruction's offset with any stored value.
-            Value storeValue = InstructionOffsetValueFactory.create(instructionOffset);
+            Value storeValue = new InstructionOffsetValue(instructionOffset);
             variables.setProducerValue(storeValue);
             stack.setProducerValue(storeValue);
 
@@ -493,7 +608,7 @@ implements   ExceptionInfoVisitor,
             // instruction.
             int nextInstructionOffset = instructionOffset +
                                         instruction.length(instructionOffset);
-            InstructionOffsetValue nextInstructionOffsetValue = InstructionOffsetValueFactory.create(nextInstructionOffset);
+            InstructionOffsetValue nextInstructionOffsetValue = new InstructionOffsetValue(nextInstructionOffset);
             branchUnit.resetCalled();
             branchUnit.setTraceBranchTargets(nextInstructionOffsetValue);
 
@@ -512,10 +627,9 @@ implements   ExceptionInfoVisitor,
 
             try
             {
-                // Process the instruction. The processor may call
-                // the Variables methods of 'variables',
-                // the Stack methods of 'stack', and
-                // the BranchUnit methods of 'branchUnit'.
+                // Process the instruction. The processor may modify the
+                // variables and the stack, and it may call the branch unit
+                // and the invocation unit.
                 instruction.accept(classFile,
                                    methodInfo,
                                    codeAttrInfo,
@@ -525,9 +639,10 @@ implements   ExceptionInfoVisitor,
             catch (RuntimeException ex)
             {
                 System.err.println("Unexpected error while performing partial evaluation:");
-                System.err.println("  ClassFile   = ["+classFile.getName()+"]");
+                System.err.println("  Class       = ["+classFile.getName()+"]");
                 System.err.println("  Method      = ["+methodInfo.getName(classFile)+methodInfo.getDescriptor(classFile)+"]");
                 System.err.println("  Instruction = "+instruction.toString(instructionOffset));
+                System.err.println("  Exception   = ["+ex.getClass().getName()+"] ("+ex.getMessage()+")");
 
                 throw ex;
             }
@@ -570,7 +685,7 @@ implements   ExceptionInfoVisitor,
 
                 if (varProducerValues[instructionOffset].instructionOffsetCount() > 0)
                 {
-                    System.out.println("     has up til now been using information from instructions setting vars: "+varProducerValues[instructionOffset]);
+                    System.out.println("     has up till now been using information from instructions setting vars: "+varProducerValues[instructionOffset]);
                 }
                 if (stackProducerValues[instructionOffset].instructionOffsetCount() > 0)
                 {
@@ -585,57 +700,33 @@ implements   ExceptionInfoVisitor,
                     System.out.println("     has up till now been branching to "+branchTargetValues[instructionOffset]);
                 }
 
-                System.out.println("     Vars:  "+variables);
-                System.out.println("     Stack: "+stack);
+                System.out.println(" Vars:  "+variables);
+                System.out.println(" Stack: "+stack);
             }
 
             // Maintain a generalized local variable frame and stack at this
-            // branch instruction offset.
-            if (vars[instructionOffset] == null)
+            // instruction offset, after execution.
+            if (evaluationCount == 0)
             {
                 // First time we're passing by this instruction.
-                // There's not even a context at this index yet.
-                vars[instructionOffset]   = new TracedVariables(variables);
-                stacks[instructionOffset] = new TracedStack(stack);
-            }
-            else if (evaluationCount == 0)
-            {
-                // First time we're passing by this instruction.
-                // Reuse the context objects at this index.
-                vars[instructionOffset].initialize(variables);
-                stacks[instructionOffset].copy(stack);
+                if (variablesAfter[instructionOffset] == null)
+                {
+                    // There's not even a context at this index yet.
+                    variablesAfter[instructionOffset] = new TracedVariables(variables);
+                    stacksAfter[instructionOffset]    = new TracedStack(stack);
+                }
+                else
+                {
+                    // Reuse the context objects at this index.
+                    variablesAfter[instructionOffset].initialize(variables);
+                    stacksAfter[instructionOffset].copy(stack);
+                }
             }
             else
             {
-                // If there are multiple alternative branches, or if this
-                // instruction has been evaluated an excessive number of
-                // times, then generalize the current context.
-                // TODO: See if we can avoid generalizing the current context.
-                //if (branchTargetCount > 1 ||
-                //    evaluationCount > MAXIMUM_EVALUATION_COUNT)
-                //{
-                //    variables.generalize(vars[instructionOffset]);
-                //    stack.generalize(stacks[instructionOffset]);
-                //}
-
-                boolean vars_changed  = vars[instructionOffset].generalize(variables);
-                boolean stack_changed = stacks[instructionOffset].generalize(stack);
-
-                // Bail out if the current context is the same as last time.
-                if (!vars_changed  &&
-                    !stack_changed &&
-                    branchTargets.equals(branchTargetValues[instructionOffset]))
-                {
-                    if (DEBUG) System.out.println("Repeated variables, stack, and branch targets");
-
-                    break;
-                }
-
-                // Generalize the current context. Note that the most recent
-                // variable values have to remain last in the generalizations,
-                // for the sake of the ret instruction.
-                variables.initialize(vars[instructionOffset]);
-                stack.copy(stacks[instructionOffset]);
+                // Merge in the current context.
+                variablesAfter[instructionOffset].generalize(variables);
+                stacksAfter[instructionOffset].generalize(stack);
             }
 
             // Did the branch unit get called?
@@ -654,7 +745,7 @@ implements   ExceptionInfoVisitor,
                 }
 
                 // Accumulate the branch origins at the branch target offsets.
-                InstructionOffsetValue instructionOffsetValue = InstructionOffsetValueFactory.create(instructionOffset);
+                InstructionOffsetValue instructionOffsetValue = new InstructionOffsetValue(instructionOffset);
                 for (int index = 0; index < branchTargetCount; index++)
                 {
                     int branchTarget = branchTargets.instructionOffset(index);
@@ -711,20 +802,26 @@ implements   ExceptionInfoVisitor,
         }
 
         // Create new arrays for storing information at each instruction offset.
-        if (vars.length < codeLength)
+        if (variablesAfter.length < codeLength)
         {
             varProducerValues    = new InstructionOffsetValue[codeLength];
             stackProducerValues  = new InstructionOffsetValue[codeLength];
             unusedProducerValues = new InstructionOffsetValue[codeLength];
             branchOriginValues   = new InstructionOffsetValue[codeLength];
             branchTargetValues   = new InstructionOffsetValue[codeLength];
-            vars                 = new TracedVariables[codeLength];
-            stacks               = new TracedStack[codeLength];
+            variablesBefore      = new TracedVariables[codeLength];
+            stacksBefore         = new TracedStack[codeLength];
+            variablesAfter       = new TracedVariables[codeLength];
+            stacksAfter          = new TracedStack[codeLength];
+            generalizedContexts  = new boolean[codeLength];
             evaluationCounts     = new int[codeLength];
             initializedVariables = new int[codeLength];
 
             for (int index = 0; index < codeLength; index++)
             {
+                varProducerValues[index]    = InstructionOffsetValueFactory.create();
+                stackProducerValues[index]  = InstructionOffsetValueFactory.create();
+                unusedProducerValues[index] = InstructionOffsetValueFactory.create();
                 initializedVariables[index] = NONE;
             }
         }
@@ -732,22 +829,33 @@ implements   ExceptionInfoVisitor,
         {
             for (int index = 0; index < codeLength; index++)
             {
-                varProducerValues[index]    = null;
-                stackProducerValues[index]  = null;
-                unusedProducerValues[index] = null;
+                varProducerValues[index]    = InstructionOffsetValueFactory.create();
+                stackProducerValues[index]  = InstructionOffsetValueFactory.create();
+                unusedProducerValues[index] = InstructionOffsetValueFactory.create();
                 branchOriginValues[index]   = null;
                 branchTargetValues[index]   = null;
+                generalizedContexts[index]  = false;
                 evaluationCounts[index]     = 0;
                 initializedVariables[index] = NONE;
 
-                if (vars[index] != null)
+                if (variablesBefore[index] != null)
                 {
-                    vars[index].reset(codeAttrInfo.u2maxLocals);
+                    variablesBefore[index].reset(codeAttrInfo.u2maxLocals);
                 }
 
-                if (stacks[index] != null)
+                if (stacksBefore[index] != null)
                 {
-                    stacks[index].reset(codeAttrInfo.u2maxStack);
+                    stacksBefore[index].reset(codeAttrInfo.u2maxStack);
+                }
+
+                if (variablesAfter[index] != null)
+                {
+                    variablesAfter[index].reset(codeAttrInfo.u2maxLocals);
+                }
+
+                if (stacksAfter[index] != null)
+                {
+                    stacksAfter[index].reset(codeAttrInfo.u2maxStack);
                 }
             }
         }
@@ -784,7 +892,7 @@ implements   ExceptionInfoVisitor,
                 // We can't use the return value, because local generalization
                 // can be different a couple of times, with the global
                 // generalization being the same.
-                generalizedVariables.generalize(vars[index]);
+                generalizedVariables.generalize(variablesAfter[index]);
             }
         }
     }

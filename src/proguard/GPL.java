@@ -1,4 +1,4 @@
-/* $Id: GPL.java,v 1.5.2.1 2006/01/03 21:52:31 eric Exp $
+/* $Id: GPL.java,v 1.5.2.3 2006/04/12 07:05:39 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java bytecode.
  *
@@ -150,7 +150,7 @@ public class GPL
 
 
     /**
-     * Returns whether the given package name is has been granted an exception
+     * Returns whether the given package name has been granted an exception
      * against the GPL linking clause, by the copyright holder of ProGuard.
      * This method is not legally binding, but of course the actual license is.
      * Please contact the copyright holder if you would like an exception for
@@ -166,7 +166,8 @@ public class GPL
                packageName.startsWith("org.netbeans")           ||
                packageName.startsWith("com.sun.kvem")           ||
                packageName.startsWith("jg.j2me")                ||
-               packageName.startsWith("jg.common");
+               packageName.startsWith("jg.common")              ||
+               packageName.startsWith("jg.buildengine");
     }
 
 

@@ -1,4 +1,4 @@
-/* $Id: FileNameMatcher.java,v 1.7 2005/11/05 19:29:25 eric Exp $
+/* $Id: FileNameMatcher.java,v 1.7.2.1 2006/04/15 21:30:28 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -41,6 +41,7 @@ public class FileNameMatcher extends BasicMatcher
     {
         ' ',
         '-',
+        '+',
         '.'
     };
 

@@ -1,4 +1,4 @@
-/* $Id: LibraryFieldInfo.java,v 1.16.2.1 2006/01/16 22:57:55 eric Exp $
+/* $Id: LibraryFieldInfo.java,v 1.16.2.2 2006/02/08 00:04:25 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -60,11 +60,21 @@ public class LibraryFieldInfo extends LibraryMemberInfo implements FieldInfo
     }
 
 
-    /**
-     * Accepts the given visitor.
-     */
+    // Implementations for LibraryMemberInfo.
+
     public void accept(LibraryClassFile libraryClassFile, MemberInfoVisitor memberInfoVisitor)
     {
         memberInfoVisitor.visitLibraryFieldInfo(libraryClassFile, this);
+    }
+
+
+    // Implementations for MemberInfo.
+
+    public void referencedClassesAccept(ClassFileVisitor classFileVisitor)
+    {
+        if (referencedClassFile != null)
+        {
+            referencedClassFile.accept(classFileVisitor);
+        }
     }
 }

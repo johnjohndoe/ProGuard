@@ -1,4 +1,4 @@
-/* $Id: ProgramMethodInfo.java,v 1.19.2.1 2006/01/16 22:57:55 eric Exp $
+/* $Id: ProgramMethodInfo.java,v 1.19.2.2 2006/02/08 00:04:25 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -77,6 +77,8 @@ public class ProgramMethodInfo extends ProgramMemberInfo implements MethodInfo
         }
     }
 
+
+    // Implementations for MemberInfo.
 
     public void referencedClassesAccept(ClassFileVisitor classFileVisitor)
     {

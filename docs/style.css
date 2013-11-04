@@ -24,6 +24,13 @@ h3
   padding: 10px;
 }
 
+h3 div
+{
+  font-weight: normal;
+  font-size: 80%;
+  float: right;
+}
+
 table
 {
   width: 100%;

@@ -1,4 +1,4 @@
-/* $Id: GotoCommonCodeReplacer.java,v 1.2.2.2 2006/01/16 22:57:56 eric Exp $
+/* $Id: GotoCommonCodeReplacer.java,v 1.2.2.3 2006/02/13 00:20:43 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -96,7 +96,7 @@ public class GotoCommonCodeReplacer implements InstructionVisitor
         {
             int branchOffset = branchInstruction.branchOffset;
             int targetOffset = offset + branchOffset;
-            
+
             // Get the number of common bytes.
             int commonCount = commonByteCodeCount(codeAttrInfo, offset, targetOffset);
 
@@ -117,7 +117,7 @@ public class GotoCommonCodeReplacer implements InstructionVisitor
                         codeAttrInfoEditor.replaceInstruction(     deleteOffset, null);
                         codeAttrInfoEditor.insertBeforeInstruction(deleteOffset, null);
                         codeAttrInfoEditor.insertAfterInstruction( deleteOffset, null);
-                        
+
                         codeAttrInfoEditor.deleteInstruction(deleteOffset);
                     }
                 }
@@ -131,7 +131,7 @@ public class GotoCommonCodeReplacer implements InstructionVisitor
                     codeAttrInfoEditor.replaceInstruction(offset,
                                                           newGotoInstruction);
                 }
-                
+
                 // Visit the instruction, if required.
                 if (extraInstructionVisitor != null)
                 {
@@ -141,12 +141,12 @@ public class GotoCommonCodeReplacer implements InstructionVisitor
         }
     }
 
-    
+
     // Small utility methods.
 
     /**
      * Returns the number of common bytes preceding the given offsets,
-     * avoiding branches and exception blocks. 
+     * avoiding branches and exception blocks.
      */
     private int commonByteCodeCount(CodeAttrInfo codeAttrInfo, int offset1, int offset2)
     {
@@ -201,7 +201,7 @@ public class GotoCommonCodeReplacer implements InstructionVisitor
                 successfulDelta = delta;
             }
         }
-        
+
         return successfulDelta;
     }
 
@@ -219,7 +219,7 @@ public class GotoCommonCodeReplacer implements InstructionVisitor
 
     /**
      * Returns the whether there is a boundary of an exception block between
-     * the given offsets (including both). 
+     * the given offsets (including both).
      */
     private boolean exceptionBoundary(CodeAttrInfo codeAttrInfo, int offset1, int offset2)
     {
@@ -230,7 +230,7 @@ public class GotoCommonCodeReplacer implements InstructionVisitor
             offset1 = offset2;
             offset2 = offset;
         }
-        
+
         // Check if there is a boundary of an exception block.
         for (int offset = offset1; offset <= offset2; offset++)
         {
@@ -240,7 +240,7 @@ public class GotoCommonCodeReplacer implements InstructionVisitor
                 return true;
             }
         }
-        
+
         return false;
     }
 }

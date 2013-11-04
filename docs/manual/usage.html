@@ -388,13 +388,18 @@ The sections below provide more details:
     "http://java.sun.com/docs/books/jls/second_edition/html/classes.doc.html#40898"
     >Section 8.3</a> and <a href=
     "http://java.sun.com/docs/books/jls/second_edition/html/classes.doc.html#227768"
-    >Section 8.4.7</a>). Still, some tools have problems with it. Notably,
-    Sun's JREs 1.4 and later fail to serialize objects with overloaded
-    primitive fields. Also, Sun's JDK 1.2.2 javac compiler produces an
-    exception when compiling with such a library (cfr. <a href=
-    "http://developer.java.sun.com/developer/bugParade/bugs/4216736.html">Bug
-    #4216736</a>). You therefore probably shouldn't use this option for
-    processing libraries.</dd>
+    >Section 8.4.7</a>). Still, some tools have problems with it. Notably:
+    <ul>
+    <li>Sun's JDK 1.2.2 <code>javac</code> compiler produces an exception when
+        compiling with such a library (cfr. <a href=
+        "http://developer.java.sun.com/developer/bugParade/bugs/4216736.html">Bug
+        #4216736</a>). You probably shouldn't use this option for processing
+        libraries.
+    <li>Sun's JRE 1.4 and later fail to serialize objects with overloaded
+        primitive fields.
+    <li>Sun's JRE 1.5 <code>pack200</code> tool reportedly has problems with
+        overloaded class members.
+    </ul></dd>
 
 <dt><a name="defaultpackage"><code><b>-defaultpackage</b></code></a>
     [<i>package_name</i>]</dt>

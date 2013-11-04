@@ -14,10 +14,20 @@
     native <methods>;
 }
 
-# Also keep - Enumerations. Keep a method that is required in enumeration
-# classes.
+# Also keep - Enumerations. Keep special static methods that are required in
+# enumeration classes.
 -keepclassmembers class * extends java.lang.Enum {
-    public **[] values();
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+
+# Also keep - Database drivers. Keep any implementations of java.sql.Driver.
+-keep class * implements java.sql.Driver
+
+# Also keep - Swing UI L&F. Keep all classes that extend the ComponentUI class,
+# along with the special static method that is required.
+-keep class * extends javax.swing.plaf.ComponentUI {
+    public static javax.swing.plaf.ComponentUI createUI(javax.swing.JComponent);
 }
 
 # Remove - System method calls. Remove all invocations of System

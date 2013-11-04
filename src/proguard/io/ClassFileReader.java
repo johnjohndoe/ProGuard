@@ -1,4 +1,4 @@
-/* $Id: ClassFileReader.java,v 1.6.2.1 2006/01/16 22:57:55 eric Exp $
+/* $Id: ClassFileReader.java,v 1.6.2.2 2006/04/12 07:15:05 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -86,7 +86,7 @@ public class ClassFileReader implements DataEntryReader
             if (classFile != null)
             {
                 if (note &&
-                    !dataEntry.getName().equals(classFile.getName()+ClassConstants.CLASS_FILE_EXTENSION))
+                    !dataEntry.getName().replace(File.pathSeparatorChar, ClassConstants.INTERNAL_PACKAGE_SEPARATOR).equals(classFile.getName()+ClassConstants.CLASS_FILE_EXTENSION))
                 {
                     System.err.println("Note: class file [" + dataEntry.getName() + "] unexpectedly contains class [" + ClassUtil.externalClassName(classFile.getName()) + "]");
                 }

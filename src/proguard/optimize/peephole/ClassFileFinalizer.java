@@ -1,4 +1,4 @@
-/* $Id: ClassFileFinalizer.java,v 1.8 2005/07/31 18:50:05 eric Exp $
+/* $Id: ClassFileFinalizer.java,v 1.8.2.1 2006/02/13 00:20:43 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -49,7 +49,7 @@ public class ClassFileFinalizer
         this(null, null);
     }
 
-    
+
     /**
      * Creates a new ClassFileFinalizer.
      * @param extraClassFileVisitor  an optional extra visitor for all finalized
@@ -64,7 +64,7 @@ public class ClassFileFinalizer
         this.extraMemberInfoVisitor = extraMemberInfoVisitor;
     }
 
-        
+
     // Implementations for ClassFileVisitor.
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)

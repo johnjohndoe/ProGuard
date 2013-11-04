@@ -23,10 +23,14 @@ Some typical useful configurations:
 <li><a href="#native">Processing native methods</a>
 <li><a href="#serializable">Processing serializable classes</a>
 <li><a href="#beans">Processing bean classes</a>
+<li><a href="#enumerations">Processing enumeration classes</a>
 <li><a href="#annotations">Processing annotations</a>
+<li><a href="#database">Processing database drivers</a>
 <li><a href="#componentui">Processing ComponentUI classes</a>
 <li><a href="#rmi">Processing RMI code</a>
 <li><a href="#stacktrace">Producing useful obfuscated stack traces</a>
+<li><a href="#restructuring">Restructuring the output archives</a>
+<li><a href="#filtering">Filtering the input and the output</a>
 <li><a href="#multiple">Processing multiple applications at once</a>
 <li><a href="#incremental">Incremental obfuscation</a>
 <li><a href="#deadcode">Finding dead code</a>
@@ -82,10 +86,10 @@ for de-obfuscating any stack traces later on, or for incremental obfuscation of
 extensions.
 <p>
 In general, you might need a few additional directives for processing <a
-href="#native">native methods</a>, <a href="#serializable">serializable
-classes</a>, <a href="#beans">bean classes</a>, or <a
-href="#annotations">annotations</a>. For processing 'simple' applications like
-ProGuard, that is not required.
+href="#native">native methods</a>, <a href="#enumerations">enumerations</a>,
+<a href="#serializable">serializable classes</a>, or <a href="#beans">bean
+classes</a>. For processing 'simple' applications like ProGuard, that is not
+required.
 
 <a name="applet">&nbsp;</a>
 <h3>A typical applet</h3>
@@ -104,9 +108,9 @@ The typical applet methods will be preserved automatically, since
 class in the library <code>rt.jar</code>.
 <p>
 If applicable, you should add directives for processing <a
-href="#native">native methods</a>, <a href="#serializable">serializable
-classes</a>, <a href="#beans">bean classes</a>, or <a
-href="#annotations">annotations</a>.
+href="#native">native methods</a>, <a href="#enumerations">enumerations</a>,
+<a href="#serializable">serializable classes</a>, or <a href="#beans">bean
+classes</a>.
 
 <a name="midlet">&nbsp;</a>
 <h3>A typical midlet</h3>
@@ -134,9 +138,9 @@ The typical midlet methods will be preserved automatically, since
 class in the library <code>midpapi20.jar</code>.
 <p>
 If applicable, you should add directives for processing <a
-href="#native">native methods</a>, <a href="#serializable">serializable
-classes</a>, <a href="#beans">bean classes</a>, or <a
-href="#annotations">annotations</a>.
+href="#native">native methods</a>, <a href="#enumerations">enumerations</a>,
+<a href="#serializable">serializable classes</a>, or <a href="#beans">bean
+classes</a>.
 <p>
 You must preverify your midlets <i>after</i> having processed them, using
 J2ME's <code>preverify</code> tool. Because this tool unpacks your processed
@@ -170,9 +174,9 @@ The <code>-printseeds</code> option prints out which classes exactly will
 be preserved, so we know for sure we're getting what we want.
 <p>
 If applicable, you should add directives for processing <a
-href="#native">native methods</a>, <a href="#serializable">serializable
-classes</a>, <a href="#beans">bean classes</a>, or <a
-href="#annotations">annotations</a>.
+href="#native">native methods</a>, <a href="#enumerations">enumerations</a>,
+<a href="#serializable">serializable classes</a>, or <a href="#beans">bean
+classes</a>.
 
 <a name="applets">&nbsp;</a>
 <h3>All possible applets in the input jars</h3>
@@ -193,9 +197,9 @@ Again, the <code>-printseeds</code> option prints out which applets exactly
 will be preserved.
 <p>
 If applicable, you should add directives for processing <a
-href="#native">native methods</a>, <a href="#serializable">serializable
-classes</a>, <a href="#beans">bean classes</a>, or <a
-href="#annotations">annotations</a>.
+href="#native">native methods</a>, <a href="#enumerations">enumerations</a>,
+<a href="#serializable">serializable classes</a>, or <a href="#beans">bean
+classes</a>.
 
 <a name="midlets">&nbsp;</a>
 <h3>All possible midlets in the input jars</h3>
@@ -220,9 +224,9 @@ And again, the <code>-printseeds</code> option prints out which midlets exactly
 will be preserved.
 <p>
 If applicable, you should add directives for processing <a
-href="#native">native methods</a>, <a href="#serializable">serializable
-classes</a>, <a href="#beans">bean classes</a>, or <a
-href="#annotations">annotations</a>.
+href="#native">native methods</a>, <a href="#enumerations">enumerations</a>,
+<a href="#serializable">serializable classes</a>, or <a href="#beans">bean
+classes</a>.
 <p>
 You must preverify your midlets <i>after</i> having processed them, using
 J2ME's <code>preverify</code> tool. Because this tool unpacks your processed
@@ -256,9 +260,9 @@ And again, the <code>-printseeds</code> option prints out which servlets
 exactly will be preserved.
 <p>
 If applicable, you should add directives for processing <a
-href="#native">native methods</a>, <a href="#serializable">serializable
-classes</a>, <a href="#beans">bean classes</a>, or <a
-href="#annotations">annotations</a>.
+href="#native">native methods</a>, <a href="#enumerations">enumerations</a>,
+<a href="#serializable">serializable classes</a>, or <a href="#beans">bean
+classes</a>.
 
 <a name="library">&nbsp;</a>
 <h3>Processing a library</h3>
@@ -288,16 +292,17 @@ serialization code:
     native &lt;methods&gt;;
 }
 
+-keepclassmembers class * extends java.lang.Enum {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+
 -keepclassmembers class * implements java.io.Serializable {
     static final long serialVersionUID;
     private void writeObject(java.io.ObjectOutputStream);
     private void readObject(java.io.ObjectInputStream);
     java.lang.Object writeReplace();
     java.lang.Object readResolve();
-}
-
--keepclassmembers class * extends java.lang.Enum {
-    public **[] values();
 }
 </pre>
 <p>
@@ -317,9 +322,10 @@ these other obfuscators are ever used for further obfuscation of the library.
 <p>
 We've added some directives for keeping the "Deprecated" attribute, for <a
 href="#stacktrace">useful stack traces</a>, for <a href="#native">native
-methods</a>, <a href="#serializable">serializable classes</a>, and for <a
-href="#annotations">annotations</a> (possibly with enumerations), which are
-all discussed in their respective examples.
+methods</a>, for <a href="#enumerations">enumerations</a>, for <a
+href="#serializable">serializable classes</a>, and for <a
+href="#annotations">annotations</a>, which are all discussed in their
+respective examples.
 <p>
 The "InnerClasses" attribute (or more precisely, its source name part) has to
 be preserved as well, for any inner classes that can be referenced from
@@ -348,6 +354,23 @@ names from being obfuscated.
 ProGuard doesn't have your native code, so it can't automatically preserve the
 classes or class members that are invoked by the native code. These are entry
 points, which you'll have to specify explicitly.
+
+<a name="enumerations">&nbsp;</a>
+<h3>Processing enumeration classes</h3>
+If your application, applet, servlet, library, etc., contains enumeration
+classes, you'll have to preserve some special methods. Enumerations were
+introduced in JDK 5.0. The java compiler translates enumerations into classes
+with a special structure. Notably, the classes contain implementations of some
+static methods that the run-time environment accesses by introspection (Isn't
+that just grand? Introspection is the self-modifying code of a new
+generation). You have to specify these explicitly, to make sure they aren't
+removed or obfuscated:
+<pre>
+-keepclassmembers class * extends java.lang.Enum {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+</pre>
 
 <a name="serializable">&nbsp;</a>
 <h3>Processing serializable classes</h3>
@@ -445,8 +468,8 @@ may require special attention:
 Note that the above directives may preserve more classes and class members
 than strictly necessary. For instance, a large number of classes may implement
 the <code>Serialization</code> interface, yet only a small number may actually
-ever be serialized. Knowing your application and tuning the configuration will
-often produce more compact results.
+ever be serialized. Knowing your application and tuning the configuration
+often produces more compact results.
 
 <a name="beans">&nbsp;</a>
 <h3>Processing bean classes</h3>
@@ -500,10 +523,6 @@ treats annotation attributes as optional, and removes them in the obfuscation
 step. If they are required, you'll have to specify this explicitly:
 <pre>
 -keepattributes *Annotation*
-
--keepclassmembers class * extends java.lang.Enum {
-    public static **[] values();
-}
 </pre>
 <p>
 For brevity, we're specifying a wildcarded attribute name, which will match
@@ -515,17 +534,26 @@ For brevity, we're specifying a wildcarded attribute name, which will match
 code, you could refine this selection, for instance not keeping the run-time
 invisible annotations (which are only used at compile-time).
 <p>
-If your annotations contain enumeration classes, you'll have to preserve the
-<code>values()</code> method in these classes. The run-time environment
-accesses this method by introspection (Isn't that just grand? Introspection is
-the self-modifying code of a new generation).
-<p>
 Some code may make further use of introspection to figure out the enclosing
 methods of anonymous inner classes. In that case, the corresponding attribute
-will have to be preserved as well:
+has to be preserved as well:
 <pre>
 -keepattributes EnclosingMethod
 </pre>
+
+<a name="database">&nbsp;</a>
+<h3>Processing database drivers</h3>
+Database drivers are implementations of the <code>Driver</code> interface.
+Since they are often created dynamically, you may want to preserve any
+implementations that you are processing as entry points:
+<pre>
+-keep class * implements java.sql.Driver
+</pre>
+<p>
+This directive also gets rid of the note that ProGuard prints out about
+<code>(java.sql.Driver)Class.forName</code> constructs, if you are
+instantiating a driver in your code (without necessarily implementing any
+drivers yourself).
 
 <a name="componentui">&nbsp;</a>
 <h3>Processing ComponentUI classes</h3>
@@ -587,11 +615,141 @@ their original names, so we're saving the mapping to a file
 <code>out.map</code>. The information can then be used by the <a
 href="retrace/index.html">ReTrace</a> tool to restore the original stack trace.
 
+<a name="restructuring">&nbsp;</a>
+<h3>Restructuring the output archives</h3>
+In simple applications, all output classes and resources files are merged into
+a single jar. For example:
+<pre>
+-injars  classes
+-injars  in1.jar
+-injars  in2.jar
+-injars  in3.jar
+-outjars out.jar
+</pre>
+<p>
+This configuration merges the processed versions of the files in the
+<code>classes</code> directory and the three jars into a single output jar
+<code>out.jar</code>.
+<p>
+If you want to preserve the structure of your input jars (and/or wars, ears,
+zips, or directories), you can specify an output directory (or a war, an ear,
+or a zip). For example:
+<pre>
+-injars  in1.jar
+-injars  in2.jar
+-injars  in3.jar
+-outjars out
+</pre>
+<p>
+The input jars will then be reconstructed in the directory <code>out</code>,
+with their original names.
+<p>
+You can also combine archives into higher level archives. For example:
+<pre>
+-injars  in1.jar
+-injars  in2.jar
+-injars  in3.jar
+-outjars out.war
+</pre>
+<p>
+The other way around, you can flatten the archives inside higher level
+archives into simple archives:
+<pre>
+-injars  in.war
+-outjars out.jar
+</pre>
+<p>
+This configuration puts the processed contents of all jars inside
+<code>in.war</code> (plus any other contents of <code>in.war</code>) into
+<code>out.jar</code>.
+<p>
+If you want to combine input jars (and/or wars, ears, zips, or directories)
+into output jars (and/or wars, ears, zips, or directories), you can group the
+<code>-injars</code> and <code>-outjars</code> options. For example:
+<pre>
+-injars  base_in1.jar
+-injars  base_in2.jar
+-injars  base_in3.jar
+-outjars base_out.jar
+
+-injars  extra_in.jar
+-outjars extra_out.jar
+</pre>
+<p>
+This configuration puts the processed results of all <code>base_in*.jar</code>
+jars into <code>base_out.jar</code>, and the processed results of the
+<code>extra_in.jar</code> into <code>extra_out.jar</code>. Note that only the
+order of the options matters; the additional whitespace is just for clarity.
+<p>
+This grouping, archiving, and flattening can be arbitrarily complex. ProGuard
+always tries to package output archives in a sensible way, reconstructing the
+input entries as much as required.
+
+<a name="filtering">&nbsp;</a>
+<h3>Filtering the input and the output</h3>
+
+If you want even greater control, you can add filters to the input and the
+output, filtering out zips, ears, wars, jars, and/or ordinary files. For
+example, if you want to disregard certain files from an input jar:
+<pre>
+-injars  in.jar(!images/**)
+-outjars out.jar
+</pre>
+<p>
+This configuration removes any files in the <code>images</code> directory and
+its subdirectories.
+<p>
+Such filters can be convenient for avoiding warnings about duplicate files in
+the output. For example, only keeping the manifest file from a first input jar:
+<pre>
+-injars  in1.jar
+-injars  in2.jar(!META-INF/MANIFEST.MF)
+-injars  in3.jar(!META-INF/MANIFEST.MF)
+-outjars out.jar
+</pre>
+<p>
+Another useful application is speeding up the processing by ProGuard, by
+disregarding a large number of irrelevant classes in the runtime library jar:
+<pre>
+-libraryjars &lt;java.home&gt;/lib/rt.jar(java/**,javax/**)
+</pre>
+<p>
+The filter makes ProGuard disregard <code>com.sun.**</code> classes, for
+instance , which don't affect the processing of ordinary applications.
+<p>
+It is also possible to filter the jars (and/or wars, ears, zips) themselves,
+based on their names. For example:
+<pre>
+-injars  in(**/acme_*.jar;)
+-outjars out.jar
+</pre>
+<p>
+Note the semi-colon in the filter; the filter in front of it applies to jar
+names. In this case, only <code>acme_*.jar</code> jars are read from the
+directory <code>in</code> and its subdirectories. Filters for war names, ear
+names, and zip names can be prefixed with additional semi-colons. All types of
+filters can be combined. They are orthogonal.
+<p>
+On the other hand, you can also filter the output, in order to control what
+content goes where. For example:
+<pre>
+-injars  in.jar
+-outjars code_out.jar(**.class)
+-outjars resources_out.jar
+</pre>
+<p>
+This configuration splits the processed output, sending <code>**.class</code>
+files to <code>code_out.jar</code>, and all remaining files to
+<code>resources_out.jar</code>.
+<p>
+Again, the filtering can be arbitrarily complex, especially when combined with
+the grouping of input and output.
+
 <a name="multiple">&nbsp;</a>
 <h3>Processing multiple applications at once</h3>
-You can process several independent applications (or applets, midlets,...) in
-one go, in order to save time and effort. ProGuard's input and output handling
-offers various ways to keep the output nicely structured.
+You can process several dependent or independent applications (or applets,
+midlets,...) in one go, in order to save time and effort. ProGuard's input and
+output handling offers various ways to keep the output nicely structured.
 <p>
 The easiest way is to specify your input jars (and/or wars, ears, zips, and
 directories) and a single output directory. ProGuard will then reconstruct the
@@ -601,34 +759,11 @@ just the input and output options:
 -injars  application1.jar
 -injars  application2.jar
 -injars  application3.jar
--injars  application.war
 -outjars processed_applications
 </pre>
 <p>
 After processing, the directory <code>processed_applications</code> will
-contain the processed application jars and war, with their original names.
-<p>
-If you want explicit control over the output names, or if you want to combine
-input jars (and/or wars, ears, zips, or directories) into output jars (and/or
-wars, ears, zips, or directories), you can group the <code>-injars</code> and
-<code>-outjars</code> options. For example:
-<pre>
--injars  application1.jar
--injars  application2.jar
--injars  application3.jar
--outjars application_out1.war
-
--injars  application.war
--outjars application_out2.war
-</pre>
-<p>
-This configuration creates two wars: one containing all processed application
-jars, and one containing the processed contents of the input war.
-<p>
-Note that ProGuard will try to package output archives in a sensible way,
-reconstructing the input entries as much as required. If you want even greater
-control, you can add filters to the input and the output, filtering out zips,
-ears, wars, jars, and/or ordinary files.
+contain the processed application jars, with their original names.
 
 <a name="incremental">&nbsp;</a>
 <h3>Incremental obfuscation</h3>

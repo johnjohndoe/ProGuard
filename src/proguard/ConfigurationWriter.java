@@ -1,4 +1,4 @@
-/* $Id: ConfigurationWriter.java,v 1.18.2.1 2006/01/16 22:57:55 eric Exp $
+/* $Id: ConfigurationWriter.java,v 1.18.2.2 2006/02/13 00:20:43 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -375,12 +375,12 @@ public class ConfigurationWriter
                 // Write out the field name and descriptor.
                 String name       = classMemberSpecification.name;
                 String descriptor = classMemberSpecification.descriptor;
-                
+
                 if (name == null)
                 {
                     name = ConfigurationConstants.ANY_CLASS_MEMBER_KEYWORD;
                 }
-    
+
                 writer.print(descriptor != null ?
                     ClassUtil.externalFullFieldDescription(0,
                                                            name,
@@ -413,12 +413,12 @@ public class ConfigurationWriter
                 // Write out the method name and descriptor.
                 String name       = classMemberSpecification.name;
                 String descriptor = classMemberSpecification.descriptor;
-                
+
                 if (name == null)
                 {
                     name = ConfigurationConstants.ANY_CLASS_MEMBER_KEYWORD;
                 }
-    
+
                 writer.print(descriptor != null ?
                     ClassUtil.externalFullMethodDescription(ClassConstants.INTERNAL_METHOD_NAME_INIT,
                                                             0,

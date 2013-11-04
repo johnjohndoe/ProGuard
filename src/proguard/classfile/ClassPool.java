@@ -1,4 +1,4 @@
-/* $Id: ClassPool.java,v 1.18.2.1 2006/01/16 22:57:55 eric Exp $
+/* $Id: ClassPool.java,v 1.18.2.5 2006/05/06 13:09:50 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -38,6 +38,15 @@ public class ClassPool
 
 
     /**
+     * Clears the class pool.
+     */
+    public void clear()
+    {
+        classFiles.clear();
+    }
+
+
+    /**
      * Adds the given ClassFile to the class pool. If a class file of the same
      * name is already present, it is left unchanged and the old class file is
      * returned.
@@ -67,23 +76,22 @@ public class ClassPool
 
 
     /**
-     * Returns a ClassFile from the class pool based on its name. Returns
+     * Returns a Clazz from the class pool based on its name. Returns
      * <code>null</code> if the class with the given name is not in the class
-     * pool. Returns the base class if the class name is an array type, and the
-     * <code>java.lang.Object</code> class if that base class is a primitive type.
+     * pool. Returns the base class if the class name is an array type.
      */
     public ClassFile getClass(String className)
     {
-        return (ClassFile)classFiles.get(ClassUtil.internalClassNameFromType(className));
+        return (ClassFile)classFiles.get(ClassUtil.internalClassNameFromClassType(className));
     }
 
 
     /**
-     * Returns an Iterator of all ClassFile objects in the class pool.
+     * Returns an Iterator of all class file names in the class pool.
      */
-    public Iterator elements()
+    public Iterator classNames()
     {
-        return classFiles.values().iterator();
+        return classFiles.keySet().iterator();
     }
 
 
@@ -111,18 +119,11 @@ public class ClassPool
      */
     public void classFilesAccept(ClassFileVisitor classFileVisitor)
     {
-        Iterator iterator = elements();
+        Iterator iterator = classFiles.values().iterator();
         while (iterator.hasNext())
         {
             ClassFile classFile = (ClassFile)iterator.next();
-try{
             classFile.accept(classFileVisitor);
-}catch (RuntimeException ex) {
-    System.out.println("Runtime exception while processing class file ["+classFile.getName()+"]");
-    throw ex;
-}catch (Error er) {
-    System.out.println("Runtime error while processing class file ["+classFile.getName()+"]");
-    throw er;}
         }
     }
 

@@ -1,4 +1,4 @@
-/* $Id: SingleImplementationMarker.java,v 1.8.2.1 2006/01/16 22:57:56 eric Exp $
+/* $Id: SingleImplementationMarker.java,v 1.8.2.2 2006/02/13 00:20:43 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -146,7 +146,7 @@ implements   ClassFileVisitor
         {
             System.out.println("Single implementation of ["+programClassFile.getName()+"]: ["+singleImplementationClassFile.getName()+"]");
         }
-        
+
         // Mark the interface and its single implementation.
         markSingleImplementation(programClassFile, singleImplementationClassFile);
 

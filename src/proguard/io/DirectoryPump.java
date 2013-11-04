@@ -1,4 +1,4 @@
-/* $Id: DirectoryPump.java,v 1.4.2.1 2006/01/16 22:57:55 eric Exp $
+/* $Id: DirectoryPump.java,v 1.4.2.2 2006/02/13 00:20:43 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -49,7 +49,7 @@ public class DirectoryPump implements DataEntryPump
         {
             throw new IOException("No such file or directory");
         }
-        
+
         readFiles(directory, dataEntryReader);
     }
 

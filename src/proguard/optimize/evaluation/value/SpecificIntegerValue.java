@@ -1,4 +1,4 @@
-/* $Id: SpecificIntegerValue.java,v 1.4.2.1 2006/01/16 22:57:56 eric Exp $
+/* $Id: SpecificIntegerValue.java,v 1.4.2.2 2006/01/27 23:34:31 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -165,12 +165,12 @@ class SpecificIntegerValue extends IntegerValue
 
     public int lessThan(IntegerValue other)
     {
-        return other.greaterThanOrEqual(this);
+        return other.greaterThan(this);
     }
 
     public int lessThanOrEqual(IntegerValue other)
     {
-        return other.greaterThan(this);
+        return other.greaterThanOrEqual(this);
     }
 
 

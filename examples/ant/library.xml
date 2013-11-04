@@ -51,13 +51,17 @@
       <method access="native" />
     </keepclasseswithmembernames>
     
-    <!-- Preserve a method that is required in all enumeration classes. -->
+    <!-- Preserve the methods that are required in all enumeration classes. -->
     
     <keepclassmembers extends="java.lang.Enum">
-      <method access="public"
+      <method access="public static"
               type="**[]"
               name="values"
               parameters="" />
+      <method access="public static"
+              type="**"
+              name="valueOf"
+              parameters="java.lang.String" />
     </keepclassmembers>
 
     <!-- Explicitly preserve all serialization members. The Serializable

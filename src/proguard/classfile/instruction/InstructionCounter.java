@@ -1,4 +1,4 @@
-/* $Id: InstructionCounter.java,v 1.1.2.1 2006/01/16 22:57:55 eric Exp $
+/* $Id: InstructionCounter.java,v 1.1.2.3 2006/02/13 00:20:43 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -26,23 +26,23 @@ import proguard.classfile.instruction.*;
 
 /**
  * This InstructionVisitor counts the number of instructions that has been visited.
- * 
+ *
  * @author Eric Lafortune
  */
 public class InstructionCounter implements InstructionVisitor
 {
     private int count;
-    
-    
+
+
     /**
      * Returns the number of instructions that has been visited so far.
      */
     public int getCount()
     {
-        return count++;
+        return count;
     }
-    
-    
+
+
     // Implementations for InstructionVisitor.
 
     public void visitBranchInstruction(ClassFile         classFile,
@@ -54,7 +54,7 @@ public class InstructionCounter implements InstructionVisitor
         count++;
     }
 
-    
+
     public void visitCpInstruction(ClassFile     classFile,
                                    MethodInfo    methodInfo,
                                    CodeAttrInfo  codeAttrInfo,
@@ -64,7 +64,7 @@ public class InstructionCounter implements InstructionVisitor
         count++;
     }
 
-    
+
     public void visitLookUpSwitchInstruction(ClassFile               classFile,
                                              MethodInfo              methodInfo,
                                              CodeAttrInfo            codeAttrInfo,
@@ -74,7 +74,7 @@ public class InstructionCounter implements InstructionVisitor
         count++;
     }
 
-    
+
     public void visitSimpleInstruction(ClassFile         classFile,
                                        MethodInfo        methodInfo,
                                        CodeAttrInfo      codeAttrInfo,
@@ -83,8 +83,8 @@ public class InstructionCounter implements InstructionVisitor
     {
         count++;
     }
-    
-    
+
+
     public void visitTableSwitchInstruction(ClassFile              classFile,
                                             MethodInfo             methodInfo,
                                             CodeAttrInfo           codeAttrInfo,
@@ -94,7 +94,7 @@ public class InstructionCounter implements InstructionVisitor
         count++;
     }
 
-    
+
     public void visitVariableInstruction(ClassFile           classFile,
                                          MethodInfo          methodInfo,
                                          CodeAttrInfo        codeAttrInfo,

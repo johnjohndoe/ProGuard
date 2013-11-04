@@ -1,4 +1,4 @@
-/* $Id: MemberCounter.java,v 1.1.2.1 2006/01/16 22:57:55 eric Exp $
+/* $Id: MemberCounter.java,v 1.1.2.3 2006/02/13 00:20:43 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -25,23 +25,23 @@ import proguard.classfile.visitor.*;
 
 /**
  * This MemberInfoVisitor counts the number of class members that has been visited.
- * 
+ *
  * @author Eric Lafortune
  */
 public class MemberCounter implements MemberInfoVisitor
 {
     private int count;
-    
-    
+
+
     /**
      * Returns the number of class members that has been visited so far.
      */
     public int getCount()
     {
-        return count++;
+        return count;
     }
-    
-    
+
+
     // Implementations for MemberInfoVisitor.
 
     public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile,
@@ -50,21 +50,21 @@ public class MemberCounter implements MemberInfoVisitor
         count++;
     }
 
-    
+
     public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile,
                                        LibraryMethodInfo libraryMethodInfo)
     {
         count++;
     }
 
-    
+
     public void visitProgramFieldInfo(ProgramClassFile programClassFile,
                                       ProgramFieldInfo programFieldInfo)
     {
         count++;
     }
 
-    
+
     public void visitProgramMethodInfo(ProgramClassFile programClassFile,
                                        ProgramMethodInfo programMethodInfo)
     {

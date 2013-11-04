@@ -1,4 +1,4 @@
-/* $Id: MemberReferenceFixer.java,v 1.4.2.1 2006/01/16 22:57:55 eric Exp $
+/* $Id: MemberReferenceFixer.java,v 1.4.2.2 2006/03/28 22:03:59 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -23,6 +23,7 @@ package proguard.classfile.editor;
 import proguard.classfile.*;
 import proguard.classfile.attribute.*;
 import proguard.classfile.attribute.annotation.*;
+import proguard.classfile.util.ClassUtil;
 import proguard.classfile.visitor.*;
 
 /**
@@ -256,11 +257,19 @@ implements   ClassFileVisitor,
 
     public void visitClassCpInfo(ClassFile classFile, ClassCpInfo classCpInfo)
     {
-        // Check if this class entry refers to an interface class.
-        ClassFile referencedClassFile = classCpInfo.referencedClassFile;
-        if (referencedClassFile != null)
+        // Check if this class entry is an array type.
+        if (ClassUtil.isInternalArrayType(classCpInfo.getName(classFile)))
         {
-            isInterfaceMethod = (referencedClassFile.getAccessFlags() & ClassConstants.INTERNAL_ACC_INTERFACE) != 0;
+            isInterfaceMethod = false;
+        }
+        else
+        {
+            // Check if this class entry refers to an interface class.
+            ClassFile referencedClassFile = classCpInfo.referencedClassFile;
+            if (referencedClassFile != null)
+            {
+                isInterfaceMethod = (referencedClassFile.getAccessFlags() & ClassConstants.INTERNAL_ACC_INTERFACE) != 0;
+            }
         }
     }
 

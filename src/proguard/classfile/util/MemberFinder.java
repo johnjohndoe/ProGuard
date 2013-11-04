@@ -1,4 +1,4 @@
-/* $Id: MemberFinder.java,v 1.7.2.2 2006/01/16 22:57:55 eric Exp $
+/* $Id: MemberFinder.java,v 1.7.2.4 2006/03/26 14:21:36 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -22,7 +22,6 @@ package proguard.classfile.util;
 
 import proguard.classfile.*;
 import proguard.classfile.visitor.*;
-
 
 /**
  * This class provides methods to find class members in a given class or in its
@@ -58,8 +57,8 @@ public class MemberFinder
      * class file or its hierarchy.
      */
     public MethodInfo findMethod(ClassFile referencingClassFile,
-                                 ClassFile classFile, 
-                                 String    name, 
+                                 ClassFile classFile,
+                                 String    name,
                                  String    descriptor)
     {
         return (MethodInfo)findMember(referencingClassFile, classFile, name, descriptor, false);

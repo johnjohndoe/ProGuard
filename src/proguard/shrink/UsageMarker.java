@@ -1,4 +1,4 @@
-/* $Id: UsageMarker.java,v 1.46.2.1 2006/01/16 22:57:56 eric Exp $
+/* $Id: UsageMarker.java,v 1.46.2.2 2006/02/13 00:20:43 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -178,10 +178,10 @@ public class UsageMarker
     private class MyPossiblyUsedMethodUsageMarker implements MemberInfoVisitor
     {
         // Implementations for MemberInfoVisitor.
-    
+
         public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo) {}
-    
-    
+
+
         public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
         {
             // Has the method already been referenced?
@@ -191,18 +191,18 @@ public class UsageMarker
 
                 // Mark the method body.
                 markProgramMethodBody(programClassFile, programMethodInfo);
-                
+
                 // Note that, if the method has been marked as possibly used,
                 // the method hierarchy has already been marked (cfr. below).
             }
         }
-    
-    
+
+
         public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo) {}
         public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo) {}
     }
 
-    
+
     // Implementations for MemberInfoVisitor.
 
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
@@ -239,7 +239,7 @@ public class UsageMarker
                 // Mark the method hierarchy.
                 markMethodHierarchy(programClassFile, programMethodInfo);
             }
-            
+
             // Hasn't the method been marked as possibly being used yet?
             else if (shouldBeMarkedAsPossiblyUsed(programMethodInfo))
             {

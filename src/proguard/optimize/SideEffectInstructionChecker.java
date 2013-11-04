@@ -1,4 +1,4 @@
-/* $Id: SideEffectInstructionChecker.java,v 1.12.2.1 2006/01/16 22:57:56 eric Exp $
+/* $Id: SideEffectInstructionChecker.java,v 1.12.2.4 2006/04/17 02:19:37 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -41,6 +41,9 @@ public class SideEffectInstructionChecker
 {
     private boolean includeReturnInstructions;
 
+    // An argument for the visitor methods.
+    private boolean isReading;
+    
     // A return value for the visitor methods.
     private boolean hasSideEffects;
 
@@ -63,7 +66,6 @@ public class SideEffectInstructionChecker
 
     // Implementations for InstructionVisitor.
 
-    public void visitBranchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, BranchInstruction branchInstruction) {}
     public void visitTableSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, TableSwitchInstruction tableSwitchInstruction) {}
     public void visitLookUpSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, LookUpSwitchInstruction lookUpSwitchInstruction) {}
 
@@ -131,6 +133,20 @@ public class SideEffectInstructionChecker
     }
 
 
+    public void visitBranchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, BranchInstruction branchInstruction)
+    {
+        byte opcode = branchInstruction.opcode;
+
+        // Check for instructions that might cause side effects.
+        if (includeReturnInstructions &&
+            (opcode == InstructionConstants.OP_JSR ||
+             opcode == InstructionConstants.OP_JSR_W))
+        {
+            hasSideEffects = true;
+        }
+    }
+
+
     // Implementations for CpInfoVisitor.
 
     public void visitIntegerCpInfo(ClassFile classFile, IntegerCpInfo integerCpInfo) {}
@@ -145,7 +161,19 @@ public class SideEffectInstructionChecker
 
     public void visitFieldrefCpInfo(ClassFile classFile, FieldrefCpInfo fieldrefCpInfo)
     {
-        hasSideEffects = !WriteOnlyFieldMarker.isWriteOnly(fieldrefCpInfo.referencedMemberInfo);
+        MemberInfo referencedMember = fieldrefCpInfo.referencedMemberInfo;
+
+        // Do we have a reference to the field?
+        if (referencedMember == null)
+        {
+            // We'll have to assume accessing the unknown field has side effects.
+            hasSideEffects = true;
+        }
+        else
+        {
+            // Check the referenced field itself.
+            fieldrefCpInfo.referencedMemberInfoAccept(this);
+        }
     }
 
 
@@ -212,7 +240,13 @@ public class SideEffectInstructionChecker
 
     // Implementations for MemberInfoVisitor.
 
-    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo) {}
+    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
+    {
+        hasSideEffects = isReading ?
+            (programFieldInfo.getAccessFlags() & ClassConstants.INTERNAL_ACC_VOLATILE) != 0 :
+            !WriteOnlyFieldMarker.isWriteOnly(programFieldInfo);
+    }
+    
 
     public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
     {
@@ -221,7 +255,13 @@ public class SideEffectInstructionChecker
     }
 
 
-    public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo) {}
+    public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo)
+    {
+        hasSideEffects = isReading ?
+            (libraryFieldInfo.getAccessFlags() & ClassConstants.INTERNAL_ACC_VOLATILE) != 0 :
+            !WriteOnlyFieldMarker.isWriteOnly(libraryFieldInfo);
+    }
+        
 
     public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo)
     {

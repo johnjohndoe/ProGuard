@@ -1,4 +1,4 @@
-/* $Id: MemberInfoClassFileAccessFilter.java,v 1.1.2.2 2006/01/16 22:57:55 eric Exp $
+/* $Id: MemberInfoClassFileAccessFilter.java,v 1.1.2.3 2006/02/13 00:20:43 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java bytecode.
  *
@@ -94,7 +94,7 @@ implements   MemberInfoVisitor
     private boolean accepted(ClassFile classFile, int memberInfoAccessFlags)
     {
         int accessLevel = AccessUtil.accessLevel(memberInfoAccessFlags);
-        
+
         return
             (accessLevel >= AccessUtil.PUBLIC                                                              ) ||
             (accessLevel >= AccessUtil.PRIVATE         && referencingClassFile.equals(classFile)                   ) ||

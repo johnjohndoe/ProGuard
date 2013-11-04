@@ -1,4 +1,4 @@
-/* $Id: ConfigurationParser.java,v 1.26.2.1 2006/01/16 22:57:55 eric Exp $
+/* $Id: ConfigurationParser.java,v 1.26.2.2 2006/04/09 08:56:44 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -146,7 +146,7 @@ public class ConfigurationParser
             else if (ConfigurationConstants.DUMP_OPTION                                      .startsWith(nextWord)) configuration.dump                             = parseOptionalFile();
             else
             {
-                throw new ParseException("Unknown configuration " + reader.locationDescription());
+                throw new ParseException("Unknown option " + reader.locationDescription());
             }
         }
     }

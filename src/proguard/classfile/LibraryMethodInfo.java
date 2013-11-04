@@ -1,4 +1,4 @@
-/* $Id: LibraryMethodInfo.java,v 1.16.2.1 2006/01/16 22:57:55 eric Exp $
+/* $Id: LibraryMethodInfo.java,v 1.16.2.2 2006/02/08 00:04:25 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -60,11 +60,27 @@ public class LibraryMethodInfo extends LibraryMemberInfo implements MethodInfo
     }
 
 
-    /**
-     * Accepts the given visitor.
-     */
+    // Implementations for LibraryMemberInfo.
+
     public void accept(LibraryClassFile libraryClassFile, MemberInfoVisitor memberInfoVisitor)
     {
         memberInfoVisitor.visitLibraryMethodInfo(libraryClassFile, this);
+    }
+
+
+    // Implementations for MemberInfo.
+
+    public void referencedClassesAccept(ClassFileVisitor classFileVisitor)
+    {
+        if (referencedClassFiles != null)
+        {
+            for (int i = 0; i < referencedClassFiles.length; i++)
+            {
+                if (referencedClassFiles[i] != null)
+                {
+                    referencedClassFiles[i].accept(classFileVisitor);
+                }
+            }
+        }
     }
 }

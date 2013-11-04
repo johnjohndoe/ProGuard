@@ -1,4 +1,4 @@
-/* $Id: NoSideEffectMethodMarker.java,v 1.5.2.1 2006/01/16 22:57:56 eric Exp $
+/* $Id: NoSideEffectMethodMarker.java,v 1.5.2.2 2006/04/17 02:18:30 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,8 +21,8 @@
 package proguard.optimize;
 
 import proguard.classfile.*;
-import proguard.classfile.instruction.*;
-import proguard.classfile.visitor.*;
+import proguard.classfile.util.MethodInfoLinker;
+import proguard.classfile.visitor.MemberInfoVisitor;
 
 /**
  * This MemberInfoVisitor marks all methods that it visits as not having any side
@@ -35,6 +35,11 @@ import proguard.classfile.visitor.*;
 public class NoSideEffectMethodMarker
   implements MemberInfoVisitor
 {
+    // A visitor info flag to indicate the visitor accepter is being kept,
+    // but that it doesn't have any side effects.
+    private static final Object KEPT_BUT_NO_SIDE_EFFECTS = new Object();
+
+
     // Implementations for MemberInfoVisitor.
 
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo) {}
@@ -62,11 +67,20 @@ public class NoSideEffectMethodMarker
         {
             info.setNoSideEffects();
         }
+        else
+        {
+            MethodInfoLinker.lastMethodInfo(methodInfo).setVisitorInfo(KEPT_BUT_NO_SIDE_EFFECTS);
+        }
     }
 
 
     public static boolean hasNoSideEffects(MethodInfo methodInfo)
     {
+        if (MethodInfoLinker.lastVisitorAccepter(methodInfo).getVisitorInfo() == KEPT_BUT_NO_SIDE_EFFECTS)
+        {
+            return true;
+        }
+
         MethodOptimizationInfo info = MethodOptimizationInfo.getMethodOptimizationInfo(methodInfo);
         return info != null &&
                info.hasNoSideEffects();

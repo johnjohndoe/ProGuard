@@ -1,4 +1,4 @@
-/* $Id: Processor.java,v 1.13.2.1 2006/01/16 22:57:56 eric Exp $
+/* $Id: Processor.java,v 1.13.2.2 2006/04/01 12:40:37 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -758,23 +758,27 @@ implements   InstructionVisitor,
 
 
             case InstructionConstants.OP_IFICMPLT:
+                // Note that the stack entries are popped in reverse order.
                 branchUnit.branchConditionally(classFile, codeAttrInfo, offset, branchTarget,
-                    -stack.ipop().lessThan(stack.ipop()));
+                    stack.ipop().greaterThan(stack.ipop()));
                 break;
 
             case InstructionConstants.OP_IFICMPGE:
+                // Note that the stack entries are popped in reverse order.
                 branchUnit.branchConditionally(classFile, codeAttrInfo, offset, branchTarget,
-                    -stack.ipop().greaterThanOrEqual(stack.ipop()));
+                    stack.ipop().lessThanOrEqual(stack.ipop()));
                 break;
 
             case InstructionConstants.OP_IFICMPGT:
+                // Note that the stack entries are popped in reverse order.
                 branchUnit.branchConditionally(classFile, codeAttrInfo, offset, branchTarget,
-                    -stack.ipop().greaterThan(stack.ipop()));
+                    stack.ipop().lessThan(stack.ipop()));
                 break;
 
             case InstructionConstants.OP_IFICMPLE:
+                // Note that the stack entries are popped in reverse order.
                 branchUnit.branchConditionally(classFile, codeAttrInfo, offset, branchTarget,
-                    -stack.ipop().lessThanOrEqual(stack.ipop()));
+                    stack.ipop().greaterThanOrEqual(stack.ipop()));
                 break;
 
             case InstructionConstants.OP_IFACMPEQ:

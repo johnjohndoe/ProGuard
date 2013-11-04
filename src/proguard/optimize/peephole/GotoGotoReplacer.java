@@ -1,4 +1,4 @@
-/* $Id: GotoGotoReplacer.java,v 1.2.2.1 2006/01/16 22:57:56 eric Exp $
+/* $Id: GotoGotoReplacer.java,v 1.2.2.2 2006/02/13 00:20:43 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -94,7 +94,7 @@ public class GotoGotoReplacer implements InstructionVisitor
                 {
                     // Simplify the goto instruction.
                     int targetBranchOffset   = ((BranchInstruction)targetInstruction).branchOffset;
-                    
+
                     Instruction newBranchInstruction =
                          new BranchInstruction(opcode,
                                                (branchOffset + targetBranchOffset));
