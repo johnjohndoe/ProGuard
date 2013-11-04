@@ -1,0 +1,105 @@
+<!doctype html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<title>ProGuard FAQ</title>
+</head>
+<body bgcolor="#ffffff">
+
+<center><h2>Frequently Asked Questions</h2></center>
+
+<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
+<h3>Contents</h3>
+</td></tr></table>
+
+<ol>
+<li><a href="#shrinking">What is shrinking?</a>
+<li><a href="#obfuscation">What is obfuscation?</a>
+<li><a href="#jdk1.4">Does <b>ProGuard</b> work with JDK1.4?</a>
+<li><a href="#forname">Does <b>ProGuard</b> handle <code>Class.forName</code>
+    calls?</a>
+<li><a href="#resource">Does <b>ProGuard</b> handle resource files?</a>
+<li><a href="#gui">Does <b>ProGuard</b> come with a GUI?</a>
+</ol>
+
+<a name="shrinking">&nbsp;</a>
+<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
+<h3>What is shrinking?</h3>
+</td></tr></table>
+<p>
+Java source code (.java files) is typically compiled to bytecode (.class
+files). Complete programs or program libraries are usually zipped up and
+distributed as Java archives (.jar files). Bytecode is more compact than Java
+source code, but it may still contain a lot of unused code, especially if it
+uses program libraries. Shrinking programs such as <b>ProGuard</b> can analyze
+bytecode and remove unused packages, classes, fields, and methods. The program
+remains functionally equivalent, including the information given in exception
+stack traces.
+
+<p>
+<a name="obfuscation">&nbsp;</a>
+<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
+<h3>What is obfuscation?</h3>
+</td></tr></table>
+<p>
+By default, compiled bytecode still contains a lot of debugging information:
+source file names, line numbers, field names, method names, argument names,
+variable names, etc. This information makes it straightforward to decompile
+the bytecode and reverse-engineer entire programs. Sometimes, this is not
+desirable. Obfuscators such as <b>ProGuard</b> can remove the debugging
+information and replace all names by meaningless character sequences, making
+it much harder to reverse-engineer the code. It further compacts the code as a
+bonus. The program remains functionally equivalent, except for the class
+names, method names, and line numbers given in exception stack traces.
+
+<p>
+<a name="jdk1.4">&nbsp;</a>
+<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
+<h3>Does <b>ProGuard</b> work with JDK1.4?</h3>
+</td></tr></table>
+<p>
+Yes. Class files compiled with the <code>javac</code> compiler of JDK1.4 have
+a slightly different structure than class files compiled with earlier versions
+of the compiler. The new class files fall within the specifications, so they
+will run on most virtual machines, but they may trip some obfuscators.
+<b>ProGuard</b> handles both class file structures correctly.
+
+<p>
+<a name="forname">&nbsp;</a>
+<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
+<h3>Does <b>ProGuard</b> handle <code>Class.forName</code> calls?</h3>
+</td></tr></table>
+<p>
+Not automatically. For the moment, you will have to specify classes that are
+created dynamically using one of the <code>-keep</code> options. The
+template-based configuration can make life a bit easier here -- please refer
+to the <a href="manual.html">User Manual</a>.
+
+<p>
+<a name="resource">&nbsp;</a>
+<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
+<h3>Does <b>ProGuard</b> handle resource files?</h3>
+</td></tr></table>
+<p>
+Not specifically. For the moment, <b>ProGuard</b> ignores any resource files.
+You will have to add them manually, or include them in a separate jar.
+
+<p>
+<a name="gui">&nbsp;</a>
+<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
+<h3>Does <b>ProGuard</b> come with a GUI?</h3>
+</td></tr></table>
+<p>
+No. <b>ProGuard</b> is a command-line tool, designed to be easily integrated
+into any automatic build process. Configuration is done using a few compact
+and powerful options; just have a look at the examples in the <a
+href="manual.html">User Manual</a>. A graphical user interface to create
+configuration files is on the list of things to do, but it has a fairly low
+priority.
+
+<hr>
+<adress>
+Copyright &copy; 2002 <a href="http://www.graphics.cornell.edu/~eric/">Eric
+Lafortune</a>.
+</address>
+</body>
+</html>

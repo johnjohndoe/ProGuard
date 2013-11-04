@@ -1,0 +1,182 @@
+/* $Id: ProgramMemberInfo.java,v 1.13 2002/05/23 19:19:57 eric Exp $
+ *
+ * ProGuard -- obfuscation and shrinking package for Java class files.
+ *
+ * Copyright (c) 1999 Mark Welsh (markw@retrologic.com)
+ * Copyright (C) 2002 Eric Lafortune (eric@graphics.cornell.edu)
+ *
+ * This library is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+ * for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this library; if not, write to the Free Software Foundation,
+ * Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ */
+package proguard.classfile;
+
+
+import proguard.classfile.visitor.*;
+import proguard.classfile.util.*;
+
+import java.io.*;
+import java.util.*;
+
+/**
+ * Representation of a field or method from a program class file.
+ *
+ * @author Mark Welsh
+ * @author Eric Lafortune
+ */
+abstract public class ProgramMemberInfo implements MemberInfo
+{
+    public int        u2accessFlags;
+    public int        u2nameIndex;
+    public int        u2descriptorIndex;
+    public int        u2attributesCount;
+    public AttrInfo[] attributes;
+
+    /**
+     * An extra field pointing to the ClassFile objects referenced in the
+     * descriptor string. This field is filled out by the <code>{@link
+     * proguard.classfile.util.ClassFileInitializer ClassFileInitializer}</code>.
+     * References to primitive types are ignored.
+     * References to library classes are left blank (<code>null</code>).
+     */
+    public ClassFile[] referencedClassFiles;
+
+    /**
+     * An extra field in which visitors can store information.
+     */
+    public Object visitorInfo;
+
+
+    protected ProgramMemberInfo() {}
+
+
+    /**
+     * Returns the (first) attribute with the given name.
+     */
+    public AttrInfo getAttribute(ClassFile classFile, String name)
+    {
+        for (int i = 0; i < u2attributesCount; i++)
+        {
+            AttrInfo attribute = attributes[i];
+            if (attribute.getAttributeName(classFile).equals(name))
+            {
+                return attribute;
+            }
+        }
+
+        return null;
+    }
+
+
+    /**
+     * Accepts the given member info visitor.
+     */
+    public abstract void accept(ProgramClassFile  programClassFile,
+                                MemberInfoVisitor memberInfoVisitor);
+
+
+
+    /**
+     * Lets the given attribute info visitor visit all the attributes of
+     * this member info.
+     */
+    public void attributesAccept(ProgramClassFile programClassFile,
+                                 AttrInfoVisitor  attrInfoVisitor) {
+        for (int i = 0; i < u2attributesCount; i++)
+        {
+            attributes[i].accept(programClassFile, attrInfoVisitor);
+        }
+    }
+
+
+    /**
+     * Lets the ClassFile objects referenced in the descriptor string
+     * accept the given visitor.
+     */
+    public void referencedClassesAccept(ClassFileVisitor classFileVisitor)
+    {
+        if (referencedClassFiles != null)
+        {
+            for (int i = 0; i < referencedClassFiles.length; i++)
+            {
+                if (referencedClassFiles[i] != null)
+                {
+                    referencedClassFiles[i].accept(classFileVisitor);
+                }
+            }
+        }
+    }
+
+
+    /**
+     * Imports the field or method data to internal representation.
+     */
+    protected void read(DataInput din, ClassFile cf) throws IOException
+    {
+        u2accessFlags = din.readUnsignedShort();
+        u2nameIndex = din.readUnsignedShort();
+        u2descriptorIndex = din.readUnsignedShort();
+        u2attributesCount = din.readUnsignedShort();
+        attributes = new AttrInfo[u2attributesCount];
+        for (int i = 0; i < u2attributesCount; i++)
+        {
+            attributes[i] = AttrInfo.create(din, cf);
+        }
+    }
+
+    /**
+     * Exports the representation to a DataOutput stream.
+     */
+    public void write(DataOutput dout) throws IOException
+    {
+        if (dout == null) throw new IOException("No output stream was provided.");
+        dout.writeShort(u2accessFlags);
+        dout.writeShort(u2nameIndex);
+        dout.writeShort(u2descriptorIndex);
+        dout.writeShort(u2attributesCount);
+        for (int i = 0; i < u2attributesCount; i++)
+        {
+            attributes[i].write(dout);
+        }
+    }
+
+
+    // Implementations for MemberInfo
+
+    public int getAccessFlags()
+    {
+        return u2accessFlags;
+    }
+
+    public String getName(ClassFile classFile)
+    {
+        return classFile.getCpString(u2nameIndex);
+    }
+
+    public String getDescriptor(ClassFile classFile)
+    {
+        return classFile.getCpString(u2descriptorIndex);
+    }
+
+
+    // Implementations for VisitorAccepter
+
+    public Object getVisitorInfo() {
+        return visitorInfo;
+    }
+
+    public void setVisitorInfo(Object visitorInfo)
+    {
+        this.visitorInfo = visitorInfo;
+    }
+}

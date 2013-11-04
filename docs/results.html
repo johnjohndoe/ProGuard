@@ -1,0 +1,111 @@
+<!doctype html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<title>ProGuard Results</title>
+</head>
+<body
+ bgcolor="#ffffff"
+ text="#000000">
+
+<center><h2>Results</h2></center>
+
+<b>ProGuard</b> can shrink jars significantly. The gains of removing dead
+code obviously depend on the original code. If you're using libraries, you'll
+really benefit from the shrinking phase. The further gains of removing debug
+code and obfuscating (typically replacing long names by short names), are on
+the order of 20%.
+<p>
+The table below presents some typical results:
+<p>
+
+<table cellpadding="5">
+
+<tr>
+<th width="28%">Input Program</th>
+<th width="12%">Orinal size</th>
+<th width="12%">After shrinking</th>
+<th width="12%">After obfusc.</th>
+<th width="12%">Total reduction</th>
+<th width="12%">Time</th>
+<th width="12%">Memory usage</th>
+</tr>
+
+<tr>
+<td bgcolor="#EEEEFF"><b>ProGuard</b> itself</td>
+<td bgcolor="#EEEEFF" align="center">136 K</td>
+<td bgcolor="#EEEEFF" align="center">124 K</td>
+<td bgcolor="#EEEEFF" align="center">85 K</td>
+<td bgcolor="#EEEEFF" align="center">37 %</td>
+<td bgcolor="#EEEEFF" align="center">50 s</td>
+<td bgcolor="#EEEEFF" align="center">16 M</td>
+</tr>
+
+<tr>
+<td bgcolor="#EEEEFF"><a target="_blank" href="http://www.clarkware.com/software/JDepend.html">JDepend</a>, a Java quality metrics tool</td>
+<td bgcolor="#EEEEFF" align="center">66 K</td>
+<td bgcolor="#EEEEFF" align="center">42 K</td>
+<td bgcolor="#EEEEFF" align="center">32 K</td>
+<td bgcolor="#EEEEFF" align="center">51 %</td>
+<td bgcolor="#EEEEFF" align="center">45 s</td>
+<td bgcolor="#EEEEFF" align="center">15 M</td>
+</tr>
+
+<tr>
+<td bgcolor="#EEEEFF"><a target="_blank" href="http://www.kclee.com/clemens/java/javancss/">JavaNCSS</a>, a Java source metrics tool</td>
+<td bgcolor="#EEEEFF" align="center">534 K</td>
+<td bgcolor="#EEEEFF" align="center">209 K</td>
+<td bgcolor="#EEEEFF" align="center">148 K</td>
+<td bgcolor="#EEEEFF" align="center">72 %</td>
+<td bgcolor="#EEEEFF" align="center">1 min</td>
+<td bgcolor="#EEEEFF" align="center">21 M</td>
+</tr>
+
+<tr>
+<td bgcolor="#EEEEFF"><a target="_blank" href="http://www.luciad.com/">LuciadMap</a>, a Java GIS library</td>
+<td bgcolor="#EEEEFF" align="center">3.2 M</td>
+<td bgcolor="#EEEEFF" align="center">2.9 M</td>
+<td bgcolor="#EEEEFF" align="center">2.4 M</td>
+<td bgcolor="#EEEEFF" align="center">25 %</td>
+<td bgcolor="#EEEEFF" align="center">2.5 min</td>
+<td bgcolor="#EEEEFF" align="center">48 M</td>
+</tr>
+
+<tr>
+<td bgcolor="#EEEEFF">A sample applet using LuciadMap</td>
+<td bgcolor="#EEEEFF" align="center">3.2 M</td>
+<td bgcolor="#EEEEFF" align="center">705 K</td>
+<td bgcolor="#EEEEFF" align="center">621 K</td>
+<td bgcolor="#EEEEFF" align="center">81 %</td>
+<td bgcolor="#EEEEFF" align="center">1.5 min</td>
+<td bgcolor="#EEEEFF" align="center">44 M</td>
+</tr>
+
+<tr>
+<td bgcolor="#EEEEFF"><a target="_blank" href="http://www.luciad.com/">LuciadiCAD</a>, a Java CAD Viewer</td>
+<td bgcolor="#EEEEFF" align="center">3.6 M</td>
+<td bgcolor="#EEEEFF" align="center">959 K</td>
+<td bgcolor="#EEEEFF" align="center">792 K</td>
+<td bgcolor="#EEEEFF" align="center">78 %</td>
+<td bgcolor="#EEEEFF" align="center">2 min</td>
+<td bgcolor="#EEEEFF" align="center">51 M</td>
+</tr>
+
+</table>
+<p>
+Results were measured on a 500 MHz Pentium III, using Sun JDK 1.3.1 in Debian
+Linux. The program sizes include companion libraries.
+<p>
+Timings are mainly governed by reading and parsing library jars and program
+jars. Shrinking and obfuscation is practically instantaneous in comparison.
+<p>
+Memory usage (the total process size) is governed by the basic java virtual
+machine and the total size of the library jars and program jars.
+
+<hr>
+<adress>
+Copyright &copy; 2002 <a href="http://www.graphics.cornell.edu/~eric/">Eric
+Lafortune</a>.
+</address>
+
+</body>
+</html>
