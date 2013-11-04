@@ -49,6 +49,14 @@ td.transparentblock {
   padding: 10px 0px;
 }
 
+td.whiteblock {
+  width: 100px;
+  text-align: center;
+  border: solid #C0C0C0 1px;
+  background: #E0E0E0;
+  padding: 10px 0px;
+}
+
 td.lightblock {
   width: 100px;
   text-align: center;

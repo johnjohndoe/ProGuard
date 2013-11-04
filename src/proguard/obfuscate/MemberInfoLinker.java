@@ -1,4 +1,4 @@
-/* $Id: MemberInfoLinker.java,v 1.7 2004/08/15 12:39:30 eric Exp $
+/* $Id: MemberInfoLinker.java,v 1.9 2004/11/20 15:41:24 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -27,7 +27,7 @@ import java.util.*;
 
 
 /**
- * This ClassFileVisitor links all class members that should get the same names
+ * This ClassFileVisitor links all methods that should get the same names
  * in the name spaces of all visited class files. A class file's name space
  * encompasses all of its subclasses and interfaces. It is typically a class file
  * that is not being subclassed. Chains of links that have been created in
@@ -45,7 +45,7 @@ public class MemberInfoLinker
 {
     // An object that is reset and reused every time.
     // The map: [class member name+descriptor - class member info]
-    private final Map memberInfoMap = new HashMap();
+    private final Map methodInfoMap = new HashMap();
 
 
     // Implementations for ClassFileVisitor.
@@ -57,7 +57,7 @@ public class MemberInfoLinker
                                          new AllMemberInfoVisitor(this));
 
         // Clean up for obfuscation of the next name space.
-        memberInfoMap.clear();
+        methodInfoMap.clear();
     }
 
 
@@ -70,7 +70,6 @@ public class MemberInfoLinker
 
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {
-        visitMemberInfo(programClassFile, programFieldInfo);
     }
 
 
@@ -82,7 +81,6 @@ public class MemberInfoLinker
 
     public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo)
     {
-        visitMemberInfo(libraryClassFile, libraryFieldInfo);
     }
 
 
@@ -100,70 +98,64 @@ public class MemberInfoLinker
      */
     private void visitMethodInfo(ClassFile classFile, MethodInfo methodInfo)
     {
+        // Private methods don't have to be linked.
+        if ((methodInfo.getAccessFlags() & ClassConstants.INTERNAL_ACC_PRIVATE) != 0)
+        {
+            return;
+        }
+
+        // Get the method's original name and descriptor.
+        String name       = methodInfo.getName(classFile);
+        String descriptor = methodInfo.getDescriptor(classFile);
+
         // Special cases: <clinit> and <init> are always kept unchanged.
         // We can ignore them here.
-        String name = methodInfo.getName(classFile);
         if (name.equals(ClassConstants.INTERNAL_METHOD_NAME_CLINIT) ||
             name.equals(ClassConstants.INTERNAL_METHOD_NAME_INIT))
         {
             return;
         }
 
-        visitMemberInfo(classFile, methodInfo);
-    }
+        // Get the last method in the chain.
+        MemberInfo thisLastMemberInfo = lastMemberInfo(methodInfo);
 
-
-    /**
-     * Links the given class member into the chains of links.
-     * @param classFile  the class file of the given member.
-     * @param memberInfo the class member to be linked.
-     */
-    private void visitMemberInfo(ClassFile classFile, MemberInfo memberInfo)
-    {
-        // Get the member's original name and descriptor.
-        String descriptor = memberInfo.getDescriptor(classFile);
-        String name       = memberInfo.getName(classFile);
-
-        // Get the last member in the chain.
-        MemberInfo thisLastMemberInfo = lastMemberInfo(memberInfo);
-
-        // See if we've already come across a member with the same name and
+        // See if we've already come across a method with the same name and
         // descriptor.
         String key = name + descriptor;
-        MemberInfo otherMemberInfo = (MemberInfo)memberInfoMap.get(key);
+        MethodInfo otherMethodInfo = (MethodInfo)methodInfoMap.get(key);
 
-        if (otherMemberInfo == null)
+        if (otherMethodInfo == null)
         {
-            // Store the new class member info in the map.
-            memberInfoMap.put(key, thisLastMemberInfo);
+            // Store the new class method info in the map.
+            methodInfoMap.put(key, thisLastMemberInfo);
         }
         else
         {
-            // Get the last member in the other chain.
-            MemberInfo otherLastMemberInfo = lastMemberInfo(otherMemberInfo);
+            // Get the last method in the other chain.
+            MemberInfo otherLastMemberInfo = lastMemberInfo(otherMethodInfo);
 
             // Check if both link chains aren't already ending in the same element.
             if (thisLastMemberInfo != otherLastMemberInfo)
             {
-                // Merge the two chains, making sure LibraryMemberInfo elements,
+                // Merge the two chains, making sure LibraryMethodInfo elements,
                 // if any, are at the end of the resulting chain.
-                if (thisLastMemberInfo instanceof LibraryMemberInfo)
+                if (thisLastMemberInfo instanceof LibraryMethodInfo)
                 {
-                    // This class member chain ends with a library class member.
+                    // This class method chain ends with a library class method.
                     // Link this chain to the end of the other one.
                     otherLastMemberInfo.setVisitorInfo(thisLastMemberInfo);
                 }
                 /* We can skip this test and go straight to the final case.
-                else if (otherLastVisitorAccepter instanceof LibraryMemberInfo)
+                else if (otherLastVisitorAccepter instanceof LibraryMethodInfo)
                 {
-                    // The other member chain ends with a library class member.
+                    // The other method chain ends with a library class method.
                     // Link the other chain to the end of this one.
                     thisLastVisitorAccepter.setVisitorInfo(otherLastVisitorAccepter);
                 }
                 */
                 else
                 {
-                    // We have two non-library class members. Link their chains
+                    // We have two non-library methods. Link their chains
                     // one way or another.
                     thisLastMemberInfo.setVisitorInfo(otherLastMemberInfo);
                 }

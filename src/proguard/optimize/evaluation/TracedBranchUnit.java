@@ -1,4 +1,4 @@
-/* $Id: TracedBranchUnit.java,v 1.2 2004/08/15 12:39:30 eric Exp $
+/* $Id: TracedBranchUnit.java,v 1.3 2004/10/10 20:56:58 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,6 +21,7 @@
 package proguard.optimize.evaluation;
 
 import proguard.classfile.*;
+import proguard.classfile.attribute.*;
 import proguard.optimize.evaluation.value.*;
 
 /**

@@ -1,4 +1,4 @@
-/* $Id: SideEffectInstructionChecker.java,v 1.3 2004/08/15 12:39:30 eric Exp $
+/* $Id: SideEffectInstructionChecker.java,v 1.6 2004/11/20 15:41:24 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,6 +21,7 @@
 package proguard.optimize;
 
 import proguard.classfile.*;
+import proguard.classfile.attribute.*;
 import proguard.classfile.instruction.*;
 import proguard.classfile.visitor.*;
 
@@ -163,23 +164,23 @@ public class SideEffectInstructionChecker
         // Do we have a reference to the interface method?
         if (interfaceMethodrefCpInfo.referencedMemberInfo == null)
         {
-            // We'll have to ssume the unknown interface method has side effects.
+            // We'll have to assume the unknown interface method has side effects.
             hasSideEffects = true;
         }
         else
         {
             // First check the referenced interface method itself.
             interfaceMethodrefCpInfo.referencedMemberInfoAccept(this);
-    
+
             // If the result isn't conclusive, check up and down the hierarchy.
             if (!hasSideEffects)
             {
                 String name = interfaceMethodrefCpInfo.getName(classFile);
                 String type = interfaceMethodrefCpInfo.getType(classFile);
-    
+
                 // Check all implementations of the method.
                 // First go to  all concrete classes of the interface.
-                // From there, travel up and down the class hierarchy to mark
+                // From there, travel up and down the class hierarchy to check
                 // the method.
                 //
                 // This way, we're also catching retro-fitted interfaces, where
@@ -199,21 +200,21 @@ public class SideEffectInstructionChecker
         // Do we have a reference to the method?
         if (methodrefCpInfo.referencedMemberInfo == null)
         {
-            // We'll have to ssume the unknown method has side effects.
+            // We'll have to assume the unknown method has side effects.
             hasSideEffects = true;
         }
         else
         {
             // First check the referenced method itself.
             methodrefCpInfo.referencedMemberInfoAccept(this);
-        
+
             // If the result isn't conclusive, check up and down the hierarchy.
             if (!hasSideEffects &&
                 virtual)
             {
                 String name = methodrefCpInfo.getName(classFile);
                 String type = methodrefCpInfo.getType(classFile);
-        
+
                 // Check all overriding implementations of the method,
                 // down the class hierarchy.
                 methodrefCpInfo.referencedClassAccept(

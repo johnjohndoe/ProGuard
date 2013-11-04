@@ -22,6 +22,10 @@
 -renamesourcefileattribute SourceFile
 -keepattributes InnerClasses,SourceFile,LineNumberTable,Deprecated
 
+# Preserve all annotations.
+
+-keepattributes *Annotation*
+
 # Preserve all public classes, and their public and protected fields and
 # methods.
 
@@ -42,6 +46,12 @@
     native <methods>;
 }
 
+# Preserve a method that is required in all enumeration classes.
+
+-keepclassmembers class * extends java.lang.Enum {
+    public **[] values();
+}
+
 # Explicitly preserve all serialization members. The Serializable interface
 # is only a marker interface, so it wouldn't save them.
 # You can comment this out if your library doesn't use serialization.
@@ -52,8 +62,8 @@
     static final long serialVersionUID;
     private void writeObject(java.io.ObjectOutputStream);
     private void readObject(java.io.ObjectInputStream);
-    Object writeReplace();
-    Object readResolve();
+    java.lang.Object writeReplace();
+    java.lang.Object readResolve();
 }
 
 # Your library may contain more items that need to be preserved; 

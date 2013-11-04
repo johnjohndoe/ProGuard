@@ -1,4 +1,4 @@
-/* $Id: AttributeUsageMarker.java,v 1.18 2004/08/15 12:39:30 eric Exp $
+/* $Id: AttributeUsageMarker.java,v 1.23 2004/11/20 15:41:24 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,7 +21,10 @@
 package proguard.obfuscate;
 
 import proguard.classfile.*;
+import proguard.classfile.attribute.*;
+import proguard.classfile.attribute.annotation.*;
 import proguard.classfile.visitor.*;
+import proguard.util.*;
 
 import java.util.*;
 
@@ -45,18 +48,26 @@ public class AttributeUsageMarker
 
 
     // Flags to specify whether optional attributes should be kept anyway.
-    private boolean keepAllAttributes;
-    private boolean keepAllUnknownAttributes;
-    private boolean keepAllKnownAttributes;
-    private Set     keepUnknownAttributes;
-    private boolean keepInnerClassNameAttribute;
-    private boolean keepLineNumberTableAttribute;
-    private boolean keepLocalVariableTableAttribute;
-    private boolean keepSourceFileAttribute;
-    private boolean keepSourceDirAttribute;
-    private boolean keepDeprecatedAttribute;
-    private boolean keepSyntheticAttribute;
-    private boolean keepSignatureAttribute;
+    private boolean       keepAllAttributes;
+    private boolean       keepAllUnknownAttributes;
+    private boolean       keepAllKnownAttributes;
+    private StringMatcher keepAttributes;
+
+    private boolean       keepInnerClassNameAttribute;
+    private boolean       keepEnclosingMethodAttribute;
+    private boolean       keepLineNumberTableAttribute;
+    private boolean       keepLocalVariableTableAttribute;
+    private boolean       keepLocalVariableTypeTableAttribute;
+    private boolean       keepSourceFileAttribute;
+    private boolean       keepSourceDirAttribute;
+    private boolean       keepDeprecatedAttribute;
+    private boolean       keepSyntheticAttribute;
+    private boolean       keepSignatureAttribute;
+    private boolean       keepRuntimeVisibleAnnotationsAttribute;
+    private boolean       keepRuntimeInvisibleAnnotationsAttribute;
+    private boolean       keepRuntimeVisibleParameterAnnotationsAttribute;
+    private boolean       keepRuntimeInvisibleParameterAnnotationsAttribute;
+    private boolean       keepAnnotationDefaultAttribute;
 
 
     /**
@@ -85,63 +96,31 @@ public class AttributeUsageMarker
 
 
     /**
-     * Specifies to keep optional attributes with the given names.
+     * Specifies to keep optional attributes with the given names. The attribute
+     * names may contain "*" or "?" wildcards, and they may be preceded by the
+     * "!" negator.
      */
     public void setKeepAttributes(List attributeNames)
     {
-        for (int index = 0; index < attributeNames.size(); index++)
-        {
-            keepAttribute((String)attributeNames.get(index));
-        }
-    }
+        keepAttributes = new BasicListMatcher(attributeNames);
 
-
-    /**
-     * Specifies to keep optional attributes with the given name.
-     */
-    public void keepAttribute(String attributeName)
-    {
-        if      (attributeName.equals(ClassConstants.ATTR_InnerClasses))
-        {
-            keepInnerClassNameAttribute = true;
-        }
-        else if (attributeName.equals(ClassConstants.ATTR_LineNumberTable))
-        {
-            keepLineNumberTableAttribute = true;
-        }
-        else if (attributeName.equals(ClassConstants.ATTR_LocalVariableTable))
-        {
-            keepLocalVariableTableAttribute = true;
-        }
-        else if (attributeName.equals(ClassConstants.ATTR_SourceFile))
-        {
-            keepSourceFileAttribute = true;
-        }
-        else if (attributeName.equals(ClassConstants.ATTR_SourceDir))
-        {
-            keepSourceDirAttribute = true;
-        }
-        else if (attributeName.equals(ClassConstants.ATTR_Deprecated))
-        {
-            keepDeprecatedAttribute = true;
-        }
-        else if (attributeName.equals(ClassConstants.ATTR_Synthetic))
-        {
-            keepSyntheticAttribute = true;
-        }
-        else if (attributeName.equals(ClassConstants.ATTR_Signature))
-        {
-            keepSignatureAttribute = true;
-        }
-        else
-        {
-            if (keepUnknownAttributes == null)
-            {
-                keepUnknownAttributes = new HashSet();
-            }
-
-            keepUnknownAttributes.add(attributeName);
-        }
+        // Precompute whether the list of attribute names matches the supported
+        // attributes.
+        keepInnerClassNameAttribute                       = keepAttributes.matches(ClassConstants.ATTR_InnerClasses);
+        keepEnclosingMethodAttribute                      = keepAttributes.matches(ClassConstants.ATTR_EnclosingMethod);
+        keepLineNumberTableAttribute                      = keepAttributes.matches(ClassConstants.ATTR_LineNumberTable);
+        keepLocalVariableTableAttribute                   = keepAttributes.matches(ClassConstants.ATTR_LocalVariableTable);
+        keepLocalVariableTypeTableAttribute               = keepAttributes.matches(ClassConstants.ATTR_LocalVariableTypeTable);
+        keepSourceFileAttribute                           = keepAttributes.matches(ClassConstants.ATTR_SourceFile);
+        keepSourceDirAttribute                            = keepAttributes.matches(ClassConstants.ATTR_SourceDir);
+        keepDeprecatedAttribute                           = keepAttributes.matches(ClassConstants.ATTR_Deprecated);
+        keepSyntheticAttribute                            = keepAttributes.matches(ClassConstants.ATTR_Synthetic);
+        keepSignatureAttribute                            = keepAttributes.matches(ClassConstants.ATTR_Signature);
+        keepRuntimeVisibleAnnotationsAttribute            = keepAttributes.matches(ClassConstants.ATTR_RuntimeVisibleAnnotations);
+        keepRuntimeInvisibleAnnotationsAttribute          = keepAttributes.matches(ClassConstants.ATTR_RuntimeInvisibleAnnotations);
+        keepRuntimeVisibleParameterAnnotationsAttribute   = keepAttributes.matches(ClassConstants.ATTR_RuntimeVisibleParameterAnnotations);
+        keepRuntimeInvisibleParameterAnnotationsAttribute = keepAttributes.matches(ClassConstants.ATTR_RuntimeInvisibleParameterAnnotations);
+        keepAnnotationDefaultAttribute                    = keepAttributes.matches(ClassConstants.ATTR_AnnotationDefault);
     }
 
 
@@ -192,8 +171,8 @@ public class AttributeUsageMarker
     {
         if (keepAllAttributes ||
             keepAllUnknownAttributes ||
-            (keepUnknownAttributes != null &&
-             keepUnknownAttributes.contains(unknownAttrInfo.getAttributeName(classFile))))
+            (keepAttributes != null &&
+             keepAttributes.matches(unknownAttrInfo.getAttributeName(classFile))))
         {
             markAsUsed(unknownAttrInfo);
         }
@@ -210,6 +189,17 @@ public class AttributeUsageMarker
         {
             // Clear references to the original inner class names.
             innerClassesAttrInfo.innerClassEntriesAccept(classFile, this);
+        }
+    }
+
+
+    public void visitEnclosingMethodAttrInfo(ClassFile classFile, EnclosingMethodAttrInfo enclosingMethodAttrInfo)
+    {
+        if (keepAllAttributes      ||
+            keepAllKnownAttributes ||
+            keepEnclosingMethodAttribute)
+        {
+            markAsUsed(enclosingMethodAttrInfo);
         }
     }
 
@@ -237,7 +227,7 @@ public class AttributeUsageMarker
 
     public void visitLineNumberTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LineNumberTableAttrInfo lineNumberTableAttrInfo)
     {
-        if (keepAllAttributes ||
+        if (keepAllAttributes      ||
             keepAllKnownAttributes ||
             keepLineNumberTableAttribute)
         {
@@ -248,7 +238,7 @@ public class AttributeUsageMarker
 
     public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo)
     {
-        if (keepAllAttributes ||
+        if (keepAllAttributes      ||
             keepAllKnownAttributes ||
             keepLocalVariableTableAttribute)
         {
@@ -257,9 +247,20 @@ public class AttributeUsageMarker
     }
 
 
+    public void visitLocalVariableTypeTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeTableAttrInfo localVariableTypeTableAttrInfo)
+    {
+        if (keepAllAttributes      ||
+            keepAllKnownAttributes ||
+            keepLocalVariableTypeTableAttribute)
+        {
+            markAsUsed(localVariableTypeTableAttrInfo);
+        }
+    }
+
+
     public void visitSourceFileAttrInfo(ClassFile classFile, SourceFileAttrInfo sourceFileAttrInfo)
     {
-        if (keepAllAttributes ||
+        if (keepAllAttributes      ||
             keepAllKnownAttributes ||
             keepSourceFileAttribute)
         {
@@ -270,7 +271,7 @@ public class AttributeUsageMarker
 
     public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo)
     {
-        if (keepAllAttributes ||
+        if (keepAllAttributes      ||
             keepAllKnownAttributes ||
             keepSourceDirAttribute)
         {
@@ -281,7 +282,7 @@ public class AttributeUsageMarker
 
     public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo)
     {
-        if (keepAllAttributes ||
+        if (keepAllAttributes      ||
             keepAllKnownAttributes ||
             keepDeprecatedAttribute)
         {
@@ -292,7 +293,7 @@ public class AttributeUsageMarker
 
     public void visitSyntheticAttrInfo(ClassFile classFile, SyntheticAttrInfo syntheticAttrInfo)
     {
-        if (keepAllAttributes ||
+        if (keepAllAttributes      ||
             keepAllKnownAttributes ||
             keepSyntheticAttribute)
         {
@@ -303,12 +304,66 @@ public class AttributeUsageMarker
 
     public void visitSignatureAttrInfo(ClassFile classFile, SignatureAttrInfo signatureAttrInfo)
     {
-        if ((keepAllAttributes ||
-             keepAllKnownAttributes ||
-             keepSignatureAttribute) &&
-            classFile.getName().equals(ClassFileObfuscator.newClassName(classFile)))
+        if (keepAllAttributes      ||
+            keepAllKnownAttributes ||
+            keepSignatureAttribute)
         {
             markAsUsed(signatureAttrInfo);
+        }
+    }
+
+
+    public void visitRuntimeVisibleAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleAnnotationsAttrInfo runtimeVisibleAnnotationsAttrInfo)
+    {
+        if (keepAllAttributes      ||
+            keepAllKnownAttributes ||
+            keepRuntimeVisibleAnnotationsAttribute)
+        {
+            markAsUsed(runtimeVisibleAnnotationsAttrInfo);
+        }
+    }
+
+
+    public void visitRuntimeInvisibleAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleAnnotationsAttrInfo runtimeInvisibleAnnotationsAttrInfo)
+    {
+        if (keepAllAttributes      ||
+            keepAllKnownAttributes ||
+            keepRuntimeInvisibleAnnotationsAttribute)
+        {
+            markAsUsed(runtimeInvisibleAnnotationsAttrInfo);
+        }
+    }
+
+
+    public void visitRuntimeVisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleParameterAnnotationsAttrInfo runtimeVisibleParameterAnnotationsAttrInfo)
+    {
+        if (keepAllAttributes      ||
+            keepAllKnownAttributes ||
+            keepRuntimeVisibleParameterAnnotationsAttribute)
+        {
+            markAsUsed(runtimeVisibleParameterAnnotationsAttrInfo);
+        }
+    }
+
+
+    public void visitRuntimeInvisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleParameterAnnotationsAttrInfo runtimeInvisibleParameterAnnotationsAttrInfo)
+    {
+        if (keepAllAttributes      ||
+            keepAllKnownAttributes ||
+            keepRuntimeInvisibleParameterAnnotationsAttribute)
+        {
+            markAsUsed(runtimeInvisibleParameterAnnotationsAttrInfo);
+        }
+    }
+
+
+    public void visitAnnotationDefaultAttrInfo(ClassFile classFile, AnnotationDefaultAttrInfo annotationDefaultAttrInfo)
+    {
+        if (keepAllAttributes      ||
+            keepAllKnownAttributes ||
+            keepAnnotationDefaultAttribute)
+        {
+            markAsUsed(annotationDefaultAttrInfo);
         }
     }
 

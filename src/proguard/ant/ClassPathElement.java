@@ -1,4 +1,4 @@
-/* $Id: ClassPathElement.java,v 1.3 2004/09/04 16:30:12 eric Exp $
+/* $Id: ClassPathElement.java,v 1.6 2004/11/20 15:41:24 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -22,9 +22,12 @@ package proguard.ant;
 
 import org.apache.tools.ant.*;
 import org.apache.tools.ant.types.*;
+
 import proguard.*;
 
 import java.io.*;
+import java.lang.ref.Reference;
+import java.util.Stack;
 
 /**
  * This FileSet represents a class path entry (or a set of class path entries)
@@ -32,15 +35,22 @@ import java.io.*;
  *
  * @author Eric Lafortune
  */
-public class ClassPathElement extends FileSet
+public class ClassPathElement extends Path
 {
-    private File   file;
-
     private String filter;
     private String jarFilter;
     private String warFilter;
     private String earFilter;
     private String zipFilter;
+
+
+    /**
+     * @see Path#Path(Project)
+     */
+    public ClassPathElement(Project project)
+    {
+        super(project);
+    }
 
 
     /**
@@ -50,18 +60,47 @@ public class ClassPathElement extends FileSet
      */
     public void appendClassPathEntriesTo(ClassPath classPath, boolean output)
     {
-        // Get the referenced file set, or else this one.
-        AbstractFileSet fileSet = isReference() ? getRef(getProject()) : this;
+        String   basePath = "";
+        String[] files;
 
-        if (output)
+        if (isReference())
         {
-            // Create a new class path entry, with the proper file name and any
-            // filters, bypassing the file check.
-            String name = file != null ?
-                file.getPath() :
-                fileSet.getDir(getProject()).getPath();
+            // Get the referenced path or file set.
+            Object referencedObject = getCheckedRef(DataType.class,
+                                                    DataType.class.getName());
 
-            ClassPathEntry entry = new ClassPathEntry(name, output);
+            if (referencedObject instanceof Path)
+            {
+                Path path = (Path)referencedObject;
+
+                // Get the names of the files in the referenced path.
+                files = path.list();
+            }
+            else if (referencedObject instanceof AbstractFileSet)
+            {
+                AbstractFileSet fileSet = (AbstractFileSet)referencedObject;
+
+                // Get the names of the existing input files in the referenced file set.
+                DirectoryScanner scanner = fileSet.getDirectoryScanner(getProject());
+                basePath = scanner.getBasedir().getPath();
+                files    = scanner.getIncludedFiles();
+            }
+            else
+            {
+                throw new BuildException("The refid attribute doesn't point to a <path> element or a <fileset> element");
+            }
+        }
+        else
+        {
+            // Get the names of the files in this path.
+            files = list();
+        }
+
+        for (int index = 0; index < files.length; index++)
+        {
+            // Create a new class path entry, with the proper file name and
+            // any filters.
+            ClassPathEntry entry = new ClassPathEntry(basePath + files[index], output);
             entry.setFilter(filter);
             entry.setJarFilter(jarFilter);
             entry.setWarFilter(warFilter);
@@ -71,50 +110,35 @@ public class ClassPathElement extends FileSet
             // Add it to the class path.
             classPath.add(entry);
         }
-        else
-        {
-            // Get the names of the existing files in the file set.
-            DirectoryScanner scanner = fileSet.getDirectoryScanner(getProject());
-            String[]         files   = scanner.getIncludedFiles();
-
-            for (int index = 0; index < files.length; index++)
-            {
-                // Create a new class path entry, with the proper file name and
-                // any filters.
-                String name = scanner.getBasedir().getPath() +
-                    File.separator +
-                    files[index];
-
-                ClassPathEntry entry = new ClassPathEntry(name, output);
-                entry.setFilter(filter);
-                entry.setJarFilter(jarFilter);
-                entry.setWarFilter(warFilter);
-                entry.setEarFilter(earFilter);
-                entry.setZipFilter(zipFilter);
-
-                // Add it to the class path.
-                classPath.add(entry);
-            }
-        }
     }
 
 
     // Ant task attributes.
 
+    /**
+     * @deprecated Use {@link #setLocation(File)} instead.
+     */
     public void setFile(File file)
     {
-        super.setFile(file);
-
-        this.file = file;
+        setLocation(file);
     }
 
 
     /**
-     * @deprecated Use {@link #setFile(File)} instead.
+     * @deprecated Use {@link #setLocation(File)} instead.
+     */
+    public void setDir(File file)
+    {
+        setLocation(file);
+    }
+
+
+    /**
+     * @deprecated Use {@link #setLocation(File)} instead.
      */
     public void setName(String name)
     {
-        setFile(new File(name));
+        setLocation(new File(name));
     }
 
 

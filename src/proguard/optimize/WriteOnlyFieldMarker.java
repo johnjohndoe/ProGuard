@@ -1,4 +1,4 @@
-/* $Id: WriteOnlyFieldMarker.java,v 1.3 2004/09/04 16:29:11 eric Exp $
+/* $Id: WriteOnlyFieldMarker.java,v 1.4 2004/10/10 20:56:58 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,6 +21,7 @@
 package proguard.optimize;
 
 import proguard.classfile.*;
+import proguard.classfile.attribute.*;
 import proguard.classfile.instruction.*;
 import proguard.classfile.visitor.*;
 

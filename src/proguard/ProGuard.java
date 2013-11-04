@@ -1,4 +1,4 @@
-/* $Id: ProGuard.java,v 1.73 2004/09/12 11:38:29 eric Exp $
+/* $Id: ProGuard.java,v 1.83 2004/11/20 15:41:24 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,6 +21,7 @@
 package proguard;
 
 import proguard.classfile.*;
+import proguard.classfile.attribute.*;
 import proguard.classfile.editor.*;
 import proguard.classfile.instruction.*;
 import proguard.classfile.util.*;
@@ -42,7 +43,7 @@ import java.io.*;
  */
 public class ProGuard
 {
-    public static final String VERSION = "ProGuard, version 3.0.7";
+    public static final String VERSION = "ProGuard, version 3.1";
 
     private Configuration configuration;
     private ClassPool     programClassPool = new ClassPool();
@@ -92,6 +93,8 @@ public class ProGuard
             // Shrink again, if we may.
             if (configuration.shrink)
             {
+                configuration.printUsage = null;
+
                 shrink();
             }
         }
@@ -181,6 +184,7 @@ public class ProGuard
             new ClassFileFilter(
             new ClassFileReader(isLibrary,
                                 configuration.skipNonPublicLibraryClasses,
+                                configuration.skipNonPublicLibraryClassMembers,
             new ClassPoolFiller(classPool, configuration.note)));
     }
 
@@ -319,7 +323,7 @@ public class ProGuard
         if (configuration.verbose)
         {
                     System.out.println("Removing unused library classes...");
-                    System.out.println("    Original number of library classes: "+libraryClassPool.size());
+                    System.out.println("    Original number of library classes: " + libraryClassPool.size());
         }
 
         // Reinitialize the library class pool with only those library classes
@@ -337,7 +341,7 @@ public class ProGuard
 
         if (configuration.verbose)
         {
-            System.out.println("    Final number of library classes:    "+libraryClassPool.size());
+            System.out.println("    Final number of library classes:    " + libraryClassPool.size());
         }
     }
 
@@ -423,7 +427,10 @@ public class ProGuard
         {
             if (configuration.verbose)
             {
-                System.out.println("Printing usage...");
+                System.out.println("Printing usage" +
+                                   (configuration.printUsage.length() > 0 ?
+                                       " to [" + configuration.printUsage + "]" :
+                                       "..."));
             }
 
             PrintStream ps = configuration.printUsage.length() > 0 ?
@@ -443,7 +450,7 @@ public class ProGuard
         if (configuration.verbose)
         {
             System.out.println("Removing unused program classes and class elements...");
-            System.out.println("    Original number of program classes: "+programClassPool.size());
+            System.out.println("    Original number of program classes: " + programClassPool.size());
         }
 
         ClassPool newProgramClassPool = new ClassPool();
@@ -458,7 +465,7 @@ public class ProGuard
 
         if (configuration.verbose)
         {
-            System.out.println("    Final number of program classes:    "+programClassPool.size());
+            System.out.println("    Final number of program classes:    " + programClassPool.size());
         }
 
         // Check if we have at least some output class files.
@@ -527,6 +534,18 @@ public class ProGuard
 
         // Mark all methods that have side effects.
         programClassPool.accept(new SideEffectMethodMarker());
+
+        // Mark all interfaces that have single implementations.
+        programClassPool.classFilesAccept(new SingleImplementationMarker(configuration.allowAccessModification));
+
+        // Inline interfaces with single implementations.
+        // First update the references to classes and class members.
+        // Then update the class member descriptors.
+        programClassPool.classFilesAccept(new AllMethodVisitor(
+                                          new AllAttrInfoVisitor(
+                                          new SingleImplementationInliner())));
+        programClassPool.classFilesAccept(new AllMemberInfoVisitor(
+                                          new SingleImplementationInliner()));
 
         // Perform partial evaluation.
         programClassPool.classFilesAccept(new AllMethodVisitor(
@@ -619,7 +638,7 @@ public class ProGuard
         {
             if (configuration.verbose)
             {
-                System.out.println("Applying mapping...");
+                System.out.println("Applying mapping [" + configuration.applyMapping + "]");
             }
 
             MappingReader    reader = new MappingReader(configuration.applyMapping);
@@ -648,6 +667,9 @@ public class ProGuard
         }
         programClassPool.classFilesAccept(attributeUsageMarker);
 
+        // Remove the attributes that can be discarded.
+        programClassPool.classFilesAccept(new AttributeShrinker());
+
         if (configuration.verbose)
         {
             System.out.println("Renaming program classes and class elements...");
@@ -660,14 +682,18 @@ public class ProGuard
 
         // Come up with new names for all class members.
         programClassPool.classFilesAccept(new BottomClassFileFilter(
-                                          new MemberInfoObfuscator(configuration.overloadAggressively)));
+                                          new MemberInfoObfuscator(configuration.overloadAggressively,
+                                                                   configuration.obfuscationDictionary)));
 
         // Print out the mapping, if requested.
         if (configuration.printMapping != null)
         {
             if (configuration.verbose)
             {
-                System.out.println("Printing mapping...");
+                System.out.println("Printing mapping" +
+                                   (configuration.printMapping.length() > 0 ?
+                                       " to [" + configuration.printMapping + "]" :
+                                       "..."));
             }
 
             PrintStream ps = configuration.printMapping.length() > 0 ?
@@ -687,14 +713,13 @@ public class ProGuard
         programClassPool.classFilesAccept(new ClassFileRenamer(configuration.defaultPackage != null,
                                                                configuration.newSourceFileAttribute));
 
-        // Remove the attributes that can be discarded.
-        programClassPool.classFilesAccept(new AttributeShrinker());
-
-        // Mark NameAndType constant pool entries that have to be kept and remove the other ones.
+        // Mark NameAndType constant pool entries that have to be kept
+        // and remove the other ones.
         programClassPool.classFilesAccept(new NameAndTypeUsageMarker());
-        programClassPool.classFilesAccept(new NameAndTypeShrinker());
+        programClassPool.classFilesAccept(new NameAndTypeShrinker(1024));
 
-        // Mark Utf8 constant pool entries that have to be kept and remove the other ones.
+        // Mark Utf8 constant pool entries that have to be kept
+        // and remove the other ones.
         programClassPool.classFilesAccept(new Utf8UsageMarker());
         programClassPool.classFilesAccept(new Utf8Shrinker(1024));
     }
@@ -847,7 +872,10 @@ public class ProGuard
     {
         if (configuration.verbose)
         {
-            System.out.println("Printing classes...");
+            System.out.println("Printing classes" +
+                               (configuration.dump.length() > 0 ?
+                                   " to [" + configuration.dump + "]" :
+                                   "..."));
         }
 
         PrintStream ps = configuration.dump.length() > 0 ?

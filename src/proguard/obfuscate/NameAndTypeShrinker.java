@@ -1,4 +1,4 @@
-/* $Id: NameAndTypeShrinker.java,v 1.21 2004/08/15 12:39:30 eric Exp $
+/* $Id: NameAndTypeShrinker.java,v 1.23 2004/11/20 15:41:24 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,6 +21,8 @@
 package proguard.obfuscate;
 
 import proguard.classfile.*;
+import proguard.classfile.attribute.*;
+import proguard.classfile.editor.ConstantPoolRemapper;
 import proguard.classfile.instruction.*;
 import proguard.classfile.visitor.*;
 
@@ -33,345 +35,42 @@ import proguard.classfile.visitor.*;
  *
  * @author Eric Lafortune
  */
-public class NameAndTypeShrinker
-  implements ClassFileVisitor,
-             CpInfoVisitor,
-             MemberInfoVisitor,
-             AttrInfoVisitor,
-             InstructionVisitor,
-             InnerClassesInfoVisitor,
-             ExceptionInfoVisitor,
-             LocalVariableInfoVisitor
+public class NameAndTypeShrinker implements ClassFileVisitor
 {
-    private int[] cpIndexMap;
+    private int[]                cpIndexMap;
+    private ConstantPoolRemapper constantPoolRemapper;
+
+
+    /**
+     * Creates a new NameAndTypeShrinker.
+     * @param codeLength an estimate of the maximum length of all the code that
+     *                   will be edited.
+     */
+    public NameAndTypeShrinker(int codeLength)
+    {
+        constantPoolRemapper = new ConstantPoolRemapper(codeLength);
+    }
 
 
     // Implementations for ClassFileVisitor.
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
-        // Shrink the arrays for constant pool.
-        // Shrinking the constant pool also sets up an index map.
+        // Shift the used constant pool entries together, filling out the
+        // index map.
         programClassFile.u2constantPoolCount =
             shrinkConstantPool(programClassFile.constantPool,
                                programClassFile.u2constantPoolCount);
 
-        // Remap the local constant pool references.
-        programClassFile.u2thisClass  = remapCpIndex(programClassFile.u2thisClass);
-        programClassFile.u2superClass = remapCpIndex(programClassFile.u2superClass);
 
-        remapCpIndexArray(programClassFile.u2interfaces,
-                          programClassFile.u2interfacesCount);
-
-        // Remap the references of the remaining contant pool entries.
-        programClassFile.constantPoolEntriesAccept(this);
-
-        // Remap the references to the constant pool in all fields, methods,
-        // and attributes.
-        programClassFile.fieldsAccept(this);
-        programClassFile.methodsAccept(this);
-        programClassFile.attributesAccept(this);
+        // Remap all constant pool references.
+        constantPoolRemapper.setCpIndexMap(cpIndexMap);
+        constantPoolRemapper.visitProgramClassFile(programClassFile);
     }
 
 
     public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
     {
-    }
-
-
-    // Implementations for CpInfoVisitor.
-
-    public void visitClassCpInfo(ClassFile classFile, ClassCpInfo classCpInfo)
-    {
-        classCpInfo.u2nameIndex =
-            remapCpIndex(classCpInfo.u2nameIndex);
-    }
-
-
-    public void visitDoubleCpInfo(ClassFile classFile, DoubleCpInfo doubleCpInfo)
-    {
-        // Nothing to do.
-    }
-
-
-    public void visitFieldrefCpInfo(ClassFile classFile, FieldrefCpInfo fieldrefCpInfo)
-    {
-        fieldrefCpInfo.u2classIndex =
-            remapCpIndex(fieldrefCpInfo.u2classIndex);
-        fieldrefCpInfo.u2nameAndTypeIndex =
-            remapCpIndex(fieldrefCpInfo.u2nameAndTypeIndex);
-    }
-
-
-    public void visitFloatCpInfo(ClassFile classFile, FloatCpInfo floatCpInfo)
-    {
-        // Nothing to do.
-    }
-
-
-    public void visitIntegerCpInfo(ClassFile classFile, IntegerCpInfo integerCpInfo)
-    {
-        // Nothing to do.
-    }
-
-
-    public void visitInterfaceMethodrefCpInfo(ClassFile classFile, InterfaceMethodrefCpInfo interfaceMethodrefCpInfo)
-    {
-        interfaceMethodrefCpInfo.u2classIndex =
-            remapCpIndex(interfaceMethodrefCpInfo.u2classIndex);
-        interfaceMethodrefCpInfo.u2nameAndTypeIndex =
-            remapCpIndex(interfaceMethodrefCpInfo.u2nameAndTypeIndex);
-    }
-
-
-    public void visitLongCpInfo(ClassFile classFile, LongCpInfo longCpInfo)
-    {
-        // Nothing to do.
-    }
-
-
-    public void visitMethodrefCpInfo(ClassFile classFile, MethodrefCpInfo methodrefCpInfo)
-    {
-        methodrefCpInfo.u2classIndex =
-            remapCpIndex(methodrefCpInfo.u2classIndex);
-        methodrefCpInfo.u2nameAndTypeIndex =
-            remapCpIndex(methodrefCpInfo.u2nameAndTypeIndex);
-    }
-
-
-    public void visitNameAndTypeCpInfo(ClassFile classFile, NameAndTypeCpInfo nameAndTypeCpInfo)
-    {
-        nameAndTypeCpInfo.u2nameIndex =
-            remapCpIndex(nameAndTypeCpInfo.u2nameIndex);
-        nameAndTypeCpInfo.u2descriptorIndex =
-            remapCpIndex(nameAndTypeCpInfo.u2descriptorIndex);
-    }
-
-
-    public void visitStringCpInfo(ClassFile classFile, StringCpInfo stringCpInfo)
-    {
-        stringCpInfo.u2stringIndex =
-            remapCpIndex(stringCpInfo.u2stringIndex);
-    }
-
-
-    public void visitUtf8CpInfo(ClassFile classFile, Utf8CpInfo utf8CpInfo)
-    {
-        // Nothing to do.
-    }
-
-
-    // Implementations for MemberInfoVisitor.
-
-    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
-    {
-        visitMemberInfo(programClassFile, programFieldInfo);
-    }
-
-
-    public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
-    {
-        visitMemberInfo(programClassFile, programMethodInfo);
-    }
-
-
-    private void visitMemberInfo(ProgramClassFile programClassFile, ProgramMemberInfo programMemberInfo)
-    {
-        // Remap the local constant pool references.
-        programMemberInfo.u2nameIndex =
-            remapCpIndex(programMemberInfo.u2nameIndex);
-        programMemberInfo.u2descriptorIndex =
-            remapCpIndex(programMemberInfo.u2descriptorIndex);
-
-        // Remap the constant pool references of the remaining attributes.
-        programMemberInfo.attributesAccept(programClassFile, this);
-    }
-
-
-    public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo)
-    {
-        // Library class files are left unchanged.
-    }
-
-
-    public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo)
-    {
-        // Library class files are left unchanged.
-    }
-
-
-    // Implementations for AttrInfoVisitor.
-
-    public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo)
-    {
-        unknownAttrInfo.u2attrNameIndex =
-            remapCpIndex(unknownAttrInfo.u2attrNameIndex);
-
-        // There's not much else we can do with unknown attributes.
-    }
-
-
-    public void visitInnerClassesAttrInfo(ClassFile classFile, InnerClassesAttrInfo innerClassesAttrInfo)
-    {
-        innerClassesAttrInfo.u2attrNameIndex =
-            remapCpIndex(innerClassesAttrInfo.u2attrNameIndex);
-
-        // Remap the constant pool references of inner classes.
-        innerClassesAttrInfo.innerClassEntriesAccept(classFile, this);
-    }
-
-
-    public void visitConstantValueAttrInfo(ClassFile classFile, FieldInfo fieldInfo, ConstantValueAttrInfo constantValueAttrInfo)
-    {
-        constantValueAttrInfo.u2attrNameIndex =
-            remapCpIndex(constantValueAttrInfo.u2attrNameIndex);
-        constantValueAttrInfo.u2constantValueIndex =
-            remapCpIndex(constantValueAttrInfo.u2constantValueIndex);
-    }
-
-
-    public void visitExceptionsAttrInfo(ClassFile classFile, MethodInfo methodInfo, ExceptionsAttrInfo exceptionsAttrInfo)
-    {
-        exceptionsAttrInfo.u2attrNameIndex =
-            remapCpIndex(exceptionsAttrInfo.u2attrNameIndex);
-
-        // Remap the constant pool references of exceptions.
-        remapCpIndexArray(exceptionsAttrInfo.u2exceptionIndexTable,
-                          exceptionsAttrInfo.u2numberOfExceptions);
-    }
-
-
-    public void visitCodeAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo)
-    {
-        codeAttrInfo.u2attrNameIndex =
-            remapCpIndex(codeAttrInfo.u2attrNameIndex);
-
-        // Remap the constant pool references of the instructions, exceptions,
-        // and attributes.
-        codeAttrInfo.instructionsAccept(classFile, methodInfo, this);
-        codeAttrInfo.exceptionsAccept(classFile, methodInfo, this);
-        codeAttrInfo.attributesAccept(classFile, methodInfo, this);
-    }
-
-
-    public void visitLineNumberTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LineNumberTableAttrInfo lineNumberTableAttrInfo)
-    {
-        lineNumberTableAttrInfo.u2attrNameIndex =
-            remapCpIndex(lineNumberTableAttrInfo.u2attrNameIndex);
-    }
-
-
-    public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo)
-    {
-        localVariableTableAttrInfo.u2attrNameIndex =
-            remapCpIndex(localVariableTableAttrInfo.u2attrNameIndex);
-
-        // Remap the constant pool references of local variables.
-        localVariableTableAttrInfo.localVariablesAccept(classFile, methodInfo, codeAttrInfo, this);
-    }
-
-
-    public void visitSourceFileAttrInfo(ClassFile classFile, SourceFileAttrInfo sourceFileAttrInfo)
-    {
-        sourceFileAttrInfo.u2attrNameIndex =
-            remapCpIndex(sourceFileAttrInfo.u2attrNameIndex);
-        sourceFileAttrInfo.u2sourceFileIndex =
-            remapCpIndex(sourceFileAttrInfo.u2sourceFileIndex);
-    }
-
-
-    public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo)
-    {
-        sourceDirAttrInfo.u2attrNameIndex =
-            remapCpIndex(sourceDirAttrInfo.u2attrNameIndex);
-        sourceDirAttrInfo.u2sourceDirIndex =
-            remapCpIndex(sourceDirAttrInfo.u2sourceDirIndex);
-    }
-
-
-    public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo)
-    {
-        deprecatedAttrInfo.u2attrNameIndex =
-            remapCpIndex(deprecatedAttrInfo.u2attrNameIndex);
-    }
-
-
-    public void visitSyntheticAttrInfo(ClassFile classFile, SyntheticAttrInfo syntheticAttrInfo)
-    {
-        syntheticAttrInfo.u2attrNameIndex =
-            remapCpIndex(syntheticAttrInfo.u2attrNameIndex);
-    }
-
-
-    public void visitSignatureAttrInfo(ClassFile classFile, SignatureAttrInfo signatureAttrInfo)
-    {
-        signatureAttrInfo.u2attrNameIndex =
-            remapCpIndex(signatureAttrInfo.u2attrNameIndex);
-        signatureAttrInfo.u2signatureIndex =
-            remapCpIndex(signatureAttrInfo.u2signatureIndex);
-    }
-
-
-    // Implementations for InstructionVisitor.
-
-    public void visitSimpleInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, SimpleInstruction simpleInstruction) {}
-    public void visitVariableInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, VariableInstruction variableInstruction) {}
-    public void visitBranchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, BranchInstruction branchInstruction) {}
-    public void visitTableSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, TableSwitchInstruction tableSwitchInstruction) {}
-    public void visitLookUpSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, LookUpSwitchInstruction lookUpSwitchInstruction) {}
-
-
-    public void visitCpInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, CpInstruction cpInstruction)
-    {
-        cpInstruction.cpIndex = remapCpIndex(cpInstruction.cpIndex);
-        cpInstruction.write(codeAttrInfo, offset);
-    }
-
-
-    // Implementations for InnerClassesInfoVisitor.
-
-    public void visitInnerClassesInfo(ClassFile classFile, InnerClassesInfo innerClassesInfo)
-    {
-        if (innerClassesInfo.u2innerClassInfoIndex != 0)
-        {
-            innerClassesInfo.u2innerClassInfoIndex =
-                remapCpIndex(innerClassesInfo.u2innerClassInfoIndex);
-        }
-
-        if (innerClassesInfo.u2outerClassInfoIndex != 0)
-        {
-            innerClassesInfo.u2outerClassInfoIndex =
-                remapCpIndex(innerClassesInfo.u2outerClassInfoIndex);
-        }
-
-        if (innerClassesInfo.u2innerNameIndex != 0)
-        {
-            innerClassesInfo.u2innerNameIndex =
-                remapCpIndex(innerClassesInfo.u2innerNameIndex);
-        }
-    }
-
-
-    // Implementations for ExceptionInfoVisitor.
-
-    public void visitExceptionInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, ExceptionInfo exceptionInfo)
-    {
-        if (exceptionInfo.u2catchType != 0)
-        {
-            exceptionInfo.u2catchType =
-                remapCpIndex(exceptionInfo.u2catchType);
-        }
-    }
-
-
-    // Implementations for LocalVariableInfoVisitor.
-
-    public void visitLocalVariableInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableInfo localVariableInfo)
-    {
-        localVariableInfo.u2nameIndex =
-            remapCpIndex(localVariableInfo.u2nameIndex);
-        localVariableInfo.u2descriptorIndex =
-            remapCpIndex(localVariableInfo.u2descriptorIndex);
     }
 
 
@@ -384,6 +83,7 @@ public class NameAndTypeShrinker
      */
     private int shrinkConstantPool(CpInfo[] constantPool, int length)
     {
+        // Create a new index map, if necessary.
         if (cpIndexMap == null ||
             cpIndexMap.length < length)
         {
@@ -420,27 +120,5 @@ public class NameAndTypeShrinker
         }
 
         return counter;
-    }
-
-
-    /**
-     * Returns the new constant pool index of the entry at the
-     * given index.
-     */
-    private int remapCpIndex(int cpIndex)
-    {
-        return cpIndexMap[cpIndex];
-    }
-
-
-    /**
-     * Remaps all constant pool indices in the given array.
-     */
-    private void remapCpIndexArray(int[] array, int length)
-    {
-        for (int i = 0; i < length; i++)
-        {
-            array[i] = remapCpIndex(array[i]);
-        }
     }
 }

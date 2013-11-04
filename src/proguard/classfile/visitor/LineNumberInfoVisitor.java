@@ -1,4 +1,4 @@
-/* $Id: LineNumberInfoVisitor.java,v 1.8 2004/08/15 12:39:30 eric Exp $
+/* $Id: LineNumberInfoVisitor.java,v 1.9 2004/10/10 20:56:58 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,6 +21,7 @@
 package proguard.classfile.visitor;
 
 import proguard.classfile.*;
+import proguard.classfile.attribute.*;
 
 
 /**

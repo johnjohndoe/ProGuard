@@ -1,4 +1,4 @@
-/* $Id: ProGuardGUI.java,v 1.24 2004/08/28 20:55:21 eric Exp $
+/* $Id: ProGuardGUI.java,v 1.27 2004/11/20 15:08:57 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -49,7 +49,7 @@ public class ProGuardGUI extends JFrame
     private static final String BOILERPLATE_CONFIGURATION = "boilerplate.pro";
     private static final String DEFAULT_CONFIGURATION     = "default.pro";
 
-    private static final String KEEP_ATTRIBUTE_DEFAULT        = "InnerClasses,SourceFile,LineNumberTable,Deprecated,Signature";
+    private static final String KEEP_ATTRIBUTE_DEFAULT        = "InnerClasses,SourceFile,LineNumberTable,Deprecated,Signature,*Annotation*,EnclosingMethod";
     private static final String SOURCE_FILE_ATTRIBUTE_DEFAULT = "SourceFile";
 
     private static final Border BORDER = BorderFactory.createEtchedBorder(EtchedBorder.RAISED);
@@ -81,42 +81,45 @@ public class ProGuardGUI extends JFrame
 
     private ClassSpecificationsPanel additionalNoSideEffectsPanel = new ClassSpecificationsPanel(this, false);
 
-    private JCheckBox shrinkCheckBox                      = new JCheckBox(msg("shrink"));
-    private JCheckBox printUsageCheckBox                  = new JCheckBox(msg("printUsage"));
+    private JCheckBox shrinkCheckBox                           = new JCheckBox(msg("shrink"));
+    private JCheckBox printUsageCheckBox                       = new JCheckBox(msg("printUsage"));
 
-    private JCheckBox optimizeCheckBox                    = new JCheckBox(msg("optimize"));
-    private JCheckBox allowAccessModificationCheckBox     = new JCheckBox(msg("allowAccessModification"));
+    private JCheckBox optimizeCheckBox                         = new JCheckBox(msg("optimize"));
+    private JCheckBox allowAccessModificationCheckBox          = new JCheckBox(msg("allowAccessModification"));
 
-    private JCheckBox obfuscateCheckBox                   = new JCheckBox(msg("obfuscate"));
-    private JCheckBox printMappingCheckBox                = new JCheckBox(msg("printMapping"));
-    private JCheckBox applyMappingCheckBox                = new JCheckBox(msg("applyMapping"));
-    private JCheckBox useMixedCaseClassNamesCheckBox      = new JCheckBox(msg("useMixedCaseClassNames"));
-    private JCheckBox overloadAggressivelyCheckBox        = new JCheckBox(msg("overloadAggressively"));
-    private JCheckBox defaultPackageCheckBox              = new JCheckBox(msg("defaultPackage"));
-    private JCheckBox keepAttributesCheckBox              = new JCheckBox(msg("keepAttributes"));
-    private JCheckBox newSourceFileAttributeCheckBox      = new JCheckBox(msg("renameSourceFileAttribute"));
+    private JCheckBox obfuscateCheckBox                        = new JCheckBox(msg("obfuscate"));
+    private JCheckBox printMappingCheckBox                     = new JCheckBox(msg("printMapping"));
+    private JCheckBox applyMappingCheckBox                     = new JCheckBox(msg("applyMapping"));
+    private JCheckBox obfuscationDictionaryCheckBox            = new JCheckBox(msg("obfuscationDictionary"));
+    private JCheckBox overloadAggressivelyCheckBox             = new JCheckBox(msg("overloadAggressively"));
+    private JCheckBox defaultPackageCheckBox                   = new JCheckBox(msg("defaultPackage"));
+    private JCheckBox useMixedCaseClassNamesCheckBox           = new JCheckBox(msg("useMixedCaseClassNames"));
+    private JCheckBox keepAttributesCheckBox                   = new JCheckBox(msg("keepAttributes"));
+    private JCheckBox newSourceFileAttributeCheckBox           = new JCheckBox(msg("renameSourceFileAttribute"));
 
-    private JCheckBox verboseCheckBox                     = new JCheckBox(msg("verbose"));
-    private JCheckBox printSeedsCheckBox                  = new JCheckBox(msg("printSeeds"));
-    private JCheckBox ignoreWarningsCheckBox              = new JCheckBox(msg("ignoreWarnings"));
-    private JCheckBox warnCheckBox                        = new JCheckBox(msg("warn"));
-    private JCheckBox noteCheckBox                        = new JCheckBox(msg("note"));
-    private JCheckBox skipNonPublicLibraryClassesCheckBox = new JCheckBox(msg("skipNonPublicLibraryClasses"));
+    private JCheckBox printSeedsCheckBox                       = new JCheckBox(msg("printSeeds"));
+    private JCheckBox verboseCheckBox                          = new JCheckBox(msg("verbose"));
+    private JCheckBox ignoreWarningsCheckBox                   = new JCheckBox(msg("ignoreWarnings"));
+    private JCheckBox warnCheckBox                             = new JCheckBox(msg("warn"));
+    private JCheckBox noteCheckBox                             = new JCheckBox(msg("note"));
+    private JCheckBox skipNonPublicLibraryClassesCheckBox      = new JCheckBox(msg("skipNonPublicLibraryClasses"));
+    private JCheckBox skipNonPublicLibraryClassMembersCheckBox = new JCheckBox(msg("skipNonPublicLibraryClassMembers"));
 
-    private JTextField printUsageTextField                = new JTextField(40);
-    private JTextField printMappingTextField              = new JTextField(40);
-    private JTextField applyMappingTextField              = new JTextField(40);
-    private JTextField defaultPackageTextField            = new JTextField(40);
-    private JTextField keepAttributesTextField            = new JTextField(40);
-    private JTextField newSourceFileAttributeTextField    = new JTextField(40);
-    private JTextField printSeedsTextField                = new JTextField(40);
+    private JTextField printUsageTextField                     = new JTextField(40);
+    private JTextField printMappingTextField                   = new JTextField(40);
+    private JTextField applyMappingTextField                   = new JTextField(40);
+    private JTextField obfuscationDictionaryTextField          = new JTextField(40);
+    private JTextField defaultPackageTextField                 = new JTextField(40);
+    private JTextField keepAttributesTextField                 = new JTextField(40);
+    private JTextField newSourceFileAttributeTextField         = new JTextField(40);
+    private JTextField printSeedsTextField                     = new JTextField(40);
 
-    private JTextArea  consoleTextArea                    = new JTextArea(msg("processingInfo"), 3, 40);
+    private JTextArea  consoleTextArea                         = new JTextArea(msg("processingInfo"), 3, 40);
 
-    private JCheckBox  reTraceVerboseCheckBox             = new JCheckBox(msg("verbose"));
-    private JTextField reTraceMappingTextField            = new JTextField(40);
-    private JTextArea  stackTraceTextArea                 = new JTextArea(3, 40);
-    private JTextArea  reTraceTextArea                    = new JTextArea(msg("reTraceInfo"), 3, 40);
+    private JTextField reTraceMappingTextField                 = new JTextField(40);
+    private JCheckBox  reTraceVerboseCheckBox                  = new JCheckBox(msg("verbose"));
+    private JTextArea  stackTraceTextArea                      = new JTextArea(3, 40);
+    private JTextArea  reTraceTextArea                         = new JTextArea(msg("reTraceInfo"), 3, 40);
 
 
     /**
@@ -326,25 +329,30 @@ public class ProGuardGUI extends JFrame
                                                               msg("selectPrintMappingFile"));
         JButton applyMappingBrowseButton = createBrowseButton(applyMappingTextField,
                                                               msg("selectApplyMappingFile"));
+        JButton obfucationDictionaryBrowseButton = createBrowseButton(obfuscationDictionaryTextField,
+                                                                      msg("selectObfuscationDictionaryFile"));
 
         JPanel obfuscationOptionsPanel = new JPanel(layout);
         addBorder(obfuscationOptionsPanel, "options");
 
-        obfuscationOptionsPanel.add(obfuscateCheckBox,               constraintsLastStretch);
-        obfuscationOptionsPanel.add(printMappingCheckBox,            constraints);
-        obfuscationOptionsPanel.add(printMappingTextField,           constraintsStretch);
-        obfuscationOptionsPanel.add(printMappingBrowseButton,        constraintsLast);
-        obfuscationOptionsPanel.add(applyMappingCheckBox,            constraints);
-        obfuscationOptionsPanel.add(applyMappingTextField,           constraintsStretch);
-        obfuscationOptionsPanel.add(applyMappingBrowseButton,        constraintsLast);
-        obfuscationOptionsPanel.add(useMixedCaseClassNamesCheckBox,  constraintsLastStretch);
-        obfuscationOptionsPanel.add(overloadAggressivelyCheckBox,    constraintsLastStretch);
-        obfuscationOptionsPanel.add(defaultPackageCheckBox,          constraints);
-        obfuscationOptionsPanel.add(defaultPackageTextField,         constraintsLastStretch);
-        obfuscationOptionsPanel.add(keepAttributesCheckBox,          constraints);
-        obfuscationOptionsPanel.add(keepAttributesTextField,         constraintsLastStretch);
-        obfuscationOptionsPanel.add(newSourceFileAttributeCheckBox,  constraints);
-        obfuscationOptionsPanel.add(newSourceFileAttributeTextField, constraintsLastStretch);
+        obfuscationOptionsPanel.add(obfuscateCheckBox,                constraintsLastStretch);
+        obfuscationOptionsPanel.add(printMappingCheckBox,             constraints);
+        obfuscationOptionsPanel.add(printMappingTextField,            constraintsStretch);
+        obfuscationOptionsPanel.add(printMappingBrowseButton,         constraintsLast);
+        obfuscationOptionsPanel.add(applyMappingCheckBox,             constraints);
+        obfuscationOptionsPanel.add(applyMappingTextField,            constraintsStretch);
+        obfuscationOptionsPanel.add(applyMappingBrowseButton,         constraintsLast);
+        obfuscationOptionsPanel.add(obfuscationDictionaryCheckBox,    constraints);
+        obfuscationOptionsPanel.add(obfuscationDictionaryTextField,   constraintsStretch);
+        obfuscationOptionsPanel.add(obfucationDictionaryBrowseButton, constraintsLast);
+        obfuscationOptionsPanel.add(overloadAggressivelyCheckBox,     constraintsLastStretch);
+        obfuscationOptionsPanel.add(defaultPackageCheckBox,           constraints);
+        obfuscationOptionsPanel.add(defaultPackageTextField,          constraintsLastStretch);
+        obfuscationOptionsPanel.add(useMixedCaseClassNamesCheckBox,   constraintsLastStretch);
+        obfuscationOptionsPanel.add(keepAttributesCheckBox,           constraints);
+        obfuscationOptionsPanel.add(keepAttributesTextField,          constraintsLastStretch);
+        obfuscationOptionsPanel.add(newSourceFileAttributeCheckBox,   constraints);
+        obfuscationOptionsPanel.add(newSourceFileAttributeTextField,  constraintsLastStretch);
 
         JPanel obfuscationPanel = new JPanel(layout);
 
@@ -384,14 +392,15 @@ public class ProGuardGUI extends JFrame
         JPanel consistencyPanel = new JPanel(layout);
         addBorder(consistencyPanel, "consistencyAndCorrectness");
 
-        consistencyPanel.add(verboseCheckBox,                     constraintsLastStretch);
-        consistencyPanel.add(printSeedsCheckBox,                  constraints);
-        consistencyPanel.add(printSeedsTextField,                 constraintsStretch);
-        consistencyPanel.add(printSeedsBrowseButton,              constraintsLast);
-        consistencyPanel.add(noteCheckBox,                        constraintsLastStretch);
-        consistencyPanel.add(warnCheckBox,                        constraintsLastStretch);
-        consistencyPanel.add(ignoreWarningsCheckBox,              constraintsLastStretch);
-        consistencyPanel.add(skipNonPublicLibraryClassesCheckBox, constraintsLastStretch);
+        consistencyPanel.add(printSeedsCheckBox,                       constraints);
+        consistencyPanel.add(printSeedsTextField,                      constraintsStretch);
+        consistencyPanel.add(printSeedsBrowseButton,                   constraintsLast);
+        consistencyPanel.add(verboseCheckBox,                          constraintsLastStretch);
+        consistencyPanel.add(noteCheckBox,                             constraintsLastStretch);
+        consistencyPanel.add(warnCheckBox,                             constraintsLastStretch);
+        consistencyPanel.add(ignoreWarningsCheckBox,                   constraintsLastStretch);
+        consistencyPanel.add(skipNonPublicLibraryClassesCheckBox,      constraintsLastStretch);
+        consistencyPanel.add(skipNonPublicLibraryClassMembersCheckBox, constraintsLastStretch);
 
         // Collect all components that are followed by text fields and make
         // sure they are equally sized. That way the text fields start at the
@@ -442,10 +451,10 @@ public class ProGuardGUI extends JFrame
         JLabel reTraceMappingLabel = new JLabel(msg("mappingFile"));
         reTraceMappingLabel.setForeground(reTraceVerboseCheckBox.getForeground());
 
-        reTraceSettingsPanel.add(reTraceVerboseCheckBox,     constraintsLastStretch);
         reTraceSettingsPanel.add(reTraceMappingLabel,        constraints);
         reTraceSettingsPanel.add(reTraceMappingTextField,    constraintsStretch);
         reTraceSettingsPanel.add(reTraceMappingBrowseButton, constraintsLast);
+        reTraceSettingsPanel.add(reTraceVerboseCheckBox,     constraintsLastStretch);
 
         stackTraceTextArea.setOpaque(true);
         stackTraceTextArea.setEditable(true);
@@ -807,32 +816,38 @@ public class ProGuardGUI extends JFrame
         additionalNoSideEffectsPanel.setClassSpecifications(configuration.assumeNoSideEffects);
 
         // Set up the other options.
-        printSeedsCheckBox                 .setSelected(configuration.printSeeds   != null);
-        printUsageCheckBox                 .setSelected(configuration.printUsage   != null);
-        printMappingCheckBox               .setSelected(configuration.printMapping != null);
-        applyMappingCheckBox               .setSelected(configuration.applyMapping != null);
-        verboseCheckBox                    .setSelected(configuration.verbose);
-        ignoreWarningsCheckBox             .setSelected(configuration.ignoreWarnings);
-        warnCheckBox                       .setSelected(configuration.warn);
-        noteCheckBox                       .setSelected(configuration.note);
-        shrinkCheckBox                     .setSelected(configuration.shrink);
-        optimizeCheckBox                   .setSelected(configuration.optimize);
-        obfuscateCheckBox                  .setSelected(configuration.obfuscate);
-        useMixedCaseClassNamesCheckBox     .setSelected(configuration.useMixedCaseClassNames);
-        overloadAggressivelyCheckBox       .setSelected(configuration.overloadAggressively);
-        defaultPackageCheckBox             .setSelected(configuration.defaultPackage != null);
-        allowAccessModificationCheckBox    .setSelected(configuration.allowAccessModification);
-        keepAttributesCheckBox             .setSelected(configuration.keepAttributes != null);
-        newSourceFileAttributeCheckBox     .setSelected(configuration.newSourceFileAttribute != null);
-        skipNonPublicLibraryClassesCheckBox.setSelected(configuration.skipNonPublicLibraryClasses);
+        shrinkCheckBox                          .setSelected(configuration.shrink);
+        printUsageCheckBox                      .setSelected(configuration.printUsage != null);
 
-        printSeedsTextField                .setText(configuration.printSeeds);
-        printUsageTextField                .setText(configuration.printUsage);
-        printMappingTextField              .setText(configuration.printMapping);
-        applyMappingTextField              .setText(configuration.applyMapping);
-        defaultPackageTextField            .setText(configuration.defaultPackage);
-        keepAttributesTextField            .setText(configuration.keepAttributes         == null ? KEEP_ATTRIBUTE_DEFAULT : ListUtil.commaSeparatedString(configuration.keepAttributes));
-        newSourceFileAttributeTextField    .setText(configuration.newSourceFileAttribute == null ? SOURCE_FILE_ATTRIBUTE_DEFAULT : configuration.newSourceFileAttribute);
+        optimizeCheckBox                        .setSelected(configuration.optimize);
+        allowAccessModificationCheckBox         .setSelected(configuration.allowAccessModification);
+
+        obfuscateCheckBox                       .setSelected(configuration.obfuscate);
+        printMappingCheckBox                    .setSelected(configuration.printMapping != null);
+        applyMappingCheckBox                    .setSelected(configuration.applyMapping != null);
+        obfuscationDictionaryCheckBox           .setSelected(configuration.defaultPackage != null);
+        overloadAggressivelyCheckBox            .setSelected(configuration.overloadAggressively);
+        defaultPackageCheckBox                  .setSelected(configuration.obfuscationDictionary != null);
+        useMixedCaseClassNamesCheckBox          .setSelected(configuration.useMixedCaseClassNames);
+        keepAttributesCheckBox                  .setSelected(configuration.keepAttributes != null);
+        newSourceFileAttributeCheckBox          .setSelected(configuration.newSourceFileAttribute != null);
+
+        printSeedsCheckBox                      .setSelected(configuration.printSeeds != null);
+        verboseCheckBox                         .setSelected(configuration.verbose);
+        noteCheckBox                            .setSelected(configuration.note);
+        warnCheckBox                            .setSelected(configuration.warn);
+        ignoreWarningsCheckBox                  .setSelected(configuration.ignoreWarnings);
+        skipNonPublicLibraryClassesCheckBox     .setSelected(configuration.skipNonPublicLibraryClasses);
+        skipNonPublicLibraryClassMembersCheckBox.setSelected(configuration.skipNonPublicLibraryClassMembers);
+
+        printUsageTextField                     .setText(configuration.printUsage);
+        printMappingTextField                   .setText(configuration.printMapping);
+        applyMappingTextField                   .setText(configuration.applyMapping);
+        obfuscationDictionaryTextField          .setText(configuration.obfuscationDictionary);
+        defaultPackageTextField                 .setText(configuration.defaultPackage);
+        keepAttributesTextField                 .setText(configuration.keepAttributes         == null ? KEEP_ATTRIBUTE_DEFAULT : ListUtil.commaSeparatedString(configuration.keepAttributes));
+        newSourceFileAttributeTextField         .setText(configuration.newSourceFileAttribute == null ? SOURCE_FILE_ATTRIBUTE_DEFAULT : configuration.newSourceFileAttribute);
+        printSeedsTextField                     .setText(configuration.printSeeds);
 
         if (configuration.printMapping != null)
         {
@@ -932,24 +947,29 @@ public class ProGuardGUI extends JFrame
 
 
         // Get the other options.
-        configuration.printSeeds                  = printSeedsCheckBox                 .isSelected() ? printSeedsTextField                                .getText() : null;
-        configuration.printUsage                  = printUsageCheckBox                 .isSelected() ? printUsageTextField                                .getText() : null;
-        configuration.printMapping                = printMappingCheckBox               .isSelected() ? printMappingTextField                              .getText() : null;
-        configuration.applyMapping                = applyMappingCheckBox               .isSelected() ? applyMappingTextField                              .getText() : null;
-        configuration.verbose                     = verboseCheckBox                    .isSelected();
-        configuration.ignoreWarnings              = ignoreWarningsCheckBox             .isSelected();
-        configuration.warn                        = warnCheckBox                       .isSelected();
-        configuration.note                        = noteCheckBox                       .isSelected();
-        configuration.shrink                      = shrinkCheckBox                     .isSelected();
-        configuration.optimize                    = optimizeCheckBox                   .isSelected();
-        configuration.obfuscate                   = obfuscateCheckBox                  .isSelected();
-        configuration.useMixedCaseClassNames      = useMixedCaseClassNamesCheckBox     .isSelected();
-        configuration.overloadAggressively        = overloadAggressivelyCheckBox       .isSelected();
-        configuration.defaultPackage              = defaultPackageCheckBox             .isSelected() ? defaultPackageTextField                            .getText()  : null;
-        configuration.allowAccessModification     = allowAccessModificationCheckBox    .isSelected();
-        configuration.keepAttributes              = keepAttributesCheckBox             .isSelected() ? ListUtil.commaSeparatedList(keepAttributesTextField.getText()) : null;
-        configuration.newSourceFileAttribute      = newSourceFileAttributeCheckBox     .isSelected() ? newSourceFileAttributeTextField                    .getText()  : null;
-        configuration.skipNonPublicLibraryClasses = skipNonPublicLibraryClassesCheckBox.isSelected();
+        configuration.shrink                           = shrinkCheckBox                          .isSelected();
+        configuration.printUsage                       = printUsageCheckBox                      .isSelected() ? printUsageTextField                                .getText() : null;
+
+        configuration.optimize                         = optimizeCheckBox                        .isSelected();
+        configuration.allowAccessModification          = allowAccessModificationCheckBox         .isSelected();
+
+        configuration.obfuscate                        = obfuscateCheckBox                       .isSelected();
+        configuration.printMapping                     = printMappingCheckBox                    .isSelected() ? printMappingTextField                              .getText() : null;
+        configuration.applyMapping                     = applyMappingCheckBox                    .isSelected() ? applyMappingTextField                              .getText() : null;
+        configuration.obfuscationDictionary            = obfuscationDictionaryCheckBox           .isSelected() ? obfuscationDictionaryTextField                     .getText()  : null;
+        configuration.overloadAggressively             = overloadAggressivelyCheckBox            .isSelected();
+        configuration.defaultPackage                   = defaultPackageCheckBox                  .isSelected() ? defaultPackageTextField                            .getText()  : null;
+        configuration.useMixedCaseClassNames           = useMixedCaseClassNamesCheckBox          .isSelected();
+        configuration.keepAttributes                   = keepAttributesCheckBox                  .isSelected() ? ListUtil.commaSeparatedList(keepAttributesTextField.getText()) : null;
+        configuration.newSourceFileAttribute           = newSourceFileAttributeCheckBox          .isSelected() ? newSourceFileAttributeTextField                    .getText()  : null;
+
+        configuration.printSeeds                       = printSeedsCheckBox                      .isSelected() ? printSeedsTextField                                .getText() : null;
+        configuration.verbose                          = verboseCheckBox                         .isSelected();
+        configuration.note                             = noteCheckBox                            .isSelected();
+        configuration.warn                             = warnCheckBox                            .isSelected();
+        configuration.ignoreWarnings                   = ignoreWarningsCheckBox                  .isSelected();
+        configuration.skipNonPublicLibraryClasses      = skipNonPublicLibraryClassesCheckBox     .isSelected();
+        configuration.skipNonPublicLibraryClassMembers = skipNonPublicLibraryClassMembersCheckBox.isSelected();
 
         return configuration;
     }

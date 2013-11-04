@@ -1,4 +1,4 @@
-/* $Id: StoreLoadReplacer.java,v 1.4 2004/08/15 12:39:30 eric Exp $
+/* $Id: StoreLoadReplacer.java,v 1.7 2004/11/20 15:06:55 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,6 +21,7 @@
 package proguard.optimize.peephole;
 
 import proguard.classfile.*;
+import proguard.classfile.attribute.*;
 import proguard.classfile.editor.*;
 import proguard.classfile.instruction.*;
 import proguard.classfile.visitor.*;
@@ -88,20 +89,23 @@ public class StoreLoadReplacer implements InstructionVisitor
                 if (nextInstruction instanceof VariableInstruction)
                 {
                     variableInstruction = (VariableInstruction)nextInstruction;
-                    if (variableInstruction.isLoad() &&
+                    if (variableInstruction.isLoad()                              &&
+                        variableInstruction.opcode != InstructionConstants.OP_RET &&
                         variableInstruction.variableIndex == variableIndex)
                     {
                         // Replace the store instruction by a matching dup instruction.
                         Instruction matchingDupInstruction = variableInstruction.isCategory2() ?
                             dup2Instruction :
                             dupInstruction;
+
                         codeAttrInfoEditor.replaceInstruction(offset,
                                                               matchingDupInstruction);
 
                         // Replace the load instruction by the store instruction.
-                        VariableInstruction storeInstruction =
+                        Instruction storeInstruction =
                              new VariableInstruction(opcode,
-                                                     variableInstruction.variableIndex);
+                                                     variableInstruction.variableIndex).shrink();
+
                         codeAttrInfoEditor.replaceInstruction(nextOffset,
                                                               storeInstruction);
                     }

@@ -1,4 +1,4 @@
-/* $Id: PartialEvaluator.java,v 1.16 2004/09/12 11:38:29 eric Exp $
+/* $Id: PartialEvaluator.java,v 1.22 2004/11/20 15:41:24 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,6 +21,8 @@
 package proguard.optimize.evaluation;
 
 import proguard.classfile.*;
+import proguard.classfile.attribute.*;
+import proguard.classfile.attribute.annotation.*;
 import proguard.classfile.editor.*;
 import proguard.classfile.instruction.*;
 import proguard.classfile.util.*;
@@ -66,15 +68,16 @@ implements   MemberInfoVisitor,
     private int[]                    evaluationCounts   = new int[INITIAL_CODE_LENGTH];
     private boolean[]                initialization     = new boolean[INITIAL_CODE_LENGTH];
     private boolean[]                isNecessary        = new boolean[INITIAL_CODE_LENGTH];
+    private boolean                  evaluateExceptions;
 
     private TracedVariables  parameters = new TracedVariables(INITIAL_VALUE_COUNT);
     private TracedVariables  variables  = new TracedVariables(INITIAL_VALUE_COUNT);
     private TracedStack      stack      = new TracedStack(INITIAL_VALUE_COUNT);
     private TracedBranchUnit branchUnit = new TracedBranchUnit();
 
+    private ClassFileCleaner             classFileCleaner             = new ClassFileCleaner();
     private SideEffectInstructionChecker sideEffectInstructionChecker = new SideEffectInstructionChecker(true);
-
-    private CodeAttrInfoEditor codeAttrInfoEditor = new CodeAttrInfoEditor(INITIAL_CODE_LENGTH);
+    private CodeAttrInfoEditor           codeAttrInfoEditor           = new CodeAttrInfoEditor(INITIAL_CODE_LENGTH);
 
     private boolean isInitializer;
 
@@ -178,15 +181,22 @@ implements   MemberInfoVisitor,
 
     public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo) {}
     public void visitInnerClassesAttrInfo(ClassFile classFile, InnerClassesAttrInfo innerClassesAttrInfo) {}
+    public void visitEnclosingMethodAttrInfo(ClassFile classFile, EnclosingMethodAttrInfo enclosingMethodAttrInfo) {}
     public void visitConstantValueAttrInfo(ClassFile classFile, FieldInfo fieldInfo, ConstantValueAttrInfo constantValueAttrInfo) {}
     public void visitExceptionsAttrInfo(ClassFile classFile, MethodInfo methodInfo, ExceptionsAttrInfo exceptionsAttrInfo) {}
     public void visitLineNumberTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LineNumberTableAttrInfo lineNumberTableAttrInfo) {}
     public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo) {}
+    public void visitLocalVariableTypeTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeTableAttrInfo localVariableTypeTableAttrInfo) {}
     public void visitSourceFileAttrInfo(ClassFile classFile, SourceFileAttrInfo sourceFileAttrInfo) {}
     public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo) {}
     public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo) {}
     public void visitSyntheticAttrInfo(ClassFile classFile, SyntheticAttrInfo syntheticAttrInfo) {}
     public void visitSignatureAttrInfo(ClassFile classFile, SignatureAttrInfo signatureAttrInfo) {}
+    public void visitRuntimeVisibleAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleAnnotationsAttrInfo runtimeVisibleAnnotationsAttrInfo) {}
+    public void visitRuntimeInvisibleAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleAnnotationsAttrInfo runtimeInvisibleAnnotationsAttrInfo) {}
+    public void visitRuntimeVisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleParameterAnnotationsAttrInfo runtimeVisibleParameterAnnotationsAttrInfo) {}
+    public void visitRuntimeInvisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleParameterAnnotationsAttrInfo runtimeInvisibleParameterAnnotationsAttrInfo) {}
+    public void visitAnnotationDefaultAttrInfo(ClassFile classFile, AnnotationDefaultAttrInfo annotationDefaultAttrInfo) {}
 
 
     public void visitCodeAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo)
@@ -269,10 +279,20 @@ implements   MemberInfoVisitor,
                                  branchUnit,
                                  0);
 
-        // Evaluate the exception catch blocks, if relevant.
-        // We're assuming nested try/catch blocks are ordered top down.
-        codeAttrInfo.exceptionsAccept(classFile, methodInfo, this);
+        // Evaluate the exception catch blocks, until their entry variables
+        // have stabilized.
+        do
+        {
+            // Reset the flag to stop evaluating.
+            evaluateExceptions = false;
 
+            // Evaluate all relevant exception catch blocks once.
+            codeAttrInfo.exceptionsAccept(classFile, methodInfo, this);
+        }
+        while (evaluateExceptions);
+
+        // Clean up the visitor information in the exceptions right away.
+        codeAttrInfo.exceptionsAccept(classFile, methodInfo, classFileCleaner);
 
         // Replace any instructions that can be simplified.
         if (DEBUG_ANALYSIS) System.out.println("Instruction simplification:");
@@ -862,8 +882,7 @@ implements   MemberInfoVisitor,
 
 
     /**
-     * Returns whether the given branch is unmarked and straddling some code
-     * that has been marked.
+     * Returns whether the given branch straddling some code that has been marked.
      * @param branchOrigin         the branch origin.
      * @param branchTarget         the branch target.
      * @param lowestNecessaryIndex the lowest offset of all instructions marked
@@ -1204,7 +1223,34 @@ implements   MemberInfoVisitor,
     {
         if (isTraced(exceptionInfo.u2startpc, exceptionInfo.u2endpc))
         {
-            if (DEBUG) System.out.println("Partial evaluation of exception: ");
+            if (DEBUG) System.out.println("Partial evaluation of exception ["+exceptionInfo.u2startpc+","+exceptionInfo.u2endpc+"] -> ["+exceptionInfo.u2handlerpc+"]:");
+
+            // Generalize the variables of the try block.
+            variables.reset(codeAttrInfo.u2maxLocals);
+            generalizeVariables(exceptionInfo.u2startpc,
+                                exceptionInfo.u2endpc,
+                                variables);
+
+            // Remember the entry variables of the exception.
+            TracedVariables exceptionVariables = (TracedVariables)exceptionInfo.getVisitorInfo();
+            if (exceptionVariables == null)
+            {
+                exceptionVariables = new TracedVariables(codeAttrInfo.u2maxLocals);
+
+                exceptionInfo.setVisitorInfo(exceptionVariables);
+            }
+            else
+            {
+                // Bail out if the entry variables are the same as last time.
+                if (exceptionVariables.equals(variables))
+                {
+                    if (DEBUG) System.out.println("  Repeated initial variables");
+
+                    return;
+                }
+            }
+
+            exceptionVariables.initialize(variables);
 
             // Reuse the existing variables and stack objects, ensuring the right size.
             variables.reset(codeAttrInfo.u2maxLocals);
@@ -1216,7 +1262,7 @@ implements   MemberInfoVisitor,
             stack.setStoreValue(storeValue);
 
             // Initialize the local variables and the stack.
-            generalizeVariables(exceptionInfo.u2startpc, exceptionInfo.u2endpc, variables);
+            variables.initialize(exceptionVariables);
             //stack.push(ReferenceValueFactory.create((ClassCpInfo)((ProgramClassFile)classFile).getCpEntry(exceptionInfo.u2catchType), false));
             stack.push(ReferenceValueFactory.create(false));
 
@@ -1228,6 +1274,9 @@ implements   MemberInfoVisitor,
                                      stack,
                                      branchUnit,
                                      exceptionInfo.u2handlerpc);
+
+            // Remember to check this exception and other exceptions once more.
+            evaluateExceptions = true;
         }
     }
 
@@ -1256,10 +1305,12 @@ implements   MemberInfoVisitor,
     {
         for (int index = startOffset; index < endOffset; index++)
         {
-            TracedVariables variables = vars[index];
-            if (variables != null)
+            if (isTraced(index))
             {
-                generalizedVariables.generalize(variables);
+                // We can't use the return value, because local generalization
+                // can be different a couple of times, with the global
+                // generalization being the same.
+                generalizedVariables.generalize(vars[index]);
             }
         }
     }
@@ -1349,6 +1400,7 @@ implements   MemberInfoVisitor,
                 System.err.println("  ClassFile   = ["+classFile.getName()+"]");
                 System.err.println("  Method      = ["+methodInfo.getName(classFile)+methodInfo.getDescriptor(classFile)+"]");
                 System.err.println("  Instruction = "+instruction.toString(instructionOffset));
+
                 throw ex;
             }
 
@@ -1428,13 +1480,16 @@ implements   MemberInfoVisitor,
                 //if (branchTargetCount > 1 ||
                 //    evaluationCount > MAXIMUM_EVALUATION_COUNT)
                 //{
-                    variables.generalize(vars[instructionOffset]);
-                    stack.generalize(stacks[instructionOffset]);
+                //    variables.generalize(vars[instructionOffset]);
+                //    stack.generalize(stacks[instructionOffset]);
                 //}
 
+                boolean vars_changed  = vars[instructionOffset].generalize(variables);
+                boolean stack_changed = stacks[instructionOffset].generalize(stack);
+
                 // Bail out if the current context is the same as last time.
-                if (variables.equals(vars[instructionOffset]) &&
-                    stack.equals(stacks[instructionOffset])   &&
+                if (!vars_changed  &&
+                    !stack_changed &&
                     branchTargets.equals(branchTargetValues[instructionOffset]))
                 {
                     if (DEBUG) System.out.println("Repeated variables, stack, and branch targets");
@@ -1442,9 +1497,11 @@ implements   MemberInfoVisitor,
                     break;
                 }
 
-                // Now generalize the context at this index.
-                vars[instructionOffset].generalize(variables);
-                stacks[instructionOffset].generalize(stack);
+                // Generalize the current context. Note that the most recent
+                // variable values have to remain last in the generalizations,
+                // for the sake of the ret instruction.
+                variables.initialize(vars[instructionOffset]);
+                stack.copy(stacks[instructionOffset]);
             }
 
             // Did the branch unit get called?

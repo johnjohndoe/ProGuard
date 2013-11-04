@@ -25,10 +25,20 @@
 
 -printseeds
 
+# Preserve all annotations.
+
+-keepattributes *Annotation*
+
 # Preserve all native method names and the names of their classes.
 
 -keepclasseswithmembernames class * {
     native <methods>;
+}
+
+# Preserve a method that is required in all enumeration classes.
+
+-keepclassmembers class * extends java.lang.Enum {
+    public **[] values();
 }
 
 # Explicitly preserve all serialization members. The Serializable interface

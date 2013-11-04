@@ -1,4 +1,4 @@
-/* $Id: InstructionOffsetValue.java,v 1.4 2004/08/28 20:55:21 eric Exp $
+/* $Id: InstructionOffsetValue.java,v 1.5 2004/11/20 15:06:55 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -83,7 +83,8 @@ public class InstructionOffsetValue extends Category1Value
 
     /**
      * Returns the generalization of this InstructionOffsetValue and the given
-     * other InstructionOffsetValue.
+     * other InstructionOffsetValue. The values of the other InstructionOffsetValue
+     * are guaranteed to remain at the end of the list.
      */
     public final Value generalize(InstructionOffsetValue other)
     {
@@ -110,14 +111,14 @@ public class InstructionOffsetValue extends Category1Value
 
         // If the length of the union array is equal to the length of the values
         // array of either, return it.
-        if (newLength == this.values.length)
-        {
-            return this;
-        }
-
         if (newLength == other.values.length)
         {
             return other;
+        }
+
+        if (newLength == this.values.length)
+        {
+            return this;
         }
 
         // Create the union array.
@@ -125,19 +126,19 @@ public class InstructionOffsetValue extends Category1Value
 
         int newIndex = 0;
 
-        // Copy the values from this array.
+        // Copy the values that are different from the other array.
         for (int index = 0; index < this.values.length; index++)
         {
-            newValues[newIndex++] = this.values[index];
+            if (!other.contains(this.values[index]))
+            {
+                newValues[newIndex++] = this.values[index];
+            }
         }
 
-        // Copy the values that are different from the other array.
+        // Copy the values from the other array.
         for (int index = 0; index < other.values.length; index++)
         {
-            if (!contains(other.values[index]))
-            {
-                newValues[newIndex++] = other.values[index];
-            }
+            newValues[newIndex++] = other.values[index];
         }
 
         return InstructionOffsetValueFactory.create(newValues);

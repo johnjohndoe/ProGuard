@@ -1,4 +1,4 @@
-/* $Id: TableSwitchInstruction.java,v 1.5 2004/08/15 12:39:30 eric Exp $
+/* $Id: TableSwitchInstruction.java,v 1.6 2004/10/10 20:56:58 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,6 +21,7 @@
 package proguard.classfile.instruction;
 
 import proguard.classfile.*;
+import proguard.classfile.attribute.*;
 
 /**
  * This Instruction represents a simple instruction without variable arguments

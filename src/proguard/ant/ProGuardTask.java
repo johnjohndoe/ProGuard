@@ -1,4 +1,4 @@
-/* $Id: ProGuardTask.java,v 1.25 2004/09/04 16:30:12 eric Exp $
+/* $Id: ProGuardTask.java,v 1.28 2004/11/20 15:08:57 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -22,6 +22,7 @@ package proguard.ant;
 
 import org.apache.tools.ant.*;
 import proguard.*;
+import proguard.classfile.util.*;
 
 import java.io.*;
 
@@ -52,9 +53,24 @@ public class ProGuardTask extends ConfigurationTask
     }
 
 
-    public void setRenamesourcefileattribute(String newSourceFileAttribute)
+    /**
+     * @deprecated Use the nested outjar element instead.
+     */
+    public void setOutjar(String parameters)
     {
-        configuration.newSourceFileAttribute = newSourceFileAttribute;
+        throw new BuildException("Use the <outjar> nested element instead of the 'outjar' attribute");
+    }
+
+
+    public void setSkipnonpubliclibraryclasses(boolean skipNonPublicLibraryClasses)
+    {
+        configuration.skipNonPublicLibraryClasses = skipNonPublicLibraryClasses;
+    }
+
+
+    public void setSkipnonpubliclibraryclassmembers(boolean skipNonPublicLibraryClassMembers)
+    {
+        configuration.skipNonPublicLibraryClassMembers = skipNonPublicLibraryClassMembers;
     }
 
 
@@ -63,9 +79,34 @@ public class ProGuardTask extends ConfigurationTask
         configuration.printSeeds = optionalFileName(printSeeds);
     }
 
+
+    public void setShrink(boolean shrink)
+    {
+        configuration.shrink = shrink;
+    }
+
+
     public void setPrintusage(File printUsage)
     {
         configuration.printUsage = optionalFileName(printUsage);
+    }
+
+
+    public void setOptimize(boolean optimize)
+    {
+        configuration.optimize = optimize;
+    }
+
+
+    public void setAllowaccessmodification(boolean allowAccessModification)
+    {
+        configuration.allowAccessModification = allowAccessModification;
+    }
+
+
+    public void setObfuscate(boolean obfuscate)
+    {
+        configuration.obfuscate = obfuscate;
     }
 
 
@@ -81,63 +122,9 @@ public class ProGuardTask extends ConfigurationTask
     }
 
 
-    public void setDump(File dump)
+    public void setObfuscationdictionary(File obfuscationDictionary)
     {
-        configuration.dump = optionalFileName(dump);
-    }
-
-
-    public void setVerbose(boolean verbose)
-    {
-        configuration.verbose = verbose;
-    }
-
-
-    public void setIgnorewarnings(boolean ignoreWarnings)
-    {
-        configuration.ignoreWarnings = ignoreWarnings;
-    }
-
-
-    public void setWarn(boolean warn)
-    {
-        configuration.warn = warn;
-    }
-
-
-    public void setNote(boolean note)
-    {
-        configuration.note = note;
-    }
-
-
-    public void setShrink(boolean shrink)
-    {
-        configuration.shrink = shrink;
-    }
-
-
-    public void setOptimize(boolean optimize)
-    {
-        configuration.optimize = optimize;
-    }
-
-
-    public void setObfuscate(boolean obfuscate)
-    {
-        configuration.obfuscate = obfuscate;
-    }
-
-
-    public void setAllowaccessmodification(boolean allowAccessModification)
-    {
-        configuration.allowAccessModification = allowAccessModification;
-    }
-
-
-    public void setUsemixedcaseclassnames(boolean useMixedCaseClassNames)
-    {
-        configuration.useMixedCaseClassNames = useMixedCaseClassNames;
+        configuration.obfuscationDictionary = obfuscationDictionary.getName();
     }
 
 
@@ -149,22 +136,49 @@ public class ProGuardTask extends ConfigurationTask
 
     public void setDefaultpackage(String defaultPackage)
     {
-        configuration.defaultPackage = defaultPackage;
+        configuration.defaultPackage = ClassUtil.internalClassName(defaultPackage);
     }
 
 
-    public void setSkipnonpubliclibraryclasses(boolean skipNonPublicLibraryClasses)
+    public void setUsemixedcaseclassnames(boolean useMixedCaseClassNames)
     {
-        configuration.skipNonPublicLibraryClasses = skipNonPublicLibraryClasses;
+        configuration.useMixedCaseClassNames = useMixedCaseClassNames;
     }
 
 
-    /**
-     * @deprecated Use the nested outjar element instead.
-     */
-    public void setOutjar(String parameters)
+    public void setRenamesourcefileattribute(String newSourceFileAttribute)
     {
-        throw new BuildException("Use the <outjar> nested element instead of the 'outjar' attribute");
+        configuration.newSourceFileAttribute = newSourceFileAttribute;
+    }
+
+
+    public void setVerbose(boolean verbose)
+    {
+        configuration.verbose = verbose;
+    }
+
+
+    public void setNote(boolean note)
+    {
+        configuration.note = note;
+    }
+
+
+    public void setWarn(boolean warn)
+    {
+        configuration.warn = warn;
+    }
+
+
+    public void setIgnorewarnings(boolean ignoreWarnings)
+    {
+        configuration.ignoreWarnings = ignoreWarnings;
+    }
+
+
+    public void setDump(File dump)
+    {
+        configuration.dump = optionalFileName(dump);
     }
 
 

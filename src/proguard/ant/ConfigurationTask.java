@@ -1,4 +1,4 @@
-/* $Id: ConfigurationTask.java,v 1.2 2004/08/28 20:55:21 eric Exp $
+/* $Id: ConfigurationTask.java,v 1.3 2004/10/31 16:28:32 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -57,7 +57,7 @@ public class ConfigurationTask extends Task
                                                             this.configuration.keepNames);
 
         configuration.keepAttributes = extendAttributes(configuration.keepAttributes,
-                                                        this.configuration.keepNames);
+                                                        this.configuration.keepAttributes);
     }
 
 

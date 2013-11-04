@@ -1,4 +1,4 @@
-/* $Id: ClassFilePrinter.java,v 1.22 2004/09/12 11:38:29 eric Exp $
+/* $Id: ClassFilePrinter.java,v 1.27 2004/11/20 15:41:24 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,6 +21,9 @@
 package proguard.classfile.visitor;
 
 import proguard.classfile.*;
+import proguard.classfile.util.*;
+import proguard.classfile.attribute.*;
+import proguard.classfile.attribute.annotation.*;
 import proguard.classfile.instruction.*;
 
 import java.io.*;
@@ -37,9 +40,11 @@ public class ClassFilePrinter
              CpInfoVisitor,
              MemberInfoVisitor,
              AttrInfoVisitor,
-             InstructionVisitor,
              ExceptionInfoVisitor,
-             InnerClassesInfoVisitor
+             InnerClassesInfoVisitor,
+             AnnotationVisitor,
+             ElementValueVisitor,
+             InstructionVisitor
 {
     private static final String INDENTATION = "  ";
 
@@ -72,11 +77,11 @@ public class ClassFilePrinter
     {
         println("_____________________________________________________________________");
         println(visitorInfo(programClassFile) + " CLASS: " + programClassFile.getName());
-        println("Magic: " + Integer.toHexString(programClassFile.u4magic));
+        println("Access:        " + ClassUtil.externalClassAccessFlags(programClassFile.u2accessFlags) + "(" + Integer.toHexString(programClassFile.u2accessFlags) + ")");
         println("Minor version: " + Integer.toHexString(programClassFile.u2minorVersion));
         println("Major version: " + Integer.toHexString(programClassFile.u2majorVersion));
-        println("Access: " + Integer.toHexString(programClassFile.u2accessFlags));
-        println("Superclass: " + programClassFile.getSuperName());
+        println("Access:        " + Integer.toHexString(programClassFile.u2accessFlags));
+        println("Superclass:    " + programClassFile.getSuperName());
         println();
 
         println("Interfaces (count = " + programClassFile.u2interfacesCount + "):");
@@ -116,11 +121,10 @@ public class ClassFilePrinter
 
     public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
     {
-/*
         println("_____________________________________________________________________");
-        println(visitorInfo(libraryClassFile) + "LIBRARY CLASS: " + libraryClassFile.getName());
-//      println("Access: " + Integer.toHexString(libraryClassFile.u2accessFlags));
-        println("Superclass: " + libraryClassFile.getSuperName());
+        println(visitorInfo(libraryClassFile) + " LIBRARY CLASS: " + libraryClassFile.getName());
+        println("Access:     "  + ClassUtil.externalClassAccessFlags(libraryClassFile.u2accessFlags) + "(" + Integer.toHexString(libraryClassFile.u2accessFlags) + ")");
+        println("Superclass: "  + libraryClassFile.getSuperName());
         println();
 
         println("Interfaces (count = " + libraryClassFile.interfaceClasses.length + "):");
@@ -134,7 +138,6 @@ public class ClassFilePrinter
 
         println("Methods (count = " + libraryClassFile.methods.length + "):");
         libraryClassFile.methodsAccept(this);
-*/
     }
 
 
@@ -298,6 +301,16 @@ public class ClassFilePrinter
     }
 
 
+    public void visitEnclosingMethodAttrInfo(ClassFile classFile, EnclosingMethodAttrInfo enclosingMethodAttrInfo)
+    {
+        println(visitorInfo(enclosingMethodAttrInfo) +
+                " Enclosing method attribute [" +
+                classFile.getCpClassNameString(enclosingMethodAttrInfo.u2classIndex)  + "." +
+                classFile.getCpNameString(enclosingMethodAttrInfo.u2nameAndTypeIndex) + " " +
+                classFile.getCpTypeString(enclosingMethodAttrInfo.u2nameAndTypeIndex) + "]");
+    }
+
+
     public void visitConstantValueAttrInfo(ClassFile classFile, FieldInfo fieldInfo, ConstantValueAttrInfo constantValueAttrInfo)
     {
         println(visitorInfo(constantValueAttrInfo) +
@@ -346,7 +359,8 @@ public class ClassFilePrinter
     public void visitLineNumberTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LineNumberTableAttrInfo lineNumberTableAttrInfo)
     {
         println(visitorInfo(lineNumberTableAttrInfo) +
-                " Line number table attribute (count = " + lineNumberTableAttrInfo.u2lineNumberTableLength + ")");
+                " Line number table attribute (count = " +
+                lineNumberTableAttrInfo.u2lineNumberTableLength + ")");
         // ...
     }
 
@@ -354,7 +368,16 @@ public class ClassFilePrinter
     public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo)
     {
         println(visitorInfo(localVariableTableAttrInfo) +
-                " Local variable table attribute (count = "+localVariableTableAttrInfo.u2localVariableTableLength + ")");
+                " Local variable table attribute (count = " +
+                localVariableTableAttrInfo.u2localVariableTableLength + ")");
+        // ...
+    }
+
+
+    public void visitLocalVariableTypeTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeTableAttrInfo localVariableTypeTableAttrInfo)
+    {
+        println(visitorInfo(localVariableTypeTableAttrInfo) +
+                " Local variable type table attribute (count = "+localVariableTypeTableAttrInfo.u2localVariableTypeTableLength + ")");
         // ...
     }
 
@@ -402,6 +425,162 @@ public class ClassFilePrinter
 
         indent();
         classFile.constantPoolEntryAccept(this, signatureAttrInfo.u2signatureIndex);
+        outdent();
+    }
+
+
+    public void visitRuntimeVisibleAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleAnnotationsAttrInfo runtimeVisibleAnnotationsAttrInfo)
+    {
+        println(visitorInfo(runtimeVisibleAnnotationsAttrInfo) +
+                " Runtime visible annotation attribute:");
+
+        indent();
+        runtimeVisibleAnnotationsAttrInfo.annotationsAccept(classFile, this);
+        outdent();
+    }
+
+
+    public void visitRuntimeInvisibleAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleAnnotationsAttrInfo runtimeInvisibleAnnotationsAttrInfo)
+    {
+        println(visitorInfo(runtimeInvisibleAnnotationsAttrInfo) +
+                " Runtime invisible annotation attribute:");
+
+        indent();
+        runtimeInvisibleAnnotationsAttrInfo.annotationsAccept(classFile, this);
+        outdent();
+    }
+
+
+    public void visitRuntimeVisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleParameterAnnotationsAttrInfo runtimeVisibleParameterAnnotationsAttrInfo)
+    {
+        println(visitorInfo(runtimeVisibleParameterAnnotationsAttrInfo) +
+                " Runtime visible parameter annotation attribute:");
+
+        indent();
+        runtimeVisibleParameterAnnotationsAttrInfo.annotationsAccept(classFile, this);
+        outdent();
+    }
+
+
+    public void visitRuntimeInvisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleParameterAnnotationsAttrInfo runtimeInvisibleParameterAnnotationsAttrInfo)
+    {
+        println(visitorInfo(runtimeInvisibleParameterAnnotationsAttrInfo) +
+                " Runtime invisible parameter annotation attribute:");
+
+        indent();
+        runtimeInvisibleParameterAnnotationsAttrInfo.annotationsAccept(classFile, this);
+        outdent();
+    }
+
+
+    public void visitAnnotationDefaultAttrInfo(ClassFile classFile, AnnotationDefaultAttrInfo annotationDefaultAttrInfo)
+    {
+        println(visitorInfo(annotationDefaultAttrInfo) +
+                " Annotation default attribute:");
+
+        indent();
+        annotationDefaultAttrInfo.defaultValueAccept(classFile, this);
+        outdent();
+    }
+
+
+    // Implementations for InnerClassesInfoVisitor.
+
+    public void visitInnerClassesInfo(ClassFile classFile, InnerClassesInfo innerClassesInfo)
+    {
+        println(visitorInfo(innerClassesInfo) +
+                " InnerClassesInfo:");
+
+        indent();
+        if (innerClassesInfo.u2innerClassInfoIndex != 0)
+        {
+            classFile.constantPoolEntryAccept(this, innerClassesInfo.u2innerClassInfoIndex);
+        }
+
+        if (innerClassesInfo.u2outerClassInfoIndex != 0)
+        {
+            classFile.constantPoolEntryAccept(this, innerClassesInfo.u2outerClassInfoIndex);
+        }
+
+        if (innerClassesInfo.u2innerNameIndex != 0)
+        {
+            classFile.constantPoolEntryAccept(this, innerClassesInfo.u2innerNameIndex);
+        }
+        outdent();
+    }
+
+
+    // Implementations for AnnotationVisitor.
+
+    public void visitAnnotation(ClassFile classFile, Annotation annotation)
+    {
+        println(visitorInfo(annotation) +
+                " Annotation [" + classFile.getCpString(annotation.u2typeIndex) + "]:");
+
+        indent();
+        annotation.elementValuesAccept(classFile, this);
+        outdent();
+    }
+
+
+    // Implementations for ElementValueVisitor.
+
+    public void visitConstantElementValue(ClassFile classFile, Annotation annotation, ConstantElementValue constantElementValue)
+    {
+        println(visitorInfo(constantElementValue) +
+                " Constant element value [" +
+                (constantElementValue.u2elementName == 0 ? "(default)" :
+                classFile.getCpString(constantElementValue.u2elementName)) + "]");
+
+        indent();
+        classFile.constantPoolEntryAccept(this, constantElementValue.u2constantValueIndex);
+        outdent();
+    }
+
+
+    public void visitEnumConstantElementValue(ClassFile classFile, Annotation annotation, EnumConstantElementValue enumConstantElementValue)
+    {
+        println(visitorInfo(enumConstantElementValue) +
+                " Enum constant element value [" +
+                (enumConstantElementValue.u2elementName == 0 ? "(default)" :
+                classFile.getCpString(enumConstantElementValue.u2elementName)) + ", " +
+                classFile.getCpString(enumConstantElementValue.u2typeNameIndex)  + ", " +
+                classFile.getCpString(enumConstantElementValue.u2constantNameIndex) + "]");
+    }
+
+
+    public void visitClassElementValue(ClassFile classFile, Annotation annotation, ClassElementValue classElementValue)
+    {
+        println(visitorInfo(classElementValue) +
+                " Class element value [" +
+                (classElementValue.u2elementName == 0 ? "(default)" :
+                classFile.getCpString(classElementValue.u2elementName)) + ", " +
+                classFile.getCpString(classElementValue.u2classInfoIndex) + "]");
+    }
+
+
+    public void visitAnnotationElementValue(ClassFile classFile, Annotation annotation, AnnotationElementValue annotationElementValue)
+    {
+        println(visitorInfo(annotationElementValue) +
+                " Annotation element value [" +
+                (annotationElementValue.u2elementName == 0 ? "(default)" :
+                classFile.getCpString(annotationElementValue.u2elementName)) + "]:");
+
+        indent();
+        annotationElementValue.annotationAccept(classFile, this);
+        outdent();
+    }
+
+
+    public void visitArrayElementValue(ClassFile classFile, Annotation annotation, ArrayElementValue arrayElementValue)
+    {
+        println(visitorInfo(arrayElementValue) +
+                " Array element value [" +
+                (arrayElementValue.u2elementName == 0 ? "(default)" :
+                classFile.getCpString(arrayElementValue.u2elementName)) + "]:");
+
+        indent();
+        arrayElementValue.elementValuesAccept(classFile, annotation, this);
         outdent();
     }
 
@@ -458,31 +637,6 @@ public class ClassFilePrinter
         {
             classFile.constantPoolEntryAccept(this, exceptionInfo.u2catchType);
         }
-    }
-
-
-    // Implementations for InnerClassesInfoVisitor.
-
-    public void visitInnerClassesInfo(ClassFile classFile, InnerClassesInfo innerClassesInfo)
-    {
-        println(visitorInfo(innerClassesInfo) +
-                " InnerClassesInfo:");
-        indent();
-        if (innerClassesInfo.u2innerClassInfoIndex != 0)
-        {
-            classFile.constantPoolEntryAccept(this, innerClassesInfo.u2innerClassInfoIndex);
-        }
-
-        if (innerClassesInfo.u2outerClassInfoIndex != 0)
-        {
-            classFile.constantPoolEntryAccept(this, innerClassesInfo.u2outerClassInfoIndex);
-        }
-
-        if (innerClassesInfo.u2innerNameIndex != 0)
-        {
-            classFile.constantPoolEntryAccept(this, innerClassesInfo.u2innerNameIndex);
-        }
-        outdent();
     }
 
 

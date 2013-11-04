@@ -1,4 +1,4 @@
-/* $Id: LoadStoreRemover.java,v 1.4 2004/08/15 12:39:30 eric Exp $
+/* $Id: LoadStoreRemover.java,v 1.6 2004/10/10 20:56:58 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,6 +21,7 @@
 package proguard.optimize.peephole;
 
 import proguard.classfile.*;
+import proguard.classfile.attribute.*;
 import proguard.classfile.editor.*;
 import proguard.classfile.instruction.*;
 import proguard.classfile.visitor.*;
@@ -64,7 +65,8 @@ public class LoadStoreRemover implements InstructionVisitor
     public void visitVariableInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, VariableInstruction variableInstruction)
     {
         // Is this instruction a load instruction?
-        if (variableInstruction.isLoad())
+        if (variableInstruction.isLoad() &&
+            variableInstruction.opcode != InstructionConstants.OP_RET)
         {
             byte opcode        = variableInstruction.opcode;
             int  variableIndex = variableInstruction.variableIndex;
@@ -79,11 +81,11 @@ public class LoadStoreRemover implements InstructionVisitor
                 Instruction nextInstruction = InstructionFactory.create(codeAttrInfo.code,
                                                                         nextOffset);
 
-                if (nextInstruction instanceof VariableInstruction &&
-                    nextInstruction.opcode != InstructionConstants.OP_IINC)
+                if (nextInstruction instanceof VariableInstruction)
                 {
                     variableInstruction = (VariableInstruction)nextInstruction;
-                    if (!variableInstruction.isLoad() &&
+                    if (!variableInstruction.isLoad()                              &&
+                        variableInstruction.opcode != InstructionConstants.OP_IINC &&
                         variableInstruction.variableIndex == variableIndex)
                     {
                         // Delete both instructions.

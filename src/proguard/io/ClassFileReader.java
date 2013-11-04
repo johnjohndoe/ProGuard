@@ -1,4 +1,4 @@
-/* $Id: ClassFileReader.java,v 1.2 2004/08/15 12:39:30 eric Exp $
+/* $Id: ClassFileReader.java,v 1.3 2004/11/20 15:08:57 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -41,6 +41,7 @@ public class ClassFileReader implements DataEntryReader
 {
     private boolean          isLibrary;
     private boolean          skipNonPublicLibraryClasses;
+    private boolean          skipNonPublicLibraryClassMembers;
     private ClassFileVisitor classFileVisitor;
 
 
@@ -50,11 +51,13 @@ public class ClassFileReader implements DataEntryReader
      */
     public ClassFileReader(boolean          isLibrary,
                            boolean          skipNonPublicLibraryClasses,
+                           boolean          skipNonPublicLibraryClassMembers,
                            ClassFileVisitor classFileVisitor)
     {
-        this.isLibrary                   = isLibrary;
-        this.skipNonPublicLibraryClasses = skipNonPublicLibraryClasses;
-        this.classFileVisitor            = classFileVisitor;
+        this.isLibrary                        = isLibrary;
+        this.skipNonPublicLibraryClasses      = skipNonPublicLibraryClasses;
+        this.skipNonPublicLibraryClassMembers = skipNonPublicLibraryClassMembers;
+        this.classFileVisitor                 = classFileVisitor;
     }
 
 
@@ -72,7 +75,7 @@ public class ClassFileReader implements DataEntryReader
 
             // Create a ClassFile representation.
             ClassFile classFile = isLibrary ?
-                (ClassFile)LibraryClassFile.create(dataInputStream, skipNonPublicLibraryClasses) :
+                (ClassFile)LibraryClassFile.create(dataInputStream, skipNonPublicLibraryClasses, skipNonPublicLibraryClassMembers) :
                 (ClassFile)ProgramClassFile.create(dataInputStream);
 
             // Apply the visitor.

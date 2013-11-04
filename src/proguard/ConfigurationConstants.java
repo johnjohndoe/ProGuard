@@ -1,4 +1,4 @@
-/* $Id: ConfigurationConstants.java,v 1.7 2004/08/15 12:39:30 eric Exp $
+/* $Id: ConfigurationConstants.java,v 1.10 2004/11/20 15:41:24 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -27,39 +27,47 @@ package proguard;
  */
 class ConfigurationConstants
 {
-    public static final String OPTION_PREFIX                               = "-";
-    public static final String AT_DIRECTIVE                                = "@";
-    public static final String INCLUDE_DIRECTIVE                           = "-include";
-    public static final String LIBRARYJARS_OPTION                          = "-libraryjars";
-    public static final String INJARS_OPTION                               = "-injars";
-    public static final String OUTJARS_OPTION                              = "-outjars";
-    public static final String RESOURCEJARS_OPTION                         = "-resourcejars";
-    public static final String KEEP_OPTION                                 = "-keep";
-    public static final String KEEP_CLASS_MEMBERS_OPTION                   = "-keepclassmembers";
-    public static final String KEEP_CLASSES_WITH_MEMBERS_OPTION            = "-keepclasseswithmembers";
-    public static final String KEEP_NAMES_OPTION                           = "-keepnames";
-    public static final String KEEP_CLASS_MEMBER_NAMES_OPTION              = "-keepclassmembernames";
-    public static final String KEEP_CLASSES_WITH_MEMBER_NAMES_OPTION       = "-keepclasseswithmembernames";
-    public static final String ASSUME_NO_SIDE_EFFECTS_OPTION               = "-assumenosideeffects";
-    public static final String KEEP_ATTRIBUTES_OPTION                      = "-keepattributes";
-    public static final String RENAME_SOURCE_FILE_ATTRIBUTE_OPTION         = "-renamesourcefileattribute";
-    public static final String PRINT_SEEDS_OPTION                          = "-printseeds";
-    public static final String PRINT_USAGE_OPTION                          = "-printusage";
-    public static final String PRINT_MAPPING_OPTION                        = "-printmapping";
-    public static final String APPLY_MAPPING_OPTION                        = "-applymapping";
-    public static final String VERBOSE_OPTION                              = "-verbose";
-    public static final String DUMP_OPTION                                 = "-dump";
-    public static final String IGNORE_WARNINGS_OPTION                      = "-ignorewarnings";
-    public static final String DONT_WARN_OPTION                            = "-dontwarn";
-    public static final String DONT_NOTE_OPTION                            = "-dontnote";
-    public static final String DONT_SHRINK_OPTION                          = "-dontshrink";
-    public static final String DONT_OPTIMIZE_OPTION                        = "-dontoptimize";
-    public static final String DONT_OBFUSCATE_OPTION                       = "-dontobfuscate";
-    public static final String DONT_USE_MIXED_CASE_CLASS_NAMES_OPTION      = "-dontusemixedcaseclassnames";
-    public static final String OVERLOAD_AGGRESSIVELY_OPTION                = "-overloadaggressively";
-    public static final String DEFAULT_PACKAGE_OPTION                      = "-defaultpackage";
-    public static final String ALLOW_ACCESS_MODIFICATION_OPTION            = "-allowaccessmodification";
-    public static final String DONT_SKIP_NON_PUBLIC_LIBRARY_CLASSES_OPTION = "-dontskipnonpubliclibraryclasses";
+    public static final String OPTION_PREFIX                                     = "-";
+    public static final String AT_DIRECTIVE                                      = "@";
+    public static final String INCLUDE_DIRECTIVE                                 = "-include";
+
+    public static final String INJARS_OPTION                                     = "-injars";
+    public static final String OUTJARS_OPTION                                    = "-outjars";
+    public static final String LIBRARYJARS_OPTION                                = "-libraryjars";
+    public static final String RESOURCEJARS_OPTION                               = "-resourcejars";
+
+    public static final String KEEP_OPTION                                       = "-keep";
+    public static final String KEEP_CLASS_MEMBERS_OPTION                         = "-keepclassmembers";
+    public static final String KEEP_CLASSES_WITH_MEMBERS_OPTION                  = "-keepclasseswithmembers";
+    public static final String KEEP_NAMES_OPTION                                 = "-keepnames";
+    public static final String KEEP_CLASS_MEMBER_NAMES_OPTION                    = "-keepclassmembernames";
+    public static final String KEEP_CLASSES_WITH_MEMBER_NAMES_OPTION             = "-keepclasseswithmembernames";
+    public static final String PRINT_SEEDS_OPTION                                = "-printseeds";
+
+    public static final String DONT_SHRINK_OPTION                                = "-dontshrink";
+    public static final String PRINT_USAGE_OPTION                                = "-printusage";
+
+    public static final String DONT_OPTIMIZE_OPTION                              = "-dontoptimize";
+    public static final String ASSUME_NO_SIDE_EFFECTS_OPTION                     = "-assumenosideeffects";
+    public static final String ALLOW_ACCESS_MODIFICATION_OPTION                  = "-allowaccessmodification";
+
+    public static final String DONT_OBFUSCATE_OPTION                             = "-dontobfuscate";
+    public static final String PRINT_MAPPING_OPTION                              = "-printmapping";
+    public static final String APPLY_MAPPING_OPTION                              = "-applymapping";
+    public static final String OBFUSCATION_DICTIONARY_OPTION                     = "-obfuscationdictionary";
+    public static final String OVERLOAD_AGGRESSIVELY_OPTION                      = "-overloadaggressively";
+    public static final String DEFAULT_PACKAGE_OPTION                            = "-defaultpackage";
+    public static final String DONT_USE_MIXED_CASE_CLASS_NAMES_OPTION            = "-dontusemixedcaseclassnames";
+    public static final String KEEP_ATTRIBUTES_OPTION                            = "-keepattributes";
+    public static final String RENAME_SOURCE_FILE_ATTRIBUTE_OPTION               = "-renamesourcefileattribute";
+
+    public static final String VERBOSE_OPTION                                    = "-verbose";
+    public static final String DONT_NOTE_OPTION                                  = "-dontnote";
+    public static final String DONT_WARN_OPTION                                  = "-dontwarn";
+    public static final String IGNORE_WARNINGS_OPTION                            = "-ignorewarnings";
+    public static final String DUMP_OPTION                                       = "-dump";
+    public static final String DONT_SKIP_NON_PUBLIC_LIBRARY_CLASSES_OPTION       = "-dontskipnonpubliclibraryclasses";
+    public static final String DONT_SKIP_NON_PUBLIC_LIBRARY_CLASS_MEMBERS_OPTION = "-dontskipnonpubliclibraryclassmembers";
 
     public static final String ANY_ATTRIBUTE_KEYWORD       = "*";
     public static final String ATTRIBUTE_SEPARATOR_KEYWORD = ",";

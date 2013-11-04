@@ -1,4 +1,4 @@
-/* $Id: ConstantPoolRemapper.java,v 1.4 2004/08/15 12:39:30 eric Exp $
+/* $Id: ConstantPoolRemapper.java,v 1.9 2004/11/20 15:41:24 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,14 +21,15 @@
 package proguard.classfile.editor;
 
 import proguard.classfile.*;
+import proguard.classfile.attribute.*;
+import proguard.classfile.attribute.annotation.*;
 import proguard.classfile.instruction.*;
 import proguard.classfile.visitor.*;
-
 
 /**
  * This ClassFileVisitor remaps all possible references to constant pool entries
  * of the classes that it visits, based on a given index map. It is assumed that
- * the constant pools themselves have already been remapped.
+ * the constant pool entries themselves have already been remapped.
  *
  * @author Eric Lafortune
  */
@@ -40,7 +41,10 @@ public class ConstantPoolRemapper
              InstructionVisitor,
              InnerClassesInfoVisitor,
              ExceptionInfoVisitor,
-             LocalVariableInfoVisitor
+             LocalVariableInfoVisitor,
+             LocalVariableTypeInfoVisitor,
+             AnnotationVisitor,
+             ElementValueVisitor
 {
     private CodeAttrInfoEditor codeAttrInfoEditor;
 
@@ -231,8 +235,19 @@ public class ConstantPoolRemapper
         innerClassesAttrInfo.u2attrNameIndex =
             remapCpIndex(innerClassesAttrInfo.u2attrNameIndex);
 
-        // Remap the constant pool references of inner classes.
+        // Remap the constant pool references of the inner classes.
         innerClassesAttrInfo.innerClassEntriesAccept(classFile, this);
+    }
+
+
+    public void visitEnclosingMethodAttrInfo(ClassFile classFile, EnclosingMethodAttrInfo enclosingMethodAttrInfo)
+    {
+        enclosingMethodAttrInfo.u2attrNameIndex =
+            remapCpIndex(enclosingMethodAttrInfo.u2attrNameIndex);
+        enclosingMethodAttrInfo.u2classIndex =
+            remapCpIndex(enclosingMethodAttrInfo.u2classIndex);
+        enclosingMethodAttrInfo.u2nameAndTypeIndex =
+            remapCpIndex(enclosingMethodAttrInfo.u2nameAndTypeIndex);
     }
 
 
@@ -250,7 +265,7 @@ public class ConstantPoolRemapper
         exceptionsAttrInfo.u2attrNameIndex =
             remapCpIndex(exceptionsAttrInfo.u2attrNameIndex);
 
-        // Remap the constant pool references of exceptions.
+        // Remap the constant pool references of the exceptions.
         remapCpIndexArray(exceptionsAttrInfo.u2exceptionIndexTable,
                           exceptionsAttrInfo.u2numberOfExceptions);
     }
@@ -289,8 +304,18 @@ public class ConstantPoolRemapper
         localVariableTableAttrInfo.u2attrNameIndex =
             remapCpIndex(localVariableTableAttrInfo.u2attrNameIndex);
 
-        // Remap the constant pool references of local variables.
+        // Remap the constant pool references of the local variables.
         localVariableTableAttrInfo.localVariablesAccept(classFile, methodInfo, codeAttrInfo, this);
+    }
+
+
+    public void visitLocalVariableTypeTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeTableAttrInfo localVariableTypeTableAttrInfo)
+    {
+        localVariableTypeTableAttrInfo.u2attrNameIndex =
+            remapCpIndex(localVariableTypeTableAttrInfo.u2attrNameIndex);
+
+        // Remap the constant pool references of the local variables.
+        localVariableTypeTableAttrInfo.localVariablesAccept(classFile, methodInfo, codeAttrInfo, this);
     }
 
 
@@ -335,39 +360,53 @@ public class ConstantPoolRemapper
     }
 
 
-    // Implementations for InstructionVisitor.
-
-    public void visitSimpleInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, SimpleInstruction simpleInstruction) {}
-    public void visitVariableInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, VariableInstruction variableInstruction) {}
-    public void visitBranchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, BranchInstruction branchInstruction) {}
-    public void visitTableSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, TableSwitchInstruction tableSwitchInstruction) {}
-    public void visitLookUpSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, LookUpSwitchInstruction lookUpSwitchInstruction) {}
-
-
-    public void visitCpInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, CpInstruction cpInstruction)
+    public void visitRuntimeVisibleAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleAnnotationsAttrInfo runtimeVisibleAnnotationsAttrInfo)
     {
-        // Remap the instruction, and get the old and the new instruction length.
-        int oldLength = cpInstruction.length(offset);
+        runtimeVisibleAnnotationsAttrInfo.u2attrNameIndex =
+            remapCpIndex(runtimeVisibleAnnotationsAttrInfo.u2attrNameIndex);
 
-        cpInstruction.cpIndex = remapCpIndex(cpInstruction.cpIndex);
-        cpInstruction.shrink();
+        // Remap the constant pool references of the annotations.
+        runtimeVisibleAnnotationsAttrInfo.annotationsAccept(classFile, this);
+    }
 
-        int newLength = cpInstruction.length(offset);
 
-        // Is the code length changing?
-        if (newLength != oldLength ||
-            codeAttrInfoEditor.isModified())
-        {
-            // We have to go through the code attribute editor.
-            cpInstruction = new CpInstruction().copy(cpInstruction);
+    public void visitRuntimeInvisibleAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleAnnotationsAttrInfo runtimeInvisibleAnnotationsAttrInfo)
+    {
+        runtimeInvisibleAnnotationsAttrInfo.u2attrNameIndex =
+            remapCpIndex(runtimeInvisibleAnnotationsAttrInfo.u2attrNameIndex);
 
-            codeAttrInfoEditor.replaceInstruction(offset, cpInstruction);
-        }
-        else
-        {
-            // We can write the instruction directly.
-            cpInstruction.write(codeAttrInfo, offset);
-        }
+        // Remap the constant pool references of the annotations.
+        runtimeInvisibleAnnotationsAttrInfo.annotationsAccept(classFile, this);
+    }
+
+
+    public void visitRuntimeVisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleParameterAnnotationsAttrInfo runtimeVisibleParameterAnnotationsAttrInfo)
+    {
+        runtimeVisibleParameterAnnotationsAttrInfo.u2attrNameIndex =
+            remapCpIndex(runtimeVisibleParameterAnnotationsAttrInfo.u2attrNameIndex);
+
+        // Remap the constant pool references of the annotations.
+        runtimeVisibleParameterAnnotationsAttrInfo.annotationsAccept(classFile, this);
+    }
+
+
+    public void visitRuntimeInvisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleParameterAnnotationsAttrInfo runtimeInvisibleParameterAnnotationsAttrInfo)
+    {
+        runtimeInvisibleParameterAnnotationsAttrInfo.u2attrNameIndex =
+            remapCpIndex(runtimeInvisibleParameterAnnotationsAttrInfo.u2attrNameIndex);
+
+        // Remap the constant pool references of the annotations.
+        runtimeInvisibleParameterAnnotationsAttrInfo.annotationsAccept(classFile, this);
+    }
+
+
+    public void visitAnnotationDefaultAttrInfo(ClassFile classFile, AnnotationDefaultAttrInfo annotationDefaultAttrInfo)
+    {
+        annotationDefaultAttrInfo.u2attrNameIndex =
+            remapCpIndex(annotationDefaultAttrInfo.u2attrNameIndex);
+
+        // Remap the constant pool references of the annotations.
+        annotationDefaultAttrInfo.defaultValueAccept(classFile, this);
     }
 
 
@@ -415,6 +454,116 @@ public class ConstantPoolRemapper
             remapCpIndex(localVariableInfo.u2nameIndex);
         localVariableInfo.u2descriptorIndex =
             remapCpIndex(localVariableInfo.u2descriptorIndex);
+    }
+
+
+    // Implementations for LocalVariableTypeInfoVisitor.
+
+    public void visitLocalVariableTypeInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeInfo localVariableTypeInfo)
+    {
+        localVariableTypeInfo.u2nameIndex =
+            remapCpIndex(localVariableTypeInfo.u2nameIndex);
+        localVariableTypeInfo.u2signatureIndex =
+            remapCpIndex(localVariableTypeInfo.u2signatureIndex);
+    }
+
+
+    // Implementations for AnnotationVisitor.
+
+    public void visitAnnotation(ClassFile classFile, Annotation annotation)
+    {
+        annotation.u2typeIndex =
+            remapCpIndex(annotation.u2typeIndex);
+
+        // Remap the constant pool references of the element values.
+        annotation.elementValuesAccept(classFile, this);
+    }
+
+
+    // Implementations for ElementValueVisitor.
+
+    public void visitConstantElementValue(ClassFile classFile, Annotation annotation, ConstantElementValue constantElementValue)
+    {
+        constantElementValue.u2elementName =
+            remapCpIndex(constantElementValue.u2elementName);
+        constantElementValue.u2constantValueIndex =
+            remapCpIndex(constantElementValue.u2constantValueIndex);
+    }
+
+
+    public void visitEnumConstantElementValue(ClassFile classFile, Annotation annotation, EnumConstantElementValue enumConstantElementValue)
+    {
+        enumConstantElementValue.u2elementName =
+            remapCpIndex(enumConstantElementValue.u2elementName);
+        enumConstantElementValue.u2typeNameIndex =
+            remapCpIndex(enumConstantElementValue.u2typeNameIndex);
+        enumConstantElementValue.u2constantNameIndex =
+            remapCpIndex(enumConstantElementValue.u2constantNameIndex);
+    }
+
+
+    public void visitClassElementValue(ClassFile classFile, Annotation annotation, ClassElementValue classElementValue)
+    {
+        classElementValue.u2elementName =
+            remapCpIndex(classElementValue.u2elementName);
+        classElementValue.u2classInfoIndex =
+            remapCpIndex(classElementValue.u2classInfoIndex);
+    }
+
+
+    public void visitAnnotationElementValue(ClassFile classFile, Annotation annotation, AnnotationElementValue annotationElementValue)
+    {
+        annotationElementValue.u2elementName =
+            remapCpIndex(annotationElementValue.u2elementName);
+
+        // Remap the constant pool references of the annotation.
+        annotationElementValue.annotationAccept(classFile, this);
+    }
+
+
+    public void visitArrayElementValue(ClassFile classFile, Annotation annotation, ArrayElementValue arrayElementValue)
+    {
+        arrayElementValue.u2elementName =
+            remapCpIndex(arrayElementValue.u2elementName);
+
+        // Remap the constant pool references of the element values.
+        arrayElementValue.elementValuesAccept(classFile, annotation, this);
+    }
+
+
+    // Implementations for InstructionVisitor.
+
+    public void visitSimpleInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, SimpleInstruction simpleInstruction) {}
+    public void visitVariableInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, VariableInstruction variableInstruction) {}
+    public void visitBranchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, BranchInstruction branchInstruction) {}
+    public void visitTableSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, TableSwitchInstruction tableSwitchInstruction) {}
+    public void visitLookUpSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, LookUpSwitchInstruction lookUpSwitchInstruction) {}
+
+
+    public void visitCpInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, CpInstruction cpInstruction)
+    {
+        // Remap the instruction, and get the old and the new instruction length.
+        int oldLength = cpInstruction.length(offset);
+
+        cpInstruction.cpIndex = remapCpIndex(cpInstruction.cpIndex);
+        cpInstruction.shrink();
+
+        int newLength = cpInstruction.length(offset);
+
+        // Is the code length changing?
+        if (newLength != oldLength ||
+            codeAttrInfoEditor.isModified())
+        {
+            // We have to go through the code attribute editor.
+            cpInstruction = new CpInstruction().copy(cpInstruction);
+
+            codeAttrInfoEditor.replaceInstruction(offset, cpInstruction);
+        }
+        else
+        {
+            // We can write the instruction directly.
+            cpInstruction.write(codeAttrInfo, offset);
+        }
     }
 
 

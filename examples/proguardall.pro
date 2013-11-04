@@ -1,7 +1,7 @@
 #
 # This ProGuard configuration file illustrates how to process ProGuard
-# (including its main application, its Ant task, and its WTK plugin),
-# the ReTrace tool, and the ProGuard GUI, all in one go.
+# (including its main application, its GUI, its Ant task, and its WTK plugin),
+# and the ReTrace tool, all in one go.
 # Configuration files for typical applications will be very similar.
 # Usage:
 #     java -jar proguard.jar @proguardall.pro
@@ -39,19 +39,23 @@
     public static void main(java.lang.String[]);
 }
 
+-keep public class proguard.gui.ProGuardGUI {
+    public static void main(java.lang.String[]);
+}
+
 -keep public class proguard.retrace.ReTrace {
     public static void main(java.lang.String[]);
 }
 
--keep public class proguard.gui.ProGuardGUI {
-    public static void main(java.lang.String[]);
-}
+# If we have ant.jar, we can properly process the Ant task.
 
 -keep public class proguard.ant.* {
     public void set*(%);
     public void set*(**);
     public void add*(**);
 }
+
+# If we have kenv.zip, we can process the J2ME WTK plugin.
 
 -keep public class proguard.wtk.ProGuardObfuscator
 

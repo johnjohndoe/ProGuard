@@ -1,4 +1,4 @@
-/* $Id: ConfigurationParser.java,v 1.15 2004/08/28 17:03:30 eric Exp $
+/* $Id: ConfigurationParser.java,v 1.18 2004/11/20 15:41:24 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -86,40 +86,47 @@ public class ConfigurationParser
             lastComments = reader.lastComments();
 
             // First include directives.
-            if      (ConfigurationConstants.AT_DIRECTIVE                               .startsWith(nextWord) ||
-                     ConfigurationConstants.INCLUDE_DIRECTIVE                          .startsWith(nextWord)) parseIncludeArgument();
+            if      (ConfigurationConstants.AT_DIRECTIVE                                     .startsWith(nextWord) ||
+                     ConfigurationConstants.INCLUDE_DIRECTIVE                                .startsWith(nextWord)) parseIncludeArgument();
 
             // Then configuration options with or without arguments.
-            else if (ConfigurationConstants.LIBRARYJARS_OPTION                         .startsWith(nextWord)) configuration.libraryJars                 = parseClassPathArgument(configuration.libraryJars, false);
-            else if (ConfigurationConstants.INJARS_OPTION                              .startsWith(nextWord)) configuration.programJars                 = parseClassPathArgument(configuration.programJars, false);
-            else if (ConfigurationConstants.OUTJARS_OPTION                             .startsWith(nextWord)) configuration.programJars                 = parseClassPathArgument(configuration.programJars, true);
-            else if (ConfigurationConstants.RESOURCEJARS_OPTION                        .startsWith(nextWord)) throw new ParseException("The '-resourcejars' option is no longer supported. Please use the '-injars' option for all input");
-            else if (ConfigurationConstants.KEEP_OPTION                                .startsWith(nextWord)) configuration.keep                        = parseClassSpecificationArguments(configuration.keep, true,  false);
-            else if (ConfigurationConstants.KEEP_CLASS_MEMBERS_OPTION                  .startsWith(nextWord)) configuration.keep                        = parseClassSpecificationArguments(configuration.keep, false, false);
-            else if (ConfigurationConstants.KEEP_CLASSES_WITH_MEMBERS_OPTION           .startsWith(nextWord)) configuration.keep                        = parseClassSpecificationArguments(configuration.keep, false, true);
-            else if (ConfigurationConstants.KEEP_NAMES_OPTION                          .startsWith(nextWord)) configuration.keepNames                   = parseClassSpecificationArguments(configuration.keepNames, true,  false);
-            else if (ConfigurationConstants.KEEP_CLASS_MEMBER_NAMES_OPTION             .startsWith(nextWord)) configuration.keepNames                   = parseClassSpecificationArguments(configuration.keepNames, false, false);
-            else if (ConfigurationConstants.KEEP_CLASSES_WITH_MEMBER_NAMES_OPTION      .startsWith(nextWord)) configuration.keepNames                   = parseClassSpecificationArguments(configuration.keepNames, false, true);
-            else if (ConfigurationConstants.ASSUME_NO_SIDE_EFFECTS_OPTION              .startsWith(nextWord)) configuration.assumeNoSideEffects         = parseClassSpecificationArguments(configuration.assumeNoSideEffects, false, false);
-            else if (ConfigurationConstants.KEEP_ATTRIBUTES_OPTION                     .startsWith(nextWord)) configuration.keepAttributes              = parseKeepAttributesArguments(configuration.keepAttributes);
-            else if (ConfigurationConstants.RENAME_SOURCE_FILE_ATTRIBUTE_OPTION        .startsWith(nextWord)) configuration.newSourceFileAttribute      = parseOptionalArgument();
-            else if (ConfigurationConstants.PRINT_SEEDS_OPTION                         .startsWith(nextWord)) configuration.printSeeds                  = parseOptionalArgument();
-            else if (ConfigurationConstants.PRINT_USAGE_OPTION                         .startsWith(nextWord)) configuration.printUsage                  = parseOptionalArgument();
-            else if (ConfigurationConstants.PRINT_MAPPING_OPTION                       .startsWith(nextWord)) configuration.printMapping                = parseOptionalArgument();
-            else if (ConfigurationConstants.APPLY_MAPPING_OPTION                       .startsWith(nextWord)) configuration.applyMapping                = parseOptionalArgument();
-            else if (ConfigurationConstants.VERBOSE_OPTION                             .startsWith(nextWord)) configuration.verbose                     = parseNoArgument(true);
-            else if (ConfigurationConstants.DUMP_OPTION                                .startsWith(nextWord)) configuration.dump                        = parseOptionalArgument();
-            else if (ConfigurationConstants.IGNORE_WARNINGS_OPTION                     .startsWith(nextWord)) configuration.ignoreWarnings              = parseNoArgument(true);
-            else if (ConfigurationConstants.DONT_WARN_OPTION                           .startsWith(nextWord)) configuration.warn                        = parseNoArgument(false);
-            else if (ConfigurationConstants.DONT_NOTE_OPTION                           .startsWith(nextWord)) configuration.note                        = parseNoArgument(false);
-            else if (ConfigurationConstants.DONT_SHRINK_OPTION                         .startsWith(nextWord)) configuration.shrink                      = parseNoArgument(false);
-            else if (ConfigurationConstants.DONT_OPTIMIZE_OPTION                       .startsWith(nextWord)) configuration.optimize                    = parseNoArgument(false);
-            else if (ConfigurationConstants.DONT_OBFUSCATE_OPTION                      .startsWith(nextWord)) configuration.obfuscate                   = parseNoArgument(false);
-            else if (ConfigurationConstants.DONT_USE_MIXED_CASE_CLASS_NAMES_OPTION     .startsWith(nextWord)) configuration.useMixedCaseClassNames      = parseNoArgument(false);
-            else if (ConfigurationConstants.OVERLOAD_AGGRESSIVELY_OPTION               .startsWith(nextWord)) configuration.overloadAggressively        = parseNoArgument(true);
-            else if (ConfigurationConstants.DEFAULT_PACKAGE_OPTION                     .startsWith(nextWord)) configuration.defaultPackage              = ClassUtil.internalClassName(parseOptionalArgument());
-            else if (ConfigurationConstants.ALLOW_ACCESS_MODIFICATION_OPTION           .startsWith(nextWord)) configuration.allowAccessModification     = parseNoArgument(true);
-            else if (ConfigurationConstants.DONT_SKIP_NON_PUBLIC_LIBRARY_CLASSES_OPTION.startsWith(nextWord)) configuration.skipNonPublicLibraryClasses = parseNoArgument(false);
+            else if (ConfigurationConstants.INJARS_OPTION                                    .startsWith(nextWord)) configuration.programJars                      = parseClassPathArgument(configuration.programJars, false);
+            else if (ConfigurationConstants.OUTJARS_OPTION                                   .startsWith(nextWord)) configuration.programJars                      = parseClassPathArgument(configuration.programJars, true);
+            else if (ConfigurationConstants.LIBRARYJARS_OPTION                               .startsWith(nextWord)) configuration.libraryJars                      = parseClassPathArgument(configuration.libraryJars, false);
+            else if (ConfigurationConstants.RESOURCEJARS_OPTION                              .startsWith(nextWord)) throw new ParseException("The '-resourcejars' option is no longer supported. Please use the '-injars' option for all input");
+            else if (ConfigurationConstants.DONT_SKIP_NON_PUBLIC_LIBRARY_CLASSES_OPTION      .startsWith(nextWord)) configuration.skipNonPublicLibraryClasses      = parseNoArgument(false);
+            else if (ConfigurationConstants.DONT_SKIP_NON_PUBLIC_LIBRARY_CLASS_MEMBERS_OPTION.startsWith(nextWord)) configuration.skipNonPublicLibraryClassMembers = parseNoArgument(false);
+
+            else if (ConfigurationConstants.KEEP_OPTION                                      .startsWith(nextWord)) configuration.keep                             = parseClassSpecificationArguments(configuration.keep, true,  false);
+            else if (ConfigurationConstants.KEEP_CLASS_MEMBERS_OPTION                        .startsWith(nextWord)) configuration.keep                             = parseClassSpecificationArguments(configuration.keep, false, false);
+            else if (ConfigurationConstants.KEEP_CLASSES_WITH_MEMBERS_OPTION                 .startsWith(nextWord)) configuration.keep                             = parseClassSpecificationArguments(configuration.keep, false, true);
+            else if (ConfigurationConstants.KEEP_NAMES_OPTION                                .startsWith(nextWord)) configuration.keepNames                        = parseClassSpecificationArguments(configuration.keepNames, true,  false);
+            else if (ConfigurationConstants.KEEP_CLASS_MEMBER_NAMES_OPTION                   .startsWith(nextWord)) configuration.keepNames                        = parseClassSpecificationArguments(configuration.keepNames, false, false);
+            else if (ConfigurationConstants.KEEP_CLASSES_WITH_MEMBER_NAMES_OPTION            .startsWith(nextWord)) configuration.keepNames                        = parseClassSpecificationArguments(configuration.keepNames, false, true);
+            else if (ConfigurationConstants.PRINT_SEEDS_OPTION                               .startsWith(nextWord)) configuration.printSeeds                       = parseOptionalArgument();
+
+            else if (ConfigurationConstants.DONT_SHRINK_OPTION                               .startsWith(nextWord)) configuration.shrink                           = parseNoArgument(false);
+            else if (ConfigurationConstants.PRINT_USAGE_OPTION                               .startsWith(nextWord)) configuration.printUsage                       = parseOptionalArgument();
+
+            else if (ConfigurationConstants.DONT_OPTIMIZE_OPTION                             .startsWith(nextWord)) configuration.optimize                         = parseNoArgument(false);
+            else if (ConfigurationConstants.ASSUME_NO_SIDE_EFFECTS_OPTION                    .startsWith(nextWord)) configuration.assumeNoSideEffects              = parseClassSpecificationArguments(configuration.assumeNoSideEffects, false, false);
+            else if (ConfigurationConstants.ALLOW_ACCESS_MODIFICATION_OPTION                 .startsWith(nextWord)) configuration.allowAccessModification          = parseNoArgument(true);
+
+            else if (ConfigurationConstants.DONT_OBFUSCATE_OPTION                            .startsWith(nextWord)) configuration.obfuscate                        = parseNoArgument(false);
+            else if (ConfigurationConstants.PRINT_MAPPING_OPTION                             .startsWith(nextWord)) configuration.printMapping                     = parseOptionalArgument();
+            else if (ConfigurationConstants.APPLY_MAPPING_OPTION                             .startsWith(nextWord)) configuration.applyMapping                     = parseOptionalArgument();
+            else if (ConfigurationConstants.OBFUSCATION_DICTIONARY_OPTION                    .startsWith(nextWord)) configuration.obfuscationDictionary            = parseObfuscationDictionaryArgument();
+            else if (ConfigurationConstants.OVERLOAD_AGGRESSIVELY_OPTION                     .startsWith(nextWord)) configuration.overloadAggressively             = parseNoArgument(true);
+            else if (ConfigurationConstants.DEFAULT_PACKAGE_OPTION                           .startsWith(nextWord)) configuration.defaultPackage                   = ClassUtil.internalClassName(parseOptionalArgument());
+            else if (ConfigurationConstants.DONT_USE_MIXED_CASE_CLASS_NAMES_OPTION           .startsWith(nextWord)) configuration.useMixedCaseClassNames           = parseNoArgument(false);
+            else if (ConfigurationConstants.KEEP_ATTRIBUTES_OPTION                           .startsWith(nextWord)) configuration.keepAttributes                   = parseKeepAttributesArguments(configuration.keepAttributes);
+            else if (ConfigurationConstants.RENAME_SOURCE_FILE_ATTRIBUTE_OPTION              .startsWith(nextWord)) configuration.newSourceFileAttribute           = parseOptionalArgument();
+
+            else if (ConfigurationConstants.VERBOSE_OPTION                                   .startsWith(nextWord)) configuration.verbose                          = parseNoArgument(true);
+            else if (ConfigurationConstants.DONT_NOTE_OPTION                                 .startsWith(nextWord)) configuration.note                             = parseNoArgument(false);
+            else if (ConfigurationConstants.DONT_WARN_OPTION                                 .startsWith(nextWord)) configuration.warn                             = parseNoArgument(false);
+            else if (ConfigurationConstants.IGNORE_WARNINGS_OPTION                           .startsWith(nextWord)) configuration.ignoreWarnings                   = parseNoArgument(true);
+            else if (ConfigurationConstants.DUMP_OPTION                                      .startsWith(nextWord)) configuration.dump                             = parseOptionalArgument();
             else
             {
                 throw new ParseException("Unknown configuration " + reader.locationDescription());
@@ -276,6 +283,20 @@ public class ConfigurationParser
         }
 
         return keepAttributes;
+    }
+
+
+    private String parseObfuscationDictionaryArgument()
+    throws ParseException, IOException
+    {
+        // Read the obfsucation dictionary name.
+        readNextWord("obfuscation dictionary name");
+
+        String obfuscationDictionary = replaceSystemProperties(nextWord);
+
+        readNextWord();
+
+        return obfuscationDictionary;
     }
 
 

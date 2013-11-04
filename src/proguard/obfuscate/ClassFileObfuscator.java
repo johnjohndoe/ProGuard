@@ -1,4 +1,4 @@
-/* $Id: ClassFileObfuscator.java,v 1.22 2004/08/15 12:39:30 eric Exp $
+/* $Id: ClassFileObfuscator.java,v 1.23 2004/11/01 21:17:51 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -65,7 +65,7 @@ public class ClassFileObfuscator
     {
         this.defaultPackageName             = defaultPackageName;
         this.useMixedCaseClassNames         = useMixedCaseClassNames;
-        this.defaultPackageClassNameFactory = new NameFactory(useMixedCaseClassNames);
+        this.defaultPackageClassNameFactory = new SimpleNameFactory(useMixedCaseClassNames);
 
         // Collect all names that have been taken already.
         programClassPool.classFilesAccept(new ClassFileVisitor()
@@ -108,7 +108,7 @@ public class ClassFileObfuscator
                 {
                     // We haven't seen this package before. Create a new name factory
                     // for it.
-                    packageClassNameFactory = new NameFactory(useMixedCaseClassNames);
+                    packageClassNameFactory = new SimpleNameFactory(useMixedCaseClassNames);
                     packageMap.put(packageName, packageClassNameFactory);
                 }
                 else

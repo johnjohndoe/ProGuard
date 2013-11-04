@@ -1,4 +1,4 @@
-/* $Id: NopRemover.java,v 1.4 2004/08/15 12:39:30 eric Exp $
+/* $Id: NopRemover.java,v 1.5 2004/10/10 20:56:58 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,6 +21,7 @@
 package proguard.optimize.peephole;
 
 import proguard.classfile.*;
+import proguard.classfile.attribute.*;
 import proguard.classfile.editor.*;
 import proguard.classfile.instruction.*;
 import proguard.classfile.visitor.*;

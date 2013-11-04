@@ -304,9 +304,10 @@ Corresponding configuration options:
 <li>-<a href="usage.html#dontobfuscate">dontobfuscate</a>
 <li>-<a href="usage.html#printmapping">printmapping</a>
 <li>-<a href="usage.html#applymapping">applymapping</a>
-<li>-<a href="usage.html#dontusemixedcaseclassnames">dontusemixedcaseclassnames</a>
+<li>-<a href="usage.html#obfuscationdictionary">obfuscationdictionary</a>
 <li>-<a href="usage.html#overloadaggressively">overloadaggressively</a>
 <li>-<a href="usage.html#defaultpackage">defaultpackage</a>
+<li>-<a href="usage.html#dontusemixedcaseclassnames">dontusemixedcaseclassnames</a>
 <li>-<a href="usage.html#keepattributes">keepattributes</a>
 <li>-<a href="usage.html#renamesourcefileattribute">renamesourcefileattribute</a>
 <li>-<a href="usage.html#keepnames">keepnames</a>
@@ -347,12 +348,13 @@ information that ProGuard returns when processing your code.
 
 Corresponding configuration options:
 <ul type="none">
-<li>-<a href="usage.html#verbose">verbose</a>
 <li>-<a href="usage.html#printseeds">printseeds</a>
+<li>-<a href="usage.html#verbose">verbose</a>
 <li>-<a href="usage.html#dontnote">dontnote</a>
 <li>-<a href="usage.html#dontwarn">dontwarn</a>
 <li>-<a href="usage.html#ignorewarnings">ignorewarnings</a>
 <li>-<a href="usage.html#dontskipnonpubliclibraryclasses">dontskipnonpubliclibraryclasses</a>
+<li>-<a href="usage.html#dontskipnonpubliclibraryclassmembers">dontskipnonpubliclibraryclassmembers</a>
 </ul>
 <p>
 
@@ -383,13 +385,13 @@ the obfuscated stack trace, and an output console to view the de-obfuscated
 stack trace:
 
 <ul>
+<li>The <b>Mapping file</b> text field takes the name of the required mapping
+    file that ProGuard wrote while processing the original code. The file name
+    can be entered manually or by means of the <b>Browse...</b> button that
+    opens a file chooser.
+
 <li>The <b>Verbose</b> check box in the settings panel allows to toggle between
     normal mode and verbose mode.
-
-<li>The <b>Mapping file</b> text field takes the name of the mapping file that
-    ProGuard wrote while processing the original code. The file name can be
-    entered manually or by means of the <b>Browse...</b> button that opens a
-    file chooser.
 
 <li>The <b>Obfuscated stack trace</b> text area allows to enter the stack
     trace, typically by copying and pasting it from elsewhere. Alternatively,

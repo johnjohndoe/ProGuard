@@ -1,4 +1,4 @@
-/* $Id: TracedVariables.java,v 1.4 2004/08/28 22:50:49 eric Exp $
+/* $Id: TracedVariables.java,v 1.7 2004/11/20 15:06:55 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -114,11 +114,11 @@ class TracedVariables extends Variables
         traceVariables.initialize(other.traceVariables);
     }
 
-    public void generalize(TracedVariables other)
+    public boolean generalize(TracedVariables other)
     {
-        super.generalize(other);
-
-        traceVariables.generalize(other.traceVariables);
+        return
+            super.generalize(other) |
+            traceVariables.generalize(other.traceVariables);
     }
 
     public void store(int index, Value value)

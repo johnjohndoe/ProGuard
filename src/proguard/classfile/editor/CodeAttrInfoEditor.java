@@ -1,4 +1,4 @@
-/* $Id: CodeAttrInfoEditor.java,v 1.7 2004/09/12 11:38:29 eric Exp $
+/* $Id: CodeAttrInfoEditor.java,v 1.9 2004/10/10 20:56:58 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,6 +21,8 @@
 package proguard.classfile.editor;
 
 import proguard.classfile.*;
+import proguard.classfile.attribute.*;
+import proguard.classfile.attribute.annotation.*;
 import proguard.classfile.instruction.*;
 import proguard.classfile.visitor.*;
 
@@ -35,7 +37,8 @@ public class CodeAttrInfoEditor
              InstructionVisitor,
              ExceptionInfoVisitor,
              LineNumberInfoVisitor,
-             LocalVariableInfoVisitor
+             LocalVariableInfoVisitor,
+             LocalVariableTypeInfoVisitor
 {
     private int              codeLength;
     private boolean          modified;
@@ -204,6 +207,7 @@ public class CodeAttrInfoEditor
 
     public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo) {}
     public void visitInnerClassesAttrInfo(ClassFile classFile, InnerClassesAttrInfo innerClassesAttrInfo) {}
+    public void visitEnclosingMethodAttrInfo(ClassFile classFile, EnclosingMethodAttrInfo enclosingMethodAttrInfo) {}
     public void visitConstantValueAttrInfo(ClassFile classFile, FieldInfo fieldInfo, ConstantValueAttrInfo constantValueAttrInfo) {}
     public void visitExceptionsAttrInfo(ClassFile classFile, MethodInfo methodInfo, ExceptionsAttrInfo exceptionsAttrInfo) {}
     public void visitSourceFileAttrInfo(ClassFile classFile, SourceFileAttrInfo sourceFileAttrInfo) {}
@@ -211,6 +215,11 @@ public class CodeAttrInfoEditor
     public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo) {}
     public void visitSyntheticAttrInfo(ClassFile classFile, SyntheticAttrInfo syntheticAttrInfo) {}
     public void visitSignatureAttrInfo(ClassFile classFile, SignatureAttrInfo signatureAttrInfo) {}
+    public void visitRuntimeVisibleAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleAnnotationsAttrInfo runtimeVisibleAnnotationsAttrInfo) {}
+    public void visitRuntimeInvisibleAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleAnnotationsAttrInfo runtimeInvisibleAnnotationsAttrInfo) {}
+    public void visitRuntimeVisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleParameterAnnotationsAttrInfo runtimeVisibleParameterAnnotationsAttrInfo) {}
+    public void visitRuntimeInvisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleParameterAnnotationsAttrInfo runtimeInvisibleParameterAnnotationsAttrInfo) {}
+    public void visitAnnotationDefaultAttrInfo(ClassFile classFile, AnnotationDefaultAttrInfo annotationDefaultAttrInfo) {}
 
 
     public void visitCodeAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo)
@@ -267,6 +276,20 @@ public class CodeAttrInfoEditor
         localVariableTableAttrInfo.u2localVariableTableLength =
             removeEmptyLocalVariables(localVariableTableAttrInfo.localVariableTable,
                                       localVariableTableAttrInfo.u2localVariableTableLength);
+    }
+
+
+    // Implementations for LocalVariableInfoVisitor.
+
+    public void visitLocalVariableTypeTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeTableAttrInfo localVariableTypeTableAttrInfo)
+    {
+        // Remap all local variable table entries.
+        localVariableTypeTableAttrInfo.localVariablesAccept(classFile, methodInfo, codeAttrInfo, this);
+
+        // Remove local variables with empty code blocks.
+        localVariableTypeTableAttrInfo.u2localVariableTypeTableLength =
+            removeEmptyLocalVariableTypes(localVariableTypeTableAttrInfo.localVariableTypeTable,
+                                          localVariableTypeTableAttrInfo.u2localVariableTypeTableLength);
     }
 
 
@@ -341,6 +364,17 @@ public class CodeAttrInfoEditor
         localVariableInfo.u2length  = remapBranchOffset(localVariableInfo.u2startpc,
                                                         localVariableInfo.u2length);
         localVariableInfo.u2startpc = remapInstructionOffset(localVariableInfo.u2startpc);
+    }
+
+
+    // Implementations for LocalVariableTypeInfoVisitor.
+
+    public void visitLocalVariableTypeInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeInfo localVariableTypeInfo)
+    {
+        // Remap the code offset and length.
+        localVariableTypeInfo.u2length  = remapBranchOffset(localVariableTypeInfo.u2startpc,
+                                                            localVariableTypeInfo.u2length);
+        localVariableTypeInfo.u2startpc = remapInstructionOffset(localVariableTypeInfo.u2startpc);
     }
 
 
@@ -603,6 +637,28 @@ public class CodeAttrInfoEditor
             if (localVariableInfo.u2length > 0)
             {
                 localVariableInfos[newIndex++] = localVariableInfo;
+            }
+        }
+
+        return newIndex;
+    }
+
+
+    /**
+     * Returns the given list of local variable types, without the ones that
+     * have empty code blocks.
+     */
+    private int removeEmptyLocalVariableTypes(LocalVariableTypeInfo[] localVariableTypeInfos,
+                                              int                     localVariableTypeInfoCount)
+    {
+        // Overwrite all empty exceptions.
+        int newIndex = 0;
+        for (int index = 0; index < localVariableTypeInfoCount; index++)
+        {
+            LocalVariableTypeInfo localVariableTypeInfo = localVariableTypeInfos[index];
+            if (localVariableTypeInfo.u2length > 0)
+            {
+                localVariableTypeInfos[newIndex++] = localVariableTypeInfo;
             }
         }
 

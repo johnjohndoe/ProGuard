@@ -1,4 +1,4 @@
-/* $Id: NameAndTypeUsageMarker.java,v 1.10 2004/08/15 12:39:30 eric Exp $
+/* $Id: NameAndTypeUsageMarker.java,v 1.12 2004/11/20 15:41:24 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,8 +21,9 @@
 package proguard.obfuscate;
 
 import proguard.classfile.*;
+import proguard.classfile.attribute.*;
+import proguard.classfile.attribute.annotation.*;
 import proguard.classfile.visitor.*;
-
 
 /**
  * This ClassFileVisitor marks all NameAndType constant pool entries that are
@@ -34,7 +35,8 @@ import proguard.classfile.visitor.*;
  */
 public class NameAndTypeUsageMarker
   implements ClassFileVisitor,
-             CpInfoVisitor
+             CpInfoVisitor,
+             AttrInfoVisitor
 {
     // A visitor info flag to indicate the NameAndType constant pool entry is being used.
     private static final Object USED = new Object();
@@ -44,8 +46,13 @@ public class NameAndTypeUsageMarker
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
-        // Mark the NameAndType entries referenced by all other constant pool entries.
+        // Mark the NameAndType entries referenced by all other constant pool
+        // entries.
         programClassFile.constantPoolEntriesAccept(this);
+
+        // Mark the NameAndType entries referenced by all EnclosingMethod
+        // attributes.
+        programClassFile.attributesAccept(this);
     }
 
 
@@ -87,6 +94,34 @@ public class NameAndTypeUsageMarker
     private void visitRefCpInfo(ClassFile classFile, RefCpInfo refCpInfo)
     {
         markNameAndTypeCpEntry(classFile, refCpInfo.u2nameAndTypeIndex);
+    }
+
+
+    // Implementations for AttrInfoVisitor.
+
+    public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo) {}
+    public void visitInnerClassesAttrInfo(ClassFile classFile, InnerClassesAttrInfo innerClassesAttrInfo) {}
+    public void visitConstantValueAttrInfo(ClassFile classFile, FieldInfo fieldInfo, ConstantValueAttrInfo constantValueAttrInfo) {}
+    public void visitExceptionsAttrInfo(ClassFile classFile, MethodInfo methodInfo, ExceptionsAttrInfo exceptionsAttrInfo) {}
+    public void visitCodeAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo) {}
+    public void visitLineNumberTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LineNumberTableAttrInfo lineNumberTableAttrInfo) {}
+    public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo) {}
+    public void visitLocalVariableTypeTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeTableAttrInfo localVariableTypeTableAttrInfo) {}
+    public void visitSourceFileAttrInfo(ClassFile classFile, SourceFileAttrInfo sourceFileAttrInfo) {}
+    public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo) {}
+    public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo) {}
+    public void visitSyntheticAttrInfo(ClassFile classFile, SyntheticAttrInfo syntheticAttrInfo) {}
+    public void visitSignatureAttrInfo(ClassFile classFile, SignatureAttrInfo signatureAttrInfo) {}
+    public void visitRuntimeVisibleAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleAnnotationsAttrInfo runtimeVisibleAnnotationsAttrInfo) {}
+    public void visitRuntimeInvisibleAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleAnnotationsAttrInfo runtimeInvisibleAnnotationsAttrInfo) {}
+    public void visitRuntimeVisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleParameterAnnotationsAttrInfo runtimeVisibleParameterAnnotationsAttrInfo) {}
+    public void visitRuntimeInvisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleParameterAnnotationsAttrInfo runtimeInvisibleParameterAnnotationsAttrInfo) {}
+    public void visitAnnotationDefaultAttrInfo(ClassFile classFile, AnnotationDefaultAttrInfo annotationDefaultAttrInfo) {}
+
+
+    public void visitEnclosingMethodAttrInfo(ClassFile classFile, EnclosingMethodAttrInfo enclosingMethodAttrInfo)
+    {
+        markNameAndTypeCpEntry(classFile, enclosingMethodAttrInfo.u2nameAndTypeIndex);
     }
 
 

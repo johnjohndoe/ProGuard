@@ -1,4 +1,4 @@
-/* $Id: ClassFileCleaner.java,v 1.14 2004/08/15 12:39:30 eric Exp $
+/* $Id: ClassFileCleaner.java,v 1.17 2004/11/20 15:41:24 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,7 +21,8 @@
 package proguard.classfile.visitor;
 
 import proguard.classfile.*;
-
+import proguard.classfile.attribute.*;
+import proguard.classfile.attribute.annotation.*;
 
 /**
  * This <code>ClassFileVisitor</code> removes all visitor information of the
@@ -35,7 +36,9 @@ public class ClassFileCleaner
              MemberInfoVisitor,
              AttrInfoVisitor,
              ExceptionInfoVisitor,
-             InnerClassesInfoVisitor
+             InnerClassesInfoVisitor,
+             AnnotationVisitor,
+             ElementValueVisitor
 {
     // Implementations for ClassFileVisitor.
 
@@ -164,8 +167,6 @@ public class ClassFileCleaner
 
 
     // Implementations for AttrInfoVisitor.
-    // Note that attributes are typically only referenced once, so we don't
-    // test if they are marked already.
 
     public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo)
     {
@@ -178,6 +179,12 @@ public class ClassFileCleaner
         clean(innerClassesAttrInfo);
 
         innerClassesAttrInfo.innerClassEntriesAccept(classFile, this);
+    }
+
+
+    public void visitEnclosingMethodAttrInfo(ClassFile classFile, EnclosingMethodAttrInfo enclosingMethodAttrInfo)
+    {
+        clean(enclosingMethodAttrInfo);
     }
 
 
@@ -216,6 +223,12 @@ public class ClassFileCleaner
     }
 
 
+    public void visitLocalVariableTypeTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeTableAttrInfo localVariableTypeTableAttrInfo)
+    {
+        clean(localVariableTypeTableAttrInfo);
+    }
+
+
     public void visitSourceFileAttrInfo(ClassFile classFile, SourceFileAttrInfo sourceFileAttrInfo)
     {
         clean(sourceFileAttrInfo);
@@ -246,11 +259,43 @@ public class ClassFileCleaner
     }
 
 
-    // Implementations for ExceptionInfoVisitor.
-
-    public void visitExceptionInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, ExceptionInfo exceptionInfo)
+    public void visitRuntimeVisibleAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleAnnotationsAttrInfo runtimeVisibleAnnotationsAttrInfo)
     {
-        clean(exceptionInfo);
+        clean(runtimeVisibleAnnotationsAttrInfo);
+
+        runtimeVisibleAnnotationsAttrInfo.annotationsAccept(classFile, this);
+    }
+
+
+    public void visitRuntimeInvisibleAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleAnnotationsAttrInfo runtimeInvisibleAnnotationsAttrInfo)
+    {
+        clean(runtimeInvisibleAnnotationsAttrInfo);
+
+        runtimeInvisibleAnnotationsAttrInfo.annotationsAccept(classFile, this);
+    }
+
+
+    public void visitRuntimeVisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleParameterAnnotationsAttrInfo runtimeVisibleParameterAnnotationsAttrInfo)
+    {
+        clean(runtimeVisibleParameterAnnotationsAttrInfo);
+
+        runtimeVisibleParameterAnnotationsAttrInfo.annotationsAccept(classFile, this);
+    }
+
+
+    public void visitRuntimeInvisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleParameterAnnotationsAttrInfo runtimeInvisibleParameterAnnotationsAttrInfo)
+    {
+        clean(runtimeInvisibleParameterAnnotationsAttrInfo);
+
+        runtimeInvisibleParameterAnnotationsAttrInfo.annotationsAccept(classFile, this);
+    }
+
+
+    public void visitAnnotationDefaultAttrInfo(ClassFile classFile, AnnotationDefaultAttrInfo annotationDefaultAttrInfo)
+    {
+        clean(annotationDefaultAttrInfo);
+
+        annotationDefaultAttrInfo.defaultValueAccept(classFile, this);
     }
 
 
@@ -259,6 +304,58 @@ public class ClassFileCleaner
     public void visitInnerClassesInfo(ClassFile classFile, InnerClassesInfo innerClassesInfo)
     {
         clean(innerClassesInfo);
+    }
+
+
+    // Implementations for ExceptionInfoVisitor.
+
+    public void visitExceptionInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, ExceptionInfo exceptionInfo)
+    {
+        clean(exceptionInfo);
+    }
+
+
+    // Implementations for AnnotationVisitor.
+
+    public void visitAnnotation(ClassFile classFile, Annotation annotation)
+    {
+        clean(annotation);
+
+        annotation.elementValuesAccept(classFile, this);
+    }
+
+
+    // Implementations for ElementValueVisitor.
+
+    public void visitConstantElementValue(ClassFile classFile, Annotation annotation, ConstantElementValue constantElementValue)
+    {
+        clean(constantElementValue);
+    }
+
+
+    public void visitEnumConstantElementValue(ClassFile classFile, Annotation annotation, EnumConstantElementValue enumConstantElementValue)
+    {
+        clean(enumConstantElementValue);
+    }
+
+
+    public void visitClassElementValue(ClassFile classFile, Annotation annotation, ClassElementValue classElementValue)
+    {
+        clean(classElementValue);
+    }
+
+
+    public void visitAnnotationElementValue(ClassFile classFile, Annotation annotation, AnnotationElementValue annotationElementValue)
+    {
+        clean(annotationElementValue);
+
+        annotationElementValue.annotationAccept(classFile, this);
+    }
+
+
+    public void visitArrayElementValue(ClassFile classFile, Annotation annotation, ArrayElementValue arrayElementValue)
+    {
+        clean(arrayElementValue);
     }
 
 

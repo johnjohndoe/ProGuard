@@ -1,4 +1,4 @@
-/* $Id: ChangedCodePrinter.java,v 1.4 2004/08/15 12:39:30 eric Exp $
+/* $Id: ChangedCodePrinter.java,v 1.6 2004/11/20 15:41:24 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,6 +21,8 @@
 package proguard.optimize;
 
 import proguard.classfile.*;
+import proguard.classfile.attribute.*;
+import proguard.classfile.attribute.annotation.*;
 import proguard.classfile.util.ClassUtil;
 import proguard.classfile.visitor.*;
 
@@ -30,8 +32,7 @@ import proguard.classfile.visitor.*;
  *
  * @author Eric Lafortune
  */
-public class ChangedCodePrinter
-implements   AttrInfoVisitor
+public class ChangedCodePrinter implements AttrInfoVisitor
 {
     private AttrInfoVisitor attrInfoVisitor;
 
@@ -54,6 +55,11 @@ implements   AttrInfoVisitor
       attrInfoVisitor.visitInnerClassesAttrInfo(classFile, innerClassesAttrInfo);
     }
 
+    public void visitEnclosingMethodAttrInfo(ClassFile classFile, EnclosingMethodAttrInfo enclosingMethodAttrInfo)
+    {
+        attrInfoVisitor.visitEnclosingMethodAttrInfo(classFile, enclosingMethodAttrInfo);
+    }
+
     public void visitConstantValueAttrInfo(ClassFile classFile, FieldInfo fieldInfo, ConstantValueAttrInfo constantValueAttrInfo)
     {
       attrInfoVisitor.visitConstantValueAttrInfo(classFile, fieldInfo, constantValueAttrInfo);
@@ -72,6 +78,11 @@ implements   AttrInfoVisitor
     public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo)
     {
       attrInfoVisitor.visitLocalVariableTableAttrInfo(classFile, methodInfo, codeAttrInfo, localVariableTableAttrInfo);
+    }
+
+    public void visitLocalVariableTypeTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeTableAttrInfo localVariableTypeTableAttrInfo)
+    {
+        attrInfoVisitor.visitLocalVariableTypeTableAttrInfo(classFile, methodInfo, codeAttrInfo, localVariableTypeTableAttrInfo);
     }
 
     public void visitSourceFileAttrInfo(ClassFile classFile, SourceFileAttrInfo sourceFileAttrInfo)
@@ -98,6 +109,32 @@ implements   AttrInfoVisitor
     {
       attrInfoVisitor.visitSignatureAttrInfo(classFile, signatureAttrInfo);
     }
+
+    public void visitRuntimeVisibleAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleAnnotationsAttrInfo runtimeVisibleAnnotationsAttrInfo)
+    {
+        attrInfoVisitor.visitRuntimeVisibleAnnotationAttrInfo(classFile, runtimeVisibleAnnotationsAttrInfo);
+    }
+
+    public void visitRuntimeInvisibleAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleAnnotationsAttrInfo runtimeInvisibleAnnotationsAttrInfo)
+    {
+        attrInfoVisitor.visitRuntimeInvisibleAnnotationAttrInfo(classFile, runtimeInvisibleAnnotationsAttrInfo);
+    }
+
+    public void visitRuntimeVisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleParameterAnnotationsAttrInfo runtimeVisibleParameterAnnotationsAttrInfo)
+    {
+        attrInfoVisitor.visitRuntimeVisibleParameterAnnotationAttrInfo(classFile, runtimeVisibleParameterAnnotationsAttrInfo);
+    }
+
+    public void visitRuntimeInvisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleParameterAnnotationsAttrInfo runtimeInvisibleParameterAnnotationsAttrInfo)
+    {
+        attrInfoVisitor.visitRuntimeInvisibleParameterAnnotationAttrInfo(classFile, runtimeInvisibleParameterAnnotationsAttrInfo);
+    }
+
+    public void visitAnnotationDefaultAttrInfo(ClassFile classFile, AnnotationDefaultAttrInfo annotationDefaultAttrInfo)
+    {
+        attrInfoVisitor.visitAnnotationDefaultAttrInfo(classFile, annotationDefaultAttrInfo);
+    }
+
 
 
     public void visitCodeAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo)

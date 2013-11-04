@@ -1,4 +1,4 @@
-/* $Id: ConfigurationWriter.java,v 1.10 2004/08/15 12:39:30 eric Exp $
+/* $Id: ConfigurationWriter.java,v 1.13 2004/11/20 15:41:24 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -116,24 +116,31 @@ public class ConfigurationWriter
         writer.println();
 
         // Write the other options.
-        writeOption(ConfigurationConstants.PRINT_SEEDS_OPTION,                          configuration.printSeeds);
-        writeOption(ConfigurationConstants.PRINT_USAGE_OPTION,                          configuration.printUsage);
-        writeOption(ConfigurationConstants.PRINT_MAPPING_OPTION,                        configuration.printMapping);
-        writeOption(ConfigurationConstants.APPLY_MAPPING_OPTION,                        configuration.applyMapping);
-        writeOption(ConfigurationConstants.VERBOSE_OPTION,                              configuration.verbose);
-        writeOption(ConfigurationConstants.IGNORE_WARNINGS_OPTION,                      configuration.ignoreWarnings);
-        writeOption(ConfigurationConstants.DONT_WARN_OPTION,                            !configuration.warn);
-        writeOption(ConfigurationConstants.DONT_NOTE_OPTION,                            !configuration.note);
-        writeOption(ConfigurationConstants.DONT_SHRINK_OPTION,                          !configuration.shrink);
-        writeOption(ConfigurationConstants.DONT_OPTIMIZE_OPTION ,                       !configuration.optimize);
-        writeOption(ConfigurationConstants.DONT_OBFUSCATE_OPTION,                       !configuration.obfuscate);
-        writeOption(ConfigurationConstants.DONT_USE_MIXED_CASE_CLASS_NAMES_OPTION,      !configuration.useMixedCaseClassNames);
-        writeOption(ConfigurationConstants.OVERLOAD_AGGRESSIVELY_OPTION,                configuration.overloadAggressively);
-        writeOption(ConfigurationConstants.DEFAULT_PACKAGE_OPTION,                      configuration.defaultPackage);
-        writeOption(ConfigurationConstants.ALLOW_ACCESS_MODIFICATION_OPTION,            configuration.allowAccessModification);
-        writeOption(ConfigurationConstants.KEEP_ATTRIBUTES_OPTION,                      ListUtil.commaSeparatedString(configuration.keepAttributes));
-        writeOption(ConfigurationConstants.RENAME_SOURCE_FILE_ATTRIBUTE_OPTION,         configuration.newSourceFileAttribute);
-        writeOption(ConfigurationConstants.DONT_SKIP_NON_PUBLIC_LIBRARY_CLASSES_OPTION, !configuration.skipNonPublicLibraryClasses);
+        writeOption(ConfigurationConstants.DONT_SKIP_NON_PUBLIC_LIBRARY_CLASSES_OPTION,       !configuration.skipNonPublicLibraryClasses);
+        writeOption(ConfigurationConstants.DONT_SKIP_NON_PUBLIC_LIBRARY_CLASS_MEMBERS_OPTION, !configuration.skipNonPublicLibraryClassMembers);
+
+        writeOption(ConfigurationConstants.DONT_SHRINK_OPTION,                                !configuration.shrink);
+        writeOption(ConfigurationConstants.PRINT_USAGE_OPTION,                                configuration.printUsage);
+
+        writeOption(ConfigurationConstants.DONT_OPTIMIZE_OPTION ,                             !configuration.optimize);
+        writeOption(ConfigurationConstants.ALLOW_ACCESS_MODIFICATION_OPTION,                  configuration.allowAccessModification);
+
+        writeOption(ConfigurationConstants.DONT_OBFUSCATE_OPTION,                             !configuration.obfuscate);
+        writeOption(ConfigurationConstants.PRINT_MAPPING_OPTION,                              configuration.printMapping);
+        writeOption(ConfigurationConstants.APPLY_MAPPING_OPTION,                              configuration.applyMapping);
+        writeOption(ConfigurationConstants.OBFUSCATION_DICTIONARY_OPTION,                     configuration.obfuscationDictionary);
+        writeOption(ConfigurationConstants.OVERLOAD_AGGRESSIVELY_OPTION,                      configuration.overloadAggressively);
+        writeOption(ConfigurationConstants.DEFAULT_PACKAGE_OPTION,                            configuration.defaultPackage);
+        writeOption(ConfigurationConstants.DONT_USE_MIXED_CASE_CLASS_NAMES_OPTION,            !configuration.useMixedCaseClassNames);
+        writeOption(ConfigurationConstants.KEEP_ATTRIBUTES_OPTION,                            ListUtil.commaSeparatedString(configuration.keepAttributes));
+        writeOption(ConfigurationConstants.RENAME_SOURCE_FILE_ATTRIBUTE_OPTION,               configuration.newSourceFileAttribute);
+
+        writeOption(ConfigurationConstants.VERBOSE_OPTION,                                    configuration.verbose);
+        writeOption(ConfigurationConstants.DONT_NOTE_OPTION,                                  !configuration.note);
+        writeOption(ConfigurationConstants.DONT_WARN_OPTION,                                  !configuration.warn);
+        writeOption(ConfigurationConstants.IGNORE_WARNINGS_OPTION,                            configuration.ignoreWarnings);
+
+        writeOption(ConfigurationConstants.PRINT_SEEDS_OPTION,                                configuration.printSeeds);
         writer.println();
 
         // Write the keep options.

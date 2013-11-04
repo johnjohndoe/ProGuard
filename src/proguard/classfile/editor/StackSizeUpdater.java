@@ -1,4 +1,4 @@
-/* $Id: StackSizeUpdater.java,v 1.8 2004/08/28 20:55:21 eric Exp $
+/* $Id: StackSizeUpdater.java,v 1.12 2004/11/20 15:41:24 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,6 +21,8 @@
 package proguard.classfile.editor;
 
 import proguard.classfile.*;
+import proguard.classfile.attribute.*;
+import proguard.classfile.attribute.annotation.*;
 import proguard.classfile.instruction.*;
 import proguard.classfile.visitor.*;
 
@@ -65,15 +67,22 @@ implements AttrInfoVisitor,
 
     public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo) {}
     public void visitInnerClassesAttrInfo(ClassFile classFile, InnerClassesAttrInfo innerClassesAttrInfo) {}
+    public void visitEnclosingMethodAttrInfo(ClassFile classFile, EnclosingMethodAttrInfo enclosingMethodAttrInfo) {}
     public void visitConstantValueAttrInfo(ClassFile classFile, FieldInfo fieldInfo, ConstantValueAttrInfo constantValueAttrInfo) {}
     public void visitExceptionsAttrInfo(ClassFile classFile, MethodInfo methodInfo, ExceptionsAttrInfo exceptionsAttrInfo) {}
     public void visitLineNumberTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LineNumberTableAttrInfo lineNumberTableAttrInfo) {}
     public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo) {}
+    public void visitLocalVariableTypeTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeTableAttrInfo localVariableTypeTableAttrInfo) {}
     public void visitSourceFileAttrInfo(ClassFile classFile, SourceFileAttrInfo sourceFileAttrInfo) {}
     public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo) {}
     public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo) {}
     public void visitSyntheticAttrInfo(ClassFile classFile, SyntheticAttrInfo syntheticAttrInfo) {}
     public void visitSignatureAttrInfo(ClassFile classFile, SignatureAttrInfo signatureAttrInfo) {}
+    public void visitRuntimeVisibleAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleAnnotationsAttrInfo runtimeVisibleAnnotationsAttrInfo) {}
+    public void visitRuntimeInvisibleAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleAnnotationsAttrInfo runtimeInvisibleAnnotationsAttrInfo) {}
+    public void visitRuntimeVisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleParameterAnnotationsAttrInfo runtimeVisibleParameterAnnotationsAttrInfo) {}
+    public void visitRuntimeInvisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleParameterAnnotationsAttrInfo runtimeInvisibleParameterAnnotationsAttrInfo) {}
+    public void visitAnnotationDefaultAttrInfo(ClassFile classFile, AnnotationDefaultAttrInfo annotationDefaultAttrInfo) {}
 
 
     public void visitCodeAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo)
@@ -161,13 +170,13 @@ implements AttrInfoVisitor,
             // We assume subroutine calls (jsr and jsr_w instructions) don't
             // change the stack, other than popping the return value.
             stackSize -= 1;
-            
+
             evaluateInstructionBlock(classFile,
                                      methodInfo,
                                      codeAttrInfo,
                                      offset + branchInstruction.length(offset));
         }
-        
+
         // Some branch instructions always end the current instruction block.
         exitInstructionBlock =
             opcode == InstructionConstants.OP_GOTO   ||
@@ -276,9 +285,15 @@ implements AttrInfoVisitor,
         {
             System.out.println("--");
         }
-                
+
         // Remember the initial stack size.
-        int initialStackSize = this.stackSize;
+        int initialStackSize = stackSize;
+
+        // Remember the maximum stack size.
+        if (maxStackSize < stackSize)
+        {
+            maxStackSize = stackSize;
+        }
 
         // Evaluate any instructions that haven't been evaluated before.
         while (!evaluated[instructionOffset])
@@ -326,7 +341,7 @@ implements AttrInfoVisitor,
 
             // Continue with the next instruction.
             instructionOffset = nextInstructionOffset;
-            
+
             if (DEBUG)
             {
                 if (evaluated[instructionOffset])

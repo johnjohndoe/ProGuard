@@ -17,7 +17,7 @@
 <li><a href="#obfuscation">What is obfuscation?</a>
 <li><a href="#optimization">What kind of optimizations does <b>ProGuard</b>
     support?</a>
-<li><a href="#jdk1.4">Does <b>ProGuard</b> work with JDK1.4? JDK1.5?</a>
+<li><a href="#jdk1.4">Does <b>ProGuard</b> work with JDK1.4? JDK5.0?</a>
 <li><a href="#j2me">Does <b>ProGuard</b> work with J2ME?</a>
 <li><a href="#ant">Does <b>ProGuard</b> have support for Ant?</a>
 <li><a href="#gui">Does <b>ProGuard</b> come with a GUI?</a>
@@ -25,8 +25,11 @@
     calls?</a>
 <li><a href="#resource">Does <b>ProGuard</b> handle resource files?</a>
 <li><a href="#encrypt">Does <b>ProGuard</b> encrypt strings constants?</a>
+<li><a href="#flow">Does <b>ProGuard</b> perform control flow obfuscation?</a>
 <li><a href="#incremental">Does <b>ProGuard</b> support incremental
     obfuscation?</a>
+<li><a href="#keywords">Can <b>ProGuard</b> obfuscate using reserved
+    keywords?</a>
 <li><a href="#stacktrace">Can <b>ProGuard</b> reconstruct obfuscated stack
     traces?</a>
 </ol>
@@ -70,6 +73,7 @@ methods:
 <li>Various peephole optimizations like push/pop simplification.
 <li>Making classes and methods final when possible.
 <li>Inlining simple getters and setters when possible.
+<li>Replacing interfaces that have single implementations.
 <li>Optionally removing logging code.
 </ul>
 The positive effects of these optimizations will depend on your code and on
@@ -81,11 +85,12 @@ A notable optimization that isn't supported yet is the inlining of constant
 fields that are not marked as final.
 
 <a name="jdk1.4">&nbsp;</a>
-<h3>Does <b>ProGuard</b> work with JDK1.4? JDK1.5?</h3>
+<h3>Does <b>ProGuard</b> work with JDK1.4? JDK5.0?</h3>
 Yes. Class files compiled with JDK1.4 are targeted at JRE1.2 by default. Class
-files compiled with JDK1.5 may have additional attributes for supporting
-generics. The compiled class files have slightly different structures from
-older class files. <b>ProGuard</b> handles all versions correctly.
+files compiled with JDK5.0 may have additional attributes for supporting
+generics and annotations. The compiled class files have slightly different
+structures from older class files. <b>ProGuard</b> handles all versions
+correctly.
 
 <a name="j2me">&nbsp;</a>
 <h3>Does <b>ProGuard</b> work with J2ME?</h3>
@@ -146,11 +151,26 @@ the encryption has to be perfectly reversible by definition. Moreover, the
 decryption costs additional memory and computation at run-time. If this feature
 is ever incorporated, I'll provide a tool to decrypt the strings as well.
 
+<a name="flow">&nbsp;</a>
+<h3>Does <b>ProGuard</b> perform flow obfuscation?</h3>
+No. Control obfuscation injects additional branches into the bytecode, in an
+attempt to fool decompilers. This operation may confuse JIT compilers as well,
+adversely affecting performance. It may be added as an option in the future,
+but it doesn't have the highest priority.
+
 <a name="incremental">&nbsp;</a>
 <h3>Does <b>ProGuard</b> support incremental obfuscation?</h3>
 Yes. This feature allows you to specify a previous obfuscation mapping file in
 a new obfuscation step, in order to produce add-ons or patches for obfuscated
 code.
+
+<a name="keywords">&nbsp;</a>
+<h3>Can <b>ProGuard</b> obfuscate using reserved keywords?</h3>
+Yes. You can specify your own obfuscation dictionary, such as a list of
+reserved key words, identifiers with foreign characters, random source files,
+or a text by Shakespeare. Note that this hardly improves the obfuscation.
+Decent decompilers can automatically replace reserved keywords, and the effect
+can fairly simply be undone by obfuscating again with simpler names.
 
 <a name="stacktrace">&nbsp;</a>
 <h3>Can <b>ProGuard</b> reconstruct obfuscated stack traces?</h3>

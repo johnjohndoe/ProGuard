@@ -21,6 +21,7 @@
     <!-- libraryjar file="jai_core.jar"        / -->
     <!-- ...                                   / -->
 
+
     <!-- Preserve all public applications. -->
 
     <keepclasseswithmembers access="public">
@@ -30,11 +31,24 @@
               parameters="java.lang.String[]" />
     </keepclasseswithmembers>
 
+    <!-- Preserve all annotations. -->
+
+    <keepattribute name="*Annotation*" />
+
     <!-- Preserve all native method names and the names of their classes. -->
 
     <keepclasseswithmembernames>
       <method access="native" />
     </keepclasseswithmembernames>
+
+    <!-- Preserve a method that is required in all enumeration classes. -->
+
+    <keepclassmembers extends="java.lang.Enum">
+      <method access="public"
+              type="**[]"
+              name="values"
+              parameters="" />
+    </keepclassmembers>
 
     <!-- Explicitly preserve all serialization members. The Serializable
          interface is only a marker interface, so it wouldn't save them.

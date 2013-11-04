@@ -1,4 +1,4 @@
-/* $Id: ClassFileClassForNameReferenceInitializer.java,v 1.12 2004/08/15 12:39:30 eric Exp $
+/* $Id: ClassFileClassForNameReferenceInitializer.java,v 1.13 2004/10/10 20:56:58 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,6 +21,7 @@
 package proguard.classfile.util;
 
 import proguard.classfile.*;
+import proguard.classfile.attribute.*;
 import proguard.classfile.instruction.*;
 import proguard.classfile.visitor.*;
 

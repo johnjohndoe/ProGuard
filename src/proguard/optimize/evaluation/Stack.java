@@ -1,4 +1,4 @@
-/* $Id: Stack.java,v 1.3 2004/08/15 12:39:30 eric Exp $
+/* $Id: Stack.java,v 1.6 2004/11/20 15:41:24 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -111,25 +111,34 @@ class Stack
     /**
      * Generalizes the values of this Stack with the values of the given Stack.
      * The stacks must have the same current sizes.
+     * @return whether the generalization has made any difference.
      */
-    public void generalize(Stack other)
+    public boolean generalize(Stack other)
     {
         if (this.currentSize != other.currentSize)
         {
             throw new IllegalArgumentException("Stacks have different current sizes ["+this.currentSize+"] and ["+other.currentSize+"]");
         }
 
+        boolean changed = false;
+
         // Generalize the stack values.
         for (int index = 0; index < currentSize; index++)
         {
-            Value thisValue  = this.values[index];
             Value otherValue = other.values[index];
 
             if (otherValue != null)
             {
-                values[index] = thisValue == null ?
-                    otherValue :
-                    thisValue.generalize(otherValue);
+                Value thisValue  = this.values[index];
+
+                if (thisValue != null)
+                {
+                    otherValue = thisValue.generalize(otherValue);
+
+                    changed = changed || !otherValue.equals(thisValue);
+                }
+
+                values[index] = otherValue;
             }
         }
 
@@ -138,6 +147,8 @@ class Stack
         {
             this.actualMaxSize = other.actualMaxSize;
         }
+
+        return changed;
     }
 
 

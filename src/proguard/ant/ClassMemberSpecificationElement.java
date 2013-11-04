@@ -1,4 +1,4 @@
-/* $Id: ClassMemberSpecificationElement.java,v 1.2 2004/08/28 22:50:49 eric Exp $
+/* $Id: ClassMemberSpecificationElement.java,v 1.4 2004/11/20 15:41:24 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -71,11 +71,6 @@ public class ClassMemberSpecificationElement extends DataType
         // Perform some basic checks on the attributes.
         if (isMethod)
         {
-            if ((type != null) ^ (parameters != null))
-            {
-                throw new BuildException("Type and parameters attributes must always be present in combination in method specification");
-            }
-
             if (isConstructor)
             {
                 if (type != null)
@@ -83,8 +78,16 @@ public class ClassMemberSpecificationElement extends DataType
                     throw new BuildException("Type attribute not allowed in constructor specification ["+type+"]");
                 }
 
-                type = ClassConstants.EXTERNAL_TYPE_VOID;
+                if (parameters != null)
+                {
+                    type = ClassConstants.EXTERNAL_TYPE_VOID;
+                }
+
                 name = ClassConstants.INTERNAL_METHOD_NAME_INIT;
+            }
+            else if ((type != null) ^ (parameters != null))
+            {
+                throw new BuildException("Type and parameters attributes must always be present in combination in method specification");
             }
         }
         else

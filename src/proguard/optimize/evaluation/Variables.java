@@ -1,4 +1,4 @@
-/* $Id: Variables.java,v 1.3 2004/08/15 12:39:30 eric Exp $
+/* $Id: Variables.java,v 1.6 2004/11/20 15:41:24 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -101,38 +101,45 @@ class Variables
 
     /**
      * Generalizes the values of this Variables object with the values of the
-     * given Variables object.
+     * given Variables object. In case of conflicts, the other Variables
+     * object gets precedence.
+     * @return whether the generalization has made any difference.
      */
-    public void generalize(Variables other)
+    public boolean generalize(Variables other)
     {
         if (this.size != other.size)
         {
             throw new IllegalArgumentException("Variable frames have different sizes ["+this.size+"] and ["+other.size+"]");
         }
 
+        boolean changed = false;
+
         for (int index = 0; index < size; index++)
         {
-            Value thisValue  = this.values[index];
             Value otherValue = other.values[index];
 
             if (otherValue != null)
             {
-                try {
-                    values[index] = thisValue == null ?
-                        otherValue :
-                        thisValue.generalize(otherValue);
-                }
-                catch (IllegalArgumentException ex)
+                Value thisValue  = this.values[index];
+
+                // Occasionally, two values of different types might be
+                // present in the same variable in a variable frame
+                // (corresponding to two local variables that share the
+                // same index), at some point outside of their scopes.
+                // The new value gets precedence.
+                if (thisValue != null &&
+                    thisValue.computationalType() == otherValue.computationalType())
                 {
-                    // Occasionally, two values of different types might be
-                    // present in the same variable in a variable frame
-                    // (corresponding to two local variables that share the
-                    // same index), at some point outside of their scopes.
-                    // We'll keep this value, in case we return back to its
-                    // scope.
+                    otherValue = thisValue.generalize(otherValue);
+
+                    changed = changed || !otherValue.equals(thisValue);
                 }
+
+                values[index] = otherValue;
             }
         }
+
+        return changed;
     }
 
 

@@ -12,7 +12,7 @@
             allowaccessmodification="on"
             printseeds="on">
 
-            <!-- On Windows, you  you can't use mixed case class names,
+            <!-- On Windows, you can't use mixed case class names,
                  for the sake of the preverify tool.
             usemixedcaseclassnames="false">
             -->
@@ -34,7 +34,7 @@
     <keepclasseswithmembernames>
       <method access="native" />
     </keepclasseswithmembernames>
-
+    
     <!-- Your application may contain more items that need to be preserved;
          typically classes that are dynamically created using Class.forName -->
 

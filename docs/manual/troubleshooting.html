@@ -79,6 +79,10 @@ some more serious warnings:
     class file didn't get recompiled properly, or some class file was left
     behind after its source file was removed. Try removing all class files,
     recompiling them, zipping them up, and running ProGuard again.
+    <p>
+    If your program classes reside in the same packages as library classes,
+    and refer to their package visible class members, then you should specify
+    the <code>-dontskipnonpubliclibraryclassmembers</code> option.
 
 </ul>
 <p>
@@ -141,6 +145,12 @@ might be several reasons:
     expecting. It may help to double-check for typos too. You can use the
     <code>-printseeds</code> option to see which elements are being kept
     exactly.
+    <p>
+
+<li>If your <b>stack traces</b> don't contain any class names or lines numbers,
+    even though you are keeping the proper attributes, make sure this debugging
+    information is present in your compiled code to start with. Notably the Ant
+    javac task has debugging information switched off by default.
     <p>
 
 <li>If you get a <code><b>NoClassDefFoundError</b></code>, your class path is

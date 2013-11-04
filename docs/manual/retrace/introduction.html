@@ -17,6 +17,39 @@ have been replaced by short meaningless strings. Source file names and line
 numbers are missing altogether. While this may be intentional, it can also be
 inconvenient when debugging problems.
 <p>
+
+<table class="diagram" align="center">
+
+<tr>
+<td rowspan="1" class="lightblock">Original code</td>
+<td             class="transparentblock">- <b>ProGuard</b> &rarr;</td>
+<td rowspan="1" class="lightblock">Obfuscated code</td>
+</tr>
+
+<tr>
+<td rowspan="3" class="transparentblock"></td>
+<td             class="transparentblock">&darr;</td>
+<td             class="transparentblock">&darr;</td>
+</tr>
+
+<tr>
+<td             class="whiteblock">Mapping file</td>
+<td             class="transparentblock">&darr;</td>
+</tr>
+
+<tr>
+<td             class="transparentblock">&darr;</td>
+<td             class="transparentblock">&darr;</td>
+</tr>
+
+<tr>
+<td             class="whiteblock">Readable stack trace</td>
+<td             class="transparentblock">&larr; <b>ReTrace</b> -</td>
+<td             class="whiteblock">Obfuscated stack trace</td>
+</tr>
+
+</table>
+<p>
 ReTrace can read an obfuscated stack trace and restore it to what it would
 look like without obfuscation. The restoration is based on the mapping file
 that ProGuard can write out during obfuscation. The mapping file links the

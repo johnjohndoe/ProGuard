@@ -52,6 +52,16 @@
 </tr>
 
 <tr>
+<td valign="top"><code><b>-dontskipnonpubliclibraryclasses</b></code></td>
+<td>Don't ignore non-public library classes.</td>
+</tr>
+
+<tr>
+<td valign="top"><code><b>-dontskipnonpubliclibraryclassmembers</b></code></td>
+<td>Don't ignore package visible library class members.</td>
+</tr>
+
+<tr>
 <td valign="top"><code><b>-keep</b></code> <i>class_specification</i></td>
 <td>Preserve the specified classes <i>and</i> class members.</td>
 
@@ -93,25 +103,14 @@
 </tr>
 
 <tr>
-<td valign="top"><code><b>-keepattributes</b></code>
-    [<i>attribute_name<b>,</b>...</i>]</td>
-<td>Preserve the given optional attributes; typically
-    <code>LineNumberTable</code>, <code>LocalVariableTable</code>,
-    <code>SourceFile</code>, <code>Deprecated</code>, <code>Synthetic</code>,
-    <code>Signature</code>, and <code>InnerClasses</code>.</td>
-</tr>
-
-<tr>
-<td valign="top"><code><b>-renamesourcefileattribute</b></code>
-    [<i>string</i>]</td>
-<td>Put the given constant string in the <code>SourceFile</code>
-    attributes.</td>
-</tr>
-
-<tr>
 <td valign="top"><code><b>-printseeds</b></code> [<i>filename</i>]</td>
 <td>List classes and class members matched by the various <code>-keep</code>
     options, to the standard output or to the given file.</td>
+</tr>
+
+<tr>
+<td valign="top"><code><b>-dontshrink</b></code></td>
+<td>Don't shrink the input class files.</td>
 </tr>
 
 <tr>
@@ -121,57 +120,8 @@
 </tr>
 
 <tr>
-<td valign="top"><code><b>-printmapping</b></code> [<i>filename</i>]</td>
-<td>Print the mapping from old names to new names for classes and class members
-    that have been renamed, to the standard output or to the given file.</td>
-</tr>
-
-<tr>
-<td valign="top"><code><b>-applymapping</b></code> <i>filename</i></td>
-<td>Reuse the given mapping, for incremental obfuscation.</td>
-</tr>
-
-<tr>
-<td valign="top"><code><b>-dump</b></code> [<i>filename</i>]</td>
-<td>Write out the internal structure of the processed class files, to the
-    standard output or to the given file.</td>
-</tr>
-
-<tr>
-<td valign="top"><code><b>-verbose</b></code></td>
-<td>Write out some more information during processing.</td>
-</tr>
-
-<tr>
-<td valign="top"><code><b>-ignorewarnings</b></code></td>
-<td>Print warnings about unresolved references, but continue processing
-    anyhow.</td>
-</tr>
-
-<tr>
-<td valign="top"><code><b>-dontwarn</b></code></td>
-<td>Don't warn about unresolved references at all.</td>
-</tr>
-
-<tr>
-<td valign="top"><code><b>-dontnote</b></code></td>
-<td>Don't print notes about class casts of variable dynamically created
-    objects.</td>
-</tr>
-
-<tr>
-<td valign="top"><code><b>-dontshrink</b></code></td>
-<td>Don't shrink the input class files.</td>
-</tr>
-
-<tr>
 <td valign="top"><code><b>-dontoptimize</b></code></td>
 <td>Don't optimize the input class files.</td>
-</tr>
-
-<tr>
-<td valign="top"><code><b>-dontobfuscate</b></code></td>
-<td>Don't obfuscate the input class files.</td>
 </tr>
 
 <tr>
@@ -188,8 +138,25 @@
 </tr>
 
 <tr>
-<td valign="top"><code><b>-dontusemixedcaseclassnames</b></code></td>
-<td>Don't generate mixed-case class names while obfuscating.</td>
+<td valign="top"><code><b>-dontobfuscate</b></code></td>
+<td>Don't obfuscate the input class files.</td>
+</tr>
+
+<tr>
+<td valign="top"><code><b>-printmapping</b></code> [<i>filename</i>]</td>
+<td>Print the mapping from old names to new names for classes and class members
+    that have been renamed, to the standard output or to the given file.</td>
+</tr>
+
+<tr>
+<td valign="top"><code><b>-applymapping</b></code> <i>filename</i></td>
+<td>Reuse the given mapping, for incremental obfuscation.</td>
+</tr>
+
+<tr>
+<td valign="top"><code><b>-obfuscationdictionary</b></code>
+    <i>filename</i></td>
+<td>Use the words in the given text file as obfuscated method names.</td>
 </tr>
 
 <tr>
@@ -204,8 +171,52 @@
 </tr>
 
 <tr>
-<td valign="top"><code><b>-dontskipnonpubliclibraryclasses</b></code></td>
-<td>Don't ignore non-public library classes.</td>
+<td valign="top"><code><b>-dontusemixedcaseclassnames</b></code></td>
+<td>Don't generate mixed-case class names while obfuscating.</td>
+</tr>
+
+<tr>
+<td valign="top"><code><b>-keepattributes</b></code>
+    [<i>attribute_name<b>,</b>...</i>]</td>
+<td>Preserve the given optional attributes; typically
+    <code>LineNumberTable</code>, <code>LocalVariableTable</code>,
+    <code>SourceFile</code>, <code>Deprecated</code>, <code>Synthetic</code>,
+    <code>Signature</code>, and <code>InnerClasses</code>.</td>
+</tr>
+
+<tr>
+<td valign="top"><code><b>-renamesourcefileattribute</b></code>
+    [<i>string</i>]</td>
+<td>Put the given constant string in the <code>SourceFile</code>
+    attributes.</td>
+</tr>
+
+<tr>
+<td valign="top"><code><b>-verbose</b></code></td>
+<td>Write out some more information during processing.</td>
+</tr>
+
+<tr>
+<td valign="top"><code><b>-dontnote</b></code></td>
+<td>Don't print notes about class casts of variable dynamically created
+    objects.</td>
+</tr>
+
+<tr>
+<td valign="top"><code><b>-dontwarn</b></code></td>
+<td>Don't warn about unresolved references at all.</td>
+</tr>
+
+<tr>
+<td valign="top"><code><b>-ignorewarnings</b></code></td>
+<td>Print warnings about unresolved references, but continue processing
+    anyhow.</td>
+</tr>
+
+<tr>
+<td valign="top"><code><b>-dump</b></code> [<i>filename</i>]</td>
+<td>Write out the internal structure of the processed class files, to the
+    standard output or to the given file.</td>
 </tr>
 
 </table>
@@ -222,7 +233,7 @@ Notes:
 </ul>
 <p>
 
-<h2><code>-keep</code> Options</h2>
+<h2>Overview of <code>Keep</code> Options</h2>
 
 <table cellpadding="5">
 

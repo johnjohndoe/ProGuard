@@ -1,4 +1,4 @@
-/* $Id: Utf8Shrinker.java,v 1.25 2004/08/15 12:39:30 eric Exp $
+/* $Id: Utf8Shrinker.java,v 1.26 2004/10/10 20:56:58 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -54,8 +54,8 @@ public class Utf8Shrinker implements ClassFileVisitor
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
-        // Shrink the arrays for constant pool.
-        // Shrinking the constant pool also sets up an index map.
+        // Shift the used constant pool entries together, filling out the
+        // index map.
         programClassFile.u2constantPoolCount =
             shrinkConstantPool(programClassFile.constantPool,
                                programClassFile.u2constantPoolCount);
@@ -80,6 +80,7 @@ public class Utf8Shrinker implements ClassFileVisitor
      */
     private int shrinkConstantPool(CpInfo[] constantPool, int length)
     {
+        // Create a new index map, if necessary.
         if (cpIndexMap == null ||
             cpIndexMap.length < length)
         {

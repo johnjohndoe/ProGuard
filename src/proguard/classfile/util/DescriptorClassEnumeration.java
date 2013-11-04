@@ -1,4 +1,4 @@
-/* $Id: DescriptorClassEnumeration.java,v 1.8 2004/08/15 12:39:30 eric Exp $
+/* $Id: DescriptorClassEnumeration.java,v 1.9 2004/11/14 15:16:01 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -72,6 +72,7 @@ public class DescriptorClassEnumeration
     {
         int count = 0;
 
+        // TODO: Handle generic types.
         for (int i = 0; i < descriptor.length(); i++)
         {
             if (descriptor.charAt(i) == ClassConstants.INTERNAL_TYPE_CLASS_END)
@@ -92,6 +93,7 @@ public class DescriptorClassEnumeration
 
     public String nextFluff()
     {
+        // TODO: Handle generic types.
         int startIndex = index;
         index = descriptor.indexOf(ClassConstants.INTERNAL_TYPE_CLASS_START, index);
         int endIndex   = index + 1;

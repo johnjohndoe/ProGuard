@@ -1,4 +1,4 @@
-/* $Id: Configuration.java,v 1.10 2004/08/28 17:03:30 eric Exp $
+/* $Id: Configuration.java,v 1.14 2004/11/20 15:41:24 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -32,6 +32,10 @@ import java.util.*;
  */
 public class Configuration
 {
+    ///////////////////////////////////////////////////////////////////////////
+    // Input and output options.
+    ///////////////////////////////////////////////////////////////////////////
+
     /**
      * A list of input and output entries (jars, wars, ears, zips, and directories).
      */
@@ -43,46 +47,156 @@ public class Configuration
     public ClassPath libraryJars;
 
     /**
-     * A list of ClassPathSpecification instances, whose class names and class
-     * member names are to be kept from shrinking, optimization, and obfuscation.
+     * Specifies whether to skip non-public library classes while reading
+     * library jars.
+     */
+    public boolean   skipNonPublicLibraryClasses = true;
+
+    /**
+     * Specifies whether to skip non-public library class members while reading
+     * library classes.
+     */
+    public boolean   skipNonPublicLibraryClassMembers = true;
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Keep options.
+    ///////////////////////////////////////////////////////////////////////////
+
+    /**
+     * A list of {@link ClassSpecification} instances, whose class names and
+     * class member names are to be kept from shrinking, optimization, and
+     * obfuscation.
      */
     public List      keep;
 
     /**
-     * A list of ClassPathSpecification instances, whose class names and class
-     * member names are to be kept from obfuscation.
+     * A list of {@link ClassSpecification} instances, whose class names and
+     * class member names are to be kept from obfuscation.
      */
     public List      keepNames;
 
     /**
-     * A list of ClassPathSpecification instances, whose methods are assumed to
-     * have no side effects.
+     * An optional output file name for listing the kept seeds.
+     * An empty string means the standard output.
+     */
+    public String    printSeeds;
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Shrinking options.
+    ///////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Specifies whether the code should be shrunk.
+     */
+    public boolean   shrink                      = true;
+
+    /**
+     * An optional output file name for listing the unused classes and class
+     * members. An empty string means the standard output.
+     */
+    public String    printUsage;
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Optimization options.
+    ///////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Specifies whether the code should be optimized.
+     */
+    public boolean   optimize                    = true;
+
+    /**
+     * A list of {@link ClassSpecification} instances, whose methods are
+     * assumed to have no side effects.
      */
     public List      assumeNoSideEffects;
 
     /**
-     * A list of String instances specifying optional attributes to be kept.
+     * Specifies whether the access of class members can be modified.
+     */
+    public boolean   allowAccessModification     = false;
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Obfuscation options.
+    ///////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Specifies whether the code should be obfuscated.
+     */
+    public boolean   obfuscate                   = true;
+
+    /**
+     * An optional output file name for listing the obfuscation mapping.
+     * An empty string means the standard output.
+     */
+    public String    printMapping;
+
+    /**
+     * An optional input file name for reading an obfuscation mapping.
+     */
+    public String    applyMapping;
+
+    /**
+     * An optional name of a file containing obfuscated class member names.
+     */
+    public String    obfuscationDictionary;
+
+    /**
+     * Specifies whether to apply aggressive name overloading on class members.
+     */
+    public boolean   overloadAggressively        = false;
+
+    /**
+     * An optional default package to which all classes whose name is obfuscated
+     * can be moved.
+     */
+    public String    defaultPackage;
+
+    /**
+     * Specifies whether to use mixed case class names.
+     */
+    public boolean   useMixedCaseClassNames      = true;
+
+    /**
+     * A list of <code>String</code>s specifying optional attributes to be kept.
      * A <code>null</code> list means no attributes. An empty list means all
-     * attributes.
+     * attributes. The attribute names may contain "*" or "?" wildcards, and
+     * they may be preceded by the "!" negator.
      */
     public List      keepAttributes;
 
+    /**
+     * An optional replacement for all SourceFile attributes.
+     */
     public String    newSourceFileAttribute;
-    public String    printSeeds;
-    public String    printUsage;
-    public String    printMapping;
-    public String    applyMapping;
-    public String    dump;
+
+    ///////////////////////////////////////////////////////////////////////////
+    // General options.
+    ///////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Specifies whether to print verbose messages.
+     */
     public boolean   verbose                     = false;
-    public boolean   ignoreWarnings              = false;
-    public boolean   warn                        = true;
+
+    /**
+     * Specifies whether to print any notes.
+     */
     public boolean   note                        = true;
-    public boolean   shrink                      = true;
-    public boolean   optimize                    = true;
-    public boolean   obfuscate                   = true;
-    public boolean   allowAccessModification     = false;
-    public boolean   useMixedCaseClassNames      = true;
-    public boolean   overloadAggressively        = false;
-    public String    defaultPackage;
-    public boolean   skipNonPublicLibraryClasses = true;
+
+    /**
+     * Specifies whether to print any warnings.
+     */
+    public boolean   warn                        = true;
+
+    /**
+     * Specifies whether to ignore any warnings.
+     */
+    public boolean   ignoreWarnings              = false;
+
+    /**
+     * An optional output file name for printing out the processed code in a
+     * more or less readable form. An empty string means the standard output.
+     */
+    public String    dump;
 }

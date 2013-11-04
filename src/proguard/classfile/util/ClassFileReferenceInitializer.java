@@ -1,4 +1,4 @@
-/* $Id: ClassFileReferenceInitializer.java,v 1.21 2004/08/21 21:37:28 eric Exp $
+/* $Id: ClassFileReferenceInitializer.java,v 1.26 2004/11/20 15:41:24 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,6 +21,8 @@
 package proguard.classfile.util;
 
 import proguard.classfile.*;
+import proguard.classfile.attribute.*;
+import proguard.classfile.attribute.annotation.*;
 import proguard.classfile.visitor.*;
 
 
@@ -47,7 +49,11 @@ public class ClassFileReferenceInitializer
   implements ClassFileVisitor,
              MemberInfoVisitor,
              CpInfoVisitor,
-             AttrInfoVisitor
+             AttrInfoVisitor,
+             //LocalVariableInfoVisitor,
+             //LocalVariableTypeInfoVisitor,
+             AnnotationVisitor,
+             ElementValueVisitor
 {
     // A reusable object for checking whether referenced methods are Class.forName,...
     private ClassFileClassForNameReferenceInitializer classFileClassForNameReferenceInitializer;
@@ -67,7 +73,7 @@ public class ClassFileReferenceInitializer
      * of all visited class files, printing warnings if some classes can't be found.
      */
     public ClassFileReferenceInitializer(ClassPool programClassPool,
-                                ClassPool libraryClassPool)
+                                         ClassPool libraryClassPool)
     {
         this(programClassPool, libraryClassPool, true, true);
     }
@@ -122,6 +128,9 @@ public class ClassFileReferenceInitializer
         // Initialize all fields and methods.
         programClassFile.fieldsAccept(this);
         programClassFile.methodsAccept(this);
+
+        // Initialize the attributes.
+        programClassFile.attributesAccept(this);
     }
 
 
@@ -218,8 +227,9 @@ public class ClassFileReferenceInitializer
             // We didn't find the member yet. Organize a search in the hierarchy
             // of superclasses and interfaces. This can happen with classes
             // compiled with "-target 1.2" (the default in JDK 1.4).
-            try {
-                referencedClassFile.hierarchyAccept(true, true, true, false,
+            try
+            {
+                referencedClassFile.hierarchyAccept(false, true, true, false,
                     isFieldRef ?
                         (ClassFileVisitor)new NamedFieldVisitor(memberFinder, name, type) :
                         (ClassFileVisitor)new NamedMethodVisitor(memberFinder, name, type));
@@ -242,9 +252,9 @@ public class ClassFileReferenceInitializer
                                    ": can't find referenced " +
                                    (isFieldRef ?
                                     "field '"  + ClassUtil.externalFullFieldDescription(0, name, type) :
-                                    "method '" + ClassUtil.externalFullMethodDescription(referencedClassFile.getName(), 0, name, type)) +
+                                    "method '" + ClassUtil.externalFullMethodDescription(className, 0, name, type)) +
                                    "' in class " +
-                                   ClassUtil.externalClassName(referencedClassFile.getName()));
+                                   ClassUtil.externalClassName(className));
             }
         }
     }
@@ -272,16 +282,210 @@ public class ClassFileReferenceInitializer
     public void visitExceptionsAttrInfo(ClassFile classFile, MethodInfo methodInfo, ExceptionsAttrInfo exceptionsAttrInfo) {}
     public void visitLineNumberTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LineNumberTableAttrInfo lineNumberTableAttrInfo) {}
     public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo) {}
+    public void visitLocalVariableTypeTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeTableAttrInfo localVariableTypeTableAttrInfo) {}
     public void visitSourceFileAttrInfo(ClassFile classFile, SourceFileAttrInfo sourceFileAttrInfo) {}
     public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo) {}
     public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo) {}
     public void visitSyntheticAttrInfo(ClassFile classFile, SyntheticAttrInfo syntheticAttrInfo) {}
-    public void visitSignatureAttrInfo(ClassFile classFile, SignatureAttrInfo signatureAttrInfo) {}
+
+
+    public void visitEnclosingMethodAttrInfo(ClassFile classFile, EnclosingMethodAttrInfo enclosingMethodAttrInfo)
+    {
+        String className = enclosingMethodAttrInfo.getClassName(classFile);
+
+        // See if we can find the referenced class file.
+        ClassFile referencedClassFile = findClass(className);
+
+        if (referencedClassFile == null)
+        {
+            // We couldn't find the enclosing class.
+            if (warn)
+            {
+                warningCount++;
+                System.err.println("Warning: " +
+                                   ClassUtil.externalClassName(classFile.getName()) +
+                                   ": can't find enclosing class " +
+                                   ClassUtil.externalClassName(className));
+            }
+
+            return;
+        }
+
+        String name = enclosingMethodAttrInfo.getName(classFile);
+        String type = enclosingMethodAttrInfo.getType(classFile);
+
+        // See if we can find the method in the referenced class.
+        MethodInfo referencedMethodInfo = referencedClassFile.findMethod(name, type);
+
+        if (referencedMethodInfo == null)
+        {
+            // We couldn't find the enclosing method.
+            if (warn)
+            {
+                warningCount++;
+                System.err.println("Warning: " +
+                                   ClassUtil.externalClassName(classFile.getName()) +
+                                   ": can't find enclosing method '" +
+                                   ClassUtil.externalFullMethodDescription(className, 0, name, type) +
+                                   "' in class " +
+                                   ClassUtil.externalClassName(className));
+            }
+
+            return;
+        }
+
+        // Save the references.
+        enclosingMethodAttrInfo.referencedClassFile  = referencedClassFile;
+        enclosingMethodAttrInfo.referencedMethodInfo = referencedMethodInfo;
+    }
 
 
     public void visitCodeAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo)
     {
         codeAttrInfo.instructionsAccept(classFile, methodInfo, classFileClassForNameReferenceInitializer);
+    }
+
+
+    public void visitSignatureAttrInfo(ClassFile classFile, SignatureAttrInfo signatureAttrInfo)
+    {
+        signatureAttrInfo.referencedClassFiles =
+            findReferencedClasses(classFile.getCpString(signatureAttrInfo.u2signatureIndex));
+    }
+
+
+    public void visitRuntimeVisibleAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleAnnotationsAttrInfo runtimeVisibleAnnotationsAttrInfo)
+    {
+        // Initialize the annotations.
+        runtimeVisibleAnnotationsAttrInfo.annotationsAccept(classFile, this);
+    }
+
+
+    public void visitRuntimeInvisibleAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleAnnotationsAttrInfo runtimeInvisibleAnnotationsAttrInfo)
+    {
+        // Initialize the annotations.
+        runtimeInvisibleAnnotationsAttrInfo.annotationsAccept(classFile, this);
+    }
+
+
+    public void visitRuntimeVisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleParameterAnnotationsAttrInfo runtimeVisibleParameterAnnotationsAttrInfo)
+    {
+        // Initialize the annotations.
+        runtimeVisibleParameterAnnotationsAttrInfo.annotationsAccept(classFile, this);
+    }
+
+
+    public void visitRuntimeInvisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleParameterAnnotationsAttrInfo runtimeInvisibleParameterAnnotationsAttrInfo)
+    {
+        // Initialize the annotations.
+        runtimeInvisibleParameterAnnotationsAttrInfo.annotationsAccept(classFile, this);
+    }
+
+
+    public void visitAnnotationDefaultAttrInfo(ClassFile classFile, AnnotationDefaultAttrInfo annotationDefaultAttrInfo)
+    {
+        // Initialize the annotation.
+        annotationDefaultAttrInfo.defaultValueAccept(classFile, this);
+    }
+
+
+    // Implementations for LocalVariableInfoVisitor.
+
+    public void visitLocalVariableInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableInfo localVariableInfo)
+    {
+        localVariableInfo.referencedClassFile =
+            findClass(classFile.getCpString(localVariableInfo.u2descriptorIndex));
+    }
+
+
+    // Implementations for LocalVariableTypeInfoVisitor.
+
+    public void visitLocalVariableTypeInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeInfo localVariableTypeInfo)
+    {
+        localVariableTypeInfo.referencedClassFiles =
+            findReferencedClasses(classFile.getCpString(localVariableTypeInfo.u2signatureIndex));
+    }
+
+
+    // Implementations for AnnotationVisitor.
+
+    public void visitAnnotation(ClassFile classFile, Annotation annotation)
+    {
+        annotation.referencedClassFiles =
+            findReferencedClasses(classFile.getCpString(annotation.u2typeIndex));
+
+        // Initialize the element values.
+        annotation.elementValuesAccept(classFile, this);
+    }
+
+
+    // Implementations for ElementValueVisitor.
+
+    public void visitConstantElementValue(ClassFile classFile, Annotation annotation, ConstantElementValue constantElementValue)
+    {
+        initializeElementValue(classFile, annotation, constantElementValue);
+    }
+
+
+    public void visitEnumConstantElementValue(ClassFile classFile, Annotation annotation, EnumConstantElementValue enumConstantElementValue)
+    {
+        initializeElementValue(classFile, annotation, enumConstantElementValue);
+
+        enumConstantElementValue.referencedClassFiles =
+            findReferencedClasses(classFile.getCpString(enumConstantElementValue.u2typeNameIndex));
+    }
+
+
+    public void visitClassElementValue(ClassFile classFile, Annotation annotation, ClassElementValue classElementValue)
+    {
+        initializeElementValue(classFile, annotation, classElementValue);
+
+        classElementValue.referencedClassFiles =
+            findReferencedClasses(classFile.getCpString(classElementValue.u2classInfoIndex));
+    }
+
+
+    public void visitAnnotationElementValue(ClassFile classFile, Annotation annotation, AnnotationElementValue annotationElementValue)
+    {
+        initializeElementValue(classFile, annotation, annotationElementValue);
+
+        // Initialize the annotation.
+        annotationElementValue.annotationAccept(classFile, this);
+    }
+
+
+    public void visitArrayElementValue(ClassFile classFile, Annotation annotation, ArrayElementValue arrayElementValue)
+    {
+        initializeElementValue(classFile, annotation, arrayElementValue);
+
+        // Initialize the element values.
+        arrayElementValue.elementValuesAccept(classFile, annotation, this);
+    }
+
+
+    /**
+     * Initializes the referenced method of an element value, if any.
+     */
+    private void initializeElementValue(ClassFile classFile, Annotation annotation, ElementValue elementValue)
+    {
+        // See if we have a referenced class file.
+        if (annotation                      != null &&
+            annotation.referencedClassFiles != null &&
+            elementValue.u2elementName      != 0)
+        {
+            // See if we can find the method in the referenced class
+            // (ignoring the descriptor).
+            try {
+                annotation.referencedClassFiles[0].accept(
+                    new AllMemberInfoVisitor(
+                    new MemberInfoNameFilter(memberFinder,
+                                             classFile.getCpString(elementValue.u2elementName))));
+            }
+            catch (MyMemberFinder.MemberFoundException ex)
+            {
+                elementValue.referencedMethodInfo = (MethodInfo)memberFinder.memberInfo;
+//                    annotation.referencedClassFiles[0].findMethod(classFile.getCpString(elementValue.u2elementName), null);
+            }
+        }
     }
 
 
@@ -291,10 +495,10 @@ public class ClassFileReferenceInitializer
      * Returns an array of class files referenced by the given descriptor, or
      * <code>null</code> if there aren't any useful references.
      */
-    private ClassFile[] findReferencedClasses(String aDescriptor)
+    private ClassFile[] findReferencedClasses(String descriptor)
     {
         DescriptorClassEnumeration enumeration =
-            new DescriptorClassEnumeration(aDescriptor);
+            new DescriptorClassEnumeration(descriptor);
 
         int classCount = enumeration.classCount();
         if (classCount > 0)

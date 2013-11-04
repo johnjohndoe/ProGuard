@@ -1,4 +1,4 @@
-/* $Id: GotoReturnReplacer.java,v 1.4 2004/08/15 12:39:30 eric Exp $
+/* $Id: GotoReturnReplacer.java,v 1.6 2004/11/20 15:06:55 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,6 +21,7 @@
 package proguard.optimize.peephole;
 
 import proguard.classfile.*;
+import proguard.classfile.attribute.*;
 import proguard.classfile.editor.*;
 import proguard.classfile.instruction.*;
 
@@ -79,7 +80,7 @@ public class GotoReturnReplacer implements InstructionVisitor
                     case InstructionConstants.OP_ARETURN:
                     case InstructionConstants.OP_RETURN:
                         // Replace the goto instruction by the return instruction.
-                        SimpleInstruction returnInstruction =
+                        Instruction returnInstruction =
                              new SimpleInstruction(targetInstruction.opcode);
                         codeAttrInfoEditor.replaceInstruction(offset,
                                                               returnInstruction);

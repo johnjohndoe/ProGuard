@@ -1,4 +1,4 @@
-/* $Id: ClassFileRenamer.java,v 1.31 2004/08/15 12:39:30 eric Exp $
+/* $Id: ClassFileRenamer.java,v 1.37 2004/11/20 15:41:24 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,9 +21,10 @@
 package proguard.obfuscate;
 
 import proguard.classfile.*;
+import proguard.classfile.attribute.*;
+import proguard.classfile.attribute.annotation.*;
 import proguard.classfile.util.*;
 import proguard.classfile.visitor.*;
-
 
 /**
  * This <code>ClassFileVisitor</code> renames the class names and class member
@@ -39,9 +40,13 @@ public class ClassFileRenamer
   implements ClassFileVisitor,
              MemberInfoVisitor,
              CpInfoVisitor,
-             AttrInfoVisitor
+             AttrInfoVisitor,
+             LocalVariableInfoVisitor,
+             LocalVariableTypeInfoVisitor,
+             AnnotationVisitor,
+             ElementValueVisitor
 {
-    private MyNameAndTypeTypeRenamer nameAndTypeRenamer = new MyNameAndTypeTypeRenamer();
+    private MyNameAndTypeRenamer nameAndTypeRenamer = new MyNameAndTypeRenamer();
 
     private boolean openUpPackages;
     private String  newSourceFileAttribute;
@@ -83,11 +88,7 @@ public class ClassFileRenamer
             programClassFile.u2accessFlags = makePublic(programClassFile.u2accessFlags);
         }
 
-        // Rename the source file attribute, if specified.
-        if (newSourceFileAttribute != null)
-        {
-            programClassFile.attributesAccept(this);
-        }
+        programClassFile.attributesAccept(this);
     }
 
 
@@ -120,11 +121,10 @@ public class ClassFileRenamer
                 createUtf8CpInfo(programClassFile, newName);
         }
 
-        // The new descriptor can be computed.
+        // Compute the new descriptor.
         String newDescriptor = newDescriptor(programMemberInfo.getDescriptor(programClassFile),
                                              programMemberInfo.referencedClassFiles);
-        if (newDescriptor != null &&
-            !newDescriptor.equals(descriptor))
+        if (newDescriptor != null)
         {
             programMemberInfo.u2descriptorIndex =
                 createUtf8CpInfo(programClassFile, newDescriptor);
@@ -146,7 +146,7 @@ public class ClassFileRenamer
      * This CpInfoVisitor renames all type elements in all NameAndTypeCpInfo
      * constant pool entries it visits.
      */
-    private class MyNameAndTypeTypeRenamer
+    private class MyNameAndTypeRenamer
        implements CpInfoVisitor
     {
         // Implementations for CpInfoVisitor.
@@ -165,7 +165,7 @@ public class ClassFileRenamer
 
         public void visitNameAndTypeCpInfo(ClassFile classFile, NameAndTypeCpInfo nameAndTypeCpInfo)
         {
-            // The new descriptor can be computed.
+            // Compute the new descriptor.
             String newDescriptor = newDescriptor(nameAndTypeCpInfo.getType(classFile),
                                                  nameAndTypeCpInfo.referencedClassFiles);
             if (newDescriptor != null)
@@ -186,6 +186,7 @@ public class ClassFileRenamer
     public void visitUtf8CpInfo(ClassFile classFile, Utf8CpInfo utf8CpInfo) {}
     public void visitNameAndTypeCpInfo(ClassFile classFile, NameAndTypeCpInfo nameAndTypeCpInfo) {}
 
+
     public void visitStringCpInfo(ClassFile classFile, StringCpInfo stringCpInfo)
     {
         // If the string is being used in a Class.forName construct, the new
@@ -202,9 +203,10 @@ public class ClassFileRenamer
         }
     }
 
+
     public void visitClassCpInfo(ClassFile classFile, ClassCpInfo classCpInfo)
     {
-        // The new class name can be retrieved from the referenced ClassFile.
+        // Compute the new class name (or type).
         String newClassName = newClassName(classCpInfo.getName(classFile),
                                            classCpInfo.referencedClassFile);
         if (newClassName != null)
@@ -221,33 +223,31 @@ public class ClassFileRenamer
         visitRefCpInfo(classFile, fieldrefCpInfo);
     }
 
+
     public void visitInterfaceMethodrefCpInfo(ClassFile classFile, InterfaceMethodrefCpInfo interfaceMethodrefCpInfo)
     {
         visitRefCpInfo(classFile, interfaceMethodrefCpInfo);
     }
+
 
     public void visitMethodrefCpInfo(ClassFile classFile, MethodrefCpInfo methodrefCpInfo)
     {
         visitRefCpInfo(classFile, methodrefCpInfo);
     }
 
+
     private void visitRefCpInfo(ClassFile classFile, RefCpInfo refCpInfo)
     {
-        // The new class member name to be set in this entry's NameAndTypeCpInfo
-        // can be retrieved from the referenced class member.
-        MemberInfo referencedMemberInfo = refCpInfo.referencedMemberInfo;
-        if (referencedMemberInfo != null)
-        {
-            String newMemberName =
-                MemberInfoObfuscator.newMemberName(referencedMemberInfo);
+        // Compute the new class member name.
+        String newMemberName = newMemberName(refCpInfo.referencedMemberInfo);
 
-            if (newMemberName != null)
-            {
-                refCpInfo.u2nameAndTypeIndex =
-                    createNameAndTypeCpInfo((ProgramClassFile)classFile,
-                                            newMemberName,
-                                            refCpInfo.getType(classFile));
-            }
+        if (newMemberName != null)
+        {
+            // Refer to a new NameAndType entry.
+            refCpInfo.u2nameAndTypeIndex =
+                createNameAndTypeCpInfo((ProgramClassFile)classFile,
+                                        newMemberName,
+                                        refCpInfo.getType(classFile));
         }
     }
 
@@ -260,23 +260,233 @@ public class ClassFileRenamer
     public void visitExceptionsAttrInfo(ClassFile classFile, MethodInfo methodInfo, ExceptionsAttrInfo exceptionsAttrInfo) {}
     public void visitCodeAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo) {}
     public void visitLineNumberTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LineNumberTableAttrInfo lineNumberTableAttrInfo) {}
-    public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo) {}
     public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo) {}
     public void visitSyntheticAttrInfo(ClassFile classFile, SyntheticAttrInfo syntheticAttrInfo) {}
-    public void visitSignatureAttrInfo(ClassFile classFile, SignatureAttrInfo signatureAttrInfo) {}
+
+
+    public void visitEnclosingMethodAttrInfo(ClassFile classFile, EnclosingMethodAttrInfo enclosingMethodAttrInfo)
+    {
+        // Compute the new class member name.
+        String newMethodName = newMemberName(enclosingMethodAttrInfo.referencedMethodInfo);
+
+        if (newMethodName != null)
+        {
+            // Refer to a new NameAndType entry.
+            enclosingMethodAttrInfo.u2nameAndTypeIndex =
+                createNameAndTypeCpInfo((ProgramClassFile)classFile,
+                                        newMethodName,
+                                        enclosingMethodAttrInfo.getType(classFile));
+        }
+    }
+
+
+    public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo)
+    {
+        // Rename the types of the local variables.
+        localVariableTableAttrInfo.localVariablesAccept(classFile, methodInfo, codeAttrInfo, this);
+    }
+
+
+    public void visitLocalVariableTypeTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeTableAttrInfo localVariableTypeTableAttrInfo)
+    {
+        // Rename the signatures of the local variables.
+        localVariableTypeTableAttrInfo.localVariablesAccept(classFile, methodInfo, codeAttrInfo, this);
+    }
 
 
     public void visitSourceFileAttrInfo(ClassFile classFile, SourceFileAttrInfo sourceFileAttrInfo)
     {
-        sourceFileAttrInfo.u2sourceFileIndex =
-            createUtf8CpInfo((ProgramClassFile)classFile, newSourceFileAttribute);
+        // Rename the source file attribute, if specified.
+        if (newSourceFileAttribute != null)
+        {
+            sourceFileAttrInfo.u2sourceFileIndex =
+                createUtf8CpInfo((ProgramClassFile)classFile, newSourceFileAttribute);
+        }
     }
 
 
     public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo)
     {
-        sourceDirAttrInfo.u2sourceDirIndex =
-            createUtf8CpInfo((ProgramClassFile)classFile, newSourceFileAttribute);
+        // Rename the source file attribute, if specified.
+        if (newSourceFileAttribute != null)
+        {
+            sourceDirAttrInfo.u2sourceDirIndex =
+                createUtf8CpInfo((ProgramClassFile)classFile, newSourceFileAttribute);
+        }
+    }
+
+
+    public void visitSignatureAttrInfo(ClassFile classFile, SignatureAttrInfo signatureAttrInfo)
+    {
+        // Compute the new signature.
+        String newSignature = newDescriptor(classFile.getCpString(signatureAttrInfo.u2signatureIndex),
+                                            signatureAttrInfo.referencedClassFiles);
+        if (newSignature != null)
+        {
+            signatureAttrInfo.u2signatureIndex =
+                createUtf8CpInfo((ProgramClassFile)classFile, newSignature);
+        }
+    }
+
+
+    public void visitRuntimeVisibleAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleAnnotationsAttrInfo runtimeVisibleAnnotationsAttrInfo)
+    {
+        // Rename the annotations.
+        runtimeVisibleAnnotationsAttrInfo.annotationsAccept(classFile, this);
+    }
+
+
+    public void visitRuntimeInvisibleAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleAnnotationsAttrInfo runtimeInvisibleAnnotationsAttrInfo)
+    {
+        // Rename the annotations.
+        runtimeInvisibleAnnotationsAttrInfo.annotationsAccept(classFile, this);
+    }
+
+
+    public void visitRuntimeVisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleParameterAnnotationsAttrInfo runtimeVisibleParameterAnnotationsAttrInfo)
+    {
+        // Rename the annotations.
+        runtimeVisibleParameterAnnotationsAttrInfo.annotationsAccept(classFile, this);
+    }
+
+
+    public void visitRuntimeInvisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleParameterAnnotationsAttrInfo runtimeInvisibleParameterAnnotationsAttrInfo)
+    {
+        // Rename the annotations.
+        runtimeInvisibleParameterAnnotationsAttrInfo.annotationsAccept(classFile, this);
+    }
+
+
+    public void visitAnnotationDefaultAttrInfo(ClassFile classFile, AnnotationDefaultAttrInfo annotationDefaultAttrInfo)
+    {
+        // Rename the annotation.
+        annotationDefaultAttrInfo.defaultValueAccept(classFile, this);
+    }
+
+
+    // Implementations for LocalVariableInfoVisitor.
+
+    public void visitLocalVariableInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableInfo localVariableInfo)
+    {
+        // Compute the new descriptor.
+        String newDescriptor = newClassName(classFile.getCpString(localVariableInfo.u2descriptorIndex),
+                                            localVariableInfo.referencedClassFile);
+        if (newDescriptor != null)
+        {
+            // Refer to a new Utf8 entry.
+            localVariableInfo.u2descriptorIndex =
+                createUtf8CpInfo((ProgramClassFile)classFile, newDescriptor);
+        }
+    }
+
+
+    // Implementations for LocalVariableTypeInfoVisitor.
+
+    public void visitLocalVariableTypeInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeInfo localVariableTypeInfo)
+    {
+        // Compute the new signature.
+        String newSignature = newDescriptor(classFile.getCpString(localVariableTypeInfo.u2signatureIndex),
+                                            localVariableTypeInfo.referencedClassFiles);
+        if (newSignature != null)
+        {
+            localVariableTypeInfo.u2signatureIndex =
+                createUtf8CpInfo((ProgramClassFile)classFile, newSignature);
+        }
+    }
+
+
+    // Implementations for AnnotationVisitor.
+
+    public void visitAnnotation(ClassFile classFile, Annotation annotation)
+    {
+        // Compute the new type name.
+        String newTypeName = newDescriptor(classFile.getCpString(annotation.u2typeIndex),
+                                           annotation.referencedClassFiles);
+        if (newTypeName != null)
+        {
+            // Refer to a new Utf8 entry.
+            annotation.u2typeIndex =
+                createUtf8CpInfo((ProgramClassFile)classFile, newTypeName);
+        }
+
+        // Rename the element values.
+        annotation.elementValuesAccept(classFile, this);
+    }
+
+
+    // Implementations for ElementValueVisitor.
+
+    public void visitConstantElementValue(ClassFile classFile, Annotation annotation, ConstantElementValue constantElementValue)
+    {
+        renameElementValue(classFile, constantElementValue);
+    }
+
+
+    public void visitEnumConstantElementValue(ClassFile classFile, Annotation annotation, EnumConstantElementValue enumConstantElementValue)
+    {
+        renameElementValue(classFile, enumConstantElementValue);
+
+        // Compute the new type name.
+        String newTypeName = newDescriptor(classFile.getCpString(enumConstantElementValue.u2typeNameIndex),
+                                           enumConstantElementValue.referencedClassFiles);
+        if (newTypeName != null)
+        {
+            // Refer to a new Utf8 entry.
+            enumConstantElementValue.u2typeNameIndex =
+                createUtf8CpInfo((ProgramClassFile)classFile, newTypeName);
+        }
+    }
+
+
+    public void visitClassElementValue(ClassFile classFile, Annotation annotation, ClassElementValue classElementValue)
+    {
+        renameElementValue(classFile, classElementValue);
+
+        // Compute the new class name.
+        String newClassName = newDescriptor(classFile.getCpString(classElementValue.u2classInfoIndex),
+                                            classElementValue.referencedClassFiles);
+
+        if (newClassName != null)
+        {
+            // Refer to a new Utf8 entry.
+            classElementValue.u2classInfoIndex =
+                createUtf8CpInfo((ProgramClassFile)classFile, newClassName);
+        }
+    }
+
+
+    public void visitAnnotationElementValue(ClassFile classFile, Annotation annotation, AnnotationElementValue annotationElementValue)
+    {
+        renameElementValue(classFile, annotationElementValue);
+
+        // Rename the annotation.
+        annotationElementValue.annotationAccept(classFile, this);
+    }
+
+
+    public void visitArrayElementValue(ClassFile classFile, Annotation annotation, ArrayElementValue arrayElementValue)
+    {
+        renameElementValue(classFile, arrayElementValue);
+
+        // Rename the element values.
+        arrayElementValue.elementValuesAccept(classFile, annotation, this);
+    }
+
+
+    /**
+     * Renames the method reference of the element value, if any.
+     */
+    public void renameElementValue(ClassFile classFile, ElementValue elementValue)
+    {
+        // Compute the new class member name.
+        String newMethodName = newMemberName(elementValue.referencedMethodInfo);
+
+        if (newMethodName != null)
+        {
+            // Refer to a new NameAndType entry.
+            elementValue.u2elementName =
+                createUtf8CpInfo((ProgramClassFile)classFile, newMethodName);
+        }
     }
 
 
@@ -466,6 +676,21 @@ public class ClassFileRenamer
         }
 
         return newClassName;
+    }
+
+
+    /**
+     * Returns the new class member name based on the given referenced class
+     * member.
+     */
+    private String newMemberName(MemberInfo referencedMemberInfo)
+    {
+        if (referencedMemberInfo == null)
+        {
+            return null;
+        }
+
+        return MemberInfoObfuscator.newMemberName(referencedMemberInfo);
     }
 
 

@@ -1,4 +1,4 @@
-/* $Id: TracedStack.java,v 1.5 2004/08/21 21:37:28 eric Exp $
+/* $Id: TracedStack.java,v 1.7 2004/11/20 15:06:55 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -117,11 +117,11 @@ class TracedStack extends Stack
         traceStack.copy(other.traceStack);
     }
 
-    public void generalize(TracedStack other)
+    public boolean generalize(TracedStack other)
     {
-        super.generalize(other);
-
-        traceStack.generalize(other.traceStack);
+        return
+            super.generalize(other) |
+            traceStack.generalize(other.traceStack);
     }
 
     public void clear()

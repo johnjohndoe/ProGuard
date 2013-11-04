@@ -1,4 +1,4 @@
-/* $Id: MemberInfoObfuscator.java,v 1.7 2004/08/15 12:39:30 eric Exp $
+/* $Id: MemberInfoObfuscator.java,v 1.11 2004/11/20 15:41:24 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -23,6 +23,7 @@ package proguard.obfuscate;
 import proguard.classfile.*;
 import proguard.classfile.visitor.*;
 
+import java.io.IOException;
 import java.util.*;
 
 
@@ -35,33 +36,41 @@ import java.util.*;
  *
  * @author Eric Lafortune
  */
-public class MemberInfoObfuscator
-  implements ClassFileVisitor,
-             MemberInfoVisitor
+public class MemberInfoObfuscator implements ClassFileVisitor
 {
     private static final char UNIQUE_SUFFIX = '_';
 
     private boolean allowAggressiveOverloading;
 
+    private NameFactory nameFactory       = new SimpleNameFactory();
+    private NameFactory uniqueNameFactory = new SimpleNameFactory();
+
     // Some objects that are reset and reused every time.
 
-    // The main map: [class member descriptor - nested map]
-    // The nested maps: [class member name - class member info]
-    private final Map         descriptorMap     = new HashMap();
+    // The main maps: [class member descriptor - new name - name]
+    private final Map nonPrivateDescriptorMap = new HashMap();
+    private final Map privateDescriptorMap    = new HashMap();
 
-    private final NameFactory uniqueNameFactory = new NameFactory();
-    private final NameFactory nameFactory       = new NameFactory();
-    private final Set         namesToAvoid      = new HashSet();
 
 
     /**
      * Creates a new MemberObfuscator.
      * @param allowAggressiveOverloading a flag that specifies whether class
      *                                   members can be overloaded aggressively.
+     * @param obfuscationDictionary      the optional name of a file from which
+     *                                   obfuscated method names can be read.
      */
-    public MemberInfoObfuscator(boolean allowAggressiveOverloading)
+    public MemberInfoObfuscator(boolean allowAggressiveOverloading,
+                                String  obfuscationDictionary)
+    throws IOException
     {
         this.allowAggressiveOverloading = allowAggressiveOverloading;
+
+        // Get names from the obfuscation dictionary, if specified.
+        if (obfuscationDictionary != null)
+        {
+            nameFactory = new ReadNameFactory(obfuscationDictionary, nameFactory);
+        }
     }
 
 
@@ -69,74 +78,22 @@ public class MemberInfoObfuscator
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
-        // Collect method names in this class's name space.
+        // Collect all preset new member names in this class's name space.
+        // This actually includes preset new private member names.
         programClassFile.hierarchyAccept(true, true, true, false,
-                                         new AllMemberInfoVisitor(this));
+                                         new AllMemberInfoVisitor(
+                                         new MyNewNameCollector(nonPrivateDescriptorMap)));
 
-        // Process the name space of each descriptor in turn.
-        Iterator descriptorIterator = descriptorMap.values().iterator();
-        while (descriptorIterator.hasNext())
-        {
-            Map memberNameMap = (Map)descriptorIterator.next();
+        // Assign new names to all non-private members in this class's name space.
+        programClassFile.hierarchyAccept(true, true, true, false,
+                                         new MyNonPrivateMemberInfoObfuscator());
 
-            // First collect all names that are already in use in this name space.
-            // Make sure no two class members already have the same name.
-            Collection memberNames = memberNameMap.values();
-            Iterator memberNameIterator = memberNames.iterator();
-            while (memberNameIterator.hasNext())
-            {
-                MemberInfo memberInfo = (MemberInfo)memberNameIterator.next();
-
-                // Does the class member already have a name?
-                String newName = newMemberName(memberInfo);
-                if (newName != null)
-                {
-                    // If so, is this name already being used by another class
-                    // member in this name space?
-                    if (namesToAvoid.contains(newName))
-                    {
-                        // We can't have that. Reassign a globally unique name.
-                        String uniqueName =
-                            uniqueNameFactory.nextName() + UNIQUE_SUFFIX;
-                        setNewMemberName(memberInfo, uniqueName);
-                    }
-                    else
-                    {
-                        // Make sure this name won't be used as a new name.
-                        namesToAvoid.add(newName);
-                    }
-                }
-            }
-
-            // Then assign unique names to class members that don't have a name yet.
-            memberNameIterator = memberNames.iterator();
-            while (memberNameIterator.hasNext())
-            {
-                MemberInfo memberInfo = (MemberInfo)memberNameIterator.next();
-
-                // Does the class member already have a name?
-                String newName = newMemberName(memberInfo);
-                if (newName == null)
-                {
-                    // If not, find a locally unique new name.
-                    do
-                    {
-                        newName = nameFactory.nextName();
-                    }
-                    while (namesToAvoid.contains(newName));
-
-                    // Assign the new name.
-                    setNewMemberName(memberInfo, newName);
-                }
-            }
-
-            // Start with a fresh set of names for the next name space.
-            nameFactory.reset();
-            namesToAvoid.clear();
-        }
+        // Assign new names to all private members in this class's name space.
+        programClassFile.hierarchyAccept(true, true, true, false,
+                                         new MyPrivateMemberInfoObfuscator());
 
         // Clean up for obfuscation of the next name space.
-        descriptorMap.clear();
+        nonPrivateDescriptorMap.clear();
     }
 
 
@@ -145,97 +102,270 @@ public class MemberInfoObfuscator
     }
 
 
-    // Implementations for MemberInfoVisitor.
-
-    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
+    private class MyNonPrivateMemberInfoObfuscator implements ClassFileVisitor
     {
-        visitMemberInfo(programClassFile, programFieldInfo);
-    }
+        // Implementations for ClassFileVisitor.
 
-
-    public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
-    {
-        visitMethodInfo(programClassFile, programMethodInfo);
-    }
-
-
-    public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo)
-    {
-        // Make sure the library field keeps its name.
-        String name = libraryFieldInfo.getName(libraryClassFile);
-        setNewMemberName(libraryFieldInfo, name);
-
-        visitMemberInfo(libraryClassFile, libraryFieldInfo);
-    }
-
-
-    public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo)
-    {
-        // Make sure the library method keeps its name.
-        String name = libraryMethodInfo.getName(libraryClassFile);
-        setNewMemberName(libraryMethodInfo, name);
-
-        visitMethodInfo(libraryClassFile, libraryMethodInfo);
-    }
-
-
-    /**
-     * Inserts the given method into the main map. Class initialization
-     * methods and constructors are ignored.
-     * @param classFile  the class file of the given method.
-     * @param methodInfo the method to be linked.
-     */
-    private void visitMethodInfo(ClassFile classFile, MethodInfo methodInfo)
-    {
-        // Special cases: <clinit> and <init> are always kept unchanged.
-        String name = methodInfo.getName(classFile);
-        if (name.equals(ClassConstants.INTERNAL_METHOD_NAME_CLINIT) ||
-            name.equals(ClassConstants.INTERNAL_METHOD_NAME_INIT))
+        public void visitProgramClassFile(ProgramClassFile programClassFile)
         {
-            return;
+            MemberInfoAccessFilter nonPrivateNewNameAssigner =
+                new MemberInfoAccessFilter(
+                new MyNewNameAssigner(nonPrivateDescriptorMap),
+                0,
+                ClassConstants.INTERNAL_ACC_PRIVATE);
+
+            programClassFile.fieldsAccept(nonPrivateNewNameAssigner);
+            programClassFile.methodsAccept(nonPrivateNewNameAssigner);
         }
 
-        visitMemberInfo(classFile, methodInfo);
+
+        public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
+        {
+        }
     }
 
 
-    /**
-     * Inserts the given class member into the main map.
-     * @param classFile  the class file of the given member.
-     * @param memberInfo the class member to be linked.
-     */
-    private void visitMemberInfo(ClassFile classFile, MemberInfo memberInfo)
+    private class MyPrivateMemberInfoObfuscator implements ClassFileVisitor
     {
-        // Get the member's original name and descriptor.
-        String descriptor = memberInfo.getDescriptor(classFile);
-        String name       = memberInfo.getName(classFile);
+        // Implementations for ClassFileVisitor.
 
-        // Put the [descriptor - name - member] triplet in the two-level map,
-        // creating a new first-level map if necessary,
-        // and overwriting a previous member if present.
-        retrieveNameMap(descriptor).put(name, memberInfo);
+        public void visitProgramClassFile(ProgramClassFile programClassFile)
+        {
+            MemberInfoAccessFilter privateNewNameAssigner =
+                new MemberInfoAccessFilter(
+                new MyNewNameAssigner(privateDescriptorMap, nonPrivateDescriptorMap),
+                ClassConstants.INTERNAL_ACC_PRIVATE,
+                0);
+
+            programClassFile.fieldsAccept(privateNewNameAssigner);
+            programClassFile.methodsAccept(privateNewNameAssigner);
+
+            // Clean up for obfuscation of the next class.
+            privateDescriptorMap.clear();
+        }
+
+
+        public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
+        {
+        }
+    }
+
+
+    private class MyNewNameCollector implements MemberInfoVisitor
+    {
+        private final Map descriptorMap;
+
+
+        public MyNewNameCollector(Map descriptorMap)
+        {
+            this.descriptorMap = descriptorMap;
+        }
+
+
+        // Implementations for MemberInfoVisitor.
+
+        public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
+        {
+            visitMemberInfo(programClassFile, programFieldInfo);
+        }
+
+
+        public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
+        {
+            visitMemberInfo(programClassFile, programMethodInfo);
+        }
+
+
+        public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo)
+        {
+            // Make sure the library field keeps its name.
+            String name = libraryFieldInfo.getName(libraryClassFile);
+            setNewMemberName(libraryFieldInfo, name);
+
+            visitMemberInfo(libraryClassFile, libraryFieldInfo);
+        }
+
+
+        public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo)
+        {
+            // Make sure the library method keeps its name.
+            String name = libraryMethodInfo.getName(libraryClassFile);
+            setNewMemberName(libraryMethodInfo, name);
+
+            visitMemberInfo(libraryClassFile, libraryMethodInfo);
+        }
+
+
+        /**
+         * Inserts the new name of the given class member into the main map.
+         * @param classFile  the class file of the given member.
+         * @param memberInfo the class member to be linked.
+         */
+        private void visitMemberInfo(ClassFile classFile, MemberInfo memberInfo)
+        {
+            // Special cases: <clinit> and <init> are always kept unchanged.
+            // We can ignore them here.
+            String name = memberInfo.getName(classFile);
+            if (name.equals(ClassConstants.INTERNAL_METHOD_NAME_CLINIT) ||
+                name.equals(ClassConstants.INTERNAL_METHOD_NAME_INIT))
+            {
+                return;
+            }
+
+            // Get the member's new name.
+            String newName = newMemberName(memberInfo);
+
+            // Remember it, if it was set.
+            if (newName != null)
+            {
+                // Get the member's descriptor.
+                String descriptor = memberInfo.getDescriptor(classFile);
+
+                // Check whether we're allowed to do aggressive overloading
+                if (!allowAggressiveOverloading)
+                {
+                    // Trim the return argument from the descriptor if not.
+                    // Works for fields and methods alike.
+                    descriptor = descriptor.substring(0, descriptor.indexOf(')')+1);
+                }
+
+                // Put the [descriptor - new name] in the map,
+                // creating a new set of new names if necessary.
+                Map newNameMap = retrieveNameMap(descriptorMap, descriptor);
+
+                // Is the other original name different from this original
+                // name?
+                String otherName = (String)newNameMap.get(newName);
+                if (otherName != null &&
+                    !otherName.equals(name))
+                {
+                    // There's a conflict! A member (with a given old name) in a
+                    // first namespace has received the same new name as this
+                    // member (with a different old name) in a second name space,
+                    // and now these two have to live together in this name space.
+                    // Assign a truly unique new name to this member.
+                    setNewMemberName(memberInfo, uniqueNameFactory.nextName() + UNIQUE_SUFFIX);
+                }
+                else
+                {
+                    // Remember not to use the new name again in this name space.
+                    newNameMap.put(newName, name);
+                }
+            }
+        }
+    }
+
+
+    private class MyNewNameAssigner implements MemberInfoVisitor
+    {
+        private final Map descriptorMap;
+        private final Map secondaryDescriptorMap;
+
+
+        public MyNewNameAssigner(Map descriptorMap)
+        {
+            this(descriptorMap, null);
+        }
+
+
+        public MyNewNameAssigner(Map descriptorMap,
+                                 Map secondaryDescriptorMap)
+        {
+            this.descriptorMap          = descriptorMap;
+            this.secondaryDescriptorMap = secondaryDescriptorMap;
+        }
+
+
+        // Implementations for MemberInfoVisitor.
+
+        public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
+        {
+            visitMemberInfo(programClassFile, programFieldInfo);
+        }
+
+
+        public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
+        {
+            visitMemberInfo(programClassFile, programMethodInfo);
+        }
+
+
+        public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo) {}
+        public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo) {}
+
+
+        /**
+         * Inserts the given class member into the main map.
+         * @param classFile  the class file of the given member.
+         * @param memberInfo the class member to be linked.
+         */
+        private void visitMemberInfo(ClassFile classFile, MemberInfo memberInfo)
+        {
+            // Special cases: <clinit> and <init> are always kept unchanged.
+            // We can ignore them here.
+            String name = memberInfo.getName(classFile);
+            if (name.equals(ClassConstants.INTERNAL_METHOD_NAME_CLINIT) ||
+                name.equals(ClassConstants.INTERNAL_METHOD_NAME_INIT))
+            {
+                return;
+            }
+
+            // Get the member's new name.
+            String newName = newMemberName(memberInfo);
+
+            // Assign a new one, if necessary.
+            if (newName == null)
+            {
+                // Get the member's descriptor.
+                String descriptor = memberInfo.getDescriptor(classFile);
+
+                // Check whether we're allowed to do aggressive overloading
+                if (!allowAggressiveOverloading)
+                {
+                    // Trim the return argument from the descriptor if not.
+                    // Works for fields and methods alike.
+                    descriptor = descriptor.substring(0, descriptor.indexOf(')')+1);
+                }
+
+                // Retrieve the new [ new name - old name ] map for the given
+                // descriptor, creating a new one if necessary.
+                Map newNameMap          = retrieveNameMap(descriptorMap, descriptor);
+                Map secondaryNewNameMap = secondaryDescriptorMap == null ? null :
+                    (Map)secondaryDescriptorMap.get(descriptor);
+
+                // Find a unique new name.
+                nameFactory.reset();
+
+                do
+                {
+                    newName = nameFactory.nextName();
+                }
+                while (newNameMap.containsKey(newName) ||
+                       (secondaryNewNameMap != null &&
+                        secondaryNewNameMap.containsKey(newName)));
+
+                // Assign the new name.
+                setNewMemberName(memberInfo, newName);
+
+                // Remember not to use the new name again in this name space.
+                newNameMap.put(newName, name);
+            }
+        }
     }
 
 
     // Small utility methods.
 
     /**
-     * Gets the nested name map, based on the main map
-     * [descriptor - nested map] and a given descriptor.
-     * A new empty one is created if necessary.
-     * @param descriptor the class member descriptor.
-     * @return the nested map [name - class member info].
+     * Gets the nested set of new names, based on the given map
+     * [descriptor - nested set of new names] and a given descriptor.
+     * A new empty set is created if necessary.
+     * @param descriptorMap the map of descriptors to [ new name - member info ] maps.
+     * @param descriptor    the class member descriptor.
+     * @return the nested set of new names.
      */
-    private Map retrieveNameMap(String descriptor)
+    private Map retrieveNameMap(Map descriptorMap, String descriptor)
     {
-        // Check whether we're allowed to do aggressive overloading
-        if (!allowAggressiveOverloading)
-        {
-            // Trim the return argument from the descriptor if not.
-            // Works for fields and methods alike.
-            descriptor = descriptor.substring(0, descriptor.indexOf(')')+1);
-        }
-
         // See if we can find the nested map with this descriptor key.
         Map nameMap = (Map)descriptorMap.get(descriptor);
 

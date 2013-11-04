@@ -1,4 +1,4 @@
-/* $Id: WordReader.java,v 1.13 2004/08/15 12:39:30 eric Exp $
+/* $Id: WordReader.java,v 1.15 2004/11/20 15:41:24 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -34,6 +34,7 @@ import java.io.*;
 public abstract class WordReader
 {
     private static final char COMMENT_CHARACTER = '#';
+
 
     private WordReader includeWordReader;
     private String     currentLine;

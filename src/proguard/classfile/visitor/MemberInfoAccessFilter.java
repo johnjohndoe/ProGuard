@@ -1,4 +1,4 @@
-/* $Id: MemberInfoAccessFilter.java,v 1.4 2004/08/15 12:39:30 eric Exp $
+/* $Id: MemberInfoAccessFilter.java,v 1.5 2004/10/10 20:56:58 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -112,7 +112,8 @@ public class MemberInfoAccessFilter
 
     // Small utility methods.
 
-    private boolean accepted(int accessFlags) {
+    private boolean accepted(int accessFlags)
+    {
         return (requiredSetAccessFlags    & ~accessFlags) == 0 &&
                (requiredUnsetAccessFlags  &  accessFlags) == 0 &&
                (requiredOneSetAccessFlags == 0                 ||

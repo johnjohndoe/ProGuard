@@ -1,4 +1,4 @@
-/* $Id: CpInstruction.java,v 1.17 2004/08/28 20:55:21 eric Exp $
+/* $Id: CpInstruction.java,v 1.18 2004/10/10 20:56:58 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,6 +21,7 @@
 package proguard.classfile.instruction;
 
 import proguard.classfile.*;
+import proguard.classfile.attribute.*;
 import proguard.classfile.util.ClassUtil;
 import proguard.classfile.visitor.CpInfoVisitor;
 

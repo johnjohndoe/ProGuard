@@ -107,7 +107,6 @@
     public int lastIndexOf(java.lang.String);
     public int lastIndexOf(java.lang.String,int);
     public int length();
-    public java.lang.StringBuffer reverse();
     public java.lang.String substring(int);
     public java.lang.String substring(int,int);
 }

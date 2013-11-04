@@ -1,4 +1,4 @@
-/* $Id: GetterSetterInliner.java,v 1.7 2004/09/04 16:27:30 eric Exp $
+/* $Id: GetterSetterInliner.java,v 1.12 2004/11/20 15:41:24 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,6 +21,8 @@
 package proguard.optimize.peephole;
 
 import proguard.classfile.*;
+import proguard.classfile.attribute.*;
+import proguard.classfile.attribute.annotation.*;
 import proguard.classfile.util.*;
 import proguard.classfile.editor.*;
 import proguard.classfile.instruction.*;
@@ -46,19 +48,19 @@ implements   InstructionVisitor,
 
     // Return values of the getter/setter checker.
     private byte        getFieldPutFieldOpcode;
-    private int         getFieldPutFieldClassIndex;
-    private int         getFieldPutFieldIndex;
-    private ClassFile   getFieldPutFieldClassFile;
-    private ClassFile[] getFieldPutFieldClassFiles;
-    private MemberInfo  getFieldPutFieldMemberInfo;
+    private int         referencedClassIndex;
+    private int         referencedFieldIndex;
+    private ClassFile   referencedClassFile;
+    private MemberInfo  referencedFieldInfo;
+    private ClassFile[] typeReferencedClassFiles;
 
 
     /**
-     * Creates a new StoreLoadReplacer.
+     * Creates a new GetterSetterInliner.
      * @param codeAttrInfoEditor a code editor that can be used for
      *                           accumulating changes to the code.
      * @param allowAccessModification indicates whether the access modifiers of
-     *                                a fields can changed in order to inline
+     *                                a field can be changed in order to inline
      *                                its getter or setter.
      */
     public GetterSetterInliner(CodeAttrInfoEditor codeAttrInfoEditor,
@@ -95,20 +97,21 @@ implements   InstructionVisitor,
             if (getFieldPutFieldOpcode != 0)
             {
                 // Reuse or create the field reference in this class.
-                int fieldrefCpInfoIndex = classFile.equals(getFieldPutFieldClassFile) ?
-                    getFieldPutFieldIndex :
+                int fieldrefCpInfoIndex = classFile.equals(referencedClassFile) ?
+                    referencedFieldIndex :
                     constantPoolEditor.addFieldrefCpInfo((ProgramClassFile)classFile,
-                                                         getFieldPutFieldClassIndex,
-                                                         getFieldPutFieldMemberInfo.getName(getFieldPutFieldClassFile),
-                                                         getFieldPutFieldMemberInfo.getDescriptor(getFieldPutFieldClassFile),
-                                                         getFieldPutFieldClassFile,
-                                                         getFieldPutFieldClassFiles,
-                                                         getFieldPutFieldMemberInfo);
+                                                         referencedClassIndex,
+                                                         referencedFieldInfo.getName(referencedClassFile),
+                                                         referencedFieldInfo.getDescriptor(referencedClassFile),
+                                                         referencedClassFile,
+                                                         referencedFieldInfo,
+                                                         typeReferencedClassFiles);
 
                 // Inline the getfield or putfield instruction.
-                codeAttrInfoEditor.replaceInstruction(offset,
-                                                      new CpInstruction(getFieldPutFieldOpcode,
-                                                                        fieldrefCpInfoIndex));
+                Instruction replacementInstruction = new CpInstruction(getFieldPutFieldOpcode,
+                                                                       fieldrefCpInfoIndex).shrink();
+
+                codeAttrInfoEditor.replaceInstruction(offset, replacementInstruction);
             }
         }
     }
@@ -147,15 +150,15 @@ implements   InstructionVisitor,
         }
 
         // The referenced method must be present and final.
-        MemberInfo referencedMemberInfo = methodrefCpInfo.referencedMemberInfo;
-        if (referencedMemberInfo == null ||
-            (referencedMemberInfo.getAccessFlags() & ClassConstants.INTERNAL_ACC_FINAL) == 0)
+        MemberInfo referencedMethodInfo = methodrefCpInfo.referencedMemberInfo;
+        if (referencedMethodInfo == null ||
+            (referencedMethodInfo.getAccessFlags() & ClassConstants.INTERNAL_ACC_FINAL) == 0)
         {
             return;
         }
 
         // Check if the method can be inlined.
-        referencedMemberInfo.accept(methodrefCpInfo.referencedClassFile,
+        referencedMethodInfo.accept(methodrefCpInfo.referencedClassFile,
                                     getterSetterChecker);
 
         // Do we have a getfield or putfield instruction to inline?
@@ -165,19 +168,35 @@ implements   InstructionVisitor,
         }
 
         // Remember the constant pool index of the referenced class.
-        getFieldPutFieldClassIndex = methodrefCpInfo.u2classIndex;
+        referencedClassIndex = methodrefCpInfo.u2classIndex;
 
         // Doesn't the field allow at least the same access as the getter or
         // setter?
-        if (AccessUtil.accessLevel(getFieldPutFieldMemberInfo.getAccessFlags()) <
-            AccessUtil.accessLevel(referencedMemberInfo.getAccessFlags()))
+        if (AccessUtil.accessLevel(referencedFieldInfo.getAccessFlags()) <
+            AccessUtil.accessLevel(referencedMethodInfo.getAccessFlags()))
         {
             // Are we allowed to fix the access?
             if (allowAccessModification)
             {
-                ((ProgramFieldInfo)getFieldPutFieldMemberInfo).u2accessFlags =
-                    AccessUtil.replaceAccessFlags(getFieldPutFieldMemberInfo.getAccessFlags(),
-                                                  referencedMemberInfo.getAccessFlags());
+                // Is the field access private?
+                if (AccessUtil.accessLevel(referencedFieldInfo.getAccessFlags()) == AccessUtil.PRIVATE)
+                {
+                    // Cancel the inlining if there's a field of the same
+                    // name and type in a subclass.
+                    referencedClassFile.hierarchyAccept(false, false, false, true,
+                                                        new NamedFieldVisitor(
+                                                        new MyInliningCanceler(),
+                                                        referencedFieldInfo.getName(referencedClassFile),
+                                                        referencedFieldInfo.getDescriptor(referencedClassFile)));
+                }
+
+                if (getFieldPutFieldOpcode != 0)
+                {
+                    // Fix the access.
+                    ((ProgramFieldInfo)referencedFieldInfo).u2accessFlags =
+                        AccessUtil.replaceAccessFlags(referencedFieldInfo.getAccessFlags(),
+                                                      referencedMethodInfo.getAccessFlags());
+                }
             }
             else
             {
@@ -217,15 +236,22 @@ implements   InstructionVisitor,
 
         public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo) {}
         public void visitInnerClassesAttrInfo(ClassFile classFile, InnerClassesAttrInfo innerClassesAttrInfo) {}
+        public void visitEnclosingMethodAttrInfo(ClassFile classFile, EnclosingMethodAttrInfo enclosingMethodAttrInfo) {}
         public void visitConstantValueAttrInfo(ClassFile classFile, FieldInfo fieldInfo, ConstantValueAttrInfo constantValueAttrInfo) {}
         public void visitExceptionsAttrInfo(ClassFile classFile, MethodInfo methodInfo, ExceptionsAttrInfo exceptionsAttrInfo) {}
         public void visitLineNumberTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LineNumberTableAttrInfo lineNumberTableAttrInfo) {}
         public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo) {}
+        public void visitLocalVariableTypeTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeTableAttrInfo localVariableTypeTableAttrInfo) {}
         public void visitSourceFileAttrInfo(ClassFile classFile, SourceFileAttrInfo sourceFileAttrInfo) {}
         public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo) {}
         public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo) {}
         public void visitSyntheticAttrInfo(ClassFile classFile, SyntheticAttrInfo syntheticAttrInfo) {}
         public void visitSignatureAttrInfo(ClassFile classFile, SignatureAttrInfo signatureAttrInfo) {}
+        public void visitRuntimeVisibleAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleAnnotationsAttrInfo runtimeVisibleAnnotationsAttrInfo) {}
+        public void visitRuntimeInvisibleAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleAnnotationsAttrInfo runtimeInvisibleAnnotationsAttrInfo) {}
+        public void visitRuntimeVisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleParameterAnnotationsAttrInfo runtimeVisibleParameterAnnotationsAttrInfo) {}
+        public void visitRuntimeInvisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleParameterAnnotationsAttrInfo runtimeInvisibleParameterAnnotationsAttrInfo) {}
+        public void visitAnnotationDefaultAttrInfo(ClassFile classFile, AnnotationDefaultAttrInfo annotationDefaultAttrInfo) {}
 
 
         public void visitCodeAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo)
@@ -282,7 +308,7 @@ implements   InstructionVisitor,
 
             // Check the class.
             // TODO: Handle fields that are in super classes.
-            if (!classFile.equals(getFieldPutFieldClassFile))
+            if (!classFile.equals(referencedClassFile))
             {
                 return;
             }
@@ -321,7 +347,7 @@ implements   InstructionVisitor,
         public void visitCpInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, CpInstruction cpInstruction)
         {
             // Remember the index of the field reference.
-            getFieldPutFieldIndex = cpInstruction.cpIndex;
+            referencedFieldIndex = cpInstruction.cpIndex;
 
             // Retrieve the referenced field and its class file.
             classFile.constantPoolEntryAccept(this, cpInstruction.cpIndex);
@@ -344,8 +370,8 @@ implements   InstructionVisitor,
         public void visitFieldrefCpInfo(ClassFile classFile, FieldrefCpInfo fieldrefCpInfo)
         {
             // Remember the class file and the field.
-            getFieldPutFieldClassFile  = fieldrefCpInfo.referencedClassFile;
-            getFieldPutFieldMemberInfo = fieldrefCpInfo.referencedMemberInfo;
+            referencedClassFile = fieldrefCpInfo.referencedClassFile;
+            referencedFieldInfo = fieldrefCpInfo.referencedMemberInfo;
 
             // Retrieve the referenced class files.
             classFile.constantPoolEntryAccept(this, fieldrefCpInfo.u2nameAndTypeIndex);
@@ -355,7 +381,36 @@ implements   InstructionVisitor,
         public void visitNameAndTypeCpInfo(ClassFile classFile, NameAndTypeCpInfo nameAndTypeCpInfo)
         {
             // Remember the referenced class files of the field.
-            getFieldPutFieldClassFiles = nameAndTypeCpInfo.referencedClassFiles;
+            typeReferencedClassFiles = nameAndTypeCpInfo.referencedClassFiles;
+        }
+    }
+
+
+    /**
+     * This MemberInfoVisitor cancels the inlining every time it visits a class
+     * member.
+     */
+    private class MyInliningCanceler
+    implements    MemberInfoVisitor
+    {
+        public void visitProgramFieldInfo( ProgramClassFile programClassFile, ProgramFieldInfo  programFieldInfo)
+        {
+            getFieldPutFieldOpcode = 0;
+        }
+
+        public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
+        {
+            getFieldPutFieldOpcode = 0;
+        }
+
+        public void visitLibraryFieldInfo( LibraryClassFile libraryClassFile, LibraryFieldInfo  libraryFieldInfo)
+        {
+            getFieldPutFieldOpcode = 0;
+        }
+
+        public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo)
+        {
+            getFieldPutFieldOpcode = 0;
         }
     }
 }

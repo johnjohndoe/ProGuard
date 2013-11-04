@@ -1,4 +1,4 @@
-/* $Id: LibraryClassFile.java,v 1.29 2004/08/15 12:39:30 eric Exp $
+/* $Id: LibraryClassFile.java,v 1.33 2004/11/20 15:11:45 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -6,9 +6,9 @@
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This library is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or (at your
- * option) any later version.
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 2 of the License, or (at your option)
+ * any later version.
  *
  * This library is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -24,6 +24,7 @@ package proguard.classfile;
 
 import proguard.classfile.util.*;
 import proguard.classfile.visitor.*;
+import proguard.classfile.attribute.*;
 
 import java.io.*;
 
@@ -82,7 +83,9 @@ public class LibraryClassFile implements ClassFile
      *
      * @throws IOException if the class file is corrupt or incomplete
      */
-    public static LibraryClassFile create(DataInput din, boolean skipNonPublic)
+    public static LibraryClassFile create(DataInput din,
+                                          boolean skipNonPublicClasses,
+                                          boolean skipNonPublicClassMembers)
     throws IOException
     {
         // See if we have to create a new library class file object.
@@ -94,7 +97,7 @@ public class LibraryClassFile implements ClassFile
         // We'll start using the reusable object.
         LibraryClassFile libraryClassFile = reusableLibraryClassFile;
 
-        libraryClassFile.read(din, skipNonPublic);
+        libraryClassFile.read(din, skipNonPublicClasses, skipNonPublicClassMembers);
 
         // Did we actually read a useful library class file?
         if (libraryClassFile.thisClassName != null)
@@ -112,11 +115,18 @@ public class LibraryClassFile implements ClassFile
     }
 
 
-    // Private constructor.
+    /**
+     * Creates an empty LibraryClassFile.
+     */
     private LibraryClassFile() {}
 
-    // Import the class data to internal representation.
-    private void read(DataInput din, boolean skipNonPublic) throws IOException
+
+    /**
+     * Imports the class data into this LibraryClassFile.
+     */
+    private void read(DataInput din,
+                      boolean skipNonPublicClasses,
+                      boolean skipNonPublicClassmembers) throws IOException
     {
         // Read and check the class file magic number.
         int u4magic = din.readInt();
@@ -154,7 +164,7 @@ public class LibraryClassFile implements ClassFile
 
         // We may stop parsing this library class file if it's not public anyway.
         // E.g. only about 60% of all rt.jar classes need to be parsed.
-        if (skipNonPublic && !isVisible())
+        if (skipNonPublicClasses && !isVisible())
         {
             return;
         }
@@ -195,7 +205,9 @@ public class LibraryClassFile implements ClassFile
             LibraryFieldInfo field = LibraryFieldInfo.create(din, reusableConstantPool);
 
             // Only store fields that are visible.
-            if (field.isVisible())
+            if (field.isVisible() ||
+                (!skipNonPublicClassmembers &&
+                 (field.getAccessFlags() & ClassConstants.INTERNAL_ACC_PRIVATE) == 0))
             {
                 reusableFields[visibleFieldsCount++] = field;
             }
@@ -222,7 +234,9 @@ public class LibraryClassFile implements ClassFile
             LibraryMethodInfo method = LibraryMethodInfo.create(din, reusableConstantPool);
 
             // Only store methods that are visible.
-            if (method.isVisible())
+            if (method.isVisible() ||
+                (!skipNonPublicClasses &&
+                 (method.getAccessFlags() & ClassConstants.INTERNAL_ACC_PRIVATE) == 0))
             {
                 reusableMethods[visibleMethodsCount++] = method;
             }
@@ -556,7 +570,8 @@ public class LibraryClassFile implements ClassFile
 
     // Implementations for VisitorAccepter.
 
-    public Object getVisitorInfo() {
+    public Object getVisitorInfo()
+    {
         return visitorInfo;
     }
 

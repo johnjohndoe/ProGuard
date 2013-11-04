@@ -1,4 +1,4 @@
-/* $Id: Processor.java,v 1.7 2004/09/12 11:38:29 eric Exp $
+/* $Id: Processor.java,v 1.11 2004/11/14 22:24:45 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,6 +21,7 @@
 package proguard.optimize.evaluation;
 
 import proguard.classfile.*;
+import proguard.classfile.attribute.*;
 import proguard.classfile.instruction.*;
 import proguard.classfile.util.ClassUtil;
 import proguard.classfile.visitor.*;
@@ -433,7 +434,7 @@ implements   InstructionVisitor,
                 break;
 
             case InstructionConstants.OP_LCMP:
-                stack.push(stack.lpop().compare(stack.lpop()));
+                stack.push(stack.lpop().compareReverse(stack.lpop()));
                 break;
 
             case InstructionConstants.OP_FCMPL:
@@ -692,13 +693,14 @@ implements   InstructionVisitor,
                 break;
 
             case InstructionConstants.OP_RET:
-                // The return address should be in the first offset of the
+                // The return address should be in the last offset of the
                 // given instruction offset variable (even though there may
                 // be other offsets).
+                InstructionOffsetValue instructionOffsetValue = variables.oload(variableIndex);
                 branchUnit.branch(classFile,
                                   codeAttrInfo,
                                   offset,
-                                  variables.oload(variableIndex).instructionOffset(0));
+                                  instructionOffsetValue.instructionOffset(instructionOffsetValue.instructionOffsetCount()-1));
                 break;
 
             default:
@@ -754,24 +756,25 @@ implements   InstructionVisitor,
                     stack.ipop().notEqual(stack.ipop()));
                 break;
 
+
             case InstructionConstants.OP_IFICMPLT:
                 branchUnit.branchConditionally(classFile, codeAttrInfo, offset, branchTarget,
-                    stack.ipop().greaterThanOrEqual(stack.ipop()));
+                    -stack.ipop().lessThan(stack.ipop()));
                 break;
 
             case InstructionConstants.OP_IFICMPGE:
                 branchUnit.branchConditionally(classFile, codeAttrInfo, offset, branchTarget,
-                    stack.ipop().lessThan(stack.ipop()));
+                    -stack.ipop().greaterThanOrEqual(stack.ipop()));
                 break;
 
             case InstructionConstants.OP_IFICMPGT:
                 branchUnit.branchConditionally(classFile, codeAttrInfo, offset, branchTarget,
-                    stack.ipop().lessThanOrEqual(stack.ipop()));
+                    -stack.ipop().greaterThan(stack.ipop()));
                 break;
 
             case InstructionConstants.OP_IFICMPLE:
                 branchUnit.branchConditionally(classFile, codeAttrInfo, offset, branchTarget,
-                    stack.ipop().greaterThan(stack.ipop()));
+                    -stack.ipop().lessThanOrEqual(stack.ipop()));
                 break;
 
             case InstructionConstants.OP_IFACMPEQ:

@@ -1,4 +1,4 @@
-/* $Id: PushPopRemover.java,v 1.6 2004/08/15 12:39:30 eric Exp $
+/* $Id: PushPopRemover.java,v 1.8 2004/10/10 20:56:58 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,9 +21,9 @@
 package proguard.optimize.peephole;
 
 import proguard.classfile.*;
+import proguard.classfile.attribute.*;
 import proguard.classfile.editor.*;
 import proguard.classfile.instruction.*;
-import proguard.classfile.visitor.*;
 
 /**
  * This InstructionVisitor deletes all push/pop instruction pairs. In this
@@ -81,14 +81,6 @@ public class PushPopRemover implements InstructionVisitor
             case InstructionConstants.OP_DCONST_0:
             case InstructionConstants.OP_DCONST_1:
 
-            case InstructionConstants.OP_IALOAD:
-            case InstructionConstants.OP_LALOAD:
-            case InstructionConstants.OP_FALOAD:
-            case InstructionConstants.OP_DALOAD:
-            case InstructionConstants.OP_AALOAD:
-            case InstructionConstants.OP_BALOAD:
-            case InstructionConstants.OP_CALOAD:
-            case InstructionConstants.OP_SALOAD:
             case InstructionConstants.OP_DUP:
             case InstructionConstants.OP_DUP2:
             case InstructionConstants.OP_BIPUSH:

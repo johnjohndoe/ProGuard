@@ -1,4 +1,4 @@
-/* $Id: ClassFile.java,v 1.17 2004/08/15 12:39:30 eric Exp $
+/* $Id: ClassFile.java,v 1.19 2004/10/23 16:53:00 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -6,9 +6,9 @@
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This library is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or (at your
- * option) any later version.
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 2 of the License, or (at your option)
+ * any later version.
  *
  * This library is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -22,6 +22,7 @@
 package proguard.classfile;
 
 import proguard.classfile.visitor.*;
+import proguard.classfile.attribute.*;
 
 
 /**
@@ -61,7 +62,7 @@ public interface ClassFile extends VisitorAccepter
     public int getCpTag(int cpIndex);
 
     /**
-     * Returns the String value of the StringCpEntry at the specified index.
+     * Returns the String value of the Utf8CpEntry at the specified index.
      */
     public String getCpString(int cpIndex);
 
