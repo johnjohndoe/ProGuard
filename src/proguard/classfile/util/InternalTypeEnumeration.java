@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -34,6 +34,8 @@ import proguard.classfile.ClassConstants;
 public class InternalTypeEnumeration
 {
     private String descriptor;
+    private int    firstIndex;
+    private int    lastIndex;
     private int    index;
 
 
@@ -43,7 +45,24 @@ public class InternalTypeEnumeration
     public InternalTypeEnumeration(String descriptor)
     {
         this.descriptor = descriptor;
-        this.index      = descriptor.indexOf(ClassConstants.INTERNAL_METHOD_ARGUMENTS_OPEN) + 1;
+        this.firstIndex = descriptor.indexOf(ClassConstants.INTERNAL_METHOD_ARGUMENTS_OPEN);
+        this.lastIndex  = descriptor.indexOf(ClassConstants.INTERNAL_METHOD_ARGUMENTS_CLOSE);
+        this.index      = firstIndex + 1;
+
+        if (lastIndex < 0)
+        {
+            lastIndex = descriptor.length();
+        }
+    }
+
+
+    /**
+     * Returns the formal type parameters from the descriptor, assuming it's a
+     * method descriptor.
+     */
+    public String formalTypeParameters()
+    {
+        return descriptor.substring(0, firstIndex);
     }
 
 
@@ -53,8 +72,7 @@ public class InternalTypeEnumeration
      */
     public boolean hasMoreTypes()
     {
-        return index < descriptor.length() &&
-               descriptor.charAt(index) != ClassConstants.INTERNAL_METHOD_ARGUMENTS_CLOSE;
+        return index < lastIndex;
     }
 
 
@@ -65,75 +83,23 @@ public class InternalTypeEnumeration
     {
         int startIndex = index;
 
-        int     nestingLevel   = 0;
-        boolean parsingRawType = true;
-        boolean parsingArrayPrefix;
-        do
+        skipArray();
+
+        char c = descriptor.charAt(index++);
+        switch (c)
         {
-            parsingArrayPrefix = false;
-
-            char c = descriptor.charAt(index++);
-
-            if (parsingRawType)
+            case ClassConstants.INTERNAL_TYPE_CLASS_START:
+            case ClassConstants.INTERNAL_TYPE_GENERIC_VARIABLE_START:
             {
-                // Parse an array character, primitive type, or a token
-                // marking the beginning of an identifier (for a class or
-                // a variable type).
-                switch (c)
-                {
-                    case ClassConstants.INTERNAL_TYPE_GENERIC_START:
-                    {
-                        parsingRawType = false;
-                        nestingLevel++;
-                        break;
-                    }
-                    case ClassConstants.INTERNAL_TYPE_GENERIC_END:
-                    {
-                        parsingRawType = false;
-                        nestingLevel--;
-                        break;
-                    }
-                    case ClassConstants.INTERNAL_TYPE_ARRAY:
-                    {
-                        parsingArrayPrefix = true;
-                        break;
-                    }
-                    case ClassConstants.INTERNAL_TYPE_CLASS_START:
-                    case ClassConstants.INTERNAL_TYPE_GENERIC_VARIABLE_START:
-                    {
-                        parsingRawType = false;
-                        nestingLevel += 2;
-                        break;
-                    }
-                }
+                skipClass();
+                break;
             }
-            else
+            case ClassConstants.INTERNAL_TYPE_GENERIC_START:
             {
-                // Parse the identifier, or a token marking its end.
-                switch (c)
-                {
-                    case ClassConstants.INTERNAL_TYPE_CLASS_END:
-                        parsingRawType = true;
-                        nestingLevel -= 2;
-
-                        // Are we at the start of a type parameter?
-                        if (nestingLevel == 1 &&
-                            descriptor.charAt(index) != ClassConstants.INTERNAL_TYPE_GENERIC_END)
-                        {
-                            parsingRawType = false;
-                        }
-                        break;
-                    case ClassConstants.INTERNAL_TYPE_GENERIC_START:
-                        parsingRawType = true;
-                        nestingLevel++;
-                        break;
-                    case ClassConstants.INTERNAL_TYPE_GENERIC_BOUND:
-                        parsingRawType = true;
-                        break;
-                }
+                skipGeneric();
+                break;
             }
         }
-        while (nestingLevel > 0 || parsingArrayPrefix);
 
         return descriptor.substring(startIndex, index);
     }
@@ -145,7 +111,58 @@ public class InternalTypeEnumeration
      */
     public String returnType()
     {
-        return descriptor.substring(descriptor.indexOf(ClassConstants.INTERNAL_METHOD_ARGUMENTS_CLOSE) + 1);
+        return descriptor.substring(lastIndex + 1);
+    }
+
+
+    // Small utility methods.
+
+    private void skipArray()
+    {
+        while (descriptor.charAt(index) == ClassConstants.INTERNAL_TYPE_ARRAY)
+        {
+            index++;
+        }
+    }
+
+
+    private void skipClass()
+    {
+        while (true)
+        {
+            char c = descriptor.charAt(index++);
+            switch (c)
+            {
+                case ClassConstants.INTERNAL_TYPE_GENERIC_START:
+                    skipGeneric();
+                    break;
+
+                case ClassConstants.INTERNAL_TYPE_CLASS_END:
+                    return;
+            }
+        }
+    }
+
+
+    private void skipGeneric()
+    {
+        int nestingLevel = 1;
+
+        do
+        {
+            char c = descriptor.charAt(index++);
+            switch (c)
+            {
+                case ClassConstants.INTERNAL_TYPE_GENERIC_START:
+                    nestingLevel++;
+                    break;
+
+                case ClassConstants.INTERNAL_TYPE_GENERIC_END:
+                    nestingLevel--;
+                    break;
+            }
+        }
+        while (nestingLevel > 0);
     }
 
 
@@ -156,15 +173,28 @@ public class InternalTypeEnumeration
     {
         try
         {
-            System.out.println("Descriptor ["+args[0]+"]");
-            InternalTypeEnumeration enumeration = new InternalTypeEnumeration(args[0]);
-
-            while (enumeration.hasMoreTypes())
+            for (int index = 0; index < args.length; index++)
             {
-                System.out.println("  Type ["+enumeration.nextType()+"]");
-            }
+                String descriptor = args[index];
 
-            System.out.println("  Return type ["+enumeration.returnType()+"]");
+                System.out.println("Descriptor ["+descriptor+"]");
+                InternalTypeEnumeration enumeration = new InternalTypeEnumeration(descriptor);
+
+                if (enumeration.firstIndex >= 0)
+                {
+                    System.out.println("  Formal type parameters ["+enumeration.formalTypeParameters()+"]");
+                }
+
+                while (enumeration.hasMoreTypes())
+                {
+                    System.out.println("  Type ["+enumeration.nextType()+"]");
+                }
+
+                if (enumeration.lastIndex < descriptor.length())
+                {
+                    System.out.println("  Return type ["+enumeration.returnType()+"]");
+                }
+            }
         }
         catch (Exception ex)
         {

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -33,202 +33,182 @@ import proguard.classfile.attribute.*;
  */
 public class AttributesEditor
 {
-    /**
-     * Adds the given attribute to the given class.
-     */
-    public void addAttribute(ProgramClass programClass,
-                             Attribute    attribute)
-    {
-        // Try to replace an existing attribute.
-        if (!replaceAttribute(programClass,
-                              programClass.u2attributesCount,
-                              programClass.attributes,
-                              attribute))
-        {
-            // Otherwise append the attribute.
-            programClass.attributes =
-                appendAttribute(programClass.u2attributesCount,
-                                programClass.attributes,
-                                attribute);
+    private final ProgramClass  targetClass;
+    private final ProgramMember targetMember;
+    private final CodeAttribute targetAttribute;
+    private final boolean       replaceAttributes;
 
-            programClass.u2attributesCount++;
+
+    /**
+     * Creates a new AttributeAdder that will edit attributes in the given
+     * target class.
+     */
+    public AttributesEditor(ProgramClass targetClass,
+                            boolean      replaceAttributes)
+    {
+        this(targetClass, null, null, replaceAttributes);
+    }
+
+
+    /**
+     * Creates a new AttributeAdder that will edit attributes in the given
+     * target class member.
+     */
+    public AttributesEditor(ProgramClass  targetClass,
+                            ProgramMember targetMember,
+                            boolean       replaceAttributes)
+    {
+        this(targetClass, targetMember, null, replaceAttributes);
+    }
+
+
+    /**
+     * Creates a new AttributeAdder that will edit attributes in the given
+     * target code attribute.
+     */
+    public AttributesEditor(ProgramClass  targetClass,
+                            ProgramMember targetMember,
+                            CodeAttribute targetAttribute,
+                            boolean       replaceAttributes)
+    {
+        this.targetClass       = targetClass;
+        this.targetMember      = targetMember;
+        this.targetAttribute   = targetAttribute;
+        this.replaceAttributes = replaceAttributes;
+    }
+
+
+    /**
+     * Adds the given attribute to the target.
+     */
+    public void addAttribute(Attribute attribute)
+    {
+        // What's the target?
+        if (targetAttribute != null)
+        {
+            // Try to replace an existing attribute.
+            if (!replaceAttributes ||
+                !replaceAttribute(targetAttribute.u2attributesCount,
+                                  targetAttribute.attributes,
+                                  attribute))
+            {
+                // Otherwise append the attribute.
+                targetAttribute.attributes =
+                    addAttribute(targetAttribute.u2attributesCount,
+                                 targetAttribute.attributes,
+                                 attribute);
+
+                targetAttribute.u2attributesCount++;
+            }
+        }
+        else if (targetMember != null)
+        {
+            // Try to replace an existing attribute.
+            if (!replaceAttributes ||
+                !replaceAttribute(targetMember.u2attributesCount,
+                                  targetMember.attributes,
+                                  attribute))
+            {
+                // Otherwise append the attribute.
+                targetMember.attributes =
+                    addAttribute(targetMember.u2attributesCount,
+                                 targetMember.attributes,
+                                 attribute);
+
+                targetMember.u2attributesCount++;
+            }
+        }
+        else
+        {
+            // Try to replace an existing attribute.
+            if (!replaceAttributes ||
+                !replaceAttribute(targetClass.u2attributesCount,
+                                  targetClass.attributes,
+                                  attribute))
+            {
+                // Otherwise append the attribute.
+                targetClass.attributes =
+                    addAttribute(targetClass.u2attributesCount,
+                                 targetClass.attributes,
+                                 attribute);
+
+                targetClass.u2attributesCount++;
+            }
         }
     }
 
 
     /**
-     * Adds the given attribute to the given field.
+     * Deletes the specified attribute from the target.
      */
-    public void addAttribute(ProgramClass programClass,
-                             ProgramField programField,
-                             Attribute    attribute)
+    public void deleteAttribute(String attributeName)
     {
-        // Try to replace an existing attribute.
-        if (!replaceAttribute(programClass,
-                              programField.u2attributesCount,
-                              programField.attributes,
-                              attribute))
+        // What's the target?
+        if (targetAttribute != null)
         {
-            // Otherwise append the attribute.
-            programField.attributes =
-                appendAttribute(programField.u2attributesCount,
-                                programField.attributes,
-                                attribute);
-
-            programField.u2attributesCount++;
+            targetAttribute.u2attributesCount =
+                deleteAttribute(targetAttribute.u2attributesCount,
+                                targetAttribute.attributes,
+                                attributeName);
         }
-    }
-
-
-    /**
-     * Adds the given attribute to the given method.
-     */
-    public void addAttribute(ProgramClass  programClass,
-                             ProgramMethod programMethod,
-                             Attribute     attribute)
-    {
-        // Try to replace an existing attribute.
-        if (!replaceAttribute(programClass,
-                              programMethod.u2attributesCount,
-                              programMethod.attributes,
-                              attribute))
+        else if (targetMember != null)
         {
-            // Otherwise append the attribute.
-            programMethod.attributes =
-                appendAttribute(programMethod.u2attributesCount,
-                                programMethod.attributes,
-                                attribute);
-
-            programMethod.u2attributesCount++;
+            targetMember.u2attributesCount =
+                deleteAttribute(targetMember.u2attributesCount,
+                                targetMember.attributes,
+                                attributeName);
         }
-    }
-
-
-    /**
-     * Adds the given attribute to the given code attribute.
-     */
-    public void addAttribute(ProgramClass  programClass,
-                             ProgramMethod programMethod,
-                             CodeAttribute codeAttribute,
-                             Attribute     attribute)
-    {
-        // Try to replace an existing attribute.
-        if (!replaceAttribute(programClass,
-                              codeAttribute.u2attributesCount,
-                              codeAttribute.attributes,
-                              attribute))
+        else
         {
-            // Otherwise append the attribute.
-            codeAttribute.attributes =
-                appendAttribute(codeAttribute.u2attributesCount,
-                                codeAttribute.attributes,
-                                attribute);
-
-            codeAttribute.u2attributesCount++;
+            targetClass.u2attributesCount =
+                deleteAttribute(targetClass.u2attributesCount,
+                                targetClass.attributes,
+                                attributeName);
         }
-    }
-
-
-    /**
-     * Deletes the given attribute from the given class.
-     */
-    public void deleteAttribute(ProgramClass programClass,
-                                String       attributeName)
-    {
-        programClass.u2attributesCount =
-            deleteAttribute(programClass,
-                            programClass.u2attributesCount,
-                            programClass.attributes,
-                            attributeName);
-    }
-
-
-    /**
-     * Deletes the given attribute from the given field.
-     */
-    public void deleteAttribute(ProgramClass programClass,
-                                ProgramField programField,
-                                String       attributeName)
-    {
-        programField.u2attributesCount =
-            deleteAttribute(programClass,
-                            programField.u2attributesCount,
-                            programField.attributes,
-                            attributeName);
-    }
-
-
-    /**
-     * Deletes the given attribute from the given method.
-     */
-    public void deleteAttribute(ProgramClass  programClass,
-                                ProgramMethod programMethod,
-                                String        attributeName)
-    {
-        programMethod.u2attributesCount =
-            deleteAttribute(programClass,
-                            programMethod.u2attributesCount,
-                            programMethod.attributes,
-                            attributeName);
-    }
-
-
-    /**
-     * Deletes the given attribute from the given code attribute.
-     */
-    public void deleteAttribute(ProgramClass  programClass,
-                                ProgramMethod programMethod,
-                                CodeAttribute codeAttribute,
-                                String        attributeName)
-    {
-        codeAttribute.u2attributesCount =
-            deleteAttribute(programClass,
-                            codeAttribute.u2attributesCount,
-                            codeAttribute.attributes,
-                            attributeName);
     }
 
 
     // Small utility methods.
 
     /**
-     * Tries put the given attribute in place of an existing attribute of
-     * the same type.
+     * Tries put the given attribute in place of an existing attribute of the
+     * same name, returning whether it was present.
      */
-    private boolean replaceAttribute(Clazz       clazz,
-                                     int         attributesCount,
+    private boolean replaceAttribute(int         attributesCount,
                                      Attribute[] attributes,
                                      Attribute   attribute)
     {
-        String attributeName = attribute.getAttributeName(clazz);
-
-        for (int index = 0; index < attributesCount; index++)
+        // Find the attribute with the same name.
+        int index = findAttribute(attributesCount,
+                                  attributes,
+                                  attribute.getAttributeName(targetClass));
+        if (index < 0)
         {
-            if (attributes[index].getAttributeName(clazz).equals(attributeName))
-            {
-                attributes[index] = attribute;
-                return true;
-            }
+            return false;
         }
 
-        return false;
+        attributes[index] = attribute;
+
+        return true;
     }
 
 
     /**
-     * Appends the given attribute to the given array of attributes, creating
-     * a new array if necessary.
+     * Appends the given attribute to the given array of attributes, creating a
+     * new array if necessary.
      */
-    private Attribute[] appendAttribute(int         attributesCount,
-                                        Attribute[] attributes,
-                                        Attribute   attribute)
+    private Attribute[] addAttribute(int         attributesCount,
+                                     Attribute[] attributes,
+                                     Attribute   attribute)
     {
         // Is the array too small to contain the additional attribute?
         if (attributes.length <= attributesCount)
         {
             // Create a new array and copy the attributes into it.
             Attribute[] newAttributes = new Attribute[attributesCount + 1];
-            System.arraycopy(attributes, 0, newAttributes, 0, attributesCount);
+            System.arraycopy(attributes, 0,
+                             newAttributes, 0,
+                             attributesCount);
             attributes = newAttributes;
         }
 
@@ -240,31 +220,50 @@ public class AttributesEditor
 
 
     /**
-     * Deletes attributes with the given name, and returns the new number of
-     * attributes.
+     * Deletes the attributes with the given name from the given array of
+     * attributes, returning the new number of attributes.
      */
-    private int deleteAttribute(Clazz       clazz,
-                                int         attributesCount,
+    private int deleteAttribute(int         attributesCount,
                                 Attribute[] attributes,
                                 String      attributeName)
     {
-        int newIndex = 0;
+        // Find the attribute.
+        int index = findAttribute(attributesCount,
+                                  attributes,
+                                  attributeName);
+        if (index < 0)
+        {
+            return attributesCount;
+        }
 
         // Shift the other attributes in the array.
+        System.arraycopy(attributes, index + 1,
+                         attributes, index,
+                         attributesCount - index - 1);
+
+        // Clear the last entry in the array.
+        attributes[--attributesCount] = null;
+
+        return attributesCount;
+    }
+
+
+    /**
+     * Finds the index of the attribute with the given name in the given
+     * array of attributes.
+     */
+    private int findAttribute(int         attributesCount,
+                              Attribute[] attributes,
+                              String      attributeName)
+    {
         for (int index = 0; index < attributesCount; index++)
         {
-            if (!attributes[index].getAttributeName(clazz).equals(attributeName))
+            if (attributes[index].getAttributeName(targetClass).equals(attributeName))
             {
-                attributes[newIndex++] = attributes[index];
+                return index;
             }
         }
 
-        // Clear the remaining entries in the array.
-        for (int index = newIndex; index < attributesCount; index++)
-        {
-            attributes[index] = null;
-        }
-
-        return newIndex;
+        return -1;
     }
 }

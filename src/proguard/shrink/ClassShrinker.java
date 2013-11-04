@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -231,54 +231,57 @@ implements   ClassVisitor,
 
         public void visitSignatureAttribute(Clazz clazz, SignatureAttribute  signatureAttribute)
         {
-            String  signature         = clazz.getString(signatureAttribute.u2signatureIndex);
             Clazz[] referencedClasses = signatureAttribute.referencedClasses;
-
-            // Go over the generic definitions, superclass and implemented interfaces.
-            InternalTypeEnumeration internalTypeEnumeration =
-                new InternalTypeEnumeration(signature);
-
-            StringBuffer newSignatureBuffer = new StringBuffer();
-
-            int referencedClassIndex    = 0;
-            int newReferencedClassIndex = 0;
-
-            while (internalTypeEnumeration.hasMoreTypes())
+            if (referencedClasses != null)
             {
-                // Consider the classes referenced by this signature.
-                String type       = internalTypeEnumeration.nextType();
-                int    classCount = new DescriptorClassEnumeration(type).classCount();
+                // Go over the generic definitions, superclass and implemented interfaces.
+                String signature = clazz.getString(signatureAttribute.u2signatureIndex);
 
-                Clazz referencedClass = referencedClasses[referencedClassIndex];
-                if (referencedClass == null ||
-                    usageMarker.isUsed(referencedClass))
+                InternalTypeEnumeration internalTypeEnumeration =
+                    new InternalTypeEnumeration(signature);
+
+                StringBuffer newSignatureBuffer = new StringBuffer();
+
+                int referencedClassIndex    = 0;
+                int newReferencedClassIndex = 0;
+
+                while (internalTypeEnumeration.hasMoreTypes())
                 {
-                    // Append the superclass or interface.
-                    newSignatureBuffer.append(type);
+                    // Consider the classes referenced by this signature.
+                    String type       = internalTypeEnumeration.nextType();
+                    int    classCount = new DescriptorClassEnumeration(type).classCount();
 
-                    // Copy the referenced classes.
-                    for (int counter = 0; counter < classCount; counter++)
+                    Clazz referencedClass = referencedClasses[referencedClassIndex];
+                    if (referencedClass == null ||
+                        usageMarker.isUsed(referencedClass))
                     {
-                        referencedClasses[newReferencedClassIndex++] =
-                            referencedClasses[referencedClassIndex++];
+                        // Append the superclass or interface.
+                        newSignatureBuffer.append(type);
+
+                        // Copy the referenced classes.
+                        for (int counter = 0; counter < classCount; counter++)
+                        {
+                            referencedClasses[newReferencedClassIndex++] =
+                                referencedClasses[referencedClassIndex++];
+                        }
+                    }
+                    else
+                    {
+                        // Skip the referenced classes.
+                        referencedClassIndex += classCount;
                     }
                 }
-                else
-                {
-                    // Skip the referenced classes.
-                    referencedClassIndex += classCount;
-                }
-            }
 
-            if (newReferencedClassIndex < referencedClassIndex)
-            {
-                // Update the signature.
-                ((Utf8Constant)((ProgramClass)clazz).constantPool[signatureAttribute.u2signatureIndex]).setString(newSignatureBuffer.toString());
-
-                // Clear the unused entries.
-                while (newReferencedClassIndex < referencedClassIndex)
+                if (newReferencedClassIndex < referencedClassIndex)
                 {
-                    referencedClasses[newReferencedClassIndex++] = null;
+                    // Update the signature.
+                    ((Utf8Constant)((ProgramClass)clazz).constantPool[signatureAttribute.u2signatureIndex]).setString(newSignatureBuffer.toString());
+
+                    // Clear the unused entries.
+                    while (newReferencedClassIndex < referencedClassIndex)
+                    {
+                        referencedClasses[newReferencedClassIndex++] = null;
+                    }
                 }
             }
         }

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -31,10 +31,10 @@ import proguard.classfile.util.ClassUtil;
 public class ValueFactory
 {
     // Shared copies of Value objects, to avoid creating a lot of objects.
-    static final IntegerValue INTEGER_VALUE = new IntegerValue();
-    static final LongValue    LONG_VALUE    = new LongValue();
-    static final FloatValue   FLOAT_VALUE   = new FloatValue();
-    static final DoubleValue  DOUBLE_VALUE  = new DoubleValue();
+    static final IntegerValue INTEGER_VALUE = new UnknownIntegerValue();
+    static final LongValue    LONG_VALUE    = new UnknownLongValue();
+    static final FloatValue   FLOAT_VALUE   = new UnknownFloatValue();
+    static final DoubleValue  DOUBLE_VALUE  = new UnknownDoubleValue();
 
     static final ReferenceValue REFERENCE_VALUE_NULL                        = new ReferenceValue(null, null, true);
     static final ReferenceValue REFERENCE_VALUE_JAVA_LANG_OBJECT_MAYBE_NULL = new ReferenceValue(ClassConstants.INTERNAL_NAME_JAVA_LANG_OBJECT, null, true);
@@ -42,7 +42,7 @@ public class ValueFactory
 
 
     /**
-     * Creates a new undefined Value of the given type.
+     * Creates a new Value of the given type.
      * The type must be a fully specified internal type for primitives, classes,
      * or arrays.
      */
@@ -55,10 +55,10 @@ public class ValueFactory
             case ClassConstants.INTERNAL_TYPE_BYTE:
             case ClassConstants.INTERNAL_TYPE_CHAR:
             case ClassConstants.INTERNAL_TYPE_SHORT:
-            case ClassConstants.INTERNAL_TYPE_INT:     return INTEGER_VALUE;
-            case ClassConstants.INTERNAL_TYPE_LONG:    return LONG_VALUE;
-            case ClassConstants.INTERNAL_TYPE_FLOAT:   return FLOAT_VALUE;
-            case ClassConstants.INTERNAL_TYPE_DOUBLE:  return DOUBLE_VALUE;
+            case ClassConstants.INTERNAL_TYPE_INT:     return createIntegerValue();
+            case ClassConstants.INTERNAL_TYPE_LONG:    return createLongValue();
+            case ClassConstants.INTERNAL_TYPE_FLOAT:   return createFloatValue();
+            case ClassConstants.INTERNAL_TYPE_DOUBLE:  return createDoubleValue();
             default:                                   return createReferenceValue(ClassUtil.isInternalArrayType(type) ?
                                                                                        type :
                                                                                        ClassUtil.internalClassNameFromClassType(type),
@@ -76,7 +76,7 @@ public class ValueFactory
     }
 
     /**
-     * Creates a new IntegerValue with a given specific value.
+     * Creates a new IntegerValue with a given particular value.
      */
     public IntegerValue createIntegerValue(int value)
     {
@@ -93,7 +93,7 @@ public class ValueFactory
     }
 
     /**
-     * Creates a new LongValue with a given specific value.
+     * Creates a new LongValue with a given particular value.
      */
     public LongValue createLongValue(long value)
     {
@@ -110,7 +110,7 @@ public class ValueFactory
     }
 
     /**
-     * Creates a new FloatValue with a given specific value.
+     * Creates a new FloatValue with a given particular value.
      */
     public FloatValue createFloatValue(float value)
     {
@@ -127,7 +127,7 @@ public class ValueFactory
     }
 
     /**
-     * Creates a new DoubleValue with a given specific value.
+     * Creates a new DoubleValue with a given particular value.
      */
     public DoubleValue createDoubleValue(double value)
     {

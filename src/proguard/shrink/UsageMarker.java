@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -66,7 +66,7 @@ implements ClassVisitor,
 
 
     private final MyInterfaceUsageMarker          interfaceUsageMarker          = new MyInterfaceUsageMarker();
-    private final MyPossiblyUsedMethodUsageMarker possiblyUsedMethodUsageMarker = new MyPossiblyUsedMethodUsageMarker();
+    private final MyPossiblyUsedMemberUsageMarker possiblyUsedMemberUsageMarker = new MyPossiblyUsedMemberUsageMarker();
 //    private ClassVisitor       dynamicClassMarker   =
 //        new MultiClassVisitor(
 //        new ClassVisitor[]
@@ -117,8 +117,9 @@ implements ClassVisitor,
                                   ClassConstants.INTERNAL_METHOD_TYPE_INIT,
                                   this);
 
-        // Process all methods that have already been marked as possibly used.
-        programClass.methodsAccept(possiblyUsedMethodUsageMarker);
+        // Process all class members that have already been marked as possibly used.
+        programClass.fieldsAccept(possiblyUsedMemberUsageMarker);
+        programClass.methodsAccept(possiblyUsedMemberUsageMarker);
 
         // Mark the attributes.
         programClass.attributesAccept(this);
@@ -186,11 +187,31 @@ implements ClassVisitor,
     }
 
 
-    private class MyPossiblyUsedMethodUsageMarker
+    private class MyPossiblyUsedMemberUsageMarker
     extends       SimplifiedVisitor
     implements    MemberVisitor
     {
         // Implementations for MemberVisitor.
+
+        public void visitProgramField(ProgramClass programClass, ProgramField programField)
+        {
+            // Has the method already been referenced?
+            if (isPossiblyUsed(programField))
+            {
+                markAsUsed(programField);
+
+                // Mark the name and descriptor.
+                markConstant(programClass, programField.u2nameIndex);
+                markConstant(programClass, programField.u2descriptorIndex);
+
+                // Mark the attributes.
+                programField.attributesAccept(programClass, UsageMarker.this);
+
+                // Mark the classes referenced in the descriptor string.
+                programField.referencedClassesAccept(UsageMarker.this);
+            }
+        }
+
 
         public void visitProgramMethod(ProgramClass programClass, ProgramMethod programMethod)
         {
@@ -206,8 +227,6 @@ implements ClassVisitor,
                 // the method hierarchy has already been marked (cfr. below).
             }
         }
-
-
     }
 
 
@@ -217,17 +236,22 @@ implements ClassVisitor,
     {
         if (shouldBeMarkedAsUsed(programField))
         {
-            markAsUsed(programField);
+            // Is the field's class used?
+            if (isUsed(programClass))
+            {
+                markAsUsed(programField);
 
-            // Mark the name and descriptor.
-            markConstant(programClass, programField.u2nameIndex);
-            markConstant(programClass, programField.u2descriptorIndex);
+                // Mark the field body.
+                markProgramFieldBody(programClass, programField);
+            }
 
-            // Mark the attributes.
-            programField.attributesAccept(programClass, this);
-
-            // Mark the classes referenced in the descriptor string.
-            programField.referencedClassesAccept(this);
+            // Hasn't the field been marked as possibly being used yet?
+            else if (shouldBeMarkedAsPossiblyUsed(programField))
+            {
+                // We can't process the field yet, because the class isn't
+                // marked as being used (yet). Give it a preliminary mark.
+                markAsPossiblyUsed(programField);
+            }
         }
     }
 
@@ -277,6 +301,20 @@ implements ClassVisitor,
     }
 
 
+    protected void markProgramFieldBody(ProgramClass programClass, ProgramField programField)
+    {
+        // Mark the name and descriptor.
+        markConstant(programClass, programField.u2nameIndex);
+        markConstant(programClass, programField.u2descriptorIndex);
+
+        // Mark the attributes.
+        programField.attributesAccept(programClass, this);
+
+        // Mark the classes referenced in the descriptor string.
+        programField.referencedClassesAccept(this);
+    }
+
+
     protected void markProgramMethodBody(ProgramClass programClass, ProgramMethod programMethod)
     {
         // Mark the name and descriptor.
@@ -297,7 +335,17 @@ implements ClassVisitor,
      */
     protected void markMethodHierarchy(Clazz clazz, Method method)
     {
-        clazz.methodImplementationsAccept(method, false, this);
+        if ((method.getAccessFlags() &
+             (ClassConstants.INTERNAL_ACC_PRIVATE |
+              ClassConstants.INTERNAL_ACC_STATIC)) == 0)
+        {
+            clazz.accept(new ConcreteClassDownTraveler(
+                         new ClassHierarchyTraveler(true, true, false, true,
+                         new NamedMethodVisitor(method.getName(clazz),
+                                                method.getDescriptor(clazz),
+                         new MemberAccessFilter(0, ClassConstants.INTERNAL_ACC_PRIVATE | ClassConstants.INTERNAL_ACC_STATIC | ClassConstants.INTERNAL_ACC_ABSTRACT,
+                         this)))));
+        }
     }
 
 
@@ -367,41 +415,23 @@ implements ClassVisitor,
     }
 
 
-    public void visitFieldrefConstant(Clazz clazz, FieldrefConstant fieldrefConstant)
+    public void visitAnyRefConstant(Clazz clazz, RefConstant refConstant)
     {
-        visitRefConstant(clazz, fieldrefConstant);
-    }
-
-
-    public void visitInterfaceMethodrefConstant(Clazz clazz, InterfaceMethodrefConstant interfaceMethodrefConstant)
-    {
-        visitRefConstant(clazz, interfaceMethodrefConstant);
-    }
-
-
-    public void visitMethodrefConstant(Clazz clazz, MethodrefConstant methodrefConstant)
-    {
-        visitRefConstant(clazz, methodrefConstant);
-    }
-
-
-    private void visitRefConstant(Clazz clazz, RefConstant methodrefConstant)
-    {
-        if (shouldBeMarkedAsUsed(methodrefConstant))
+        if (shouldBeMarkedAsUsed(refConstant))
         {
-            markAsUsed(methodrefConstant);
+            markAsUsed(refConstant);
 
-            markConstant(clazz, methodrefConstant.u2classIndex);
-            markConstant(clazz, methodrefConstant.u2nameAndTypeIndex);
+            markConstant(clazz, refConstant.u2classIndex);
+            markConstant(clazz, refConstant.u2nameAndTypeIndex);
 
             // When compiled with "-target 1.2" or higher, the class or
-            // interface actually containing the referenced method may be
-            // higher up the hierarchy. Make sure it's marked, in case it
+            // interface actually containing the referenced class member may
+            // be higher up the hierarchy. Make sure it's marked, in case it
             // isn't used elsewhere.
-            methodrefConstant.referencedClassAccept(this);
+            refConstant.referencedClassAccept(this);
 
-            // Mark the referenced method itself.
-            methodrefConstant.referencedMemberAccept(this);
+            // Mark the referenced class member itself.
+            refConstant.referencedMemberAccept(this);
         }
     }
 
@@ -659,25 +689,14 @@ implements ClassVisitor,
     {
         // At this point, we only mark outer classes of this class.
         // Inner class can be marked later, by InnerUsageMarker.
-        if (innerClassesInfo.u2innerClassIndex == 0 &&
+        if (innerClassesInfo.u2innerClassIndex != 0 &&
             clazz.getName().equals(clazz.getClassName(innerClassesInfo.u2innerClassIndex)))
         {
             markAsUsed(innerClassesInfo);
 
-            if (innerClassesInfo.u2innerClassIndex != 0)
-            {
-                markConstant(clazz, innerClassesInfo.u2innerClassIndex);
-            }
-
-            if (innerClassesInfo.u2outerClassIndex != 0)
-            {
-                markConstant(clazz, innerClassesInfo.u2outerClassIndex);
-            }
-
-            if (innerClassesInfo.u2innerNameIndex != 0)
-            {
-                markConstant(clazz, innerClassesInfo.u2innerNameIndex);
-            }
+            innerClassesInfo.innerClassConstantAccept(clazz, this);
+            innerClassesInfo.outerClassConstantAccept(clazz, this);
+            innerClassesInfo.innerNameConstantAccept(clazz, this);
         }
     }
 

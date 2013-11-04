@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -44,13 +44,35 @@ implements   AttributeVisitor,
 {
     private static final boolean DEBUG = false;
 
+    private final InstructionVisitor extraAddedInstructionVisitor;
+
     private final CodeAttributeEditor codeAttributeEditor = new CodeAttributeEditor();
 
     private String  descriptor;
     private boolean hasBeenFixed;
 
 
-    // Implementations for AttributeVisitor.
+    /**
+     * Creates a new EvaluationSimplifier.
+     */
+    public DuplicateInitializerInvocationFixer()
+    {
+        this(null);
+    }
+
+
+    /**
+     * Creates a new EvaluationSimplifier.
+     * @param extraAddedInstructionVisitor an optional extra visitor for all
+     *                                     added instructions.
+     */
+    public DuplicateInitializerInvocationFixer(InstructionVisitor extraAddedInstructionVisitor)
+    {
+        this.extraAddedInstructionVisitor = extraAddedInstructionVisitor;
+    }
+
+
+   // Implementations for AttributeVisitor.
 
     public void visitAnyAttribute(Clazz clazz, Attribute attribute) {}
 
@@ -95,6 +117,11 @@ implements   AttributeVisitor,
                 {
                     System.out.println("DuplicateInitializerInvocationFixer:");
                     System.out.println("  Inserting "+extraInstruction.toString()+" before "+constantInstruction.toString(offset));
+                }
+
+                if (extraAddedInstructionVisitor != null)
+                {
+                    extraInstruction.accept(null, null, null, offset, extraAddedInstructionVisitor);
                 }
             }
         }

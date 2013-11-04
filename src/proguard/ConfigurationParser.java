@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -131,11 +131,14 @@ public class ConfigurationParser
             else if (ConfigurationConstants.OPTIMIZATION_PASSES                              .startsWith(nextWord)) configuration.optimizationPasses               = parseIntegerArgument();
             else if (ConfigurationConstants.ASSUME_NO_SIDE_EFFECTS_OPTION                    .startsWith(nextWord)) configuration.assumeNoSideEffects              = parseClassSpecificationArguments(configuration.assumeNoSideEffects);
             else if (ConfigurationConstants.ALLOW_ACCESS_MODIFICATION_OPTION                 .startsWith(nextWord)) configuration.allowAccessModification          = parseNoArgument(true);
+            else if (ConfigurationConstants.MERGE_INTERFACES_AGGRESSIVELY_OPTION             .startsWith(nextWord)) configuration.mergeInterfacesAggressively      = parseNoArgument(true);
 
             else if (ConfigurationConstants.DONT_OBFUSCATE_OPTION                            .startsWith(nextWord)) configuration.obfuscate                        = parseNoArgument(false);
             else if (ConfigurationConstants.PRINT_MAPPING_OPTION                             .startsWith(nextWord)) configuration.printMapping                     = parseOptionalFile();
             else if (ConfigurationConstants.APPLY_MAPPING_OPTION                             .startsWith(nextWord)) configuration.applyMapping                     = parseFile();
             else if (ConfigurationConstants.OBFUSCATION_DICTIONARY_OPTION                    .startsWith(nextWord)) configuration.obfuscationDictionary            = parseFile();
+            else if (ConfigurationConstants.CLASS_OBFUSCATION_DICTIONARY_OPTION              .startsWith(nextWord)) configuration.classObfuscationDictionary       = parseFile();
+            else if (ConfigurationConstants.PACKAGE_OBFUSCATION_DICTIONARY_OPTION            .startsWith(nextWord)) configuration.packageObfuscationDictionary     = parseFile();
             else if (ConfigurationConstants.OVERLOAD_AGGRESSIVELY_OPTION                     .startsWith(nextWord)) configuration.overloadAggressively             = parseNoArgument(true);
             else if (ConfigurationConstants.USE_UNIQUE_CLASS_MEMBER_NAMES_OPTION             .startsWith(nextWord)) configuration.useUniqueClassMemberNames        = parseNoArgument(true);
             else if (ConfigurationConstants.DONT_USE_MIXED_CASE_CLASS_NAMES_OPTION           .startsWith(nextWord)) configuration.useMixedCaseClassNames           = parseNoArgument(false);
@@ -423,7 +426,8 @@ public class ConfigurationParser
         while (true)
         {
             readNextWord("keyword '" + ConfigurationConstants.CLASS_KEYWORD +
-                         "' or '" + ClassConstants.EXTERNAL_ACC_INTERFACE + "'", true);
+                         "', '"      + ClassConstants.EXTERNAL_ACC_INTERFACE +
+                         "', or '"   + ClassConstants.EXTERNAL_ACC_ENUM + "'", true);
 
             if (!ConfigurationConstants.ARGUMENT_SEPARATOR_KEYWORD.equals(nextWord))
             {
@@ -431,10 +435,9 @@ public class ConfigurationParser
                 break;
             }
 
-            readNextWord("keyword '" +
-                         ConfigurationConstants.ALLOW_SHRINKING_SUBOPTION + "', '" +
-                         ConfigurationConstants.ALLOW_OPTIMIZATION_SUBOPTION + "', or '" +
-                         ConfigurationConstants.ALLOW_OBFUSCATION_SUBOPTION + "'");
+            readNextWord("keyword '" + ConfigurationConstants.ALLOW_SHRINKING_SUBOPTION +
+                         "', '"      + ConfigurationConstants.ALLOW_OPTIMIZATION_SUBOPTION +
+                         "', or '"   + ConfigurationConstants.ALLOW_OBFUSCATION_SUBOPTION + "'");
 
             if      (ConfigurationConstants.ALLOW_SHRINKING_SUBOPTION   .startsWith(nextWord))
             {
@@ -450,11 +453,10 @@ public class ConfigurationParser
             }
             else
             {
-                throw new ParseException("Expecting keyword '" +
-                                         ConfigurationConstants.ALLOW_SHRINKING_SUBOPTION + "', '" +
-                                         ConfigurationConstants.ALLOW_OPTIMIZATION_SUBOPTION + "', or '" +
-                                         ConfigurationConstants.ALLOW_OBFUSCATION_SUBOPTION + "' before " +
-                                         reader.locationDescription());
+                throw new ParseException("Expecting keyword '" + ConfigurationConstants.ALLOW_SHRINKING_SUBOPTION +
+                                         "', '"                + ConfigurationConstants.ALLOW_OPTIMIZATION_SUBOPTION +
+                                         "', or '"             + ConfigurationConstants.ALLOW_OBFUSCATION_SUBOPTION +
+                                         "' before " + reader.locationDescription());
             }
         }
 
@@ -485,7 +487,8 @@ public class ConfigurationParser
 
         // Read and add the class configuration.
         readNextWord("keyword '" + ConfigurationConstants.CLASS_KEYWORD +
-                     "' or '" + ClassConstants.EXTERNAL_ACC_INTERFACE + "'", true);
+                     "', '"      + ClassConstants.EXTERNAL_ACC_INTERFACE +
+                     "', or '"   + ClassConstants.EXTERNAL_ACC_ENUM + "'", true);
 
         classSpecifications.add(parseClassSpecificationArguments());
 
@@ -507,16 +510,16 @@ public class ConfigurationParser
         while (!ConfigurationConstants.CLASS_KEYWORD.equals(nextWord))
         {
             // Parse the annotation type, if any.
-            if (ConfigurationConstants.ANNOTATION_KEYWORD.equals(nextWord))
-            {
-                annotationType =
-                    ClassUtil.internalType(
-                    ListUtil.commaSeparatedString(
-                    parseCommaSeparatedList("annotation type",
-                                            true, false, false, true, false, null)));
-
-                continue;
-            }
+//            if (ConfigurationConstants.ANNOTATION_KEYWORD.equals(nextWord))
+//            {
+//                annotationType =
+//                    ClassUtil.internalType(
+//                    ListUtil.commaSeparatedString(
+//                    parseCommaSeparatedList("annotation type",
+//                                            true, false, false, true, false, null)));
+//
+//                continue;
+//            }
 
             // Strip the negating sign, if any.
             String strippedWord = nextWord.startsWith(ConfigurationConstants.NEGATOR_KEYWORD) ?
@@ -524,12 +527,37 @@ public class ConfigurationParser
                 nextWord;
 
             // Parse the class access modifiers.
+            // TODO: Distinguish annotation from annotation modifier.
             int accessFlag =
-                strippedWord.equals(ClassConstants.EXTERNAL_ACC_PUBLIC)    ? ClassConstants.INTERNAL_ACC_PUBLIC    :
-                strippedWord.equals(ClassConstants.EXTERNAL_ACC_FINAL)     ? ClassConstants.INTERNAL_ACC_FINAL     :
-                strippedWord.equals(ClassConstants.EXTERNAL_ACC_INTERFACE) ? ClassConstants.INTERNAL_ACC_INTERFACE :
-                strippedWord.equals(ClassConstants.EXTERNAL_ACC_ABSTRACT)  ? ClassConstants.INTERNAL_ACC_ABSTRACT  :
-                                                                             unknownAccessFlag();
+                strippedWord.equals(ClassConstants.EXTERNAL_ACC_PUBLIC)     ? ClassConstants.INTERNAL_ACC_PUBLIC      :
+                strippedWord.equals(ClassConstants.EXTERNAL_ACC_FINAL)      ? ClassConstants.INTERNAL_ACC_FINAL       :
+                strippedWord.equals(ClassConstants.EXTERNAL_ACC_INTERFACE)  ? ClassConstants.INTERNAL_ACC_INTERFACE   :
+                strippedWord.equals(ClassConstants.EXTERNAL_ACC_ABSTRACT)   ? ClassConstants.INTERNAL_ACC_ABSTRACT    :
+                strippedWord.equals(ClassConstants.EXTERNAL_ACC_ANNOTATION) ? ClassConstants.INTERNAL_ACC_ANNOTATTION :
+                strippedWord.equals(ClassConstants.EXTERNAL_ACC_ENUM)       ? ClassConstants.INTERNAL_ACC_ENUM        :
+                                                                              unknownAccessFlag();
+
+            // Is it an annotation modifier?
+            if (accessFlag == ClassConstants.INTERNAL_ACC_ANNOTATTION)
+            {
+                // Is the next word actually an annotation type?
+                readNextWord("annotation type or keyword '" + ClassConstants.EXTERNAL_ACC_INTERFACE + "'", false);
+
+                if (!nextWord.equals(ClassConstants.EXTERNAL_ACC_INTERFACE) &&
+                    !nextWord.equals(ClassConstants.EXTERNAL_ACC_ENUM)      &&
+                    !nextWord.equals(ConfigurationConstants.CLASS_KEYWORD))
+                {
+                    // Parse the annotation type.
+                    annotationType =
+                        ClassUtil.internalType(
+                        ListUtil.commaSeparatedString(
+                        parseCommaSeparatedList("annotation type",
+                                                false, false, false, true, false, null)));
+
+                    continue;
+                }
+            }
+
             if (strippedWord.equals(nextWord))
             {
                 requiredSetClassAccessFlags   |= accessFlag;
@@ -547,14 +575,17 @@ public class ConfigurationParser
                                          "' before " + reader.locationDescription());
             }
 
-            if (ClassConstants.EXTERNAL_ACC_INTERFACE.equals(strippedWord))
+            if (strippedWord.equals(ClassConstants.EXTERNAL_ACC_INTERFACE) ||
+                strippedWord.equals(ClassConstants.EXTERNAL_ACC_ENUM)      ||
+                strippedWord.equals(ConfigurationConstants.CLASS_KEYWORD))
             {
-                // The interface keyword. Stop parsing the class flags.
+                // The interface or enum keyword. Stop parsing the class flags.
                 break;
             }
 
             readNextWord("keyword '" + ConfigurationConstants.CLASS_KEYWORD +
-                         "' or '" + ClassConstants.EXTERNAL_ACC_INTERFACE + "'");
+                         "', '"      + ClassConstants.EXTERNAL_ACC_INTERFACE +
+                         "', or '"   + ClassConstants.EXTERNAL_ACC_ENUM + "'", true);
         }
 
        // Parse the class name part.

@@ -2,21 +2,21 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
- * This library is free software; you can redistribute it and/or modify it
+ * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
  * Software Foundation; either version 2 of the License, or (at your option)
  * any later version.
  *
- * This library is distributed in the hope that it will be useful, but WITHOUT
+ * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
- * for more details.
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this library; if not, write to the Free Software Foundation,
- * Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 package proguard.optimize.evaluation;
 
@@ -35,19 +35,33 @@ import proguard.evaluation.value.*;
 public class LoadingInvocationUnit
 extends      BasicInvocationUnit
 {
+    /**
+     * Creates a new LoadingInvocationUnit with the given value factory.
+     */
+    public LoadingInvocationUnit(ValueFactory valueFactory)
+    {
+        super(valueFactory);
+    }
+
+
     // Implementations for BasicInvocationUnit.
 
     protected Value getFieldClassValue(Clazz       clazz,
                                        RefConstant refConstant,
                                        String      type)
     {
+        // Do we know this field?
         Member referencedMember = refConstant.referencedMember;
         if (referencedMember != null)
         {
+            // Retrieve the stored field class value.
             ReferenceValue value = StoringInvocationUnit.getFieldClassValue((Field)referencedMember);
-            if (value != null)
+            if (value != null &&
+                value.isParticular())
             {
                 return value;
+//                // Make sure the value is refreshed.
+//                return refresh(value);
             }
         }
 
@@ -59,13 +73,18 @@ extends      BasicInvocationUnit
                                   RefConstant refConstant,
                                   String      type)
     {
+        // Do we know this field?
         Member referencedMember = refConstant.referencedMember;
         if (referencedMember != null)
         {
+            // Retrieve the stored field value.
             Value value = StoringInvocationUnit.getFieldValue((Field)referencedMember);
-            if (value != null)
+            if (value != null &&
+                value.isParticular())
             {
                 return value;
+//                // Make sure the value is refreshed.
+//                return refresh(value);
             }
         }
 
@@ -79,10 +98,14 @@ extends      BasicInvocationUnit
                                             String type,
                                             Clazz  referencedClass)
     {
+        // Retrieve the stored method parameter value.
         Value value = StoringInvocationUnit.getMethodParameterValue(method, parameterIndex);
-        if (value != null)
-        {
-            return value;
+            if (value != null &&
+                value.isParticular())
+            {
+                return value;
+//            // Make sure the value is refreshed.
+//            return refresh(value);
         }
 
         return super.getMethodParameterValue(clazz,
@@ -97,13 +120,18 @@ extends      BasicInvocationUnit
                                          RefConstant refConstant,
                                          String      type)
     {
+        // Do we know this method?
         Member referencedMember = refConstant.referencedMember;
         if (referencedMember != null)
         {
+            // Retrieve the stored method return value.
             Value value = StoringInvocationUnit.getMethodReturnValue((Method)referencedMember);
-            if (value != null)
+            if (value != null &&
+                value.isParticular())
             {
                 return value;
+//                // Make sure the value is refreshed.
+//                return refresh(value);
             }
         }
 
@@ -111,4 +139,31 @@ extends      BasicInvocationUnit
                                           refConstant,
                                           type);
     }
+//
+//
+//    // Small utility methods.
+//
+//    private Value refresh(Value value)
+//    {
+//        if (value.isParticular())
+//        {
+//            return value;
+//        }
+//
+//        switch (value.computationalType())
+//        {
+//            case Value.TYPE_INTEGER: return valueFactory.createIntegerValue();
+//            case Value.TYPE_LONG:    return valueFactory.createLongValue();
+//            case Value.TYPE_FLOAT:   return valueFactory.createFloatValue();
+//            case Value.TYPE_DOUBLE:  return valueFactory.createDoubleValue();
+//            default:
+//            {
+//                ReferenceValue referenceValue = value.referenceValue();
+//
+//                return valueFactory.createReferenceValue(referenceValue.getType(),
+//                                                         referenceValue.getReferencedClass(),
+//                                                         referenceValue.isNull() != Value.NEVER);
+//            }
+//        }
+//    }
 }

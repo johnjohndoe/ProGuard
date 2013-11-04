@@ -2,21 +2,21 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
- * This library is free software; you can redistribute it and/or modify it
+ * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
  * Software Foundation; either version 2 of the License, or (at your option)
  * any later version.
  *
- * This library is distributed in the hope that it will be useful, but WITHOUT
+ * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
- * for more details.
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this library; if not, write to the Free Software Foundation,
- * Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 package proguard.preverify;
 
@@ -25,7 +25,7 @@ import proguard.classfile.attribute.*;
 import proguard.classfile.attribute.preverification.*;
 import proguard.classfile.attribute.visitor.AttributeVisitor;
 import proguard.classfile.editor.*;
-import proguard.classfile.instruction.InstructionConstants;
+import proguard.classfile.instruction.*;
 import proguard.classfile.util.SimplifiedVisitor;
 import proguard.classfile.visitor.*;
 import proguard.evaluation.*;
@@ -54,10 +54,8 @@ implements   MemberVisitor,
 
     private final boolean microEdition;
 
-    private final PartialEvaluator   partialEvaluator   = new PartialEvaluator();
-    private final LivenessAnalyzer   livenessAnalyzer   = new LivenessAnalyzer(partialEvaluator);
-    private final ConstantPoolEditor constantPoolEditor = new ConstantPoolEditor();
-    private final AttributesEditor   attributesEditor   = new AttributesEditor();
+    private final PartialEvaluator partialEvaluator = new PartialEvaluator();
+    private final LivenessAnalyzer livenessAnalyzer = new LivenessAnalyzer(partialEvaluator);
 
 
     /**
@@ -198,10 +196,7 @@ implements   MemberVisitor,
         if (frameCount == 0)
         {
             // Remove any stack map (table) attribute from the code attribute.
-            attributesEditor.deleteAttribute(programClass,
-                                             programMethod,
-                                             codeAttribute,
-                                             stackMapAttributeName);
+            new AttributesEditor(programClass, programMethod, codeAttribute, true).deleteAttribute(stackMapAttributeName);
         }
         else
         {
@@ -229,13 +224,10 @@ implements   MemberVisitor,
 
             // Fill out the name of the stack map attribute.
             stackMapAttribute.u2attributeNameIndex =
-                constantPoolEditor.addUtf8Constant(programClass, stackMapAttributeName);
+                new ConstantPoolEditor(programClass).addUtf8Constant(stackMapAttributeName);
 
             // Add the new stack map (table) attribute to the code attribute.
-            attributesEditor.addAttribute(programClass,
-                                          programMethod,
-                                          codeAttribute,
-                                          stackMapAttribute);
+            new AttributesEditor(programClass, programMethod, codeAttribute, true).addAttribute(stackMapAttribute);
 
             if (DEBUG)
             {
@@ -425,7 +417,7 @@ implements   MemberVisitor,
                     return VerificationTypeFactory.createNullType();
                 }
 
-                // Is the reference type newly created?
+                // Does the reference type have a single producer?
                 if (offset != PartialEvaluator.AT_METHOD_ENTRY)
                 {
                     InstructionOffsetValue producers = producerValue.instructionOffsetValue();
@@ -433,9 +425,17 @@ implements   MemberVisitor,
                     {
                         int producerOffset = producers.instructionOffset(0);
 
+                        // Follow any dup or swap instructions.
+                        while (producerOffset != PartialEvaluator.AT_METHOD_ENTRY &&
+                               isDupOrSwap(codeAttribute.code[producerOffset]))
+                        {
+                            producers      = partialEvaluator.getStackBefore(producerOffset).getTopProducerValue(0).instructionOffsetValue();
+                            producerOffset = producers.instructionOffset(0);
+                        }
+
                         // Special case: in an instance initialization method,
                         // before the super initialization, loading "this"
-                        // produces an unitinitialized stack entry.
+                        // produces an uninitialized stack entry.
                         if (partialEvaluator.isInitializer()                       &&
                             offset <= partialEvaluator.superInitializationOffset() &&
                             producerOffset > PartialEvaluator.AT_METHOD_ENTRY      &&
@@ -444,9 +444,11 @@ implements   MemberVisitor,
                             producerOffset = PartialEvaluator.AT_METHOD_ENTRY;
                         }
 
+                        // Is the reference type newly created?
                         int initializationOffset = producerOffset == PartialEvaluator.AT_METHOD_ENTRY ?
                             partialEvaluator.superInitializationOffset() :
                             partialEvaluator.initializationOffset(producerOffset);
+
                         if (initializationOffset != PartialEvaluator.NONE)
                         {
                             // Is the reference type still uninitialized?
@@ -476,9 +478,8 @@ implements   MemberVisitor,
     private int createClassConstant(ProgramClass   programClass,
                                     ReferenceValue referenceValue)
     {
-        return constantPoolEditor.addClassConstant(programClass,
-                                                   referenceValue.getType(),
-                                                   referenceValue.getReferencedClass());
+        return new ConstantPoolEditor(programClass).addClassConstant(referenceValue.getType(),
+                                                                     referenceValue.getReferencedClass());
     }
 
 
@@ -599,5 +600,16 @@ implements   MemberVisitor,
         }
 
         return true;
+    }
+
+
+    /**
+     * Returns whether the given instruction opcode represents a dup or swap
+     * instruction (dup, dup_x1, dup_x2, dup2, dup2_x1, dup2_x2, swap).
+     */
+    private boolean isDupOrSwap(int opcode)
+    {
+        return opcode >= InstructionConstants.OP_DUP &&
+               opcode <= InstructionConstants.OP_SWAP;
     }
 }

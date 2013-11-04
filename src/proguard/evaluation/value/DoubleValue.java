@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -27,7 +27,7 @@ import proguard.classfile.ClassConstants;
  *
  * @author Eric Lafortune
  */
-public class DoubleValue extends Category2Value
+public abstract class DoubleValue extends Category2Value
 {
     /**
      * Returns the specific double value, if applicable.
@@ -38,90 +38,83 @@ public class DoubleValue extends Category2Value
     }
 
 
+    // Basic unary methods.
+
+    /**
+     * Returns the negated value of this DoubleValue.
+     */
+    public abstract DoubleValue negate();
+
+    /**
+     * Converts this DoubleValue to an IntegerValue.
+     */
+    public abstract IntegerValue convertToInteger();
+
+    /**
+     * Converts this DoubleValue to a LongValue.
+     */
+    public abstract LongValue convertToLong();
+
+    /**
+     * Converts this DoubleValue to a FloatValue.
+     */
+    public abstract FloatValue convertToFloat();
+
+
     // Basic binary methods.
 
     /**
      * Returns the generalization of this DoubleValue and the given other
      * DoubleValue.
      */
-    public DoubleValue generalize(DoubleValue other)
-    {
-        return this;
-    }
+    public abstract DoubleValue generalize(DoubleValue other);
 
 
     /**
      * Returns the sum of this DoubleValue and the given DoubleValue.
      */
-    public DoubleValue add(DoubleValue other)
-    {
-        return this;
-    }
+    public abstract DoubleValue add(DoubleValue other);
 
     /**
      * Returns the difference of this DoubleValue and the given DoubleValue.
      */
-    public DoubleValue subtract(DoubleValue other)
-    {
-        return this;
-    }
+    public abstract DoubleValue subtract(DoubleValue other);
 
     /**
      * Returns the difference of the given DoubleValue and this DoubleValue.
      */
-    public DoubleValue subtractFrom(DoubleValue other)
-    {
-        return this;
-    }
+    public abstract DoubleValue subtractFrom(DoubleValue other);
 
     /**
      * Returns the product of this DoubleValue and the given DoubleValue.
      */
-    public DoubleValue multiply(DoubleValue other)
-    {
-        return this;
-    }
+    public abstract DoubleValue multiply(DoubleValue other);
 
     /**
      * Returns the quotient of this DoubleValue and the given DoubleValue.
      */
-    public DoubleValue divide(DoubleValue other)
-    {
-        return this;
-    }
+    public abstract DoubleValue divide(DoubleValue other);
 
     /**
      * Returns the quotient of the given DoubleValue and this DoubleValue.
      */
-    public DoubleValue divideOf(DoubleValue other)
-    {
-        return this;
-    }
+    public abstract DoubleValue divideOf(DoubleValue other);
 
     /**
      * Returns the remainder of this DoubleValue divided by the given DoubleValue.
      */
-    public DoubleValue remainder(DoubleValue other)
-    {
-        return this;
-    }
+    public abstract DoubleValue remainder(DoubleValue other);
 
     /**
      * Returns the remainder of the given DoubleValue divided by this DoubleValue.
      */
-    public DoubleValue remainderOf(DoubleValue other)
-    {
-        return this;
-    }
+    public abstract DoubleValue remainderOf(DoubleValue other);
 
     /**
      * Returns an IntegerValue with value -1, 0, or 1, if this DoubleValue is
      * less than, equal to, or greater than the given DoubleValue, respectively.
      */
-    public IntegerValue compare(DoubleValue other, ValueFactory valueFactory)
-    {
-        return valueFactory.createIntegerValue();
-    }
+    public abstract IntegerValue compare(DoubleValue other);
 
 
     // Derived binary methods.
@@ -130,44 +123,9 @@ public class DoubleValue extends Category2Value
      * Returns an IntegerValue with value 1, 0, or -1, if this DoubleValue is
      * less than, equal to, or greater than the given DoubleValue, respectively.
      */
-    public final IntegerValue compareReverse(DoubleValue other, ValueFactory valueFactory)
+    public final IntegerValue compareReverse(DoubleValue other)
     {
-        return compare(other, valueFactory).negate();
-    }
-
-
-    // Basic unary methods.
-
-    /**
-     * Returns the negated value of this DoubleValue.
-     */
-    public DoubleValue negate()
-    {
-        return this;
-    }
-
-    /**
-     * Converts this DoubleValue to an IntegerValue.
-     */
-    public IntegerValue convertToInteger(ValueFactory valueFactory)
-    {
-        return valueFactory.createIntegerValue();
-    }
-
-    /**
-     * Converts this DoubleValue to a LongValue.
-     */
-    public LongValue convertToLong(ValueFactory valueFactory)
-    {
-        return valueFactory.createLongValue();
-    }
-
-    /**
-     * Converts this DoubleValue to a FloatValue.
-     */
-    public FloatValue convertToFloat(ValueFactory valueFactory)
-    {
-        return valueFactory.createFloatValue();
+        return compare(other).negate();
     }
 
 
@@ -179,7 +137,7 @@ public class DoubleValue extends Category2Value
      */
     public DoubleValue generalize(SpecificDoubleValue other)
     {
-        return this;
+        return generalize((DoubleValue)other);
     }
 
 
@@ -188,7 +146,7 @@ public class DoubleValue extends Category2Value
      */
     public DoubleValue add(SpecificDoubleValue other)
     {
-        return this;
+        return add((DoubleValue)other);
     }
 
     /**
@@ -196,7 +154,7 @@ public class DoubleValue extends Category2Value
      */
     public DoubleValue subtract(SpecificDoubleValue other)
     {
-        return this;
+        return subtract((DoubleValue)other);
     }
 
     /**
@@ -204,7 +162,7 @@ public class DoubleValue extends Category2Value
      */
     public DoubleValue subtractFrom(SpecificDoubleValue other)
     {
-        return this;
+        return subtractFrom((DoubleValue)other);
     }
 
     /**
@@ -212,7 +170,7 @@ public class DoubleValue extends Category2Value
      */
     public DoubleValue multiply(SpecificDoubleValue other)
     {
-        return this;
+        return multiply((DoubleValue)other);
     }
 
     /**
@@ -220,7 +178,7 @@ public class DoubleValue extends Category2Value
      */
     public DoubleValue divide(SpecificDoubleValue other)
     {
-        return this;
+        return divide((DoubleValue)other);
     }
 
     /**
@@ -229,7 +187,7 @@ public class DoubleValue extends Category2Value
      */
     public DoubleValue divideOf(SpecificDoubleValue other)
     {
-        return this;
+        return divideOf((DoubleValue)other);
     }
 
     /**
@@ -238,7 +196,7 @@ public class DoubleValue extends Category2Value
      */
     public DoubleValue remainder(SpecificDoubleValue other)
     {
-        return this;
+        return remainder((DoubleValue)other);
     }
 
     /**
@@ -247,7 +205,7 @@ public class DoubleValue extends Category2Value
      */
     public DoubleValue remainderOf(SpecificDoubleValue other)
     {
-        return this;
+        return remainderOf((DoubleValue)other);
     }
 
     /**
@@ -255,9 +213,9 @@ public class DoubleValue extends Category2Value
      * less than, equal to, or greater than the given SpecificDoubleValue,
      * respectively.
      */
-    public IntegerValue compare(SpecificDoubleValue other, ValueFactory valueFactory)
+    public IntegerValue compare(SpecificDoubleValue other)
     {
-        return valueFactory.createIntegerValue();
+        return compare((DoubleValue)other);
     }
 
 
@@ -268,15 +226,123 @@ public class DoubleValue extends Category2Value
      * less than, equal to, or greater than the given SpecificDoubleValue,
      * respectively.
      */
-    public final IntegerValue compareReverse(SpecificDoubleValue other, ValueFactory valueFactory)
+    public final IntegerValue compareReverse(SpecificDoubleValue other)
     {
-        return compare(other, valueFactory).negate();
+        return compare(other).negate();
+    }
+
+
+    // Similar binary methods, but this time with particular arguments.
+
+    /**
+     * Returns the generalization of this DoubleValue and the given other
+     * ParticularDoubleValue.
+     */
+    public DoubleValue generalize(ParticularDoubleValue other)
+    {
+        return generalize((SpecificDoubleValue)other);
+    }
+
+
+    /**
+     * Returns the sum of this DoubleValue and the given ParticularDoubleValue.
+     */
+    public DoubleValue add(ParticularDoubleValue other)
+    {
+        return add((SpecificDoubleValue)other);
+    }
+
+    /**
+     * Returns the difference of this DoubleValue and the given ParticularDoubleValue.
+     */
+    public DoubleValue subtract(ParticularDoubleValue other)
+    {
+        return subtract((SpecificDoubleValue)other);
+    }
+
+    /**
+     * Returns the difference of the given ParticularDoubleValue and this DoubleValue.
+     */
+    public DoubleValue subtractFrom(ParticularDoubleValue other)
+    {
+        return subtractFrom((SpecificDoubleValue)other);
+    }
+
+    /**
+     * Returns the product of this DoubleValue and the given ParticularDoubleValue.
+     */
+    public DoubleValue multiply(ParticularDoubleValue other)
+    {
+        return multiply((SpecificDoubleValue)other);
+    }
+
+    /**
+     * Returns the quotient of this DoubleValue and the given ParticularDoubleValue.
+     */
+    public DoubleValue divide(ParticularDoubleValue other)
+    {
+        return divide((SpecificDoubleValue)other);
+    }
+
+    /**
+     * Returns the quotient of the given ParticularDoubleValue and this
+     * DoubleValue.
+     */
+    public DoubleValue divideOf(ParticularDoubleValue other)
+    {
+        return divideOf((SpecificDoubleValue)other);
+    }
+
+    /**
+     * Returns the remainder of this DoubleValue divided by the given
+     * ParticularDoubleValue.
+     */
+    public DoubleValue remainder(ParticularDoubleValue other)
+    {
+        return remainder((SpecificDoubleValue)other);
+    }
+
+    /**
+     * Returns the remainder of the given ParticularDoubleValue and this
+     * DoubleValue.
+     */
+    public DoubleValue remainderOf(ParticularDoubleValue other)
+    {
+        return remainderOf((SpecificDoubleValue)other);
+    }
+
+    /**
+     * Returns an IntegerValue with value -1, 0, or 1, if this DoubleValue is
+     * less than, equal to, or greater than the given ParticularDoubleValue,
+     * respectively.
+     */
+    public IntegerValue compare(ParticularDoubleValue other)
+    {
+        return compare((SpecificDoubleValue)other);
+    }
+
+
+    // Derived binary methods.
+
+    /**
+     * Returns an IntegerValue with value 1, 0, or -1, if this DoubleValue is
+     * less than, equal to, or greater than the given ParticularDoubleValue,
+     * respectively.
+     */
+    public final IntegerValue compareReverse(ParticularDoubleValue other)
+    {
+        return compare(other).negate();
     }
 
 
     // Implementations for Value.
 
     public final DoubleValue doubleValue()
+    {
+        return this;
+    }
+
+    public Value refresh()
     {
         return this;
     }
@@ -294,26 +360,5 @@ public class DoubleValue extends Category2Value
     public final String internalType()
     {
         return String.valueOf(ClassConstants.INTERNAL_TYPE_DOUBLE);
-    }
-
-
-    // Implementations for Object.
-
-    public boolean equals(Object object)
-    {
-        return object != null &&
-               this.getClass() == object.getClass();
-    }
-
-
-    public int hashCode()
-    {
-        return this.getClass().hashCode();
-    }
-
-
-    public String toString()
-    {
-        return "d";
     }
 }

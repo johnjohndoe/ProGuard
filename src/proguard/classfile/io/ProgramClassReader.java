@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -483,10 +483,22 @@ implements   ClassVisitor,
     {
         // Read the parameter annotations.
         parameterAnnotationsAttribute.u2parametersCount           = dataInput.readUnsignedByte();
+
+        // The java compilers of JDK 1.5, JDK 1.6, and Eclipse all count the
+        // number of parameters of constructors of non-static inner classes
+        // incorrectly. Fix it right here.
+        int parameterStart = 0;
+        if (method.getName(clazz).equals(ClassConstants.INTERNAL_METHOD_NAME_INIT))
+        {
+            int realParametersCount = ClassUtil.internalMethodParameterCount(method.getDescriptor(clazz));
+            parameterStart = realParametersCount - parameterAnnotationsAttribute.u2parametersCount;
+            parameterAnnotationsAttribute.u2parametersCount = realParametersCount;
+        }
+
         parameterAnnotationsAttribute.u2parameterAnnotationsCount = new int[parameterAnnotationsAttribute.u2parametersCount];
         parameterAnnotationsAttribute.parameterAnnotations        = new Annotation[parameterAnnotationsAttribute.u2parametersCount][];
 
-        for (int parameterIndex = 0; parameterIndex < parameterAnnotationsAttribute.u2parametersCount; parameterIndex++)
+        for (int parameterIndex = parameterStart; parameterIndex < parameterAnnotationsAttribute.u2parametersCount; parameterIndex++)
         {
             // Read the parameter annotations of the given parameter.
             int u2annotationsCount = dataInput.readUnsignedShort();

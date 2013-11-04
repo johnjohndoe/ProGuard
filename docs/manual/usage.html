@@ -86,11 +86,11 @@ The sections below provide more details:
 
 <dd>Specifies the input jars (or wars, ears, zips, or directories) of the
     application to be processed. The class files in these jars will be
-    processed and written to the output jars. Any non-class files will be
-    copied without changes. Please be aware of any temporary files (e.g.
-    created by IDEs), especially if you are reading your input files straight
-    from directories. The entries in the class path can be filtered, as
-    explained in the <a href="#filters">filters</a> section. For better
+    processed and written to the output jars. By default, any non-class files
+    will be copied without changes. Please be aware of any temporary files
+    (e.g. created by IDEs), especially if you are reading your input files
+    straight from directories. The entries in the class path can be filtered,
+    as explained in the <a href="#filters">filters</a> section. For better
     readability, class path entries can be specified using multiple
     <code>-injars</code> options.</dd>
 
@@ -298,7 +298,7 @@ The sections below provide more details:
     many different reasons. This option prints the shortest chain of methods
     to a specified seed or entry point, for each specified class and class
     member. <i>In the current implementation, the shortest chain that is
-    printed out may sometimes contain circular reasonings -- these do not
+    printed out may sometimes contain circular deductions -- these do not
     reflect the actual shrinking process.</i> If the <a
     href="#verbose"><code>-verbose</code></a> option if specified, the traces
     include full field and method signatures. Only applicable when
@@ -344,18 +344,38 @@ The sections below provide more details:
     broadened during processing. This can improve the results of the
     optimization step. For instance, when inlining a public getter, it may be
     necessary to make the accessed field public too. Although Java's binary
-    compatibility specifications (cfr. <a href=
+    compatibility specifications formally do not require this (cfr. <a href=
     "http://java.sun.com/docs/books/jls/second_edition/html/j.title.doc.html"
     >The Java Language Specification, Second Edition</a>, <a href=
     "http://java.sun.com/docs/books/jls/second_edition/html/binaryComp.doc.html#47259"
-    >Section 13.4.6</a>) formally do not require this, some virtual machines
-    would have problems with the processed code otherwise. Only applicable
-    when optimizing (and when obfuscating with the
-    <a href="#repackageclasses"><code>-repackageclasses</code></a> option).
+    >Section 13.4.6</a>), some virtual machines would have problems with the
+    processed code otherwise. Only applicable when optimizing (and when
+    obfuscating with the <a
+    href="#repackageclasses"><code>-repackageclasses</code></a> option).
     <p>
     Counter-indication: you probably shouldn't use this option when processing
     code that is to be used as a library, since classes and class members that
     weren't designed to be public in the API may become public.</dd>
+
+<dt><a name="mergeinterfacesaggressively"><code><b>-mergeinterfacesaggressively</b></code></a></dt>
+
+<dd>Specifies that interfaces may be merged, even if their implementing
+    classes don't implement all interface methods. This can reduce the size of
+    the output by reducing the total number of classes. Note that Java's
+    binary compatibility specifications allow such constructs (cfr. <a href=
+    "http://java.sun.com/docs/books/jls/second_edition/html/j.title.doc.html"
+    >The Java Language Specification, Second Edition</a>, <a href=
+    "http://java.sun.com/docs/books/jls/second_edition/html/binaryComp.doc.html#45347"
+    >Section 13.5.3</a>), even if they are not allowed in the Java language
+    (cfr. <a href=
+    "http://java.sun.com/docs/books/jls/second_edition/html/j.title.doc.html"
+    >The Java Language Specification, Second Edition</a>, <a href=
+    "http://java.sun.com/docs/books/jls/second_edition/html/classes.doc.html#34031"
+    >Section 8.1.4</a>). Only applicable when optimizing.
+    <p>
+    Counter-indication: setting this option can reduce the performance of the
+    processed code on some JVMs, since advanced just-in-time compilation tend
+    to favor more interfaces with fewer implementing classes.</dd>
 
 </dl>
 <p>
@@ -412,6 +432,24 @@ The sections below provide more details:
     by obfuscating again with simpler names. The most useful application is
     specifying strings that are typically already present in class files (such
     as 'Code'), thus reducing the class file sizes just a little bit more.
+    Only applicable when obfuscating.</dd>
+
+<dt><a name="classobfuscationdictionary"><code><b>-classobfuscationdictionary</b></code></a>
+    <a href="#filename"><i>filename</i></a></dt>
+
+<dd>Specifies a text file from which all valid words are used as obfuscated
+    class names. The obfuscation dictionary is similar to the one of the
+    option <a
+    href="#obfuscationdictionary"><code>-obfuscationdictionary</code></a>.
+    Only applicable when obfuscating.</dd>
+
+<dt><a name="packageobfuscationdictionary"><code><b>-packageobfuscationdictionary</b></code></a>
+    <a href="#filename"><i>filename</i></a></dt>
+
+<dd>Specifies a text file from which all valid words are used as obfuscated
+    package names. The obfuscation dictionary is similar to the one of the
+    option <a
+    href="#obfuscationdictionary"><code>-obfuscationdictionary</code></a>.
     Only applicable when obfuscating.</dd>
 
 <dt><a name="overloadaggressively"><code><b>-overloadaggressively</b></code></a></dt>
@@ -615,24 +653,26 @@ The sections below provide more details:
 
 <dt><a name="dontnote"><code><b>-dontnote</b></code></a></dt>
 
-<dd>Specifies not to print notes about class casts of variable dynamically
-    created objects. These notes provide hints about classes that may have to
-    be kept.</dd>
+<dd>Specifies not to print notes about potential mistakes or omissions in the
+    configuration, like typos in class names, or missing options that might be
+    useful.</dd>
 
 <dt><a name="dontwarn"><code><b>-dontwarn</b></code></a></dt>
 
 <dd>Specifies not to warn about unresolved references and other important
-    problems at all. For instance, if the unresolved classes or class members
-    are indeed required for processing, the processed code will not function
-    properly. <i>Only use this option if you know what you're doing!</i></dd>
+    problems at all. Ignoring warnings can be dangerous. For instance, if the
+    unresolved classes or class members are indeed required for processing,
+    the processed code will not function properly. <i>Only use this option if
+    you know what you're doing!</i></dd>
 
 <dt><a name="ignorewarnings"><code><b>-ignorewarnings</b></code></a></dt>
 
-<dd>Specifies to print any warnings about unresolved references, and other
-    important problems, but to continue processing in any case. For instance,
-    if the unresolved classes or class members are indeed required for
-    processing, the processed code will not function properly. <i>Only use this
-    option if you know what you're doing!</i></dd>
+<dd>Specifies to print any warnings about unresolved references and other
+    important problems, but to continue processing in any case. Ignoring
+    warnings can be dangerous. For instance, if the unresolved classes or
+    class members are indeed required for processing, the processed code will
+    not function properly. <i>Only use this option if you know what you're
+    doing!</i></dd>
 
 <dt><a name="printconfiguration"><code><b>-printconfiguration</b></code></a>
     [<a href="#filename"><i>filename</i></a>]</dt>
@@ -853,6 +893,21 @@ If you're not sure which option you need, you should probably simply use
 <code>-keep</code>. It will make sure the specified classes and class members
 are not removed in the shrinking step, and not renamed in the obfuscation step.
 <p>
+<table>
+<tr><td valign="top">
+<img src="attention.gif" width="64" height="64"alt="attention">
+</td><td>
+Always remember:
+<ul>
+<li>Specifying a class without class members only preserves the class as an
+    entry point &mdash; any class members may then still be removed, optimized,
+    or obfuscated.</li>
+<li>Specifying a class member only preserves the class member as an entry
+    point &mdash; any associated code may still be optimized and adapted.</li>
+</ul>
+</td></tr>
+</table>
+<p>
 
 <a name="keepoptionmodifiers">&nbsp;</a>
 <h2>Keep Option Modifiers</h2>
@@ -899,7 +954,7 @@ definition:
 <p>
 
 <pre>
-[<b>@</b><i>annotationtype</i>] [[<b>!</b>]<b>public</b>|<b>final</b>|<b>abstract</b> ...] [<b>!</b>]<b>interface</b>|<b>class</b> <i>classname</i>
+[<b>@</b><i>annotationtype</i>] [[<b>!</b>]<b>public</b>|<b>final</b>|<b>abstract</b>|<b>@</b> ...] [<b>!</b>]<b>interface</b>|<b>class</b>|<b>enum</b> <i>classname</i>
     [<b>extends</b>|<b>implements</b> [<b>@</b><i>annotationtype</i>] <i>classname</i>]
 [<b>{</b>
     [<b>@</b><i>annotationtype</i>] [[<b>!</b>]<b>public</b>|<b>private</b>|<b>protected</b>|<b>static</b>|<b>volatile</b>|<b>transient</b> ...] <b>&lt;fields&gt;</b> |
@@ -924,9 +979,10 @@ files.
 
 <li>The <code><b>class</b></code> keyword refers to any interface or class.
     The <code><b>interface</b></code> keyword restricts matches to interface
-    classes. Preceding the <code><b>interface</b></code> keyword by a
-    <code><b>!</b></code> restricts matches to classes that are not
-    interfaces.
+    classes. The <code><b>enum</b></code> keyword restricts matches to
+    enumeration classes. Preceding the <code><b>interface</b></code> or
+    <code><b>enum</b></code> keywords by a <code><b>!</b></code> restricts
+    matches to classes that are not interfaces or enumerations, respectively.
     <p>
 
 <li>Every <i>classname</i> must be fully qualified, e.g.
@@ -1072,7 +1128,7 @@ files.
 
 <hr>
 <address>
-Copyright &copy; 2002-2007
+Copyright &copy; 2002-2008
 <a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>

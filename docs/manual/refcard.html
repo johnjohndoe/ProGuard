@@ -179,6 +179,11 @@
 </tr>
 
 <tr>
+<td valign="top"><a href="usage.html#mergeinterfacesaggressively"><code><b>-mergeinterfacesaggressively</b></code></a></td>
+<td>Allow any interfaces to be merged, while optimizing.</td>
+</tr>
+
+<tr>
 <td valign="top"><a href="usage.html#dontobfuscate"><code><b>-dontobfuscate</b></code></a></td>
 <td>Don't obfuscate the input class files.</td>
 </tr>
@@ -199,7 +204,19 @@
 <tr>
 <td valign="top"><a href="usage.html#obfuscationdictionary"><code><b>-obfuscationdictionary</b></code></a>
                  <a href="usage.html#filename"><i>filename</i></a></td>
-<td>Use the words in the given text file as obfuscated method names.</td>
+<td>Use the words in the given text file as obfuscated field names and method names.</td>
+</tr>
+
+<tr>
+<td valign="top"><a href="usage.html#classobfuscationdictionary"><code><b>-classobfuscationdictionary</b></code></a>
+                 <a href="usage.html#filename"><i>filename</i></a></td>
+<td>Use the words in the given text file as obfuscated class names.</td>
+</tr>
+
+<tr>
+<td valign="top"><a href="usage.html#packageobfuscationdictionary"><code><b>-packageobfuscationdictionary</b></code></a>
+                 <a href="usage.html#filename"><i>filename</i></a></td>
+<td>Use the words in the given text file as obfuscated package names.</td>
 </tr>
 
 <tr>
@@ -282,8 +299,8 @@
 
 <tr>
 <td valign="top"><a href="usage.html#dontnote"><code><b>-dontnote</b></code></a></td>
-<td>Don't print notes about class casts of variable dynamically created
-    objects.</td>
+<td>Don't print notes about potential mistakes or omissions in the
+    configuration.</td>
 </tr>
 
 <tr>
@@ -413,7 +430,7 @@ Notes:
 
 <hr>
 <address>
-Copyright &copy; 2002-2007
+Copyright &copy; 2002-2008
 <a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>

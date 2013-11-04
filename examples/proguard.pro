@@ -40,12 +40,15 @@
 # If you want to preserve the Ant task as well, you'll have to specify the
 # main ant.jar.
 
-#-libraryjars /usr/local/java/ant1.6.5/lib/ant.jar
-#-keep public class proguard.ant.* {
+#-libraryjars /usr/local/java/ant/lib/ant.jar
+#-adaptresourcefilecontents proguard/ant/task.properties
+#
+#-keep,allowobfuscation class proguard.ant.*
+#-keepclassmembers public class proguard.ant.* {
+#    <init>(org.apache.tools.ant.Project);
 #    public void set*(***);
 #    public void add*(***);
 #}
-
 
 # If you want to preserve the WTK obfuscation plug-in, you'll have to specify
 # the kenv.zip file.

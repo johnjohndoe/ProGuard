@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -47,7 +47,21 @@ public class MemberDescriptorFilter implements MemberVisitor
     public MemberDescriptorFilter(String        regularExpression,
                                   MemberVisitor memberVisitor)
     {
-        this.regularExpressionMatcher = new ClassNameParser().parse(regularExpression);
+        this(new ClassNameParser().parse(regularExpression), memberVisitor);
+    }
+
+
+    /**
+     * Creates a new MemberDescriptorFilter.
+     * @param regularExpressionMatcher the regular expression against which
+     *                                 member descriptors will be matched.
+     * @param memberVisitor            the <code>MemberVisitor</code> to which
+     *                                 visits will be delegated.
+     */
+    public MemberDescriptorFilter(StringMatcher regularExpressionMatcher,
+                                  MemberVisitor memberVisitor)
+    {
+        this.regularExpressionMatcher = regularExpressionMatcher;
         this.memberVisitor            = memberVisitor;
     }
 

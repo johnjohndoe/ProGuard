@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -97,8 +97,11 @@ implements   ClassVisitor,
         println("Minor version: 0x" + Integer.toHexString(ClassUtil.internalMinorClassVersion(programClass.u4version)));
         println("Access flags:  0x" + Integer.toHexString(programClass.u2accessFlags));
         println("  = " +
+                ((programClass.u2accessFlags & ClassConstants.INTERNAL_ACC_ANNOTATTION) != 0 ? "@ " : "") +
                 ClassUtil.externalClassAccessFlags(programClass.u2accessFlags) +
-                ((programClass.u2accessFlags & ClassConstants.INTERNAL_ACC_INTERFACE) == 0 ? "class " : "") +
+                ((programClass.u2accessFlags & ClassConstants.INTERNAL_ACC_ENUM)      != 0 ? "enum " :
+                 (programClass.u2accessFlags & ClassConstants.INTERNAL_ACC_INTERFACE) == 0 ? "class " :
+                                                                                             "") +
                 ClassUtil.externalClassName(programClass.getName()) +
                 (programClass.u2superClass == 0 ? "" : " extends " +
                 ClassUtil.externalClassName(programClass.getSuperName())));
@@ -107,10 +110,7 @@ implements   ClassVisitor,
 
         println("Interfaces (count = " + programClass.u2interfacesCount + "):");
         indent();
-        for (int index = 0; index < programClass.u2interfacesCount; index++)
-        {
-            println("+ " + programClass.getClassName(programClass.u2interfaces[index]));
-        }
+        programClass.interfaceConstantsAccept(this);
         outdent();
         println();
 
@@ -149,10 +149,14 @@ implements   ClassVisitor,
         println("Superclass:    " + libraryClass.getSuperName());
         println("Access flags:  0x" + Integer.toHexString(libraryClass.u2accessFlags));
         println("  = " +
+                ((libraryClass.u2accessFlags & ClassConstants.INTERNAL_ACC_ANNOTATTION) != 0 ? "@ " : "") +
                 ClassUtil.externalClassAccessFlags(libraryClass.u2accessFlags) +
-                ((libraryClass.u2accessFlags & ClassConstants.INTERNAL_ACC_INTERFACE) == 0 ? "class " : "") +
-                ClassUtil.externalClassName(libraryClass.getName()) + " extends "  +
-                ClassUtil.externalClassName(libraryClass.getSuperName()));
+                ((libraryClass.u2accessFlags & ClassConstants.INTERNAL_ACC_ENUM)      != 0 ? "enum " :
+                 (libraryClass.u2accessFlags & ClassConstants.INTERNAL_ACC_INTERFACE) == 0 ? "class " :
+                                                                                             "") +
+                ClassUtil.externalClassName(libraryClass.getName()) +
+                (libraryClass.getSuperName() == null ? "" : " extends "  +
+                ClassUtil.externalClassName(libraryClass.getSuperName())));
         outdent();
         println();
 
@@ -594,20 +598,9 @@ implements   ClassVisitor,
                 " InnerClassesInfo:");
 
         indent();
-        if (innerClassesInfo.u2innerClassIndex != 0)
-        {
-            clazz.constantPoolEntryAccept(innerClassesInfo.u2innerClassIndex, this);
-        }
-
-        if (innerClassesInfo.u2outerClassIndex != 0)
-        {
-            clazz.constantPoolEntryAccept(innerClassesInfo.u2outerClassIndex, this);
-        }
-
-        if (innerClassesInfo.u2innerNameIndex != 0)
-        {
-            clazz.constantPoolEntryAccept(innerClassesInfo.u2innerNameIndex, this);
-        }
+        innerClassesInfo.innerClassConstantAccept(clazz, this);
+        innerClassesInfo.outerClassConstantAccept(clazz, this);
+        innerClassesInfo.innerNameConstantAccept(clazz, this);
         outdent();
     }
 

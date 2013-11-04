@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -34,7 +34,8 @@ import proguard.classfile.visitor.ClassVisitor;
  * references are equivalent to the names, but they are more efficient to work
  * with.
  * <p>
- * This visitor optionally prints warnings if some items can't be found.
+ * This visitor optionally prints warnings if some superclasses can't be found
+ * or if they are in the program class pool.
  *
  * @author Eric Lafortune
  */
@@ -45,21 +46,24 @@ implements   ClassVisitor,
 {
     private final ClassPool      programClassPool;
     private final ClassPool      libraryClassPool;
-    private final WarningPrinter warningPrinter;
+    private final WarningPrinter missingWarningPrinter;
+    private final WarningPrinter dependencyWarningPrinter;
 
 
     /**
      * Creates a new ClassSuperHierarchyInitializer that initializes the super
      * hierarchy of all visited class files, optionally printing warnings if
-     * some classes can't be found.
+     * some classes can't be found or if they are in the program class pool.
      */
     public ClassSuperHierarchyInitializer(ClassPool      programClassPool,
                                           ClassPool      libraryClassPool,
-                                          WarningPrinter warningPrinter)
+                                          WarningPrinter missingWarningPrinter,
+                                          WarningPrinter dependencyWarningPrinter)
     {
-        this.programClassPool = programClassPool;
-        this.libraryClassPool = libraryClassPool;
-        this.warningPrinter   = warningPrinter;
+        this.programClassPool         = programClassPool;
+        this.libraryClassPool         = libraryClassPool;
+        this.missingWarningPrinter    = missingWarningPrinter;
+        this.dependencyWarningPrinter = dependencyWarningPrinter;
     }
 
 
@@ -68,18 +72,10 @@ implements   ClassVisitor,
     public void visitProgramClass(ProgramClass programClass)
     {
         // Link to the super class.
-        if (programClass.u2superClass != 0)
-        {
-            programClass.constantPoolEntryAccept(programClass.u2superClass,
-                                                 this);
-        }
+        programClass.superClassConstantAccept(this);
 
         // Link to the interfaces.
-        for (int index = 0; index < programClass.u2interfacesCount; index++)
-        {
-            programClass.constantPoolEntryAccept(programClass.u2interfaces[index],
-                                                 this);
-        }
+        programClass.interfaceConstantsAccept(this);
     }
 
 
@@ -133,7 +129,7 @@ implements   ClassVisitor,
      * Returns the class with the given name, either for the program class pool
      * or from the library class pool, or <code>null</code> if it can't be found.
      */
-    private Clazz findClass(String subClassName, String name)
+    private Clazz findClass(String referencingClassName, String name)
     {
         // First look for the class in the program class pool.
         Clazz clazz = programClassPool.getClass(name);
@@ -142,16 +138,25 @@ implements   ClassVisitor,
         if (clazz == null)
         {
             clazz = libraryClassPool.getClass(name);
-        }
 
-        if (clazz == null &&
-            warningPrinter != null)
+            if (clazz == null &&
+                missingWarningPrinter != null)
+            {
+                // We didn't find the superclass or interface. Print a warning.
+                missingWarningPrinter.print("Warning: " +
+                                            ClassUtil.externalClassName(referencingClassName) +
+                                            ": can't find superclass or interface " +
+                                            ClassUtil.externalClassName(name));
+            }
+        }
+        else if (dependencyWarningPrinter != null)
         {
-            // We didn't find the superclass or interface. Print a warning.
-            warningPrinter.print("Warning: " +
-                                 ClassUtil.externalClassName(subClassName) +
-                                 ": can't find superclass or interface " +
-                                 ClassUtil.externalClassName(name));
+            // The superclass or interface was found in the program class pool.
+            // Print a warning.
+            dependencyWarningPrinter.print("Warning: library class " +
+                                           ClassUtil.externalClassName(referencingClassName) +
+                                           " extends or implements program class " +
+                                           ClassUtil.externalClassName(name));
         }
 
         return clazz;

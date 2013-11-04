@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -46,10 +46,12 @@ implements   ClassVisitor,
              InnerClassesInfoVisitor,
              ConstantVisitor
 {
-    private final boolean useMixedCaseClassNames;
-    private final String  flattenPackageHierarchy;
-    private final String  repackageClasses;
-    private final boolean allowAccessModification;
+    private final DictionaryNameFactory classNameFactory;
+    private final DictionaryNameFactory packageNameFactory;
+    private final boolean               useMixedCaseClassNames;
+    private final String                flattenPackageHierarchy;
+    private final String                repackageClasses;
+    private final boolean               allowAccessModification;
 
     private final Set classNamesToAvoid                  = new HashSet();
 
@@ -71,21 +73,29 @@ implements   ClassVisitor,
      * Creates a new ClassObfuscator.
      * @param programClassPool        the class pool in which class names
      *                                have to be unique.
-     * @param useMixedCaseClassNames  specifies whether obfuscated packages
-     *                                and classes can get mixed-case names.
-     * @param flattenPackageHierarchy the base package if the obfuscated
-     *                                package hierarchy is to be flattened.
-     * @param repackageClasses        the base package if the obfuscated
-     *                                classes are to be repackaged.
-     * @param allowAccessModification specifies whether obfuscated classes
-     *                                can be freely moved between packages.
+     * @param classNameFactory        the optional class obfuscation dictionary.
+     * @param packageNameFactory      the optional package obfuscation
+     *                                dictionary.
+     * @param useMixedCaseClassNames  specifies whether obfuscated packages and
+     *                                classes can get mixed-case names.
+     * @param flattenPackageHierarchy the base package if the obfuscated package
+     *                                hierarchy is to be flattened.
+     * @param repackageClasses        the base package if the obfuscated classes
+     *                                are to be repackaged.
+     * @param allowAccessModification specifies whether obfuscated classes can
+     *                                be freely moved between packages.
      */
-    public ClassObfuscator(ClassPool programClassPool,
-                           boolean   useMixedCaseClassNames,
-                           String    flattenPackageHierarchy,
-                           String    repackageClasses,
-                           boolean   allowAccessModification)
+    public ClassObfuscator(ClassPool             programClassPool,
+                           DictionaryNameFactory classNameFactory,
+                           DictionaryNameFactory packageNameFactory,
+                           boolean               useMixedCaseClassNames,
+                           String                flattenPackageHierarchy,
+                           String                repackageClasses,
+                           boolean               allowAccessModification)
     {
+        this.classNameFactory   = classNameFactory;
+        this.packageNameFactory = packageNameFactory;
+
         // First append the package separator if necessary.
         if (flattenPackageHierarchy != null &&
             flattenPackageHierarchy.length() > 0)
@@ -301,6 +311,13 @@ implements   ClassVisitor,
             // We haven't seen packages in this superpackage before. Create
             // a new name factory for them.
             packageNameFactory = new SimpleNameFactory(useMixedCaseClassNames);
+            if (this.packageNameFactory != null)
+            {
+                packageNameFactory =
+                    new DictionaryNameFactory(this.packageNameFactory,
+                                              packageNameFactory);
+            }
+
             packagePrefixPackageNameFactoryMap.put(newSuperPackagePrefix,
                                                    packageNameFactory);
         }
@@ -333,6 +350,13 @@ implements   ClassVisitor,
             // We haven't seen classes in this package before. Create a new name
             // factory for them.
             classNameFactory = new SimpleNameFactory(useMixedCaseClassNames);
+            if (this.classNameFactory != null)
+            {
+                classNameFactory =
+                    new DictionaryNameFactory(this.classNameFactory,
+                                              classNameFactory);
+            }
+
             packagePrefixClassNameFactoryMap.put(newPackagePrefix,
                                                  classNameFactory);
         }

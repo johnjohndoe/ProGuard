@@ -2,21 +2,21 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
- * This library is free software; you can redistribute it and/or modify it
+ * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
  * Software Foundation; either version 2 of the License, or (at your option)
  * any later version.
  *
- * This library is distributed in the hope that it will be useful, but WITHOUT
+ * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
- * for more details.
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this library; if not, write to the Free Software Foundation,
- * Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 package proguard.classfile.editor;
 
@@ -67,9 +67,9 @@ implements   AttributeVisitor,
     private byte[]  code                  = new byte[ClassConstants.TYPICAL_CODE_LENGTH];
     private int[]   oldInstructionOffsets = new int[ClassConstants.TYPICAL_CODE_LENGTH];
 
-    private final int[]   codeFragmentOffsets   = new int[MAXIMUM_LEVELS];
-    private final int[]   codeFragmentLengths   = new int[MAXIMUM_LEVELS];
-    private final int[][] instructionOffsetMap  = new int[MAXIMUM_LEVELS][ClassConstants.TYPICAL_CODE_LENGTH];
+    private final int[]   codeFragmentOffsets  = new int[MAXIMUM_LEVELS];
+    private final int[]   codeFragmentLengths  = new int[MAXIMUM_LEVELS];
+    private final int[][] instructionOffsetMap = new int[MAXIMUM_LEVELS][ClassConstants.TYPICAL_CODE_LENGTH];
 
     private ExceptionInfo[] exceptionTable   =  new ExceptionInfo[ClassConstants.TYPICAL_EXCEPTION_TABLE_LENGTH];
 
@@ -77,6 +77,7 @@ implements   AttributeVisitor,
 
     private final StackSizeUpdater    stackSizeUpdater    = new StackSizeUpdater();
     private final VariableSizeUpdater variableSizeUpdater = new VariableSizeUpdater();
+//    private final InstructionWriter   instructionWriter   = new InstructionWriter();
 
 
     /**
@@ -125,6 +126,13 @@ implements   AttributeVisitor,
         {
             throw new IllegalArgumentException("Maximum number of code fragment levels exceeded ["+level+"]");
         }
+
+//        // TODO: Figure out some length.
+//        if (level == 0)
+//        {
+//            // Prepare for possible widening of instructions.
+//            instructionWriter.reset(2 * maximumCodeFragmentLength);
+//        }
 
         // Make sure there is sufficient space for adding the code fragment.
         maximumCodeLength += maximumCodeFragmentLength;
@@ -176,6 +184,11 @@ implements   AttributeVisitor,
         oldInstructionOffsets[codeLength] = oldInstructionOffset;
 
         // Write the instruction.
+//        instruction.accept(null,
+//                           null,
+//                           new CodeAttribute(0, 0, 0, 0, code, 0, null, 0, null),
+//                           codeLength,
+//                           instructionWriter);
         instruction.write(code, codeLength);
 
         // Fill out the new offset of the appended instruction.
@@ -272,6 +285,11 @@ implements   AttributeVisitor,
                 instruction.accept(null, null, null, instructionOffset, this);
 
                 // Write the instruction back.
+//                instruction.accept(null,
+//                                   null,
+//                                   new CodeAttribute(0, 0, 0, 0, code, 0, null, 0, null),
+//                                   instructionOffset,
+//                                   instructionWriter);
                 instruction.write(code, instructionOffset);
 
                 // Don't remap this instruction again.
@@ -373,6 +391,9 @@ implements   AttributeVisitor,
         //codeAttribute.u2exceptionTableLength =
         //    removeEmptyExceptions(codeAttribute.exceptionTable,
         //                          codeAttribute.u2exceptionTableLength);
+
+//        // Make sure instructions are widened if necessary.
+//        instructionWriter.visitCodeAttribute(clazz, method, codeAttribute);
 
         level--;
     }

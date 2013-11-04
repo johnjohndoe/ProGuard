@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -39,8 +39,6 @@ extends      SimplifiedVisitor
 implements   ClassVisitor,
              AttributeVisitor
 {
-    private final ConstantPoolEditor constantPoolEditor = new ConstantPoolEditor();
-
     private final String newSourceFileAttribute;
 
 
@@ -79,8 +77,7 @@ implements   ClassVisitor,
     {
         // Fix the source file attribute.
         sourceFileAttribute.u2sourceFileIndex =
-            constantPoolEditor.addUtf8Constant((ProgramClass)clazz,
-                                               newSourceFileAttribute);
+            new ConstantPoolEditor((ProgramClass)clazz).addUtf8Constant(newSourceFileAttribute);
     }
 
 
@@ -88,7 +85,6 @@ implements   ClassVisitor,
     {
         // Fix the source file attribute.
         sourceDirAttribute.u2sourceDirIndex =
-            constantPoolEditor.addUtf8Constant((ProgramClass)clazz,
-                                               newSourceFileAttribute);
+            new ConstantPoolEditor((ProgramClass)clazz).addUtf8Constant(newSourceFileAttribute);
     }
 }

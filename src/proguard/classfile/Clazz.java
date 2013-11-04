@@ -2,21 +2,21 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
- * This library is free software; you can redistribute it and/or modify it
+ * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
  * Software Foundation; either version 2 of the License, or (at your option)
  * any later version.
  *
- * This library is distributed in the hope that it will be useful, but WITHOUT
+ * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
- * for more details.
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this library; if not, write to the Free Software Foundation,
- * Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 package proguard.classfile;
 
@@ -159,6 +159,13 @@ public interface Clazz extends VisitorAccepter
                                 ClassVisitor classVisitor);
 
     /**
+     * Lets the given class visitor visit all known subclasses.
+     * @param classVisitor the <code>ClassVisitor</code> that will visit the
+     *                     subclasses.
+     */
+    public void subclassesAccept(ClassVisitor classVisitor);
+
+    /**
      * Lets the given constant pool entry visitor visit all constant pool entries
      * of this class.
      */
@@ -169,6 +176,24 @@ public interface Clazz extends VisitorAccepter
      * at the specified index.
      */
     public void constantPoolEntryAccept(int index, ConstantVisitor constantVisitor);
+
+    /**
+     * Lets the given constant pool entry visitor visit the class constant pool
+     * entry of this class.
+     */
+    public void thisClassConstantAccept(ConstantVisitor constantVisitor);
+
+    /**
+     * Lets the given constant pool entry visitor visit the class constant pool
+     * entry of the super class of this class, if there is one.
+     */
+    public void superClassConstantAccept(ConstantVisitor constantVisitor);
+
+    /**
+     * Lets the given constant pool entry visitor visit the class constant pool
+     * entries for all interfaces of this class.
+     */
+    public void interfaceConstantsAccept(ConstantVisitor constantVisitor);
 
     /**
      * Lets the given member info visitor visit all fields of this class.
@@ -199,85 +224,6 @@ public interface Clazz extends VisitorAccepter
      * @return whether it may have implementations.
      */
     public boolean mayHaveImplementations(Method method);
-
-    /**
-     * Lets the given member info visitor visit all concrete implementations of
-     * the specified method in the class hierarchy.
-     * @param method            the method that may have concrete implementations.
-     * @param visitThisMethod   specifies whether to visit the method in
-     *                          this class.
-     * @param memberVisitor     the <code>MemberVisitor</code> that will
-     *                          visit the method hierarchy.
-     */
-    public void methodImplementationsAccept(Method        method,
-                                            boolean       visitThisMethod,
-                                            MemberVisitor memberVisitor);
-
-    /**
-     * Lets the given member info visitor visit all concrete implementations of
-     * the specified method in the class hierarchy.
-     * @param name              the method name.
-     * @param type              the method descriptor.
-     * @param visitThisMethod   specifies whether to visit the method in
-     *                          this class.
-     * @param memberVisitor     the <code>MemberVisitor</code> that will
-     *                          visit the method hierarchy.
-     */
-    public void methodImplementationsAccept(String        name,
-                                            String        type,
-                                            boolean       visitThisMethod,
-                                            MemberVisitor memberVisitor);
-
-    /**
-     * Lets the given member info visitor visit all concrete implementations of
-     * the specified method in the class hierarchy.
-     * @param name                   the method name.
-     * @param descriptor             the method descriptor.
-     * @param visitThisMethod        specifies whether to visit the method in
-     *                               this class.
-     * @param visitSpecialMethods    specifies whether to visit the special
-     *                               initializer methods.
-     * @param visitSuperMethods      specifies whether to visit the method in
-     *                               the super classes.
-     * @param visitOverridingMethods specifies whether to visit the method in
-     *                               the subclasses.
-     * @param visitSpecialMethods    specifies whether to visit special methods.
-     * @param memberVisitor          the <code>MemberVisitor</code> that
-     *                               will visit the method hierarchy.
-     */
-    public void methodImplementationsAccept(String        name,
-                                            String        descriptor,
-                                            boolean       visitThisMethod,
-                                            boolean       visitSpecialMethods,
-                                            boolean       visitSuperMethods,
-                                            boolean       visitOverridingMethods,
-                                            MemberVisitor memberVisitor);
-    /**
-     * Lets the given member info visitor visit all concrete implementations of
-     * the specified method in the class hierarchy.
-     * @param name                   the method name.
-     * @param descriptor             the method descriptor.
-     * @param method                 the method itself, if present.
-     * @param visitThisMethod        specifies whether to visit the method in
-     *                               this class.
-     * @param visitSpecialMethods    specifies whether to visit the method in
-     *                               the interfaces.
-     * @param visitSuperMethods      specifies whether to visit the method in
-     *                               the super classes.
-     * @param visitOverridingMethods specifies whether to visit the method in
-     *                               the subclasses.
-     * @param visitSpecialMethods    specifies whether to visit special methods.
-     * @param memberVisitor          the <code>MemberVisitor</code> that
-     *                               will visit the method hierarchy.
-     */
-    public void methodImplementationsAccept(String        name,
-                                            String        descriptor,
-                                            Method        method,
-                                            boolean       visitThisMethod,
-                                            boolean       visitSuperMethods,
-                                            boolean       visitOverridingMethods,
-                                            boolean       visitSpecialMethods,
-                                            MemberVisitor memberVisitor);
 
     /**
      * Lets the given attribute info visitor visit all attributes of this class.

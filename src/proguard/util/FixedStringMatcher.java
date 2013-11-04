@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -22,7 +22,7 @@ package proguard.util;
 
 /**
  * This StringMatcher tests whether strings start with a given fixed string
- * and then match another given StringMatcher.
+ * and then match another optional given StringMatcher.
  *
  * @author Eric Lafortune
  */
@@ -50,6 +50,7 @@ public class FixedStringMatcher implements StringMatcher
     public boolean matches(String string)
     {
         return string.startsWith(fixedString) &&
-               nextMatcher.matches(string.substring(fixedString.length()));
+               (nextMatcher == null ||
+                nextMatcher.matches(string.substring(fixedString.length())));
     }
 }

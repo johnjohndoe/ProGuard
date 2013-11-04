@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -80,9 +80,6 @@ implements   ClassVisitor,
             return;
         }
 
-        // Get the last method in the chain.
-        Member thisLastMember = lastMember(member);
-
         // See if we've already come across a method with the same name and
         // descriptor.
         String key = name + ' ' + descriptor;
@@ -90,32 +87,46 @@ implements   ClassVisitor,
 
         if (otherMember == null)
         {
+            // Get the last method in the chain.
+            Member thisLastMember = lastMember(member);
+
             // Store the new class method in the map.
             memberMap.put(key, thisLastMember);
         }
         else
         {
-            // Get the last method in the other chain.
-            Member otherLastMember = lastMember(otherMember);
-
-            // Check if both link chains aren't already ending in the same element.
-            if (!thisLastMember.equals(otherLastMember))
-            {
-                // Merge the two chains, with the library members last.
-                if (otherLastMember instanceof LibraryMember)
-                {
-                    thisLastMember.setVisitorInfo(otherLastMember);
-                }
-                else
-                {
-                    otherLastMember.setVisitorInfo(thisLastMember);
-                }
-            }
+            // Link both members.
+            link(member, otherMember);
         }
     }
 
 
     // Small utility methods.
+
+    /**
+     * Links the two given class members.
+     */
+    private static void link(Member member1, Member member2)
+    {
+        // Get the last methods in the both chains.
+        Member lastMember1 = lastMember(member1);
+        Member lastMember2 = lastMember(member2);
+
+        // Check if both link chains aren't already ending in the same element.
+        if (!lastMember1.equals(lastMember2))
+        {
+            // Merge the two chains, with the library members last.
+            if (lastMember2 instanceof LibraryMember)
+            {
+                lastMember1.setVisitorInfo(lastMember2);
+            }
+            else
+            {
+                lastMember2.setVisitorInfo(lastMember1);
+            }
+        }
+    }
+
 
     /**
      * Finds the last class member in the linked list of related class members.

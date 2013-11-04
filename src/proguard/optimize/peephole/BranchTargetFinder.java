@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -73,7 +73,7 @@ implements   AttributeVisitor,
 
     private int     currentSubroutineStart;
     private int     currentSubroutineEnd;
-    private final int[]   recentCreationOffsets = new int[MAXIMUM_CREATION_OFFSETS];
+    private int[]   recentCreationOffsets = new int[MAXIMUM_CREATION_OFFSETS];
     private int     recentCreationOffsetIndex;
     private boolean isInitializer;
 
@@ -337,6 +337,7 @@ implements   AttributeVisitor,
 
         superInitializationOffset = NONE;
 
+        // We're assuming all subroutines are contiguous blocks of code.
         // We're not starting in a subroutine.
         currentSubroutineStart = NONE;
         currentSubroutineEnd   = NONE;
@@ -426,14 +427,16 @@ implements   AttributeVisitor,
                 {
                     System.out.println("" +
                                        (isBranchOrigin(index)         ? 'B' : '-') +
+                                       (isAfterBranch(index)          ? 'b' : '-') +
                                        (isBranchTarget(index)         ? 'T' : '-') +
                                        (isExceptionStart(index)       ? 'E' : '-') +
-                                       (isExceptionEnd(index)         ? 'E' : '-') +
+                                       (isExceptionEnd(index)         ? 'e' : '-') +
                                        (isExceptionHandler(index)     ? 'H' : '-') +
                                        (isSubroutineInvocation(index) ? 'J' : '-') +
                                        (isSubroutineStart(index)      ? 'S' : '-') +
                                        (isSubroutineReturning(index)  ? 'r' : '-') +
-                                       (isSubroutine(index)           ? " ["+subroutineStart(index)+" -> "+subroutineEnd(index)+"] " : " ") +
+                                       (isSubroutine(index)           ? " ["+subroutineStart(index)+" -> "+subroutineEnd(index)+"]" : "") +
+                                       (isNew(index)                  ? " ["+initializationOffset(index)+"] " : " ---- ") +
                                        InstructionFactory.create(codeAttribute.code, index).toString(index));
                 }
             }

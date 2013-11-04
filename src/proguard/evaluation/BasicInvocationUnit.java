@@ -2,21 +2,21 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
- * This library is free software; you can redistribute it and/or modify it
+ * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
  * Software Foundation; either version 2 of the License, or (at your option)
  * any later version.
  *
- * This library is distributed in the hope that it will be useful, but WITHOUT
+ * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
- * for more details.
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this library; if not, write to the Free Software Foundation,
- * Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 package proguard.evaluation;
 
@@ -42,7 +42,7 @@ implements   InvocationUnit,
              ConstantVisitor,
              MemberVisitor
 {
-    private final ValueFactory valueFactory = new ValueFactory();
+    protected final ValueFactory valueFactory;
 
     // Fields acting as parameters between the visitor methods.
     private boolean isStatic;
@@ -52,8 +52,16 @@ implements   InvocationUnit,
 
 
     /**
-     * Sets up the given variables for entering the given method.
+     * Creates a new BasicInvocationUnit with the given value factory.
      */
+    public BasicInvocationUnit(ValueFactory valueFactory)
+    {
+        this.valueFactory = valueFactory;
+    }
+
+
+    // Implementations for InvocationUnit.
+
     public void enterMethod(Clazz clazz, Method method, Variables variables)
     {
         String descriptor = method.getDescriptor(clazz);
@@ -121,19 +129,12 @@ implements   InvocationUnit,
     }
 
 
-    /**
-     * Exits the given method with the given return value.
-     */
     public void exitMethod(Clazz clazz, Method method, Value returnValue)
     {
         setMethodReturnValue(clazz, method, returnValue);
     }
 
 
-    /**
-     * Updates the given stack corresponding to the execution of the given
-     * field or method reference instruction.
-     */
     public void invokeMember(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, ConstantInstruction constantInstruction, Stack stack)
     {
         int constantIndex = constantInstruction.constantIndex;
@@ -221,7 +222,6 @@ implements   InvocationUnit,
             setMethodParameterValue(clazz, methodrefConstant, parameterIndex, stack.pop());
         }
 
-        // Pop the reference value, if applicable.
         // Push the return value, if applicable.
         String returnType = ClassUtil.internalMethodReturnType(type);
         if (returnType.charAt(0) != ClassConstants.INTERNAL_TYPE_VOID)
@@ -231,6 +231,9 @@ implements   InvocationUnit,
     }
 
 
+    /**
+     * Sets the class thru which the specified field is accessed.
+     */
     protected void setFieldClassValue(Clazz          clazz,
                                       RefConstant    refConstant,
                                       ReferenceValue value)
@@ -239,6 +242,9 @@ implements   InvocationUnit,
     }
 
 
+    /**
+     * Returns the class thru which the specified field is accessed.
+     */
     protected Value getFieldClassValue(Clazz       clazz,
                                        RefConstant refConstant,
                                        String      type)
@@ -253,6 +259,9 @@ implements   InvocationUnit,
     }
 
 
+    /**
+     * Sets the value of the specified field.
+     */
     protected void setFieldValue(Clazz       clazz,
                                  RefConstant refConstant,
                                  Value       value)
@@ -261,6 +270,9 @@ implements   InvocationUnit,
     }
 
 
+    /**
+     * Returns the value of the specified field.
+     */
     protected Value getFieldValue(Clazz       clazz,
                                   RefConstant refConstant,
                                   String      type)
@@ -275,6 +287,9 @@ implements   InvocationUnit,
     }
 
 
+    /**
+     * Sets the value of the specified method parameter.
+     */
     protected void setMethodParameterValue(Clazz       clazz,
                                            RefConstant refConstant,
                                            int         parameterIndex,
@@ -284,6 +299,9 @@ implements   InvocationUnit,
     }
 
 
+    /**
+     * Returns the value of the specified method parameter.
+     */
     protected Value getMethodParameterValue(Clazz  clazz,
                                             Method method,
                                             int    parameterIndex,
@@ -294,6 +312,9 @@ implements   InvocationUnit,
     }
 
 
+    /**
+     * Sets the return value of the specified method.
+     */
     protected void setMethodReturnValue(Clazz  clazz,
                                         Method method,
                                         Value  value)
@@ -302,6 +323,9 @@ implements   InvocationUnit,
     }
 
 
+    /**
+     * Returns the return value of the specified method.
+     */
     protected Value getMethodReturnValue(Clazz       clazz,
                                          RefConstant refConstant,
                                          String      type)

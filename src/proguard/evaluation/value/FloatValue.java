@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -27,7 +27,7 @@ import proguard.classfile.ClassConstants;
  *
  * @author Eric Lafortune
  */
-public class FloatValue extends Category1Value
+public abstract class FloatValue extends Category1Value
 {
     /**
      * Returns the specific float value, if applicable.
@@ -38,90 +38,83 @@ public class FloatValue extends Category1Value
     }
 
 
+    // Basic unary methods.
+
+    /**
+     * Returns the negated value of this FloatValue.
+     */
+    public abstract FloatValue negate();
+
+    /**
+     * Converts this FloatValue to an IntegerValue.
+     */
+    public abstract IntegerValue convertToInteger();
+
+    /**
+     * Converts this FloatValue to a LongValue.
+     */
+    public abstract LongValue convertToLong();
+
+    /**
+     * Converts this FloatValue to a DoubleValue.
+     */
+    public abstract DoubleValue convertToDouble();
+
+
     // Basic binary methods.
 
     /**
      * Returns the generalization of this FloatValue and the given other
      * FloatValue.
      */
-    public FloatValue generalize(FloatValue other)
-    {
-        return this;
-    }
+    public abstract FloatValue generalize(FloatValue other);
 
 
     /**
      * Returns the sum of this FloatValue and the given FloatValue.
      */
-    public FloatValue add(FloatValue other)
-    {
-        return this;
-    }
+    public abstract FloatValue add(FloatValue other);
 
     /**
      * Returns the difference of this FloatValue and the given FloatValue.
      */
-    public FloatValue subtract(FloatValue other)
-    {
-        return this;
-    }
+    public abstract FloatValue subtract(FloatValue other);
 
     /**
      * Returns the difference of the given FloatValue and this FloatValue.
      */
-    public FloatValue subtractFrom(FloatValue other)
-    {
-        return this;
-    }
+    public abstract FloatValue subtractFrom(FloatValue other);
 
     /**
      * Returns the product of this FloatValue and the given FloatValue.
      */
-    public FloatValue multiply(FloatValue other)
-    {
-        return this;
-    }
+    public abstract FloatValue multiply(FloatValue other);
 
     /**
      * Returns the quotient of this FloatValue and the given FloatValue.
      */
-    public FloatValue divide(FloatValue other)
-    {
-        return this;
-    }
+    public abstract FloatValue divide(FloatValue other);
 
     /**
      * Returns the quotient of the given FloatValue and this FloatValue.
      */
-    public FloatValue divideOf(FloatValue other)
-    {
-        return this;
-    }
+    public abstract FloatValue divideOf(FloatValue other);
 
     /**
      * Returns the remainder of this FloatValue divided by the given FloatValue.
      */
-    public FloatValue remainder(FloatValue other)
-    {
-        return this;
-    }
+    public abstract FloatValue remainder(FloatValue other);
 
     /**
      * Returns the remainder of the given FloatValue divided by this FloatValue.
      */
-    public FloatValue remainderOf(FloatValue other)
-    {
-        return this;
-    }
+    public abstract FloatValue remainderOf(FloatValue other);
 
     /**
      * Returns an IntegerValue with value -1, 0, or 1, if this FloatValue is
      * less than, equal to, or greater than the given FloatValue, respectively.
      */
-    public IntegerValue compare(FloatValue other, ValueFactory valueFactory)
-    {
-        return valueFactory.createIntegerValue();
-    }
+    public abstract IntegerValue compare(FloatValue other);
 
 
     // Derived binary methods.
@@ -130,44 +123,9 @@ public class FloatValue extends Category1Value
      * Returns an IntegerValue with value 1, 0, or -1, if this FloatValue is
      * less than, equal to, or greater than the given FloatValue, respectively.
      */
-    public final IntegerValue compareReverse(FloatValue other, ValueFactory valueFactory)
+    public final IntegerValue compareReverse(FloatValue other)
     {
-        return compare(other, valueFactory).negate();
-    }
-
-
-    // Basic unary methods.
-
-    /**
-     * Returns the negated value of this FloatValue.
-     */
-    public FloatValue negate()
-    {
-        return this;
-    }
-
-    /**
-     * Converts this FloatValue to an IntegerValue.
-     */
-    public IntegerValue convertToInteger(ValueFactory valueFactory)
-    {
-        return valueFactory.createIntegerValue();
-    }
-
-    /**
-     * Converts this FloatValue to a LongValue.
-     */
-    public LongValue convertToLong(ValueFactory valueFactory)
-    {
-        return valueFactory.createLongValue();
-    }
-
-    /**
-     * Converts this FloatValue to a DoubleValue.
-     */
-    public DoubleValue convertToDouble(ValueFactory valueFactory)
-    {
-        return valueFactory.createDoubleValue();
+        return compare(other).negate();
     }
 
 
@@ -179,7 +137,7 @@ public class FloatValue extends Category1Value
      */
     public FloatValue generalize(SpecificFloatValue other)
     {
-        return this;
+        return generalize((FloatValue)other);
     }
 
 
@@ -188,7 +146,7 @@ public class FloatValue extends Category1Value
      */
     public FloatValue add(SpecificFloatValue other)
     {
-        return this;
+        return add((FloatValue)other);
     }
 
     /**
@@ -196,7 +154,7 @@ public class FloatValue extends Category1Value
      */
     public FloatValue subtract(SpecificFloatValue other)
     {
-        return this;
+        return subtract((FloatValue)other);
     }
 
     /**
@@ -204,7 +162,7 @@ public class FloatValue extends Category1Value
      */
     public FloatValue subtractFrom(SpecificFloatValue other)
     {
-        return this;
+        return subtractFrom((FloatValue)other);
     }
 
     /**
@@ -212,7 +170,7 @@ public class FloatValue extends Category1Value
      */
     public FloatValue multiply(SpecificFloatValue other)
     {
-        return this;
+        return multiply((FloatValue)other);
     }
 
     /**
@@ -220,7 +178,7 @@ public class FloatValue extends Category1Value
      */
     public FloatValue divide(SpecificFloatValue other)
     {
-        return this;
+        return divide((FloatValue)other);
     }
 
     /**
@@ -229,7 +187,7 @@ public class FloatValue extends Category1Value
      */
     public FloatValue divideOf(SpecificFloatValue other)
     {
-        return this;
+        return divideOf((FloatValue)other);
     }
 
     /**
@@ -238,7 +196,7 @@ public class FloatValue extends Category1Value
      */
     public FloatValue remainder(SpecificFloatValue other)
     {
-        return this;
+        return remainder((FloatValue)other);
     }
 
     /**
@@ -247,7 +205,7 @@ public class FloatValue extends Category1Value
      */
     public FloatValue remainderOf(SpecificFloatValue other)
     {
-        return this;
+        return remainderOf((FloatValue)other);
     }
 
     /**
@@ -255,9 +213,9 @@ public class FloatValue extends Category1Value
      * less than, equal to, or greater than the given SpecificFloatValue,
      * respectively.
      */
-    public IntegerValue compare(SpecificFloatValue other, ValueFactory valueFactory)
+    public IntegerValue compare(SpecificFloatValue other)
     {
-        return valueFactory.createIntegerValue();
+        return compare((FloatValue)other);
     }
 
 
@@ -268,9 +226,112 @@ public class FloatValue extends Category1Value
      * less than, equal to, or greater than the given SpecificFloatValue,
      * respectively.
      */
-    public final IntegerValue compareReverse(SpecificFloatValue other, ValueFactory valueFactory)
+    public final IntegerValue compareReverse(SpecificFloatValue other)
     {
-        return compare(other, valueFactory).negate();
+        return compare(other).negate();
+    }
+
+
+    // Similar binary methods, but this time with particular arguments.
+
+    /**
+     * Returns the generalization of this FloatValue and the given other
+     * ParticularFloatValue.
+     */
+    public FloatValue generalize(ParticularFloatValue other)
+    {
+        return generalize((SpecificFloatValue)other);
+    }
+
+
+    /**
+     * Returns the sum of this FloatValue and the given ParticularFloatValue.
+     */
+    public FloatValue add(ParticularFloatValue other)
+    {
+        return add((SpecificFloatValue)other);
+    }
+
+    /**
+     * Returns the difference of this FloatValue and the given ParticularFloatValue.
+     */
+    public FloatValue subtract(ParticularFloatValue other)
+    {
+        return subtract((SpecificFloatValue)other);
+    }
+
+    /**
+     * Returns the difference of the given ParticularFloatValue and this FloatValue.
+     */
+    public FloatValue subtractFrom(ParticularFloatValue other)
+    {
+        return subtractFrom((SpecificFloatValue)other);
+    }
+
+    /**
+     * Returns the product of this FloatValue and the given ParticularFloatValue.
+     */
+    public FloatValue multiply(ParticularFloatValue other)
+    {
+        return multiply((SpecificFloatValue)other);
+    }
+
+    /**
+     * Returns the quotient of this FloatValue and the given ParticularFloatValue.
+     */
+    public FloatValue divide(ParticularFloatValue other)
+    {
+        return divide((SpecificFloatValue)other);
+    }
+
+    /**
+     * Returns the quotient of the given ParticularFloatValue and this
+     * FloatValue.
+     */
+    public FloatValue divideOf(ParticularFloatValue other)
+    {
+        return divideOf((SpecificFloatValue)other);
+    }
+
+    /**
+     * Returns the remainder of this FloatValue divided by the given
+     * ParticularFloatValue.
+     */
+    public FloatValue remainder(ParticularFloatValue other)
+    {
+        return remainder((SpecificFloatValue)other);
+    }
+
+    /**
+     * Returns the remainder of the given ParticularFloatValue and this
+     * FloatValue.
+     */
+    public FloatValue remainderOf(ParticularFloatValue other)
+    {
+        return remainderOf((SpecificFloatValue)other);
+    }
+
+    /**
+     * Returns an IntegerValue with value -1, 0, or 1, if this FloatValue is
+     * less than, equal to, or greater than the given ParticularFloatValue,
+     * respectively.
+     */
+    public IntegerValue compare(ParticularFloatValue other)
+    {
+        return compare((SpecificFloatValue)other);
+    }
+
+
+    // Derived binary methods.
+
+    /**
+     * Returns an IntegerValue with value 1, 0, or -1, if this FloatValue is
+     * less than, equal to, or greater than the given ParticularFloatValue,
+     * respectively.
+     */
+    public final IntegerValue compareReverse(ParticularFloatValue other)
+    {
+        return compare(other).negate();
     }
 
 
@@ -294,26 +355,5 @@ public class FloatValue extends Category1Value
     public final String internalType()
     {
         return String.valueOf(ClassConstants.INTERNAL_TYPE_FLOAT);
-    }
-
-
-    // Implementations for Object.
-
-    public boolean equals(Object object)
-    {
-        return object != null &&
-               this.getClass() == object.getClass();
-    }
-
-
-    public int hashCode()
-    {
-        return this.getClass().hashCode();
-    }
-
-
-    public String toString()
-    {
-        return "f";
     }
 }

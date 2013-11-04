@@ -36,10 +36,11 @@ depending on practical circumstances and personal preference.
 
 <h3>1. An external ProGuard configuration file</h3>
 
-The simplest way to use the ProGuard task in an Ant build file is to keep
-your ProGuard configuration file, and include it from Ant. You can include
-your ProGuard configuration file by setting the <a
-href="#configuration"><code>configuration</code></a> attribute of your
+The simplest way to use the ProGuard task in an Ant build file is to keep your
+ProGuard configuration file, and include it from Ant. You can include your
+ProGuard configuration file by setting
+the <a href="#configuration_attribute"><code>configuration</code></a>
+attribute of your
 <code>proguard</code> task. Your ant build file will then look like this:
 <p>
 
@@ -116,10 +117,12 @@ elements:
 
 <dl>
 
-<dt><a name="configuration"><code><b>configuration</b></code></a>
+<dt><a name="configuration_attribute"><code><b>configuration</b></code></a>
     = "<i>filename</i>"</dt>
 <dd>Read and merge options from the given ProGuard-style configuration
-    file.</dd>
+    file. Note: for reading XML-style configurations, use the <a
+    href="#configuration_element"><code>configuration</code></a>
+    <i>element</i>.</dd>
 
 <dt><a href="usage.html#dontskipnonpubliclibraryclasses"><code><b>skipnonpubliclibraryclasses</b></code></a>
     = "<i>boolean</i>"
@@ -174,6 +177,11 @@ elements:
 <dd>Allow the access modifiers of classes and class members to be modified,
     while optimizing.</dd>
 
+<dt><a href="usage.html#mergeinterfacesaggressively"><code><b>mergeinterfacesaggressively</b></code></a>
+    = "<i>boolean</i>"
+    (default = false)</dt>
+<dd>Allow any interfaces to be merged, while optimizing.</dd>
+
 <dt><a href="usage.html#dontobfuscate"><code><b>obfuscate</b></code></a>
     = "<i>boolean</i>"
    (default = true)</dt>
@@ -193,7 +201,18 @@ elements:
 <dt><a href="usage.html#obfuscationdictionary"><code><b>obfuscationdictionary</b></code></a>
     = "<i>filename</i>"
     (default = none)</dt>
-<dd>Use the words in the given text file as obfuscated method names.</dd>
+<dd>Use the words in the given text file as obfuscated field names and method
+    names.</dd>
+
+<dt><a href="usage.html#classobfuscationdictionary"><code><b>classobfuscationdictionary</b></code></a>
+    = "<i>filename</i>"
+    (default = none)</dt>
+<dd>Use the words in the given text file as obfuscated class names.</dd>
+
+<dt><a href="usage.html#packageobfuscationdictionary"><code><b>packageobfuscationdictionary</b></code></a>
+    = "<i>filename</i>"
+    (default = none)</dt>
+<dd>Use the words in the given text file as obfuscated package names.</dd>
 
 <dt><a href="usage.html#overloadaggressively"><code><b>overloadaggressively</b></code></a>
     = "<i>boolean</i>"
@@ -248,7 +267,8 @@ elements:
 <dt><a href="usage.html#dontnote"><code><b>note</b></code></a>
     = "<i>boolean</i>"
    (default = true)</dt>
-<dd>Print notes about class casts of variable dynamically created objects.</dd>
+<dd>Print notes about potential mistakes or omissions in the
+    configuration.</dd>
 
 <dt><a href="usage.html#dontwarn"><code><b>warn</b></code></a>
     = "<i>boolean</i>"
@@ -372,13 +392,16 @@ elements:
 <dd>Update the contents of the specified resource files, based on the
     obfuscated names of the class files.</dd>
 
-<dt><code><b>&lt;configuration refid = </b></code>"<i>ref_id</i>"
+<dt><a name="configuration_element"><code><b>&lt;configuration refid = </b></code></a>"<i>ref_id</i>"
     <code><b>/&gt;</b></code></dt>
 <dd>Includes the configuration specified in the
     <code>&lt;proguardconfiguration&gt;</code> task (or
     <code>&lt;proguard&gt;</code> task) with the attribute <code>id</code> =
     "<i>ref_id</i>". Note that only the nested elements of this configuration
-    are considered, not the attributes.</dd>
+    are considered, not the attributes. Also note: for reading ProGuard-style
+    configuration files, use the <a
+    href="#configuration_attribute"><code>configuration</code></a>
+    <i>attribute</i>.</dd>
 
 </dl>
 
@@ -537,7 +560,7 @@ attributes:
 
 <hr>
 <address>
-Copyright &copy; 2002-2007
+Copyright &copy; 2002-2008
 <a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>

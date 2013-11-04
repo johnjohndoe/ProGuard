@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -38,9 +38,9 @@ public class ReferenceValue extends Category1Value
     private static final boolean DEBUG = false;
 
 
-    private final String  type;
-    private final Clazz   referencedClass;
-    private final boolean mayBeNull;
+    protected final String  type;
+    protected final Clazz   referencedClass;
+    protected final boolean mayBeNull;
 
 
     /**
@@ -216,6 +216,12 @@ public class ReferenceValue extends Category1Value
      */
     public ReferenceValue generalize(ReferenceValue other)
     {
+        // If both types are identical, the generalization is the same too.
+        if (this.equals(other))
+        {
+            return this;
+        }
+
         String thisType  = this.type;
         String otherType = other.type;
 
@@ -461,7 +467,7 @@ public class ReferenceValue extends Category1Value
         return this.generalize(other.referenceValue());
     }
 
-    public boolean isSpecific()
+    public boolean isParticular()
     {
         return type == null;
     }
@@ -486,6 +492,11 @@ public class ReferenceValue extends Category1Value
 
     public boolean equals(Object object)
     {
+        if (this == object)
+        {
+            return true;
+        }
+        
         if (object == null ||
             this.getClass() != object.getClass())
         {
@@ -508,8 +519,8 @@ public class ReferenceValue extends Category1Value
 
     public String toString()
     {
-        return "a:" + (type == null ?
+        return type == null ?
             "null" :
-            type + (referencedClass == null ? "?" : "") + (mayBeNull ? "" : "!"));
+            type + (referencedClass == null ? "?" : "") + (mayBeNull ? "" : "!");
     }
 }

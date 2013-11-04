@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -136,6 +136,11 @@ public class Configuration
      */
     public boolean   allowAccessModification          = false;
 
+    /**
+     * Specifies whether interfaces may be merged aggressively.
+     */
+    public boolean   mergeInterfacesAggressively      = false;
+
     ///////////////////////////////////////////////////////////////////////////
     // Obfuscation options.
     ///////////////////////////////////////////////////////////////////////////
@@ -160,6 +165,16 @@ public class Configuration
      * An optional name of a file containing obfuscated class member names.
      */
     public File      obfuscationDictionary;
+
+    /**
+     * An optional name of a file containing obfuscated class names.
+     */
+    public File      classObfuscationDictionary;
+
+    /**
+     * An optional name of a file containing obfuscated package names.
+     */
+    public File      packageObfuscationDictionary;
 
     /**
      * Specifies whether to apply aggressive name overloading on class members.

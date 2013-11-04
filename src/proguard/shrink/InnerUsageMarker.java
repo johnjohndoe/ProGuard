@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -91,25 +91,15 @@ implements   AttributeVisitor,
 
         if (!innerClassesInfoUsed)
         {
-            int u2innerClassIndex = innerClassesInfo.u2innerClassIndex;
-            int u2outerClassIndex = innerClassesInfo.u2outerClassIndex;
-            int u2innerNameIndex  = innerClassesInfo.u2innerNameIndex;
+            // Check if the inner class (if any) is marked as being used.
+            classUsed = true;
+            innerClassesInfo.innerClassConstantAccept(clazz, this);
+            innerClassesInfoUsed = classUsed;
 
-            innerClassesInfoUsed = true;
-
-            if (u2innerClassIndex != 0)
-            {
-                // Check if the inner class is marked as being used.
-                markConstant(clazz, u2innerClassIndex);
-                innerClassesInfoUsed = classUsed;
-            }
-
-            if (u2outerClassIndex != 0)
-            {
-                // Check if the outer class is marked as being used.
-                markConstant(clazz, u2outerClassIndex);
-                innerClassesInfoUsed &= classUsed;
-            }
+            // Check if the outer class (if any) is marked as being used.
+            classUsed = true;
+            innerClassesInfo.outerClassConstantAccept(clazz, this);
+            innerClassesInfoUsed &= classUsed;
 
             // If both the inner class and the outer class are marked as being
             // used, then mark this InnerClassesInfo as well.
@@ -117,10 +107,7 @@ implements   AttributeVisitor,
             {
                 usageMarker.markAsUsed(innerClassesInfo);
 
-                if (u2innerNameIndex != 0)
-                {
-                    markConstant(clazz, u2innerNameIndex);
-                }
+                innerClassesInfo.innerNameConstantAccept(clazz, this);
             }
         }
 

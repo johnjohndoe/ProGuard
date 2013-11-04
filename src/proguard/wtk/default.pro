@@ -1,5 +1,6 @@
 -dontnote
 -microedition
+-mergeinterfacesaggressively
 -overloadaggressively
 -repackageclasses ''
 -allowaccessmodification

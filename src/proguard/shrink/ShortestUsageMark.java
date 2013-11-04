@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -38,8 +38,8 @@ final class ShortestUsageMark
     private final boolean certain;
     private final String  reason;
     private final int     depth;
-    private Clazz   clazz;
-    private Method  method;
+    private       Clazz   clazz;
+    private       Member  member;
 
 
     /**
@@ -74,20 +74,20 @@ final class ShortestUsageMark
      * @param previousUsageMark the previous mark to which this one is linked.
      * @param reason            the reason for this mark.
      * @param clazz             the class causing this mark.
-     * @param method            the method in the above class causing this mark.
+     * @param member            the member in the above class causing this mark.
      * @param cost              the added cost of following this path.
      */
     public ShortestUsageMark(ShortestUsageMark previousUsageMark,
                              String            reason,
                              int               cost,
                              Clazz             clazz,
-                             Method            method)
+                             Member            member)
     {
         this.certain = true;
         this.reason  = reason;
         this.depth   = previousUsageMark.depth + cost;
         this.clazz   = clazz;
-        this.method  = method;
+        this.member  = member;
     }
 
 
@@ -103,7 +103,7 @@ final class ShortestUsageMark
         this.reason  = otherUsageMark.reason;
         this.depth   = otherUsageMark.depth;
         this.clazz   = otherUsageMark.clazz;
-        this.method  = otherUsageMark.method;
+        this.member  = otherUsageMark.member;
     }
 
 
@@ -146,12 +146,12 @@ final class ShortestUsageMark
 
     /**
      * Applies the given class visitor to this mark's class, if any,
-     * and if this mark doesn't have a method.
+     * and if this mark doesn't have a member.
      */
     public void acceptClassVisitor(ClassVisitor classVisitor)
     {
         if (clazz  != null &&
-            method == null)
+            member == null)
         {
             clazz.accept(classVisitor);
         }
@@ -159,14 +159,14 @@ final class ShortestUsageMark
 
 
     /**
-     * Applies the given class visitor to this mark's method, if any.
+     * Applies the given class visitor to this mark's member, if any.
      */
-    public void acceptMethodVisitor(MemberVisitor memberVisitor)
+    public void acceptMemberVisitor(MemberVisitor memberVisitor)
     {
         if (clazz  != null &&
-            method != null)
+            member != null)
         {
-            method.accept(clazz, memberVisitor);
+            member.accept(clazz, memberVisitor);
         }
     }
 
@@ -178,6 +178,6 @@ final class ShortestUsageMark
         return "certain=" + certain + ", depth="+depth+": " +
                reason +
                (clazz      != null ? clazz.getName() : "(none)") + ": " +
-               (method     != null ? method.getName(clazz) : "(none)");
+               (member     != null ? member.getName(clazz) : "(none)");
     }
 }

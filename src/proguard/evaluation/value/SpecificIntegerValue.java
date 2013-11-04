@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -25,29 +25,47 @@ package proguard.evaluation.value;
  *
  * @author Eric Lafortune
  */
-final class SpecificIntegerValue extends IntegerValue
+abstract class SpecificIntegerValue extends IntegerValue
 {
-    private final int value;
+    // Implementations of unary methods of IntegerValue.
 
-
-    public SpecificIntegerValue(int value)
+    public IntegerValue negate()
     {
-        this.value = value;
+        return new NegatedIntegerValue(this);
     }
 
-
-    // Implementations for IntegerValue.
-
-    public int value()
+    public IntegerValue convertToByte()
     {
-        return value;
+        return new ConvertedByteValue(this);
+    }
+
+    public IntegerValue convertToCharacter()
+    {
+        return new ConvertedCharacterValue(this);
+    }
+
+    public IntegerValue convertToShort()
+    {
+        return new ConvertedShortValue(this);
+    }
+
+    public LongValue convertToLong()
+    {
+        return new ConvertedLongValue(this);
+    }
+
+    public FloatValue convertToFloat()
+    {
+        return new ConvertedFloatValue(this);
+    }
+
+    public DoubleValue convertToDouble()
+    {
+        return new ConvertedDoubleValue(this);
     }
 
 
     // Implementations of binary methods of IntegerValue.
-
-    // Perhaps the other value arguments are more specific than apparent
-    // in these methods, so delegate to them.
 
     public IntegerValue generalize(IntegerValue other)
     {
@@ -174,186 +192,141 @@ final class SpecificIntegerValue extends IntegerValue
     }
 
 
-    // Implementations of unary methods of IntegerValue.
-
-    public IntegerValue negate()
-    {
-        return new SpecificIntegerValue(-value);
-    }
-
-    public IntegerValue convertToByte(ValueFactory valueFactory)
-    {
-        int byteValue = (byte)value;
-
-        return byteValue == value ?
-            this :
-            new SpecificIntegerValue(byteValue);
-    }
-
-    public IntegerValue convertToCharacter(ValueFactory valueFactory)
-    {
-        int charValue = (char)value;
-
-        return charValue == value ?
-            this :
-            new SpecificIntegerValue(charValue);
-    }
-
-    public IntegerValue convertToShort(ValueFactory valueFactory)
-    {
-        int shortValue = (short)value;
-
-        return shortValue == value ?
-            this :
-            new SpecificIntegerValue(shortValue);
-    }
-
-    public IntegerValue convertToInteger(ValueFactory valueFactory)
-    {
-        return this;
-    }
-
-    public LongValue convertToLong(ValueFactory valueFactory)
-    {
-        return valueFactory.createLongValue((long)value);
-    }
-
-    public FloatValue convertToFloat(ValueFactory valueFactory)
-    {
-        return valueFactory.createFloatValue((float)value);
-    }
-
-    public DoubleValue convertToDouble(ValueFactory valueFactory)
-    {
-        return valueFactory.createDoubleValue((double)value);
-    }
-
-
     // Implementations of binary IntegerValue methods with SpecificIntegerValue
     // arguments.
 
     public IntegerValue generalize(SpecificIntegerValue other)
     {
-        return this.value == other.value ? this : ValueFactory.INTEGER_VALUE;
+        return this.equals(other) ? this : ValueFactory.INTEGER_VALUE;
     }
 
     public IntegerValue add(SpecificIntegerValue other)
     {
-        return new SpecificIntegerValue(this.value + other.value);
+        return new CompositeIntegerValue(this, CompositeIntegerValue.ADD, other);
     }
 
     public IntegerValue subtract(SpecificIntegerValue other)
     {
-        return new SpecificIntegerValue(this.value - other.value);
+        return this.equals(other) ?
+            SpecificValueFactory.INTEGER_VALUE_0 :
+            new CompositeIntegerValue(this, CompositeIntegerValue.SUBTRACT, other);
     }
 
     public IntegerValue subtractFrom(SpecificIntegerValue other)
     {
-        return new SpecificIntegerValue(other.value - this.value);
+        return this.equals(other) ?
+            SpecificValueFactory.INTEGER_VALUE_0 :
+            new CompositeIntegerValue(other, CompositeIntegerValue.SUBTRACT, this);
     }
 
     public IntegerValue multiply(SpecificIntegerValue other)
     {
-        return new SpecificIntegerValue(this.value * other.value);
+        return new CompositeIntegerValue(this, CompositeIntegerValue.MULTIPLY, other);
     }
 
     public IntegerValue divide(SpecificIntegerValue other)
     throws ArithmeticException
     {
-        return new SpecificIntegerValue(this.value / other.value);
+        return new CompositeIntegerValue(this, CompositeIntegerValue.DIVIDE, other);
     }
 
     public IntegerValue divideOf(SpecificIntegerValue other)
     throws ArithmeticException
     {
-        return new SpecificIntegerValue(other.value / this.value);
+        return new CompositeIntegerValue(other, CompositeIntegerValue.DIVIDE, this);
     }
 
     public IntegerValue remainder(SpecificIntegerValue other)
     throws ArithmeticException
     {
-        return new SpecificIntegerValue(this.value % other.value);
+        return new CompositeIntegerValue(this, CompositeIntegerValue.REMAINDER, other);
     }
 
     public IntegerValue remainderOf(SpecificIntegerValue other)
     throws ArithmeticException
     {
-        return new SpecificIntegerValue(other.value % this.value);
+        return new CompositeIntegerValue(other, CompositeIntegerValue.REMAINDER, this);
     }
 
     public IntegerValue shiftLeft(SpecificIntegerValue other)
     {
-        return new SpecificIntegerValue(this.value << other.value);
-    }
-
-    public IntegerValue shiftLeftOf(SpecificIntegerValue other)
-    {
-        return new SpecificIntegerValue(other.value << this.value);
+        return new CompositeIntegerValue(this, CompositeIntegerValue.SHIFT_LEFT, other);
     }
 
     public IntegerValue shiftRight(SpecificIntegerValue other)
     {
-        return new SpecificIntegerValue(this.value >> other.value);
-    }
-
-    public IntegerValue shiftRightOf(SpecificIntegerValue other)
-    {
-        return new SpecificIntegerValue(other.value >> this.value);
+        return new CompositeIntegerValue(this, CompositeIntegerValue.SHIFT_RIGHT, other);
     }
 
     public IntegerValue unsignedShiftRight(SpecificIntegerValue other)
     {
-        return new SpecificIntegerValue(this.value >>> other.value);
+        return new CompositeIntegerValue(this, CompositeIntegerValue.UNSIGNED_SHIFT_RIGHT, other);
+    }
+
+    public IntegerValue shiftLeftOf(SpecificIntegerValue other)
+    {
+        return new CompositeIntegerValue(other, CompositeIntegerValue.SHIFT_LEFT, this);
+    }
+
+    public IntegerValue shiftRightOf(SpecificIntegerValue other)
+    {
+        return new CompositeIntegerValue(other, CompositeIntegerValue.SHIFT_RIGHT, this);
     }
 
     public IntegerValue unsignedShiftRightOf(SpecificIntegerValue other)
     {
-        return new SpecificIntegerValue(other.value >>> this.value);
+        return new CompositeIntegerValue(other, CompositeIntegerValue.UNSIGNED_SHIFT_RIGHT, this);
     }
 
-    public LongValue shiftLeftOf(SpecificLongValue other, ValueFactory valueFactory)
+    public LongValue shiftLeftOf(SpecificLongValue other)
     {
-        return valueFactory.createLongValue(other.value() << this.value);
+        return new CompositeLongValue(other, CompositeLongValue.SHIFT_LEFT, this);
     }
 
-    public LongValue shiftRightOf(SpecificLongValue other, ValueFactory valueFactory)
+    public LongValue shiftRightOf(SpecificLongValue other)
     {
-        return valueFactory.createLongValue(other.value() >> this.value);
+        return new CompositeLongValue(other, CompositeLongValue.SHIFT_RIGHT, this);
     }
 
-    public LongValue unsignedShiftRightOf(SpecificLongValue other, ValueFactory valueFactory)
+    public LongValue unsignedShiftRightOf(SpecificLongValue other)
     {
-        return valueFactory.createLongValue(other.value() >>> this.value);
+        return new CompositeLongValue(other, CompositeLongValue.UNSIGNED_SHIFT_RIGHT, this);
     }
 
     public IntegerValue and(SpecificIntegerValue other)
     {
-        return new SpecificIntegerValue(this.value & other.value);
+        return this.equals(other) ?
+            this :
+            new CompositeIntegerValue(other, CompositeIntegerValue.AND, this);
     }
 
     public IntegerValue or(SpecificIntegerValue other)
     {
-        return new SpecificIntegerValue(this.value | other.value);
+        return this.equals(other) ?
+            this :
+            new CompositeIntegerValue(other, CompositeIntegerValue.OR, this);
     }
 
     public IntegerValue xor(SpecificIntegerValue other)
     {
-        return new SpecificIntegerValue(this.value ^ other.value);
+        return this.equals(other) ?
+            SpecificValueFactory.INTEGER_VALUE_0 :
+            new CompositeIntegerValue(other, CompositeIntegerValue.XOR, this);
     }
 
     public int equal(SpecificIntegerValue other)
     {
-        return this.value == other.value ? ALWAYS : NEVER;
+        return this.equals(other) ? ALWAYS : MAYBE;
     }
 
     public int lessThan(SpecificIntegerValue other)
     {
-        return this.value <  other.value ? ALWAYS : NEVER;
+        return this.equals(other) ? NEVER : MAYBE;
     }
 
     public int lessThanOrEqual(SpecificIntegerValue other)
     {
-        return this.value <= other.value ? ALWAYS : NEVER;
+        return this.equals(other) ? ALWAYS : MAYBE;
     }
 
 
@@ -369,20 +342,13 @@ final class SpecificIntegerValue extends IntegerValue
 
     public boolean equals(Object object)
     {
-        return object          != null              &&
-               this.getClass() == object.getClass() &&
-               this.value      == ((SpecificIntegerValue)object).value;
+        return object != null &&
+               this.getClass() == object.getClass();
     }
 
 
     public int hashCode()
     {
-        return this.getClass().hashCode() ^ value;
-    }
-
-
-    public String toString()
-    {
-        return "i:"+value;
+        return this.getClass().hashCode();
     }
 }

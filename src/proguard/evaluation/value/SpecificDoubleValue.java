@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -14,7 +14,7 @@
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
- * You should have received a copy of the GNU General Public License adouble
+ * You should have received a copy of the GNU General Public License along
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
@@ -25,32 +25,32 @@ package proguard.evaluation.value;
  *
  * @author Eric Lafortune
  */
-final class SpecificDoubleValue extends DoubleValue
+abstract class SpecificDoubleValue extends DoubleValue
 {
-    private final double value;
+    // Implementations of unary methods of DoubleValue.
 
-
-    /**
-     * Creates a new specific double value.
-     */
-    public SpecificDoubleValue(double value)
+    public DoubleValue negate()
     {
-        this.value = value;
+        return new NegatedDoubleValue(this);
     }
 
-
-    // Implementations for DoubleValue.
-
-    public double value()
+    public IntegerValue convertToInteger()
     {
-        return value;
+        return new ConvertedIntegerValue(this);
+    }
+
+    public LongValue convertToLong()
+    {
+        return new ConvertedLongValue(this);
+    }
+
+    public FloatValue convertToFloat()
+    {
+        return new ConvertedFloatValue(this);
     }
 
 
     // Implementations of binary methods of DoubleValue.
-
-    // Perhaps the other value arguments are more specific than apparent
-    // in these methods, so delegate to them.
 
     public DoubleValue generalize(DoubleValue other)
     {
@@ -97,32 +97,9 @@ final class SpecificDoubleValue extends DoubleValue
         return other.remainder(this);
     }
 
-    public IntegerValue compare(DoubleValue other, ValueFactory valueFactory)
+    public IntegerValue compare(DoubleValue other)
     {
-        return other.compareReverse(this, valueFactory);
-    }
-
-
-    // Implementations of unary methods of DoubleValue.
-
-    public DoubleValue negate()
-    {
-        return new SpecificDoubleValue(-value);
-    }
-
-    public IntegerValue convertToInteger(ValueFactory valueFactory)
-    {
-        return new SpecificIntegerValue((int)value);
-    }
-
-    public LongValue convertToLong(ValueFactory valueFactory)
-    {
-        return new SpecificLongValue((long)value);
-    }
-
-    public FloatValue convertToFloat(ValueFactory valueFactory)
-    {
-        return new SpecificFloatValue((float)value);
+        return other.compareReverse(this);
     }
 
 
@@ -131,54 +108,54 @@ final class SpecificDoubleValue extends DoubleValue
 
     public DoubleValue generalize(SpecificDoubleValue other)
     {
-        return this.value == other.value ? this : ValueFactory.DOUBLE_VALUE;
+        return this.equals(other) ? this : ValueFactory.DOUBLE_VALUE;
     }
 
     public DoubleValue add(SpecificDoubleValue other)
     {
-        return new SpecificDoubleValue(this.value + other.value);
+        return new CompositeDoubleValue(this, CompositeDoubleValue.ADD, other);
     }
 
     public DoubleValue subtract(SpecificDoubleValue other)
     {
-        return new SpecificDoubleValue(this.value - other.value);
+        return new CompositeDoubleValue(this, CompositeDoubleValue.SUBTRACT, other);
     }
 
     public DoubleValue subtractFrom(SpecificDoubleValue other)
     {
-        return new SpecificDoubleValue(other.value - this.value);
+        return new CompositeDoubleValue(other, CompositeDoubleValue.SUBTRACT, this);
     }
 
     public DoubleValue multiply(SpecificDoubleValue other)
     {
-        return new SpecificDoubleValue(this.value * other.value);
+        return new CompositeDoubleValue(this, CompositeDoubleValue.MULTIPLY, other);
     }
 
     public DoubleValue divide(SpecificDoubleValue other)
     {
-        return new SpecificDoubleValue(this.value / other.value);
+        return new CompositeDoubleValue(this, CompositeDoubleValue.DIVIDE, other);
     }
 
     public DoubleValue divideOf(SpecificDoubleValue other)
     {
-        return new SpecificDoubleValue(other.value / this.value);
+        return new CompositeDoubleValue(other, CompositeDoubleValue.DIVIDE, this);
     }
 
     public DoubleValue remainder(SpecificDoubleValue other)
     {
-        return new SpecificDoubleValue(this.value % other.value);
+        return new CompositeDoubleValue(this, CompositeDoubleValue.REMAINDER, other);
     }
 
     public DoubleValue remainderOf(SpecificDoubleValue other)
     {
-        return new SpecificDoubleValue(other.value % this.value);
+        return new CompositeDoubleValue(other, CompositeDoubleValue.REMAINDER, this);
     }
 
-    public IntegerValue compare(SpecificDoubleValue other, ValueFactory valueFactory)
+    public IntegerValue compare(SpecificDoubleValue other)
     {
-        return this.value <  other.value ? SpecificValueFactory.INTEGER_VALUE_M1 :
-               this.value == other.value ? SpecificValueFactory.INTEGER_VALUE_0  :
-                                           SpecificValueFactory.INTEGER_VALUE_1;
+        return this.equals(other) ?
+            SpecificValueFactory.INTEGER_VALUE_0 :
+            new ComparisonValue(this, other);
     }
 
 
@@ -194,20 +171,13 @@ final class SpecificDoubleValue extends DoubleValue
 
     public boolean equals(Object object)
     {
-        return object          != null              &&
-               this.getClass() == object.getClass() &&
-               this.value      == ((SpecificDoubleValue)object).value;
+        return object != null &&
+               this.getClass() == object.getClass();
     }
 
 
     public int hashCode()
     {
-        return this.getClass().hashCode() ^ (int)Double.doubleToLongBits(value);
-    }
-
-
-    public String toString()
-    {
-        return "d:"+value;
+        return this.getClass().hashCode();
     }
 }

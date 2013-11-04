@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -406,63 +406,63 @@ implements   InstructionVisitor,
                 break;
 
             case InstructionConstants.OP_I2L:
-                stack.push(stack.ipop().convertToLong(valueFactory));
+                stack.push(stack.ipop().convertToLong());
                 break;
 
             case InstructionConstants.OP_I2F:
-                stack.push(stack.ipop().convertToFloat(valueFactory));
+                stack.push(stack.ipop().convertToFloat());
                 break;
 
             case InstructionConstants.OP_I2D:
-                stack.push(stack.ipop().convertToDouble(valueFactory));
+                stack.push(stack.ipop().convertToDouble());
                 break;
 
             case InstructionConstants.OP_L2I:
-                stack.push(stack.lpop().convertToInteger(valueFactory));
+                stack.push(stack.lpop().convertToInteger());
                 break;
 
             case InstructionConstants.OP_L2F:
-                stack.push(stack.lpop().convertToFloat(valueFactory));
+                stack.push(stack.lpop().convertToFloat());
                 break;
 
             case InstructionConstants.OP_L2D:
-                stack.push(stack.lpop().convertToDouble(valueFactory));
+                stack.push(stack.lpop().convertToDouble());
                 break;
 
             case InstructionConstants.OP_F2I:
-                stack.push(stack.fpop().convertToInteger(valueFactory));
+                stack.push(stack.fpop().convertToInteger());
                 break;
 
             case InstructionConstants.OP_F2L:
-                stack.push(stack.fpop().convertToLong(valueFactory));
+                stack.push(stack.fpop().convertToLong());
                 break;
 
             case InstructionConstants.OP_F2D:
-                stack.push(stack.fpop().convertToDouble(valueFactory));
+                stack.push(stack.fpop().convertToDouble());
                 break;
 
             case InstructionConstants.OP_D2I:
-                stack.push(stack.dpop().convertToInteger(valueFactory));
+                stack.push(stack.dpop().convertToInteger());
                 break;
 
             case InstructionConstants.OP_D2L:
-                stack.push(stack.dpop().convertToLong(valueFactory));
+                stack.push(stack.dpop().convertToLong());
                 break;
 
             case InstructionConstants.OP_D2F:
-                stack.push(stack.dpop().convertToFloat(valueFactory));
+                stack.push(stack.dpop().convertToFloat());
                 break;
 
             case InstructionConstants.OP_I2B:
-                stack.push(stack.ipop().convertToByte(valueFactory));
+                stack.push(stack.ipop().convertToByte());
                 break;
 
             case InstructionConstants.OP_I2C:
-                stack.push(stack.ipop().convertToCharacter(valueFactory));
+                stack.push(stack.ipop().convertToCharacter());
                 break;
 
             case InstructionConstants.OP_I2S:
-                stack.push(stack.ipop().convertToShort(valueFactory));
+                stack.push(stack.ipop().convertToShort());
                 break;
 
             case InstructionConstants.OP_LCMP:
@@ -470,27 +470,27 @@ implements   InstructionVisitor,
 
                 LongValue longValue1 = stack.lpop();
                 LongValue longValue2 = stack.lpop();
-                stack.push(longValue2.compare(longValue1, valueFactory));
+                stack.push(longValue2.compare(longValue1));
                 break;
 
             case InstructionConstants.OP_FCMPL:
                 FloatValue floatValue1 = stack.fpop();
                 FloatValue floatValue2 = stack.fpop();
-                stack.push(floatValue2.compare(floatValue1, valueFactory));
+                stack.push(floatValue2.compare(floatValue1));
                 break;
 
             case InstructionConstants.OP_FCMPG:
-                stack.push(stack.fpop().compareReverse(stack.fpop(), valueFactory));
+                stack.push(stack.fpop().compareReverse(stack.fpop()));
                 break;
 
             case InstructionConstants.OP_DCMPL:
                 DoubleValue doubleValue1 = stack.dpop();
                 DoubleValue doubleValue2 = stack.dpop();
-                stack.push(doubleValue2.compare(doubleValue1, valueFactory));
+                stack.push(doubleValue2.compare(doubleValue1));
                 break;
 
             case InstructionConstants.OP_DCMPG:
-                stack.push(stack.dpop().compareReverse(stack.dpop(), valueFactory));
+                stack.push(stack.dpop().compareReverse(stack.dpop()));
                 break;
 
             case InstructionConstants.OP_IRETURN:
@@ -934,7 +934,7 @@ implements   InstructionVisitor,
     public void visitStringConstant(Clazz clazz, StringConstant stringConstant)
     {
         cpValue = valueFactory.createReferenceValue(ClassConstants.INTERNAL_NAME_JAVA_LANG_STRING,
-                                                    stringConstant.javaLangStringClass, 
+                                                    stringConstant.javaLangStringClass,
                                                     false);
     }
 

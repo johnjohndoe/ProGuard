@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -40,8 +40,7 @@ import proguard.optimize.info.*;
  */
 public class EvaluationSimplifier
 extends      SimplifiedVisitor
-implements   AttributeVisitor,
-             InstructionVisitor
+implements   AttributeVisitor
 {
     //*
     private static final boolean DEBUG_RESULTS  = false;
@@ -59,7 +58,9 @@ implements   AttributeVisitor,
     private final InstructionVisitor extraAddedInstructionVisitor;
 
     private final PartialEvaluator             partialEvaluator;
+    private final PartialEvaluator             simplePartialEvaluator       = new PartialEvaluator();
     private final SideEffectInstructionChecker sideEffectInstructionChecker = new SideEffectInstructionChecker(true);
+    private final MyInstructionSimplifier      instructionSimplifier        = new MyInstructionSimplifier();
     private final MyProducerMarker             producerMarker               = new MyProducerMarker();
     private final MyStackConsistencyFixer      stackConsistencyFixer        = new MyStackConsistencyFixer();
     private final CodeAttributeEditor          codeAttributeEditor          = new CodeAttributeEditor(false);
@@ -69,6 +70,7 @@ implements   AttributeVisitor,
     private boolean[][] stacksSimplifiedBefore  = new boolean[ClassConstants.TYPICAL_CODE_LENGTH][ClassConstants.TYPICAL_STACK_SIZE];
     private boolean[]   instructionsNecessary   = new boolean[ClassConstants.TYPICAL_CODE_LENGTH];
     private boolean[]   instructionsSimplified  = new boolean[ClassConstants.TYPICAL_CODE_LENGTH];
+    private int[]       aliasingVariables       = new int[ClassConstants.TYPICAL_CODE_LENGTH];
 
     private int maxMarkedOffset;
 
@@ -121,7 +123,7 @@ implements   AttributeVisitor,
 //            clazz.getName().equals("abc/Def") &&
 //            method.getName(clazz).equals("abc");
 
-        // TODO: Remove this when the partial evaluator has stabilized.
+        // TODO: Remove this when the evaluation simplifier has stabilized.
         // Catch any unexpected exceptions from the actual visiting method.
         try
         {
@@ -172,8 +174,16 @@ implements   AttributeVisitor,
         // Replace any instructions that can be simplified.
         if (DEBUG_ANALYSIS) System.out.println("Instruction simplification:");
 
-        codeAttribute.instructionsAccept(clazz, method, this);
+        for (int offset = 0; offset < codeLength; offset++)
+        {
+            if (partialEvaluator.isTraced(offset))
+            {
+                Instruction instruction = InstructionFactory.create(codeAttribute.code,
+                                                                    offset);
 
+                instruction.accept(clazz, method, codeAttribute, offset, instructionSimplifier);
+            }
+        }
 
         // Mark all essential instructions that have been encountered as used.
         if (DEBUG_ANALYSIS) System.out.println("Usage initialization: ");
@@ -235,13 +245,24 @@ implements   AttributeVisitor,
 
             if (partialEvaluator.isTraced(offset))
             {
-                if (isInstructionNecessary(offset) &&
-                    !isInstructionSimplified(offset))
+                if (isInstructionNecessary(offset))
                 {
-                    Instruction instruction = InstructionFactory.create(codeAttribute.code,
-                                                                        offset);
+                    if (isInstructionSimplified(offset))
+                    {
+                        int variableIndex = getAliasingVariable(offset);
 
-                    instruction.accept(clazz, method, codeAttribute, offset, producerMarker);
+                        if (variableIndex >= 0)
+                        {
+                            markVariableProducers(offset, variableIndex);
+                        }
+                    }
+                    else
+                    {
+                        Instruction instruction = InstructionFactory.create(codeAttribute.code,
+                                                                            offset);
+
+                        instruction.accept(clazz, method, codeAttribute, offset, producerMarker);
+                    }
                 }
 
                 // Check if this instruction is a branch origin from a branch
@@ -275,14 +296,19 @@ implements   AttributeVisitor,
 
         for (int offset = 0; offset < codeLength; offset++)
         {
-            // Is it an initialization that hasn't been marked yet, and whose
-            // corresponding variable is necessary?
+            // Is it a variable initialization that hasn't been marked yet?
             if (partialEvaluator.isTraced(offset) &&
                 !isInstructionNecessary(offset))
             {
+                // Is the corresponding variable necessary anywhere in the code,
+                // accoriding to a simple partial evaluation?
                 int variableIndex = partialEvaluator.initializedVariable(offset);
                 if (variableIndex >= 0 &&
-                    isVariableNecessaryAfter(offset, codeAttribute.u4codeLength, variableIndex))
+                    isVariableInitializationNecessary(clazz,
+                                                      method,
+                                                      codeAttribute,
+                                                      offset,
+                                                      variableIndex))
                 {
                     markInstruction(offset);
                 }
@@ -434,6 +460,285 @@ implements   AttributeVisitor,
 
         // Apply all accumulated changes to the code.
         codeAttributeEditor.visitCodeAttribute(clazz, method, codeAttribute);
+    }
+
+
+    /**
+     * This InstructionVisitor simplifies the instructions that it visits,
+     * whenever possible, and marks them as such.
+     */
+    private class MyInstructionSimplifier
+    extends       SimplifiedVisitor
+    implements    InstructionVisitor
+    {
+        // Implementations for InstructionVisitor.
+
+        public void visitSimpleInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, SimpleInstruction simpleInstruction)
+        {
+            switch (simpleInstruction.opcode)
+            {
+                case InstructionConstants.OP_IALOAD:
+                case InstructionConstants.OP_BALOAD:
+                case InstructionConstants.OP_CALOAD:
+                case InstructionConstants.OP_SALOAD:
+                case InstructionConstants.OP_IADD:
+                case InstructionConstants.OP_ISUB:
+                case InstructionConstants.OP_IMUL:
+                case InstructionConstants.OP_IDIV:
+                case InstructionConstants.OP_IREM:
+                case InstructionConstants.OP_INEG:
+                case InstructionConstants.OP_ISHL:
+                case InstructionConstants.OP_ISHR:
+                case InstructionConstants.OP_IUSHR:
+                case InstructionConstants.OP_IAND:
+                case InstructionConstants.OP_IOR:
+                case InstructionConstants.OP_IXOR:
+                case InstructionConstants.OP_L2I:
+                case InstructionConstants.OP_F2I:
+                case InstructionConstants.OP_D2I:
+                case InstructionConstants.OP_I2B:
+                case InstructionConstants.OP_I2C:
+                case InstructionConstants.OP_I2S:
+                    replaceIntegerPushInstruction(clazz, offset, simpleInstruction);
+                    break;
+
+                case InstructionConstants.OP_LALOAD:
+                case InstructionConstants.OP_LADD:
+                case InstructionConstants.OP_LSUB:
+                case InstructionConstants.OP_LMUL:
+                case InstructionConstants.OP_LDIV:
+                case InstructionConstants.OP_LREM:
+                case InstructionConstants.OP_LNEG:
+                case InstructionConstants.OP_LSHL:
+                case InstructionConstants.OP_LSHR:
+                case InstructionConstants.OP_LUSHR:
+                case InstructionConstants.OP_LAND:
+                case InstructionConstants.OP_LOR:
+                case InstructionConstants.OP_LXOR:
+                case InstructionConstants.OP_I2L:
+                case InstructionConstants.OP_F2L:
+                case InstructionConstants.OP_D2L:
+                    replaceLongPushInstruction(clazz, offset, simpleInstruction);
+                    break;
+
+                case InstructionConstants.OP_FALOAD:
+                case InstructionConstants.OP_FADD:
+                case InstructionConstants.OP_FSUB:
+                case InstructionConstants.OP_FMUL:
+                case InstructionConstants.OP_FDIV:
+                case InstructionConstants.OP_FREM:
+                case InstructionConstants.OP_FNEG:
+                case InstructionConstants.OP_I2F:
+                case InstructionConstants.OP_L2F:
+                case InstructionConstants.OP_D2F:
+                    replaceFloatPushInstruction(clazz, offset, simpleInstruction);
+                    break;
+
+                case InstructionConstants.OP_DALOAD:
+                case InstructionConstants.OP_DADD:
+                case InstructionConstants.OP_DSUB:
+                case InstructionConstants.OP_DMUL:
+                case InstructionConstants.OP_DDIV:
+                case InstructionConstants.OP_DREM:
+                case InstructionConstants.OP_DNEG:
+                case InstructionConstants.OP_I2D:
+                case InstructionConstants.OP_L2D:
+                case InstructionConstants.OP_F2D:
+                    replaceDoublePushInstruction(clazz, offset, simpleInstruction);
+                    break;
+
+                case InstructionConstants.OP_AALOAD:
+                    replaceReferencePushInstruction(clazz, offset, simpleInstruction);
+                    break;
+            }
+        }
+
+
+        public void visitVariableInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, VariableInstruction variableInstruction)
+        {
+            int variableIndex = variableInstruction.variableIndex;
+
+            switch (variableInstruction.opcode)
+            {
+                case InstructionConstants.OP_ILOAD:
+                case InstructionConstants.OP_ILOAD_0:
+                case InstructionConstants.OP_ILOAD_1:
+                case InstructionConstants.OP_ILOAD_2:
+                case InstructionConstants.OP_ILOAD_3:
+                    replaceIntegerPushInstruction(clazz, offset, variableInstruction, variableIndex);
+                    break;
+
+                case InstructionConstants.OP_LLOAD:
+                case InstructionConstants.OP_LLOAD_0:
+                case InstructionConstants.OP_LLOAD_1:
+                case InstructionConstants.OP_LLOAD_2:
+                case InstructionConstants.OP_LLOAD_3:
+                    replaceLongPushInstruction(clazz, offset, variableInstruction, variableIndex);
+                    break;
+
+                case InstructionConstants.OP_FLOAD:
+                case InstructionConstants.OP_FLOAD_0:
+                case InstructionConstants.OP_FLOAD_1:
+                case InstructionConstants.OP_FLOAD_2:
+                case InstructionConstants.OP_FLOAD_3:
+                    replaceFloatPushInstruction(clazz, offset, variableInstruction, variableIndex);
+                    break;
+
+                case InstructionConstants.OP_DLOAD:
+                case InstructionConstants.OP_DLOAD_0:
+                case InstructionConstants.OP_DLOAD_1:
+                case InstructionConstants.OP_DLOAD_2:
+                case InstructionConstants.OP_DLOAD_3:
+                    replaceDoublePushInstruction(clazz, offset, variableInstruction, variableIndex);
+                    break;
+
+                case InstructionConstants.OP_ALOAD:
+                case InstructionConstants.OP_ALOAD_0:
+                case InstructionConstants.OP_ALOAD_1:
+                case InstructionConstants.OP_ALOAD_2:
+                case InstructionConstants.OP_ALOAD_3:
+                    replaceReferencePushInstruction(clazz, offset, variableInstruction);
+                    break;
+
+            }
+        }
+
+
+        public void visitConstantInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, ConstantInstruction constantInstruction)
+        {
+            switch (constantInstruction.opcode)
+            {
+                case InstructionConstants.OP_GETSTATIC:
+                case InstructionConstants.OP_GETFIELD:
+                    replaceAnyPushInstruction(clazz, offset, constantInstruction);
+                    break;
+
+                case InstructionConstants.OP_INVOKEVIRTUAL:
+                case InstructionConstants.OP_INVOKESPECIAL:
+                case InstructionConstants.OP_INVOKESTATIC:
+                case InstructionConstants.OP_INVOKEINTERFACE:
+                    clazz.constantPoolEntryAccept(constantInstruction.constantIndex,
+                                                  new ReferencedMemberVisitor(
+                                                  new MyUnusedParameterSimplifier(offset,
+                                                                                  constantInstruction)));
+
+                    if (constantInstruction.stackPushCount(clazz) > 0 &&
+                        !sideEffectInstructionChecker.hasSideEffects(clazz,
+                                                                     method,
+                                                                     codeAttribute,
+                                                                     offset,
+                                                                     constantInstruction))
+                    {
+                        replaceAnyPushInstruction(clazz, offset, constantInstruction);
+                    }
+
+                    break;
+
+                case InstructionConstants.OP_CHECKCAST:
+                    replaceReferencePushInstruction(clazz, offset, constantInstruction);
+                    break;
+            }
+        }
+
+
+        public void visitBranchInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, BranchInstruction branchInstruction)
+        {
+            switch (branchInstruction.opcode)
+            {
+                case InstructionConstants.OP_GOTO:
+                case InstructionConstants.OP_GOTO_W:
+                    // Don't replace unconditional branches.
+                    break;
+
+                case InstructionConstants.OP_JSR:
+                case InstructionConstants.OP_JSR_W:
+                    replaceJsrInstruction(clazz, offset, branchInstruction);
+                    break;
+
+                default:
+                    replaceBranchInstruction(clazz, offset, branchInstruction);
+                    break;
+            }
+        }
+
+
+        public void visitAnySwitchInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, SwitchInstruction switchInstruction)
+        {
+            // First try to simplify it to a simple branch.
+            replaceBranchInstruction(clazz, offset, switchInstruction);
+
+            // Otherwise make sure all branch targets are valid.
+            if (!isInstructionSimplified(offset))
+            {
+                replaceSwitchInstruction(clazz, offset, switchInstruction);
+            }
+        }
+    }
+
+
+    /**
+     * This MemberVisitor marks stack entries that aren't necessary because
+     * parameters aren't used in the methods that are visited.
+     */
+    private class MyUnusedParameterSimplifier
+    extends       SimplifiedVisitor
+    implements    MemberVisitor
+    {
+        private int                 invocationOffset;
+        private ConstantInstruction invocationInstruction;
+
+
+        /**
+         * Creates a new MyUnusedParameterSimplifier for the given invocation
+         * at the given offset.
+         */
+        private MyUnusedParameterSimplifier(int                 invocationOffset,
+                                            ConstantInstruction invocationInstruction)
+        {
+            this.invocationOffset      = invocationOffset;
+            this.invocationInstruction = invocationInstruction;
+        }
+
+
+        // Implementations for MemberVisitor.
+
+        public void visitAnyMember(Clazz clazz, Member member) {}
+
+
+        public void visitProgramMethod(ProgramClass programClass, ProgramMethod programMethod)
+        {
+            // Get the total size of the parameters.
+            int parameterSize = ParameterUsageMarker.getParameterSize(programMethod);
+
+            // Make the method invocation static, if possible.
+            if ((programMethod.getAccessFlags() & ClassConstants.INTERNAL_ACC_STATIC) == 0 &&
+                !ParameterUsageMarker.isParameterUsed(programMethod, 0))
+            {
+                replaceInvocationInstruction(programClass,
+                                             invocationOffset,
+                                             invocationInstruction);
+            }
+
+            // Remove unused parameters.
+            for (int index = 0; index < parameterSize; index++)
+            {
+                if (!ParameterUsageMarker.isParameterUsed(programMethod, index))
+                {
+                    TracedStack stack =
+                        partialEvaluator.getStackBefore(invocationOffset);
+
+                    int stackIndex = stack.size() - parameterSize + index;
+
+                    if (DEBUG)
+                    {
+                        System.out.println("  ["+invocationOffset+"] Ignoring parameter #"+index+" of "+programClass.getName()+"."+programMethod.getName(programClass)+programMethod.getDescriptor(programClass)+"] (stack entry #"+stackIndex+" ["+stack.getBottom(stackIndex)+"])");
+                        System.out.println("    Full stack: "+stack);
+                    }
+
+                    markStackSimplificationBefore(invocationOffset, stackIndex);
+                }
+            }
+        }
     }
 
 
@@ -593,6 +898,11 @@ implements   AttributeVisitor,
                     if (requiredPushCount > 0)
                     {
                         if (DEBUG_ANALYSIS) System.out.print("  Inserting before marked consumer "+instruction.toString(offset));
+
+                        if (requiredPushCount > (instruction.isCategory2() ? 2 : 1))
+                        {
+                            throw new IllegalArgumentException("Unsupported stack size increment ["+requiredPushCount+"]");
+                        }
 
                         increaseStackSize(offset, tracedStack.getTop(0).computationalType(), false);
                     }
@@ -1332,280 +1642,6 @@ implements   AttributeVisitor,
     }
 
 
-    // Implementations for InstructionVisitor.
-
-    public void visitSimpleInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, SimpleInstruction simpleInstruction)
-    {
-        if (partialEvaluator.isTraced(offset))
-        {
-            switch (simpleInstruction.opcode)
-            {
-                case InstructionConstants.OP_IALOAD:
-                case InstructionConstants.OP_BALOAD:
-                case InstructionConstants.OP_CALOAD:
-                case InstructionConstants.OP_SALOAD:
-                case InstructionConstants.OP_IADD:
-                case InstructionConstants.OP_ISUB:
-                case InstructionConstants.OP_IMUL:
-                case InstructionConstants.OP_IDIV:
-                case InstructionConstants.OP_IREM:
-                case InstructionConstants.OP_INEG:
-                case InstructionConstants.OP_ISHL:
-                case InstructionConstants.OP_ISHR:
-                case InstructionConstants.OP_IUSHR:
-                case InstructionConstants.OP_IAND:
-                case InstructionConstants.OP_IOR:
-                case InstructionConstants.OP_IXOR:
-                case InstructionConstants.OP_L2I:
-                case InstructionConstants.OP_F2I:
-                case InstructionConstants.OP_D2I:
-                case InstructionConstants.OP_I2B:
-                case InstructionConstants.OP_I2C:
-                case InstructionConstants.OP_I2S:
-                    replaceIntegerPushInstruction(clazz, offset, simpleInstruction);
-                    break;
-
-                case InstructionConstants.OP_LALOAD:
-                case InstructionConstants.OP_LADD:
-                case InstructionConstants.OP_LSUB:
-                case InstructionConstants.OP_LMUL:
-                case InstructionConstants.OP_LDIV:
-                case InstructionConstants.OP_LREM:
-                case InstructionConstants.OP_LNEG:
-                case InstructionConstants.OP_LSHL:
-                case InstructionConstants.OP_LSHR:
-                case InstructionConstants.OP_LUSHR:
-                case InstructionConstants.OP_LAND:
-                case InstructionConstants.OP_LOR:
-                case InstructionConstants.OP_LXOR:
-                case InstructionConstants.OP_I2L:
-                case InstructionConstants.OP_F2L:
-                case InstructionConstants.OP_D2L:
-                    replaceLongPushInstruction(clazz, offset, simpleInstruction);
-                    break;
-
-                case InstructionConstants.OP_FALOAD:
-                case InstructionConstants.OP_FADD:
-                case InstructionConstants.OP_FSUB:
-                case InstructionConstants.OP_FMUL:
-                case InstructionConstants.OP_FDIV:
-                case InstructionConstants.OP_FREM:
-                case InstructionConstants.OP_FNEG:
-                case InstructionConstants.OP_I2F:
-                case InstructionConstants.OP_L2F:
-                case InstructionConstants.OP_D2F:
-                    replaceFloatPushInstruction(clazz, offset, simpleInstruction);
-                    break;
-
-                case InstructionConstants.OP_DALOAD:
-                case InstructionConstants.OP_DADD:
-                case InstructionConstants.OP_DSUB:
-                case InstructionConstants.OP_DMUL:
-                case InstructionConstants.OP_DDIV:
-                case InstructionConstants.OP_DREM:
-                case InstructionConstants.OP_DNEG:
-                case InstructionConstants.OP_I2D:
-                case InstructionConstants.OP_L2D:
-                case InstructionConstants.OP_F2D:
-                    replaceDoublePushInstruction(clazz, offset, simpleInstruction);
-                    break;
-
-                case InstructionConstants.OP_AALOAD:
-                    replaceReferencePushInstruction(clazz, offset, simpleInstruction    );
-                    break;
-            }
-        }
-    }
-
-
-    public void visitVariableInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, VariableInstruction variableInstruction)
-    {
-        if (partialEvaluator.isTraced(offset))
-        {
-            switch (variableInstruction.opcode)
-            {
-                case InstructionConstants.OP_ILOAD:
-                case InstructionConstants.OP_ILOAD_0:
-                case InstructionConstants.OP_ILOAD_1:
-                case InstructionConstants.OP_ILOAD_2:
-                case InstructionConstants.OP_ILOAD_3:
-                    replaceIntegerPushInstruction(clazz, offset, variableInstruction);
-                    break;
-
-                case InstructionConstants.OP_LLOAD:
-                case InstructionConstants.OP_LLOAD_0:
-                case InstructionConstants.OP_LLOAD_1:
-                case InstructionConstants.OP_LLOAD_2:
-                case InstructionConstants.OP_LLOAD_3:
-                    replaceLongPushInstruction(clazz, offset, variableInstruction);
-                    break;
-
-                case InstructionConstants.OP_FLOAD:
-                case InstructionConstants.OP_FLOAD_0:
-                case InstructionConstants.OP_FLOAD_1:
-                case InstructionConstants.OP_FLOAD_2:
-                case InstructionConstants.OP_FLOAD_3:
-                    replaceFloatPushInstruction(clazz, offset, variableInstruction);
-                    break;
-
-                case InstructionConstants.OP_DLOAD:
-                case InstructionConstants.OP_DLOAD_0:
-                case InstructionConstants.OP_DLOAD_1:
-                case InstructionConstants.OP_DLOAD_2:
-                case InstructionConstants.OP_DLOAD_3:
-                    replaceDoublePushInstruction(clazz, offset, variableInstruction);
-                    break;
-
-                case InstructionConstants.OP_ALOAD:
-                case InstructionConstants.OP_ALOAD_0:
-                case InstructionConstants.OP_ALOAD_1:
-                case InstructionConstants.OP_ALOAD_2:
-                case InstructionConstants.OP_ALOAD_3:
-                    replaceReferencePushInstruction(clazz, offset, variableInstruction);
-                    break;
-
-            }
-        }
-    }
-
-
-    public void visitConstantInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, ConstantInstruction constantInstruction)
-    {
-        if (partialEvaluator.isTraced(offset))
-        {
-            switch (constantInstruction.opcode)
-            {
-                case InstructionConstants.OP_GETSTATIC:
-                case InstructionConstants.OP_GETFIELD:
-                    replaceAnyPushInstruction(clazz, offset, constantInstruction);
-                    break;
-
-                case InstructionConstants.OP_INVOKEVIRTUAL:
-                case InstructionConstants.OP_INVOKESPECIAL:
-                case InstructionConstants.OP_INVOKESTATIC:
-                case InstructionConstants.OP_INVOKEINTERFACE:
-                    clazz.constantPoolEntryAccept(constantInstruction.constantIndex,
-                                                  new ReferencedMemberVisitor(
-                                                  new MyUnusedParameterSimplifier(offset,
-                                                                                  constantInstruction)));
-
-                    if (constantInstruction.stackPushCount(clazz) > 0 &&
-                        !sideEffectInstructionChecker.hasSideEffects(clazz,
-                                                                     method,
-                                                                     codeAttribute,
-                                                                     offset,
-                                                                     constantInstruction))
-                    {
-                        replaceAnyPushInstruction(clazz, offset, constantInstruction);
-                    }
-
-                    break;
-
-                case InstructionConstants.OP_CHECKCAST:
-                    replaceReferencePushInstruction(clazz, offset, constantInstruction);
-                    break;
-            }
-        }
-    }
-
-
-    public void visitBranchInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, BranchInstruction branchInstruction)
-    {
-        if (partialEvaluator.isTraced(offset))
-        {
-            switch (branchInstruction.opcode)
-            {
-                case InstructionConstants.OP_GOTO:
-                case InstructionConstants.OP_GOTO_W:
-                    // Don't replace unconditional branches.
-                    break;
-
-                case InstructionConstants.OP_JSR:
-                case InstructionConstants.OP_JSR_W:
-                    replaceJsrInstruction(clazz, offset, branchInstruction);
-                    break;
-
-                default:
-                    replaceBranchInstruction(clazz, offset, branchInstruction);
-                    break;
-            }
-        }
-    }
-
-
-    public void visitAnySwitchInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, SwitchInstruction switchInstruction)
-    {
-        if (partialEvaluator.isTraced(offset))
-        {
-            // First try to simplify it to a simple branch.
-            replaceBranchInstruction(clazz, offset, switchInstruction);
-
-            // Otherwise make sure all branch targets are valid.
-            if (!isInstructionSimplified(offset))
-            {
-                replaceSwitchInstruction(clazz, offset, switchInstruction);
-            }
-        }
-    }
-
-
-    private class MyUnusedParameterSimplifier
-    extends       SimplifiedVisitor
-    implements    MemberVisitor
-    {
-        private int                 invocationOffset;
-        private ConstantInstruction invocationInstruction;
-
-
-        private MyUnusedParameterSimplifier(int                 invocationOffset,
-                                            ConstantInstruction invocationInstruction)
-        {
-            this.invocationOffset      = invocationOffset;
-            this.invocationInstruction = invocationInstruction;
-        }
-
-
-        // Implementations for MemberVisitor.
-
-        public void visitAnyMember(Clazz clazz, Member member) {}
-
-
-        public void visitProgramMethod(ProgramClass programClass, ProgramMethod programMethod)
-        {
-            // Get the total size of the parameters.
-            int parameterSize = ParameterUsageMarker.getParameterSize(programMethod);
-
-            // Make the method invocation static, if possible.
-            if (!ParameterUsageMarker.isParameterUsed(programMethod, 0))
-            {
-                replaceInvocationInstruction(programClass,
-                                             invocationOffset,
-                                             invocationInstruction);
-            }
-
-            // Remove unused parameters.
-            for (int index = 0; index < parameterSize; index++)
-            {
-                if (!ParameterUsageMarker.isParameterUsed(programMethod, index))
-                {
-                    TracedStack stack =
-                        partialEvaluator.getStackBefore(invocationOffset);
-
-                    int stackIndex = stack.size() - parameterSize + index;
-
-                    if (DEBUG)
-                    {
-                        System.out.println("  ["+invocationOffset+"] Ignoring parameter #"+index+" of "+programClass.getName()+"."+programMethod.getDescriptor(programClass)+"] (stack entry #"+stackIndex+" ["+stack.getBottom(stackIndex)+"])");
-                        System.out.println("    Full stack: "+stack);
-                    }
-
-                    markStackSimplificationBefore(invocationOffset, stackIndex);
-                }
-            }
-        }
-    }
-
-
     // Small utility methods.
 
     /**
@@ -1617,7 +1653,7 @@ implements   AttributeVisitor,
                                            Instruction instruction)
     {
         Value pushedValue = partialEvaluator.getStackAfter(offset).getTop(0);
-        if (pushedValue.isSpecific())
+        if (pushedValue.isParticular())
         {
             switch (pushedValue.computationalType())
             {
@@ -1649,17 +1685,48 @@ implements   AttributeVisitor,
                                                int         offset,
                                                Instruction instruction)
     {
+        replaceIntegerPushInstruction(clazz,
+                                      offset,
+                                      instruction,
+                                      partialEvaluator.getVariablesBefore(offset).size());
+    }
+
+
+    /**
+     * Replaces the integer pushing instruction at the given offset by a simpler
+     * push instruction, if possible.
+     */
+    private void replaceIntegerPushInstruction(Clazz       clazz,
+                                               int         offset,
+                                               Instruction instruction,
+                                               int         maxVariableIndex)
+    {
         Value pushedValue = partialEvaluator.getStackAfter(offset).getTop(0);
-        if (pushedValue.isSpecific())
+        if (pushedValue.isParticular())
         {
             int value = pushedValue.integerValue().value();
             if (value << 16 >> 16 == value)
             {
-                replacePushInstruction(clazz,
+                replaceConstantPushInstruction(clazz,
                                        offset,
                                        instruction,
                                        InstructionConstants.OP_SIPUSH,
                                        value);
+            }
+        }
+        else if (pushedValue.isSpecific())
+        {
+            TracedVariables variables = partialEvaluator.getVariablesBefore(offset);
+            for (int variableIndex = 0; variableIndex < maxVariableIndex; variableIndex++)
+            {
+                if (pushedValue.equals(variables.load(variableIndex)))
+                {
+                    replaceVariablePushInstruction(clazz,
+                                                   offset,
+                                                   instruction,
+                                                   InstructionConstants.OP_ILOAD,
+                                                   variableIndex);
+                }
             }
         }
     }
@@ -1673,18 +1740,49 @@ implements   AttributeVisitor,
                                             int         offset,
                                             Instruction instruction)
     {
+        replaceLongPushInstruction(clazz,
+                                   offset,
+                                   instruction,
+                                   partialEvaluator.getVariablesBefore(offset).size());
+    }
+
+
+    /**
+     * Replaces the long pushing instruction at the given offset by a simpler
+     * push instruction, if possible.
+     */
+    private void replaceLongPushInstruction(Clazz       clazz,
+                                            int         offset,
+                                            Instruction instruction,
+                                            int         maxVariableIndex)
+    {
         Value pushedValue = partialEvaluator.getStackAfter(offset).getTop(0);
-        if (pushedValue.isSpecific())
+        if (pushedValue.isParticular())
         {
             long value = pushedValue.longValue().value();
             if (value == 0L ||
                 value == 1L)
             {
-                replacePushInstruction(clazz,
+                replaceConstantPushInstruction(clazz,
                                        offset,
                                        instruction,
                                        InstructionConstants.OP_LCONST_0,
                                        (int)value);
+            }
+        }
+        else if (pushedValue.isSpecific())
+        {
+            TracedVariables variables = partialEvaluator.getVariablesBefore(offset);
+            for (int variableIndex = 0; variableIndex < maxVariableIndex; variableIndex++)
+            {
+                if (pushedValue.equals(variables.load(variableIndex)))
+                {
+                    replaceVariablePushInstruction(clazz,
+                                                   offset,
+                                                   instruction,
+                                                   InstructionConstants.OP_LLOAD,
+                                                   variableIndex);
+                }
             }
         }
     }
@@ -1698,19 +1796,50 @@ implements   AttributeVisitor,
                                              int         offset,
                                              Instruction instruction)
     {
+        replaceFloatPushInstruction(clazz,
+                                    offset,
+                                    instruction,
+                                    partialEvaluator.getVariablesBefore(offset).size());
+    }
+
+
+    /**
+     * Replaces the float pushing instruction at the given offset by a simpler
+     * push instruction, if possible.
+     */
+    private void replaceFloatPushInstruction(Clazz       clazz,
+                                             int         offset,
+                                             Instruction instruction,
+                                             int         maxVariableIndex)
+    {
         Value pushedValue = partialEvaluator.getStackAfter(offset).getTop(0);
-        if (pushedValue.isSpecific())
+        if (pushedValue.isParticular())
         {
             float value = pushedValue.floatValue().value();
             if (value == 0f ||
                 value == 1f ||
                 value == 2f)
             {
-                replacePushInstruction(clazz,
+                replaceConstantPushInstruction(clazz,
                                        offset,
                                        instruction,
                                        InstructionConstants.OP_FCONST_0,
                                        (int)value);
+            }
+        }
+        else if (pushedValue.isSpecific())
+        {
+            TracedVariables variables = partialEvaluator.getVariablesBefore(offset);
+            for (int variableIndex = 0; variableIndex < maxVariableIndex; variableIndex++)
+            {
+                if (pushedValue.equals(variables.load(variableIndex)))
+                {
+                    replaceVariablePushInstruction(clazz,
+                                                   offset,
+                                                   instruction,
+                                                   InstructionConstants.OP_FLOAD,
+                                                   variableIndex);
+                }
             }
         }
     }
@@ -1724,18 +1853,49 @@ implements   AttributeVisitor,
                                               int         offset,
                                               Instruction instruction)
     {
+        replaceDoublePushInstruction(clazz,
+                                     offset,
+                                     instruction,
+                                     partialEvaluator.getVariablesBefore(offset).size());
+    }
+
+
+    /**
+     * Replaces the double pushing instruction at the given offset by a simpler
+     * push instruction, if possible.
+     */
+    private void replaceDoublePushInstruction(Clazz       clazz,
+                                              int         offset,
+                                              Instruction instruction,
+                                              int         maxVariableIndex)
+    {
         Value pushedValue = partialEvaluator.getStackAfter(offset).getTop(0);
-        if (pushedValue.isSpecific())
+        if (pushedValue.isParticular())
         {
             double value = pushedValue.doubleValue().value();
             if (value == 0.0 ||
                 value == 1.0)
             {
-                replacePushInstruction(clazz,
+                replaceConstantPushInstruction(clazz,
                                        offset,
                                        instruction,
                                        InstructionConstants.OP_DCONST_0,
                                        (int)value);
+            }
+        }
+        else if (pushedValue.isSpecific())
+        {
+            TracedVariables variables = partialEvaluator.getVariablesBefore(offset);
+            for (int variableIndex = 0; variableIndex < maxVariableIndex; variableIndex++)
+            {
+                if (pushedValue.equals(variables.load(variableIndex)))
+                {
+                    replaceVariablePushInstruction(clazz,
+                                                   offset,
+                                                   instruction,
+                                                   InstructionConstants.OP_DLOAD,
+                                                   variableIndex);
+                }
             }
         }
     }
@@ -1750,10 +1910,10 @@ implements   AttributeVisitor,
                                                  Instruction instruction)
     {
         Value pushedValue = partialEvaluator.getStackAfter(offset).getTop(0);
-        if (pushedValue.isSpecific())
+        if (pushedValue.isParticular())
         {
             // A reference value can only be specific if it is null.
-            replacePushInstruction(clazz,
+            replaceConstantPushInstruction(clazz,
                                    offset,
                                    instruction,
                                    InstructionConstants.OP_ACONST_NULL,
@@ -1763,18 +1923,51 @@ implements   AttributeVisitor,
 
 
     /**
+     * Replaces the instruction at a given offset by a given push instruction
+     * of a constant.
+     */
+    private void replaceConstantPushInstruction(Clazz       clazz,
+                                                int         offset,
+                                                Instruction instruction,
+                                                byte        replacementOpcode,
+                                                int         value)
+    {
+        replacePushInstruction(clazz,
+                               offset,
+                               instruction,
+                               new SimpleInstruction(replacementOpcode, value).shrink());
+    }
+
+
+    /**
+     * Replaces the instruction at a given offset by a given push instruction
+     * of a variable.
+     */
+    private void replaceVariablePushInstruction(Clazz       clazz,
+                                                int         offset,
+                                                Instruction instruction,
+                                                byte        replacementOpcode,
+                                                int         variableIndex)
+    {
+        replacePushInstruction(clazz,
+                               offset,
+                               instruction,
+                               new VariableInstruction(replacementOpcode, variableIndex).shrink());
+
+        // Mark that the instruction has been simplified by loading an aliasing
+        // variable.
+        setAliasingVariable(offset, variableIndex);
+    }
+
+
+    /**
      * Replaces the instruction at a given offset by a given push instruction.
      */
     private void replacePushInstruction(Clazz       clazz,
                                         int         offset,
                                         Instruction instruction,
-                                        byte        replacementOpcode,
-                                        int         value)
+                                        Instruction replacementInstruction)
     {
-        // Remember the replacement instruction.
-        Instruction replacementInstruction =
-             new SimpleInstruction(replacementOpcode, value).shrink();
-
         if (DEBUG_ANALYSIS) System.out.println("  Replacing instruction at ["+offset+"] by "+replacementInstruction.toString());
 
         codeAttributeEditor.replaceInstruction(offset, replacementInstruction);
@@ -2138,6 +2331,7 @@ implements   AttributeVisitor,
         {
             instructionsNecessary  = new boolean[codeLength];
             instructionsSimplified = new boolean[codeLength];
+            aliasingVariables      = new int[codeLength];
         }
         else
         {
@@ -2146,6 +2340,11 @@ implements   AttributeVisitor,
                 instructionsNecessary[index]  = false;
                 instructionsSimplified[index] = false;
             }
+        }
+
+        for (int index = 0; index < codeLength; index++)
+        {
+            aliasingVariables[index] = -1;
         }
     }
 
@@ -2170,6 +2369,67 @@ implements   AttributeVisitor,
     }
 
 
+    /**
+     * Returns whether the specified variable must be initialized at the
+     * specified offset, according to the verifier of the JVM.
+     */
+    private boolean isVariableInitializationNecessary(Clazz         clazz,
+                                                      Method        method,
+                                                      CodeAttribute codeAttribute,
+                                                      int           initializationOffset,
+                                                      int           variableIndex)
+    {
+        int codeLength = codeAttribute.u4codeLength;
+
+        // Is the variable necessary anywhere at all?
+        if (isVariableNecessaryAfterAny(0, codeLength, variableIndex))
+        {
+            if (DEBUG_ANALYSIS) System.out.println("Simple partial evalutation for initialization of variable v"+variableIndex+" at ["+initializationOffset+"]");
+
+            // Lazily compute perform simple partial evaluation, the way the
+            // JVM preverifier would do it.
+            simplePartialEvaluator.visitCodeAttribute(clazz, method, codeAttribute);
+
+            if (DEBUG_ANALYSIS) System.out.println("End of simple partial evalutation for initialization of variable v"+variableIndex+" at ["+initializationOffset+"]");
+
+            // Check if the variable is necessary elsewhere.
+            for (int offset = 0; offset < codeLength; offset++)
+            {
+                if (isInstructionNecessary(offset))
+                {
+                    Value producer = partialEvaluator.getVariablesBefore(offset).getProducerValue(variableIndex);
+                    if (producer != null)
+                    {
+                        Value simpleProducer = simplePartialEvaluator.getVariablesBefore(offset).getProducerValue(variableIndex);
+                        if (simpleProducer != null)
+                        {
+                            InstructionOffsetValue producerOffsets =
+                                producer.instructionOffsetValue();
+                            InstructionOffsetValue simpleProducerOffsets =
+                                simpleProducer.instructionOffsetValue();
+
+                            // Does the sophisticated partial evaluation have fewer
+                            // producers than the simple one?
+                            // And does the simple partial evaluation point to an
+                            // initialization of the variable?
+                            if (producerOffsets.instructionOffsetCount() <
+                                simpleProducerOffsets.instructionOffsetCount() &&
+                                isVariableNecessaryAfterAny(producerOffsets, variableIndex) &&
+                                simpleProducerOffsets.contains(initializationOffset))
+                            {
+                                // Then the initialization is necessary.
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+
     private void markVariableAfter(int instructionOffset,
                                    int variableIndex)
     {
@@ -2188,16 +2448,38 @@ implements   AttributeVisitor,
 
 
     /**
-     * Returns whether the specified variable is ever necessary after an
+     * Returns whether the specified variable is ever necessary after any
      * instruction in the specified block.
      */
-    private boolean isVariableNecessaryAfter(int startOffset,
-                                             int endOffset,
-                                             int variableIndex)
+    private boolean isVariableNecessaryAfterAny(int startOffset,
+                                                int endOffset,
+                                                int variableIndex)
     {
         for (int offset = startOffset; offset < endOffset; offset++)
         {
             if (isVariableNecessaryAfter(offset, variableIndex))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+
+    /**
+     * Returns whether the specified variable is ever necessary after any
+     * instruction in the specified set of instructions offsets.
+     */
+    private boolean isVariableNecessaryAfterAny(InstructionOffsetValue instructionOffsetValue,
+                                                int                    variableIndex)
+    {
+        int count = instructionOffsetValue.instructionOffsetCount();
+
+        for (int index = 0; index < count; index++)
+        {
+            if (isVariableNecessaryAfter(instructionOffsetValue.instructionOffset(index),
+                                         variableIndex))
             {
                 return true;
             }
@@ -2295,6 +2577,19 @@ implements   AttributeVisitor,
     private boolean isInstructionSimplified(int instructionOffset)
     {
         return instructionsSimplified[instructionOffset];
+    }
+
+
+    private void setAliasingVariable(int instructionOffset,
+                                     int variableIndex)
+    {
+        aliasingVariables[instructionOffset] = variableIndex;
+    }
+
+
+    private int getAliasingVariable(int instructionOffset)
+    {
+        return aliasingVariables[instructionOffset];
     }
 
 

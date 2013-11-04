@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -36,9 +36,9 @@ import proguard.classfile.visitor.MemberVisitor;
  */
 public class ExceptionInstructionChecker
 extends      SimplifiedVisitor
-implements   InstructionVisitor,
-             ConstantVisitor,
-             MemberVisitor
+implements   InstructionVisitor
+//             ConstantVisitor,
+//             MemberVisitor
 {
     // A return value for the visitor methods.
     private boolean mayThrowExceptions;
@@ -133,52 +133,55 @@ implements   InstructionVisitor,
     }
 
 
-    // Implementations for ConstantVisitor.
-
-    public void visitAnyMethodrefConstant(Clazz clazz, RefConstant refConstant)
-    {
-        Member referencedMember = refConstant.referencedMember;
-
-        // Do we have a reference to the method?
-        if (referencedMember == null)
-        {
-            // We'll have to assume invoking the unknown method may throw an
-            // an exception.
-            mayThrowExceptions = true;
-        }
-        else
-        {
-            // First check the referenced method itself.
-            refConstant.referencedMemberAccept(this);
-
-            // If the result isn't conclusive, check down the hierarchy.
-            if (!mayThrowExceptions)
-            {
-                Clazz  referencedClass  = refConstant.referencedClass;
-                Method referencedMethod = (Method)referencedMember;
-
-                // Check all other implementations of the method in the class
-                // hierarchy.
-                referencedClass.methodImplementationsAccept(referencedMethod,
-                                                            false,
-                                                            this);
-            }
-        }
-    }
-
-
-    // Implementations for MemberVisitor.
-
-    public void visitProgramMethod(ProgramClass programClass, ProgramMethod programMethod)
-    {
+//    // Implementations for ConstantVisitor.
+//
+//    public void visitAnyMethodrefConstant(Clazz clazz, RefConstant refConstant)
+//    {
+//        Member referencedMember = refConstant.referencedMember;
+//
+//        // Do we have a reference to the method?
+//        if (referencedMember == null)
+//        {
+//            // We'll have to assume invoking the unknown method may throw an
+//            // an exception.
+//            mayThrowExceptions = true;
+//        }
+//        else
+//        {
+//            // First check the referenced method itself.
+//            refConstant.referencedMemberAccept(this);
+//
+//            // If the result isn't conclusive, check down the hierarchy.
+//            if (!mayThrowExceptions)
+//            {
+//                Clazz  referencedClass  = refConstant.referencedClass;
+//                Method referencedMethod = (Method)referencedMember;
+//
+//                // Check all other implementations of the method in the class
+//                // hierarchy.
+//                referencedClass.methodImplementationsAccept(referencedMethod,
+//                                                            false,
+//                                                            false,
+//                                                            true,
+//                                                            true,
+//                                                            this);
+//            }
+//        }
+//    }
+//
+//
+//    // Implementations for MemberVisitor.
+//
+//    public void visitProgramMethod(ProgramClass programClass, ProgramMethod programMethod)
+//    {
 //        mayThrowExceptions = mayThrowExceptions ||
 //                             ExceptionMethodMarker.mayThrowExceptions(programMethod);
-    }
-
-
-    public void visitLibraryMethod(LibraryClass libraryClass, LibraryMethod libraryMethod)
-    {
+//    }
+//
+//
+//    public void visitLibraryMethod(LibraryClass libraryClass, LibraryMethod libraryMethod)
+//    {
 //        mayThrowExceptions = mayThrowExceptions ||
 //                             !NoExceptionMethodMarker.doesntThrowExceptions(libraryMethod);
-    }
+//    }
 }

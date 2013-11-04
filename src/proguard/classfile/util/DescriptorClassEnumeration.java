@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -100,7 +100,7 @@ public class DescriptorClassEnumeration
                 case ClassConstants.INTERNAL_TYPE_GENERIC_END:
                 {
                     nestingLevel--;
-                    break;
+                    continue loop;
                 }
                 case ClassConstants.INTERNAL_TYPE_GENERIC_BOUND:
                 {
@@ -159,6 +159,7 @@ public class DescriptorClassEnumeration
             {
                 case ClassConstants.INTERNAL_TYPE_GENERIC_START:
                 case ClassConstants.INTERNAL_TYPE_CLASS_END:
+                case ClassConstants.EXTERNAL_INNER_CLASS_SEPARATOR:
                 {
                     break loop;
                 }
@@ -195,14 +196,18 @@ public class DescriptorClassEnumeration
     {
         try
         {
-            System.out.println("Descriptor ["+args[0]+"]");
-            DescriptorClassEnumeration enumeration = new DescriptorClassEnumeration(args[0]);
-            System.out.println("Class count = "+enumeration.classCount());
-            System.out.println("  Fluff: ["+enumeration.nextFluff()+"]");
-            while (enumeration.hasMoreClassNames())
+            for (int index = 0; index < args.length; index++)
             {
-                System.out.println("  Name:  ["+enumeration.nextClassName()+"]");
+                String descriptor = args[index];
+
+                System.out.println("Descriptor ["+descriptor+"]");
+                DescriptorClassEnumeration enumeration = new DescriptorClassEnumeration(descriptor);
                 System.out.println("  Fluff: ["+enumeration.nextFluff()+"]");
+                while (enumeration.hasMoreClassNames())
+                {
+                    System.out.println("  Name:  ["+enumeration.nextClassName()+"]");
+                    System.out.println("  Fluff: ["+enumeration.nextFluff()+"]");
+                }
             }
         }
         catch (Exception ex)

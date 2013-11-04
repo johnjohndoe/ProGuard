@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -27,15 +27,39 @@ import proguard.classfile.ClassConstants;
  *
  * @author Eric Lafortune
  */
-public class LongValue extends Category2Value
+public abstract class LongValue extends Category2Value
 {
     /**
      * Returns the specific long value, if applicable.
      */
     public long value()
     {
-        return 0L;
+        return 0;
     }
+
+
+    // Basic unary methods.
+
+    /**
+     * Returns the negated value of this LongValue.
+     */
+    public abstract LongValue negate();
+
+
+    /**
+     * Converts this LongValue to an IntegerValue.
+     */
+    public abstract IntegerValue convertToInteger();
+
+    /**
+     * Converts this LongValue to a FloatValue.
+     */
+    public abstract FloatValue convertToFloat();
+
+    /**
+     * Converts this LongValue to a DoubleValue.
+     */
+    public abstract DoubleValue convertToDouble();
 
 
     // Basic binary methods.
@@ -46,16 +70,15 @@ public class LongValue extends Category2Value
      */
     public LongValue generalize(LongValue other)
     {
-        return this;
+        return other.generalize(this);
     }
-
 
     /**
      * Returns the sum of this LongValue and the given LongValue.
      */
     public LongValue add(LongValue other)
     {
-        return this;
+        return other.add(this);
     }
 
     /**
@@ -63,7 +86,7 @@ public class LongValue extends Category2Value
      */
     public LongValue subtract(LongValue other)
     {
-        return this;
+        return other.subtractFrom(this);
     }
 
     /**
@@ -71,47 +94,54 @@ public class LongValue extends Category2Value
      */
     public LongValue subtractFrom(LongValue other)
     {
-        return this;
+        return other.subtract(this);
     }
 
     /**
      * Returns the product of this LongValue and the given LongValue.
      */
     public LongValue multiply(LongValue other)
+    throws ArithmeticException
     {
-        return this;
+        return other.multiply(this);
     }
 
     /**
      * Returns the quotient of this LongValue and the given LongValue.
      */
     public LongValue divide(LongValue other)
+    throws ArithmeticException
     {
-        return this;
+        return other.divideOf(this);
     }
 
     /**
      * Returns the quotient of the given LongValue and this LongValue.
      */
     public LongValue divideOf(LongValue other)
+    throws ArithmeticException
     {
-        return this;
+        return other.divide(this);
     }
 
     /**
-     * Returns the remainder of this LongValue divided by the given LongValue.
+     * Returns the remainder of this LongValue divided by the given
+     * LongValue.
      */
     public LongValue remainder(LongValue other)
+    throws ArithmeticException
     {
-        return this;
+        return other.remainderOf(this);
     }
 
     /**
-     * Returns the remainder of the given LongValue divided by this LongValue.
+     * Returns the remainder of the given LongValue divided by this
+     * LongValue.
      */
     public LongValue remainderOf(LongValue other)
+    throws ArithmeticException
     {
-        return this;
+        return other.remainder(this);
     }
 
     /**
@@ -119,7 +149,7 @@ public class LongValue extends Category2Value
      */
     public LongValue shiftLeft(IntegerValue other)
     {
-        return this;
+        return other.shiftLeftOf(this);
     }
 
     /**
@@ -127,7 +157,7 @@ public class LongValue extends Category2Value
      */
     public LongValue shiftRight(IntegerValue other)
     {
-        return this;
+        return other.shiftRightOf(this);
     }
 
     /**
@@ -136,7 +166,7 @@ public class LongValue extends Category2Value
      */
     public LongValue unsignedShiftRight(IntegerValue other)
     {
-        return this;
+        return other.unsignedShiftRightOf(this);
     }
 
     /**
@@ -145,7 +175,7 @@ public class LongValue extends Category2Value
      */
     public LongValue and(LongValue other)
     {
-        return this;
+        return other.and(this);
     }
 
     /**
@@ -154,7 +184,7 @@ public class LongValue extends Category2Value
      */
     public LongValue or(LongValue other)
     {
-        return this;
+        return other.or(this);
     }
 
     /**
@@ -163,16 +193,16 @@ public class LongValue extends Category2Value
      */
     public LongValue xor(LongValue other)
     {
-        return this;
+        return other.xor(this);
     }
 
     /**
      * Returns an IntegerValue with value -1, 0, or 1, if this LongValue is
      * less than, equal to, or greater than the given LongValue, respectively.
      */
-    public IntegerValue compare(LongValue other, ValueFactory valueFactory)
+    public IntegerValue compare(LongValue other)
     {
-        return valueFactory.createIntegerValue();
+        return other.compareReverse(this);
     }
 
 
@@ -182,44 +212,9 @@ public class LongValue extends Category2Value
      * Returns an IntegerValue with value 1, 0, or -1, if this LongValue is
      * less than, equal to, or greater than the given LongValue, respectively.
      */
-    public final IntegerValue compareReverse(LongValue other, ValueFactory valueFactory)
+    public final IntegerValue compareReverse(LongValue other)
     {
-        return compare(other, valueFactory).negate();
-    }
-
-
-    // Basic unary methods.
-
-    /**
-     * Returns the negated value of this LongValue.
-     */
-    public LongValue negate()
-    {
-        return this;
-    }
-
-    /**
-     * Converts this LongValue to an IntegerValue.
-     */
-    public IntegerValue convertToInteger(ValueFactory valueFactory)
-    {
-        return valueFactory.createIntegerValue();
-    }
-
-    /**
-     * Converts this LongValue to a FloatValue.
-     */
-    public FloatValue convertToFloat(ValueFactory valueFactory)
-    {
-        return valueFactory.createFloatValue();
-    }
-
-    /**
-     * Converts this LongValue to a DoubleValue.
-     */
-    public DoubleValue convertToDouble(ValueFactory valueFactory)
-    {
-        return valueFactory.createDoubleValue();
+        return compare(other).negate();
     }
 
 
@@ -268,7 +263,8 @@ public class LongValue extends Category2Value
     }
 
     /**
-     * Returns the quotient of this LongValue and the given SpecificLongValue.
+     * Returns the quotient of this LongValue and the given
+     * SpecificLongValue.
      */
     public LongValue divide(SpecificLongValue other)
     {
@@ -276,7 +272,8 @@ public class LongValue extends Category2Value
     }
 
     /**
-     * Returns the quotient of the given SpecificLongValue and this LongValue.
+     * Returns the quotient of the given SpecificLongValue and this
+     * LongValue.
      */
     public LongValue divideOf(SpecificLongValue other)
     {
@@ -293,7 +290,7 @@ public class LongValue extends Category2Value
     }
 
     /**
-     * Returns the remainder of the given SpecificLongValue and this
+     * Returns the remainder of the given SpecificLongValue divided by this
      * LongValue.
      */
     public LongValue remainderOf(SpecificLongValue other)
@@ -302,26 +299,26 @@ public class LongValue extends Category2Value
     }
 
     /**
-     * Returns this LongValue, shifted left by the given SpecificIntegerValue.
+     * Returns this LongValue, shifted left by the given SpecificLongValue.
      */
-    public LongValue shiftLeft(SpecificIntegerValue other)
+    public LongValue shiftLeft(SpecificLongValue other)
     {
         return this;
     }
 
     /**
-     * Returns this LongValue, shifted right by the given SpecificIntegerValue.
+     * Returns this LongValue, shifted right by the given SpecificLongValue.
      */
-    public LongValue shiftRight(SpecificIntegerValue other)
+    public LongValue shiftRight(SpecificLongValue other)
     {
         return this;
     }
 
     /**
-     * Returns this unsigned LongValue, shifted left by the given
-     * SpecificIntegerValue.
+     * Returns this unsigned LongValue, shifted right by the given
+     * SpecificLongValue.
      */
-    public LongValue unsignedShiftRight(SpecificIntegerValue other)
+    public LongValue unsignedShiftRight(SpecificLongValue other)
     {
         return this;
     }
@@ -358,9 +355,9 @@ public class LongValue extends Category2Value
      * less than, equal to, or greater than the given SpecificLongValue,
      * respectively.
      */
-    public IntegerValue compare(SpecificLongValue other, ValueFactory valueFactory)
+    public IntegerValue compare(SpecificLongValue other)
     {
-        return valueFactory.createIntegerValue();
+        return new ComparisonValue(this, other);
     }
 
 
@@ -371,9 +368,165 @@ public class LongValue extends Category2Value
      * less than, equal to, or greater than the given SpecificLongValue,
      * respectively.
      */
-    public final IntegerValue compareReverse(SpecificLongValue other, ValueFactory valueFactory)
+    public final IntegerValue compareReverse(SpecificLongValue other)
     {
-        return compare(other, valueFactory).negate();
+        return compare(other).negate();
+    }
+
+
+    // Similar binary methods, but this time with particular arguments.
+
+    /**
+     * Returns the generalization of this LongValue and the given other
+     * ParticularLongValue.
+     */
+    public LongValue generalize(ParticularLongValue other)
+    {
+        return generalize((SpecificLongValue)other);
+    }
+
+
+    /**
+     * Returns the sum of this LongValue and the given ParticularLongValue.
+     */
+    public LongValue add(ParticularLongValue other)
+    {
+        return add((SpecificLongValue)other);
+    }
+
+    /**
+     * Returns the difference of this LongValue and the given ParticularLongValue.
+     */
+    public LongValue subtract(ParticularLongValue other)
+    {
+        return subtract((SpecificLongValue)other);
+    }
+
+    /**
+     * Returns the difference of the given ParticularLongValue and this LongValue.
+     */
+    public LongValue subtractFrom(ParticularLongValue other)
+    {
+        return subtractFrom((SpecificLongValue)other);
+    }
+
+    /**
+     * Returns the product of this LongValue and the given ParticularLongValue.
+     */
+    public LongValue multiply(ParticularLongValue other)
+    {
+        return multiply((SpecificLongValue)other);
+    }
+
+    /**
+     * Returns the quotient of this LongValue and the given
+     * ParticularLongValue.
+     */
+    public LongValue divide(ParticularLongValue other)
+    {
+        return divide((SpecificLongValue)other);
+    }
+
+    /**
+     * Returns the quotient of the given ParticularLongValue and this
+     * LongValue.
+     */
+    public LongValue divideOf(ParticularLongValue other)
+    {
+        return divideOf((SpecificLongValue)other);
+    }
+
+    /**
+     * Returns the remainder of this LongValue divided by the given
+     * ParticularLongValue.
+     */
+    public LongValue remainder(ParticularLongValue other)
+    {
+        return remainder((SpecificLongValue)other);
+    }
+
+    /**
+     * Returns the remainder of the given ParticularLongValue divided by this
+     * LongValue.
+     */
+    public LongValue remainderOf(ParticularLongValue other)
+    {
+        return remainderOf((SpecificLongValue)other);
+    }
+
+    /**
+     * Returns this LongValue, shifted left by the given ParticularIntegerValue.
+     */
+    public LongValue shiftLeft(ParticularIntegerValue other)
+    {
+        return shiftLeft((SpecificIntegerValue)other);
+    }
+
+    /**
+     * Returns this LongValue, shifted right by the given ParticularIntegerValue.
+     */
+    public LongValue shiftRight(ParticularIntegerValue other)
+    {
+        return shiftRight((SpecificIntegerValue)other);
+    }
+
+    /**
+     * Returns this unsigned LongValue, shifted right by the given
+     * ParticularIntegerValue.
+     */
+    public LongValue unsignedShiftRight(ParticularIntegerValue other)
+    {
+        return unsignedShiftRight((SpecificIntegerValue)other);
+    }
+
+    /**
+     * Returns the logical <i>and</i> of this LongValue and the given
+     * ParticularLongValue.
+     */
+    public LongValue and(ParticularLongValue other)
+    {
+        return and((SpecificLongValue)other);
+    }
+
+    /**
+     * Returns the logical <i>or</i> of this LongValue and the given
+     * ParticularLongValue.
+     */
+    public LongValue or(ParticularLongValue other)
+    {
+        return or((SpecificLongValue)other);
+    }
+
+    /**
+     * Returns the logical <i>xor</i> of this LongValue and the given
+     * ParticularLongValue.
+     */
+    public LongValue xor(ParticularLongValue other)
+    {
+        return xor((SpecificLongValue)other);
+    }
+
+    /**
+     * Returns an IntegerValue with value -1, 0, or 1, if this LongValue is
+     * less than, equal to, or greater than the given ParticularLongValue,
+     * respectively.
+     */
+    public IntegerValue compare(ParticularLongValue other)
+    {
+        return compare((SpecificLongValue)other);
+    }
+
+
+    // Derived binary methods.
+
+    /**
+     * Returns an IntegerValue with value 1, 0, or -1, if this LongValue is
+     * less than, equal to, or greater than the given ParticularLongValue,
+     * respectively.
+     */
+    public final IntegerValue compareReverse(ParticularLongValue other)
+    {
+        return compare(other).negate();
     }
 
 
@@ -396,27 +549,6 @@ public class LongValue extends Category2Value
 
     public final String internalType()
     {
-        return String.valueOf(ClassConstants.INTERNAL_TYPE_LONG);
-    }
-
-
-    // Implementations for Object.
-
-    public boolean equals(Object object)
-    {
-        return object != null &&
-               this.getClass() == object.getClass();
-    }
-
-
-    public int hashCode()
-    {
-        return this.getClass().hashCode();
-    }
-
-
-    public String toString()
-    {
-        return "l";
+        return String.valueOf(ClassConstants.INTERNAL_TYPE_INT);
     }
 }

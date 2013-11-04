@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -14,7 +14,7 @@
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
- * You should have received a copy of the GNU General Public License afloat
+ * You should have received a copy of the GNU General Public License along
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
@@ -25,32 +25,32 @@ package proguard.evaluation.value;
  *
  * @author Eric Lafortune
  */
-final class SpecificFloatValue extends FloatValue
+abstract class SpecificFloatValue extends FloatValue
 {
-    private final float value;
+    // Implementations of unary methods of FloatValue.
 
-
-    /**
-     * Creates a new specific float value.
-     */
-    public SpecificFloatValue(float value)
+    public FloatValue negate()
     {
-        this.value = value;
+        return new NegatedFloatValue(this);
     }
 
-
-    // Implementations for FloatValue.
-
-    public float value()
+    public IntegerValue convertToInteger()
     {
-        return value;
+        return new ConvertedIntegerValue(this);
+    }
+
+    public LongValue convertToLong()
+    {
+        return new ConvertedLongValue(this);
+    }
+
+    public DoubleValue convertToDouble()
+    {
+        return new ConvertedDoubleValue(this);
     }
 
 
     // Implementations of binary methods of FloatValue.
-
-    // Perhaps the other value arguments are more specific than apparent
-    // in these methods, so delegate to them.
 
     public FloatValue generalize(FloatValue other)
     {
@@ -97,32 +97,9 @@ final class SpecificFloatValue extends FloatValue
         return other.remainder(this);
     }
 
-    public IntegerValue compare(FloatValue other, ValueFactory valueFactory)
+    public IntegerValue compare(FloatValue other)
     {
-        return other.compareReverse(this, valueFactory);
-    }
-
-
-    // Implementations of unary methods of FloatValue.
-
-    public FloatValue negate()
-    {
-        return new SpecificFloatValue(-value);
-    }
-
-    public IntegerValue convertToInteger(ValueFactory valueFactory)
-    {
-        return valueFactory.createIntegerValue((int)value);
-    }
-
-    public LongValue convertToLong(ValueFactory valueFactory)
-    {
-        return valueFactory.createLongValue((long)value);
-    }
-
-    public DoubleValue convertToDouble(ValueFactory valueFactory)
-    {
-        return valueFactory.createDoubleValue((double)value);
+        return other.compareReverse(this);
     }
 
 
@@ -131,54 +108,54 @@ final class SpecificFloatValue extends FloatValue
 
     public FloatValue generalize(SpecificFloatValue other)
     {
-        return this.value == other.value ? this : ValueFactory.FLOAT_VALUE;
+        return this.equals(other) ? this : ValueFactory.FLOAT_VALUE;
     }
 
     public FloatValue add(SpecificFloatValue other)
     {
-        return new SpecificFloatValue(this.value + other.value);
+        return new CompositeFloatValue(this, CompositeFloatValue.ADD, other);
     }
 
     public FloatValue subtract(SpecificFloatValue other)
     {
-        return new SpecificFloatValue(this.value - other.value);
+        return new CompositeFloatValue(this, CompositeFloatValue.SUBTRACT, other);
     }
 
     public FloatValue subtractFrom(SpecificFloatValue other)
     {
-        return new SpecificFloatValue(other.value - this.value);
+        return new CompositeFloatValue(other, CompositeFloatValue.SUBTRACT, this);
     }
 
     public FloatValue multiply(SpecificFloatValue other)
     {
-        return new SpecificFloatValue(this.value * other.value);
+        return new CompositeFloatValue(this, CompositeFloatValue.MULTIPLY, other);
     }
 
     public FloatValue divide(SpecificFloatValue other)
     {
-        return new SpecificFloatValue(this.value / other.value);
+        return new CompositeFloatValue(this, CompositeFloatValue.DIVIDE, other);
     }
 
     public FloatValue divideOf(SpecificFloatValue other)
     {
-        return new SpecificFloatValue(other.value / this.value);
+        return new CompositeFloatValue(other, CompositeFloatValue.DIVIDE, this);
     }
 
     public FloatValue remainder(SpecificFloatValue other)
     {
-        return new SpecificFloatValue(this.value % other.value);
+        return new CompositeFloatValue(this, CompositeFloatValue.REMAINDER, other);
     }
 
     public FloatValue remainderOf(SpecificFloatValue other)
     {
-        return new SpecificFloatValue(other.value % this.value);
+        return new CompositeFloatValue(other, CompositeFloatValue.REMAINDER, this);
     }
 
-    public IntegerValue compare(SpecificFloatValue other, ValueFactory valueFactory)
+    public IntegerValue compare(SpecificFloatValue other)
     {
-        return this.value <  other.value ? valueFactory.createIntegerValue(-1) :
-               this.value == other.value ? valueFactory.createIntegerValue(0) :
-                                           valueFactory.createIntegerValue(1);
+        return this.equals(other) ?
+            SpecificValueFactory.INTEGER_VALUE_0 :
+            new ComparisonValue(this, other);
     }
 
 
@@ -194,20 +171,13 @@ final class SpecificFloatValue extends FloatValue
 
     public boolean equals(Object object)
     {
-        return object          != null              &&
-               this.getClass() == object.getClass() &&
-               this.value      == ((SpecificFloatValue)object).value;
+        return object != null &&
+               this.getClass() == object.getClass();
     }
 
 
     public int hashCode()
     {
-        return this.getClass().hashCode() ^ Float.floatToIntBits(value);
-    }
-
-
-    public String toString()
-    {
-        return "f:"+value;
+        return this.getClass().hashCode();
     }
 }

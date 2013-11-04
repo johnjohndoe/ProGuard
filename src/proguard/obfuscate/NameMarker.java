@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -21,6 +21,11 @@
 package proguard.obfuscate;
 
 import proguard.classfile.*;
+import proguard.classfile.util.SimplifiedVisitor;
+import proguard.classfile.constant.ClassConstant;
+import proguard.classfile.constant.visitor.ConstantVisitor;
+import proguard.classfile.attribute.*;
+import proguard.classfile.attribute.visitor.*;
 import proguard.classfile.visitor.*;
 
 
@@ -35,14 +40,21 @@ import proguard.classfile.visitor.*;
  * @author Eric Lafortune
  */
 class      NameMarker
+extends    SimplifiedVisitor
 implements ClassVisitor,
-           MemberVisitor
+           MemberVisitor,
+           AttributeVisitor,
+           InnerClassesInfoVisitor,
+           ConstantVisitor
 {
     // Implementations for ClassVisitor.
 
     public void visitProgramClass(ProgramClass programClass)
     {
         keepClassName(programClass);
+
+        // Make sure any outer class names are kept as well.
+        programClass.attributesAccept(this);
     }
 
 
@@ -75,6 +87,43 @@ implements ClassVisitor,
     public void visitLibraryMethod(LibraryClass libraryClass, LibraryMethod libraryMethod)
     {
         keepMethodName(libraryClass, libraryMethod);
+    }
+
+
+    // Implementations for AttributeVisitor.
+
+    public void visitAnyAttribute(Clazz clazz, Attribute attribute) {}
+
+
+    public void visitInnerClassesAttribute(Clazz clazz, InnerClassesAttribute innerClassesAttribute)
+    {
+        // Make sure the outer class names are kept as well.
+        innerClassesAttribute.innerClassEntriesAccept(clazz, this);
+    }
+
+
+    // Implementations for InnerClassesInfoVisitor.
+
+    public void visitInnerClassesInfo(Clazz clazz, InnerClassesInfo innerClassesInfo)
+    {
+        // Make sure the outer class name is kept as well.
+        int innerClassIndex = innerClassesInfo.u2innerClassIndex;
+        int outerClassIndex = innerClassesInfo.u2outerClassIndex;
+        if (innerClassIndex != 0 &&
+            outerClassIndex != 0 &&
+            clazz.getClassName(innerClassIndex).equals(clazz.getName()))
+        {
+            clazz.constantPoolEntryAccept(outerClassIndex, this);
+        }
+    }
+
+
+    // Implementations for ConstantVisitor.
+
+    public void visitClassConstant(Clazz clazz, ClassConstant classConstant)
+    {
+        // Make sure the outer class name is kept as well.
+        classConstant.referencedClassAccept(this);
     }
 
 

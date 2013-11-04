@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -42,8 +42,9 @@ implements   ClassVisitor,
 {
     private final UsageMarker usageMarker;
 
-    // A field acting as a return parameter for several methods.
+    // Fields acting as a return parameters for several methods.
     private boolean used;
+    private boolean anyUsed;
 
 
     /**
@@ -66,14 +67,14 @@ implements   ClassVisitor,
 
         if (classUsed || classPossiblyUsed)
         {
-            // Mark the references to interfaces that are being used.
-            for (int index = 0; index < programClass.u2interfacesCount; index++)
-            {
-                // Check if the interface is used. Mark the constant pool entry
-                // if so.
-                markConstant(programClass, programClass.u2interfaces[index]);
-                classUsed |= used;
-            }
+            // Check if any interfaces are being used.
+            boolean oldAnyUsed = anyUsed;
+            anyUsed = false;
+
+            programClass.interfaceConstantsAccept(this);
+
+            classUsed |= anyUsed;
+            anyUsed = oldAnyUsed;
 
             // Is this an interface with a preliminary mark?
             if (classPossiblyUsed)
@@ -86,13 +87,10 @@ implements   ClassVisitor,
                     usageMarker.markAsUsed(programClass);
 
                     // Mark this interface's name.
-                    markConstant(programClass, programClass.u2thisClass);
+                    programClass.thisClassConstantAccept(this);
 
                     // Mark the superclass (java/lang/Object).
-                    if (programClass.u2superClass != 0)
-                    {
-                        markConstant(programClass, programClass.u2superClass);
-                    }
+                    programClass.superClassConstantAccept(this);
                 }
                 else
                 {
@@ -109,8 +107,9 @@ implements   ClassVisitor,
 
     public void visitLibraryClass(LibraryClass libraryClass)
     {
-        // The return value.
-        used = true;
+        // The return values.
+        used    = true;
+        anyUsed = true;
     }
 
 
@@ -122,10 +121,10 @@ implements   ClassVisitor,
 
         if (!classUsed)
         {
-            // The ClassConstant isn't marked as being used yet. But maybe it should
-            // be included as an interface, so check the actual class.
+            // The ClassConstant isn't marked as being used yet. But maybe it
+            // should be included as an interface, so check the actual class.
             classConstant.referencedClassAccept(this);
-            classUsed =   used;
+            classUsed = used;
 
             if (classUsed)
             {
@@ -133,12 +132,13 @@ implements   ClassVisitor,
                 // as well.
                 usageMarker.markAsUsed(classConstant);
 
-                markConstant(clazz, classConstant.u2nameIndex);
+                clazz.constantPoolEntryAccept(classConstant.u2nameIndex, this);
             }
         }
 
-        // The return value.
-        used = classUsed;
+        // The return values.
+        used    =  classUsed;
+        anyUsed |= classUsed;
     }
 
 
@@ -148,17 +148,5 @@ implements   ClassVisitor,
         {
             usageMarker.markAsUsed(utf8Constant);
         }
-    }
-
-
-    // Small utility methods.
-
-    /**
-     * Marks the given constant pool entry of the given class. This includes
-     * visiting any referenced objects.
-     */
-    private void markConstant(Clazz clazz, int index)
-    {
-         clazz.constantPoolEntryAccept(index, this);
     }
 }

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -198,7 +198,7 @@ implements   ClassVisitor,
     public void visitSameOneFrame(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, SameOneFrame sameOneFrame)
     {
         clean(sameOneFrame);
-        
+
         sameOneFrame.stackItemAccept(clazz, method, codeAttribute, offset, this);
     }
 
@@ -212,7 +212,7 @@ implements   ClassVisitor,
     public void visitMoreZeroFrame(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, MoreZeroFrame moreZeroFrame)
     {
         clean(moreZeroFrame);
-        
+
         moreZeroFrame.additionalVariablesAccept(clazz, method, codeAttribute, offset, this);
     }
 
@@ -220,7 +220,7 @@ implements   ClassVisitor,
     public void visitFullFrame(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, FullFrame fullFrame)
     {
         clean(fullFrame);
-        
+
         fullFrame.variablesAccept(clazz, method, codeAttribute, offset, this);
         fullFrame.stackAccept(clazz, method, codeAttribute, offset, this);
     }

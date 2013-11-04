@@ -23,6 +23,7 @@
 <li><a href="#jdk1.4">Does <b>ProGuard</b> work with Java 2? Java 5? Java
     6?</a>
 <li><a href="#jme">Does <b>ProGuard</b> work with Java Micro Edition?</a>
+<li><a href="#android">Does <b>ProGuard</b> work for Google Android code?</a>
 <li><a href="#blackberry">Does <b>ProGuard</b> work for Blackberry code?</a>
 <li><a href="#ant">Does <b>ProGuard</b> have support for Ant?</a>
 <li><a href="#gui">Does <b>ProGuard</b> come with a GUI?</a>
@@ -82,7 +83,8 @@ class files at Java 6.
 Apart from removing unused classes, fields, and methods in the shrinking step,
 <b>ProGuard</b> can also perform optimizations at the bytecode level, inside
 and across methods. Thanks to techniques like control flow analysis, data flow
-analysis, partial evaluation, and liveness analysis, <b>ProGuard</b> can:
+analysis, partial evaluation, static single assignment, global value numbering,
+and liveness analysis, <b>ProGuard</b> can:
 
 <ul>
 <li>Evaluate constant expressions.
@@ -95,6 +97,8 @@ analysis, partial evaluation, and liveness analysis, <b>ProGuard</b> can:
 <li>Remove write-only fields and unused method parameters.
 <li>Inline constant fields, method parameters, and return values.
 <li>Inline methods that are short or only called once.
+<li>Simplify tail recursion calls.
+<li>Merge classes and interfaces.
 <li>Make methods private, static, and final when possible.
 <li>Make classes static and final when possible.
 <li>Replace interfaces that have single implementations.
@@ -140,8 +144,16 @@ preverifier.
 <b>ProGuard</b> also comes with an obfuscator plug-in for the JME Wireless
 Toolkit.
 
+<a name="android">&nbsp;</a>
+<h3>Does <b>ProGuard</b> work for Google Android code?</h3>
+
+Yes. Google's <code>dx</code> compiler converts ordinary jar files into files
+that run on Android devices. By preprocessing the original jar files,
+<b>ProGuard</b> can significantly reduce the file sizes and boost the run-time
+performance of the code.
+
 <a name="blackberry">&nbsp;</a>
-<h3>Does <b>ProGuard</b> work with Blackberry code?</h3>
+<h3>Does <b>ProGuard</b> work for Blackberry code?</h3>
 
 It should. RIM's proprietary <code>rapc</code> compiler converts ordinary JME
 jar files into cod files that run on Blackberry devices. The compiler performs
@@ -170,14 +182,14 @@ loading, editing, executing, and saving ProGuard configurations.
 <a name="forname">&nbsp;</a>
 <h3>Does <b>ProGuard</b> handle <code>Class.forName</code> calls?</h3>
 
-Yes. <b>ProGuard</b> automatically handles
-<code>Class.forName("SomeClass")</code> and <code>SomeClass.class</code>
-constructs. The referenced classes are preserved in the shrinking phase, and
-the string arguments are properly replaced in the obfuscation phase.
+Yes. <b>ProGuard</b> automatically handles constructs like
+<code>Class.forName("SomeClass")</code> and <code>SomeClass.class</code>. The
+referenced classes are preserved in the shrinking phase, and the string
+arguments are properly replaced in the obfuscation phase.
 <p>
 With variable string arguments, it's generally not possible to determine their
 possible values. They might be read from a configuration file, for instance.
-However, <b>ProGuard</b> will note constructs like
+However, <b>ProGuard</b> will note a number of constructs like
 "<code>(SomeClass)Class.forName(variable).newInstance()</code>". These might
 be an indication that the class or interface <code>SomeClass</code> and/or its
 implementations may need to be preserved. The user can adapt his configuration
@@ -235,7 +247,7 @@ Manual</a> for more details.
 
 <hr>
 <address>
-Copyright &copy; 2002-2007
+Copyright &copy; 2002-2008
 <a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>

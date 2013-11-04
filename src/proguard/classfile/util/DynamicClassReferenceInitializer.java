@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -176,6 +176,8 @@ implements   InstructionVisitor,
 
     private final ClassPool      programClassPool;
     private final ClassPool      libraryClassPool;
+    private final WarningPrinter missingNotePrinter;
+    private final WarningPrinter dependencyWarningPrinter;
     private final WarningPrinter notePrinter;
     private final StringMatcher  noteExceptionMatcher;
 
@@ -215,17 +217,22 @@ implements   InstructionVisitor,
 
     /**
      * Creates a new DynamicClassReferenceInitializer that optionally prints
-     * notes, with optional class specifications for which never to print notes.
+     * warnings and notes, with optional class specifications for which never
+     * to print notes.
      */
     public DynamicClassReferenceInitializer(ClassPool      programClassPool,
                                             ClassPool      libraryClassPool,
+                                            WarningPrinter missingNotePrinter,
+                                            WarningPrinter dependencyWarningPrinter,
                                             WarningPrinter notePrinter,
                                             StringMatcher  noteExceptionMatcher)
     {
-        this.programClassPool     = programClassPool;
-        this.libraryClassPool     = libraryClassPool;
-        this.notePrinter          = notePrinter;
-        this.noteExceptionMatcher = noteExceptionMatcher;
+        this.programClassPool         = programClassPool;
+        this.libraryClassPool         = libraryClassPool;
+        this.missingNotePrinter       = missingNotePrinter;
+        this.dependencyWarningPrinter = dependencyWarningPrinter;
+        this.notePrinter              = notePrinter;
+        this.noteExceptionMatcher     = noteExceptionMatcher;
     }
 
 
@@ -296,7 +303,7 @@ implements   InstructionVisitor,
         String externalClassName = stringConstant.getString(clazz);
         String internalClassName = ClassUtil.internalClassName(externalClassName);
 
-        stringConstant.referencedClass = findClass(internalClassName);
+        stringConstant.referencedClass = findClass(clazz.getName(), internalClassName);
     }
 
 
@@ -424,8 +431,15 @@ implements   InstructionVisitor,
      * Returns the class with the given name, either for the program class pool
      * or from the library class pool, or <code>null</code> if it can't be found.
      */
-    private Clazz findClass(String name)
+    private Clazz findClass(String referencingClassName, String name)
     {
+        // Ignore any primitive array types.
+        if (ClassUtil.isInternalArrayType(name) &&
+            !ClassUtil.isInternalClassType(name))
+        {
+            return null;
+        }
+
         // First look for the class in the program class pool.
         Clazz clazz = programClassPool.getClass(name);
 
@@ -433,6 +447,25 @@ implements   InstructionVisitor,
         if (clazz == null)
         {
             clazz = libraryClassPool.getClass(name);
+
+            if (clazz == null &&
+                missingNotePrinter != null)
+            {
+                // We didn't find the superclass or interface. Print a note.
+                missingNotePrinter.print("Note: " +
+                                         ClassUtil.externalClassName(referencingClassName) +
+                                         ": can't find dynamically referenced class " +
+                                         ClassUtil.externalClassName(name));
+            }
+        }
+        else if (dependencyWarningPrinter != null)
+        {
+            // The superclass or interface was found in the program class pool.
+            // Print a warning.
+            dependencyWarningPrinter.print("Warning: library class " +
+                                           ClassUtil.externalClassName(referencingClassName) +
+                                           " depends dynamically on program class " +
+                                           ClassUtil.externalClassName(name));
         }
 
         return clazz;

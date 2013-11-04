@@ -2,21 +2,21 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
- * This library is free software; you can redistribute it and/or modify it
+ * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
  * Software Foundation; either version 2 of the License, or (at your option)
  * any later version.
  *
- * This library is distributed in the hope that it will be useful, but WITHOUT
+ * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
- * for more details.
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this library; if not, write to the Free Software Foundation,
- * Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 package proguard.classfile.editor;
 
@@ -33,27 +33,42 @@ import proguard.classfile.constant.visitor.ConstantVisitor;
 public class ConstantAdder
 implements   ConstantVisitor
 {
-    private ProgramClass targetClass;
-    private int          constantIndex;
+    private final ConstantPoolEditor constantPoolEditor;
 
-    private final ConstantPoolEditor constantPoolEditor = new ConstantPoolEditor();
+    private int constantIndex;
 
 
     /**
-     * Sets the class to which visited constants will be copied.
+     * Creates a new ConstantAdder that will copy constants into the given
+     * target class.
      */
-    public void setTargetClass(ProgramClass targetClass)
+    public ConstantAdder(ProgramClass targetClass)
     {
-        this.targetClass = targetClass;
+        constantPoolEditor = new ConstantPoolEditor(targetClass);
     }
 
 
     /**
-     * Returns the class to which visited constants will be copied.
+     * Adds a copy of the specified constant in the given class and returns
+     * its index. If the specified index is 0, the returned value is 0 too.
      */
-    public ProgramClass getTargetClass()
+    public int addConstant(Clazz clazz, int constantIndex)
     {
-        return targetClass;
+        clazz.constantPoolEntryAccept(constantIndex, this);
+
+        return this.constantIndex;
+    }
+
+
+    /**
+     * Adds a copy of the given constant in the given class and returns
+     * its index.
+     */
+    public int addConstant(Clazz clazz, Constant constant)
+    {
+        constant.accept(clazz, this);
+
+        return this.constantIndex;
     }
 
 
@@ -72,40 +87,35 @@ implements   ConstantVisitor
     public void visitIntegerConstant(Clazz clazz, IntegerConstant integerConstant)
     {
         constantIndex =
-            constantPoolEditor.addIntegerConstant(targetClass,
-                                                  integerConstant.getValue());
+            constantPoolEditor.addIntegerConstant(integerConstant.getValue());
     }
 
 
     public void visitLongConstant(Clazz clazz, LongConstant longConstant)
     {
         constantIndex =
-            constantPoolEditor.addLongConstant(targetClass,
-                                               longConstant.getValue());
+            constantPoolEditor.addLongConstant(longConstant.getValue());
     }
 
 
     public void visitFloatConstant(Clazz clazz, FloatConstant floatConstant)
     {
         constantIndex =
-            constantPoolEditor.addFloatConstant(targetClass,
-                                                floatConstant.getValue());
+            constantPoolEditor.addFloatConstant(floatConstant.getValue());
     }
 
 
     public void visitDoubleConstant(Clazz clazz, DoubleConstant doubleConstant)
     {
         constantIndex =
-            constantPoolEditor.addDoubleConstant(targetClass,
-                                                 doubleConstant.getValue());
+            constantPoolEditor.addDoubleConstant(doubleConstant.getValue());
     }
 
 
     public void visitStringConstant(Clazz clazz, StringConstant stringConstant)
     {
         constantIndex =
-            constantPoolEditor.addStringConstant(targetClass,
-                                                 stringConstant.getString(clazz),
+            constantPoolEditor.addStringConstant(stringConstant.getString(clazz),
                                                  stringConstant.referencedClass,
                                                  stringConstant.referencedMember);
     }
@@ -114,8 +124,7 @@ implements   ConstantVisitor
     public void visitUtf8Constant(Clazz clazz, Utf8Constant utf8Constant)
     {
         constantIndex =
-            constantPoolEditor.addUtf8Constant(targetClass,
-                                               utf8Constant.getString());
+            constantPoolEditor.addUtf8Constant(utf8Constant.getString());
     }
 
 
@@ -127,8 +136,7 @@ implements   ConstantVisitor
         // Then add the actual field reference constant, with its referenced
         // class and class member.
         constantIndex =
-            constantPoolEditor.addFieldrefConstant(targetClass,
-                                                   constantIndex,
+            constantPoolEditor.addFieldrefConstant(constantIndex,
                                                    fieldrefConstant.getName(clazz),
                                                    fieldrefConstant.getType(clazz),
                                                    fieldrefConstant.referencedClass,
@@ -144,8 +152,7 @@ implements   ConstantVisitor
         // Then add the actual interface method reference constant, with its
         // referenced class and class member.
         constantIndex =
-            constantPoolEditor.addInterfaceMethodrefConstant(targetClass,
-                                                             constantIndex,
+            constantPoolEditor.addInterfaceMethodrefConstant(constantIndex,
                                                              interfaceMethodrefConstant.getName(clazz),
                                                              interfaceMethodrefConstant.getType(clazz),
                                                              interfaceMethodrefConstant.referencedClass,
@@ -161,8 +168,7 @@ implements   ConstantVisitor
         // Then add the actual method reference constant, with its referenced
         // class and class member.
         constantIndex =
-            constantPoolEditor.addMethodrefConstant(targetClass,
-                                                    constantIndex,
+            constantPoolEditor.addMethodrefConstant(constantIndex,
                                                     methodrefConstant.getName(clazz),
                                                     methodrefConstant.getType(clazz),
                                                     methodrefConstant.referencedClass,
@@ -174,8 +180,7 @@ implements   ConstantVisitor
     {
         // Add the class constant, with its referenced class..
         constantIndex =
-            constantPoolEditor.addClassConstant(targetClass,
-                                                classConstant.getName(clazz),
+            constantPoolEditor.addClassConstant(classConstant.getName(clazz),
                                                 classConstant.referencedClass);
     }
 
@@ -183,8 +188,7 @@ implements   ConstantVisitor
     public void visitNameAndTypeConstant(Clazz clazz, NameAndTypeConstant nameAndTypeConstant)
     {
         constantIndex =
-            constantPoolEditor.addNameAndTypeConstant(targetClass,
-                                                      nameAndTypeConstant.getName(clazz),
+            constantPoolEditor.addNameAndTypeConstant(nameAndTypeConstant.getName(clazz),
                                                       nameAndTypeConstant.getType(clazz));
     }
 }

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -90,6 +90,34 @@ implements   MemberVisitor
                     {
                         markParameterUsed(programMethod, index);
                     }
+                }
+
+                // Mark the category 2 parameters that are half-used.
+                InternalTypeEnumeration internalTypeEnumeration =
+                    new InternalTypeEnumeration(programMethod.getDescriptor(programClass));
+
+                // All parameters of non-static methods are shifted by one in
+                // the local variable frame.
+                int index =
+                    (accessFlags & ClassConstants.INTERNAL_ACC_STATIC) != 0 ?
+                        0 : 1;
+
+                while (internalTypeEnumeration.hasMoreTypes())
+                {
+                    String type = internalTypeEnumeration.nextType();
+                    if (ClassUtil.isInternalCategory2Type(type))
+                    {
+                        if (variableUsageMarker.isVariableUsed(index) ||
+                            variableUsageMarker.isVariableUsed(index+1))
+                        {
+                            markParameterUsed(programMethod, index);
+                            markParameterUsed(programMethod, index+1);
+                        }
+
+                        index++;
+                    }
+
+                    index++;
                 }
             }
 

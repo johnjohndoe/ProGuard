@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -50,8 +50,6 @@ implements   MemberVisitor,
 
 
     private final MemberVisitor extraFixedInitializerVisitor;
-
-    private final ConstantPoolEditor constantPoolEditor = new ConstantPoolEditor();
 
 
     /**
@@ -115,8 +113,7 @@ implements   MemberVisitor,
 
                         // Update the descriptor.
                         programMethod.u2descriptorIndex =
-                            constantPoolEditor.addUtf8Constant(programClass,
-                                                               newDescriptor);
+                            new ConstantPoolEditor(programClass).addUtf8Constant(newDescriptor);
 
                         // Fix the local variable frame size, the method
                         // signature, and the parameter annotations, if
@@ -176,14 +173,12 @@ implements   MemberVisitor,
 
         // Update the signature.
         signatureAttribute.u2signatureIndex =
-            constantPoolEditor.addUtf8Constant((ProgramClass)clazz,
-                                               newSignature);
+            new ConstantPoolEditor((ProgramClass)clazz).addUtf8Constant(newSignature);
     }
 
 
-public void visitAnyParameterAnnotationsAttribute(Clazz clazz, Method method, ParameterAnnotationsAttribute parameterAnnotationsAttribute)
+    public void visitAnyParameterAnnotationsAttribute(Clazz clazz, Method method, ParameterAnnotationsAttribute parameterAnnotationsAttribute)
     {
-
         // Update the number of parameters.
         int oldParametersCount = parameterAnnotationsAttribute.u2parametersCount++;
 

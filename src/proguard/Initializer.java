@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -59,23 +59,58 @@ public class Initializer
     {
         int originalLibraryClassPoolSize = libraryClassPool.size();
 
-        // Initialize the superclass hierarchy for program classes.
-        WarningPrinter hierarchyWarningPrinter = configuration.warn ?
+        // Construct a reduced library class pool with only those library
+        // classes whose hierarchies are referenced by the program classes.
+        // We can't do this if we later have to come up with the obfuscated
+        // class member names that are globally unique.
+        ClassPool reducedLibraryClassPool = configuration.useUniqueClassMemberNames ?
+            null : new ClassPool();
+
+        WarningPrinter classReferenceWarningPrinter = configuration.warn ?
             new WarningPrinter(System.err) :
             null;
 
+        WarningPrinter dependencyWarningPrinter = configuration.warn ?
+            new WarningPrinter(System.err) :
+            null;
+
+        // Initialize the superclass hierarchies for program classes.
         programClassPool.classesAccept(
             new ClassSuperHierarchyInitializer(programClassPool,
                                                libraryClassPool,
-                                               hierarchyWarningPrinter));
+                                               classReferenceWarningPrinter,
+                                               null));
 
-        // Initialize the superclass hierarchy for library classes.
+        if (reducedLibraryClassPool != null)
+        {
+            // Collect the library classes that are referenced by program
+            // classes.
+            programClassPool.classesAccept(
+                new ReferencedClassVisitor(
+                new LibraryClassFilter(
+                new ClassPoolFiller(reducedLibraryClassPool))));
+
+            // Initialize the superclass hierarchy for referenced library
+            // classes, with warnings.
+            reducedLibraryClassPool.classesAccept(
+                new ClassSuperHierarchyInitializer(programClassPool,
+                                                   libraryClassPool,
+                                                   classReferenceWarningPrinter,
+                                                   dependencyWarningPrinter));
+        }
+
+        // Initialize the superclass hierarchy for library classes, without
+        // warnings.
         libraryClassPool.classesAccept(
             new ClassSuperHierarchyInitializer(programClassPool,
                                                libraryClassPool,
-                                               null));
+                                               null,
+                                               dependencyWarningPrinter));
 
-        // Initialize the Class.forName and .class references.
+        WarningPrinter dynamicClassReferenceNotePrinter = configuration.warn ?
+            new WarningPrinter(System.err) :
+            null;
+
         WarningPrinter classForNameNotePrinter = configuration.note ?
             new WarningPrinter(System.out) :
             null;
@@ -86,18 +121,21 @@ public class Initializer
             new AllInstructionVisitor(
             new DynamicClassReferenceInitializer(programClassPool,
                                                  libraryClassPool,
+                                                 dynamicClassReferenceNotePrinter,
+                                                 null,
                                                  classForNameNotePrinter,
                                                  createClassNoteExceptionMatcher(configuration.keep))))));
 
         // Initialize the class references of program class members and attributes.
-        WarningPrinter referenceWarningPrinter = configuration.warn ?
+        WarningPrinter memberReferenceWarningPrinter = configuration.warn ?
             new WarningPrinter(System.err) :
             null;
 
         programClassPool.classesAccept(
             new ClassReferenceInitializer(programClassPool,
                                           libraryClassPool,
-                                          referenceWarningPrinter));
+                                          memberReferenceWarningPrinter,
+                                          null));
 
         // Initialize the Class.get[Declared]{Field,Method} references.
         WarningPrinter getMemberNotePrinter = configuration.note ?
@@ -137,22 +175,9 @@ public class Initializer
                                       descriptorKeepNotePrinter).checkClassSpecifications(configuration.keep);
         }
 
-        // Reconstruct a library class pool with only those library classes
-        // whose hierarchies are referenced by the program classes. We can't do
-        // this if we later have to come up with the obfuscated class member
-        // names that are globally unique.
-        if (configuration.useUniqueClassMemberNames)
+        // Initialize the class references of library class members.
+        if (reducedLibraryClassPool != null)
         {
-            // Initialize the class references of library class members.
-            libraryClassPool.classesAccept(
-                new ClassReferenceInitializer(programClassPool,
-                                              libraryClassPool,
-                                              null));
-        }
-        else
-        {
-            ClassPool referencedLibraryClassPool = new ClassPool();
-
             // Collect the library classes that are referenced by program
             // classes.
             programClassPool.classesAccept(
@@ -160,13 +185,14 @@ public class Initializer
                 new LibraryClassFilter(
                 new ClassHierarchyTraveler(true, true, true, false,
                 new LibraryClassFilter(
-                new ClassPoolFiller(referencedLibraryClassPool))))));
+                new ClassPoolFiller(reducedLibraryClassPool))))));
 
             // Initialize the class references of library class members.
-            referencedLibraryClassPool.classesAccept(
+            reducedLibraryClassPool.classesAccept(
                 new ClassReferenceInitializer(programClassPool,
                                               libraryClassPool,
-                                              null));
+                                              null,
+                                              dependencyWarningPrinter));
 
             // Reset the library class pool.
             libraryClassPool.clear();
@@ -174,7 +200,7 @@ public class Initializer
             // Copy the library classes that are referenced directly by program
             // classes and the library classes that are referenced by referenced
             // library classes.
-            referencedLibraryClassPool.classesAccept(
+            reducedLibraryClassPool.classesAccept(
                 new MultiClassVisitor(new ClassVisitor[]
                 {
                     new ClassHierarchyTraveler(true, true, true, false,
@@ -187,6 +213,15 @@ public class Initializer
                     new LibraryClassFilter(
                     new ClassPoolFiller(libraryClassPool)))))
                 }));
+        }
+        else
+        {
+            // Initialize the class references of all library class members.
+            libraryClassPool.classesAccept(
+                new ClassReferenceInitializer(programClassPool,
+                                              libraryClassPool,
+                                              null,
+                                              dependencyWarningPrinter));
         }
 
         // Initialize the subclass hierarchies.
@@ -221,6 +256,17 @@ public class Initializer
             }
         }
 
+        if (dynamicClassReferenceNotePrinter != null)
+        {
+            int dynamicClassReferenceNoteCount = dynamicClassReferenceNotePrinter.getWarningCount();
+            if (dynamicClassReferenceNoteCount > 0)
+            {
+                System.out.println("Note: there were " + dynamicClassReferenceNoteCount +
+                                   " unresolved dynamic references to classes or interfaces.");
+                System.err.println("      You should check if you need to specify additional program jars.");
+            }
+        }
+
         if (classForNameNotePrinter != null)
         {
             int classForNameNoteCount = classForNameNotePrinter.getWarningCount();
@@ -246,22 +292,32 @@ public class Initializer
         }
 
         // Print out a summary of the warnings, if necessary.
-        if (hierarchyWarningPrinter != null &&
-            referenceWarningPrinter != null)
+        if (classReferenceWarningPrinter  != null &&
+            dependencyWarningPrinter      != null &&
+            memberReferenceWarningPrinter != null   )
         {
-            int hierarchyWarningCount = hierarchyWarningPrinter.getWarningCount();
-            if (hierarchyWarningCount > 0)
+            int classReferenceWarningCount = classReferenceWarningPrinter.getWarningCount();
+            if (classReferenceWarningCount > 0)
             {
-                System.err.println("Warning: there were " + hierarchyWarningCount +
-                                   " unresolved references to superclasses or interfaces.");
+                System.err.println("Warning: there were " + classReferenceWarningCount +
+                                   " unresolved references to classes or interfaces.");
                 System.err.println("         You may need to specify additional library jars (using '-libraryjars'),");
                 System.err.println("         or perhaps the '-dontskipnonpubliclibraryclasses' option.");
             }
 
-            int referenceWarningCount = referenceWarningPrinter.getWarningCount();
-            if (referenceWarningCount > 0)
+            int dependencyWarningCount = dependencyWarningPrinter.getWarningCount();
+            if (dependencyWarningCount > 0)
             {
-                System.err.println("Warning: there were " + referenceWarningCount +
+                System.err.println("Warning: there were " + dependencyWarningCount +
+                                   " instances of library classes depending on program classes.");
+                System.err.println("         You must avoid such dependencies, since the program classes will");
+                System.err.println("         be processed, while the library classes will remain unchanged.");
+            }
+
+            int memberReferenceWarningCount = memberReferenceWarningPrinter.getWarningCount();
+            if (memberReferenceWarningCount > 0)
+            {
+                System.err.println("Warning: there were " + memberReferenceWarningCount +
                                    " unresolved references to program class members.");
                 System.err.println("         Your input classes appear to be inconsistent.");
                 System.err.println("         You may need to recompile them and try again.");
@@ -270,8 +326,9 @@ public class Initializer
                 System.err.println("         '-dontskipnonpubliclibraryclassmembers'.");
             }
 
-            if ((hierarchyWarningCount > 0 ||
-                 referenceWarningCount > 0) &&
+            if ((classReferenceWarningCount   > 0 ||
+                 dependencyWarningCount       > 0 ||
+                 memberReferenceWarningCount  > 0) &&
                 !configuration.ignoreWarnings)
             {
                 throw new IOException("Please correct the above warnings first.");

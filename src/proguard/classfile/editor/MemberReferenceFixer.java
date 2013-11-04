@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -48,8 +48,7 @@ implements   ClassVisitor,
     private static final boolean DEBUG = false;
 
 
-    private final ConstantPoolEditor constantPoolEditor = new ConstantPoolEditor();
-    private final StackSizeUpdater   stackSizeUpdater   = new StackSizeUpdater();
+    private final StackSizeUpdater stackSizeUpdater = new StackSizeUpdater();
 
     // Parameter for the visitor methods.
     private int constantIndex;
@@ -78,7 +77,7 @@ implements   ClassVisitor,
             }
         }
 
-        // Fix class members.
+        // Fix the class members.
         programClass.fieldsAccept(this);
         programClass.methodsAccept(this);
 
@@ -113,8 +112,7 @@ implements   ClassVisitor,
 
                 // Update the name.
                 stringConstant.u2stringIndex =
-                    constantPoolEditor.addUtf8Constant((ProgramClass)clazz,
-                                                       newName);
+                    new ConstantPoolEditor((ProgramClass)clazz).addUtf8Constant(newName);
             }
         }
     }
@@ -142,9 +140,7 @@ implements   ClassVisitor,
 
                 // Update the name and type index.
                 fieldrefConstant.u2nameAndTypeIndex =
-                    constantPoolEditor.addNameAndTypeConstant((ProgramClass)clazz,
-                                                              newName,
-                                                              newType);
+                    new ConstantPoolEditor((ProgramClass)clazz).addNameAndTypeConstant(newName, newType);
             }
         }
     }
@@ -172,9 +168,7 @@ implements   ClassVisitor,
 
                 // Update the name and type index.
                 interfaceMethodrefConstant.u2nameAndTypeIndex =
-                    constantPoolEditor.addNameAndTypeConstant((ProgramClass)clazz,
-                                                              newName,
-                                                              newType);
+                    new ConstantPoolEditor((ProgramClass)clazz).addNameAndTypeConstant(newName, newType);
 
                 // Remember that the stack sizes of the methods in this class
                 // may have changed.
@@ -230,9 +224,7 @@ implements   ClassVisitor,
 
                 // Update the name and type index.
                 methodrefConstant.u2nameAndTypeIndex =
-                    constantPoolEditor.addNameAndTypeConstant((ProgramClass)clazz,
-                                                              newName,
-                                                              newType);
+                    new ConstantPoolEditor((ProgramClass)clazz).addNameAndTypeConstant(newName, newType);
 
                 // Remember that the stack sizes of the methods in this class
                 // may have changed.
@@ -311,8 +303,7 @@ implements   ClassVisitor,
             {
                 // Update the class index.
                 enclosingMethodAttribute.u2classIndex =
-                    constantPoolEditor.addClassConstant((ProgramClass)clazz,
-                                                        referencedClass);
+                    new ConstantPoolEditor((ProgramClass)clazz).addClassConstant(referencedClass);
             }
 
             // Does it have a new name or type?
@@ -321,9 +312,8 @@ implements   ClassVisitor,
             {
                 // Update the name and type index.
                 enclosingMethodAttribute.u2nameAndTypeIndex =
-                    constantPoolEditor.addNameAndTypeConstant((ProgramClass)clazz,
-                                                              referencedMember.getName(referencedClass),
-                                                              referencedMember.getDescriptor(referencedClass));
+                    new ConstantPoolEditor((ProgramClass)clazz).addNameAndTypeConstant(referencedMember.getName(referencedClass),
+                                                                                       referencedMember.getDescriptor(referencedClass));
             }
         }
     }
@@ -334,7 +324,7 @@ implements   ClassVisitor,
         // Recompute the maximum stack size if necessary.
         if (stackSizesMayHaveChanged)
         {
-            stackSizeUpdater.visitCodeAttribute(clazz, method, codeAttribute);
+                stackSizeUpdater.visitCodeAttribute(clazz, method, codeAttribute);
         }
 
         // Fix the nested attributes.
@@ -431,8 +421,7 @@ implements   ClassVisitor,
             {
                 // Update the element name index.
                 elementValue.u2elementNameIndex =
-                    constantPoolEditor.addUtf8Constant((ProgramClass)clazz,
-                                                       newMethodName);
+                    new ConstantPoolEditor((ProgramClass)clazz).addUtf8Constant(newMethodName);
             }
         }
     }

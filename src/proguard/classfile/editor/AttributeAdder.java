@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -25,6 +25,7 @@ import proguard.classfile.attribute.*;
 import proguard.classfile.attribute.annotation.*;
 import proguard.classfile.attribute.preverification.*;
 import proguard.classfile.attribute.visitor.AttributeVisitor;
+import proguard.classfile.util.SimplifiedVisitor;
 
 /**
  * This AttributeVisitor adds all attributes that it visits to the given
@@ -33,26 +34,32 @@ import proguard.classfile.attribute.visitor.AttributeVisitor;
  * @author Eric Lafortune
  */
 public class AttributeAdder
+extends      SimplifiedVisitor
 implements   AttributeVisitor
 {
-    private static final int[] EMPTY_INTS = new int[0];
+    private static final byte[]          EMPTY_BYTES       = new byte[0];
+    private static final int[]           EMPTY_INTS        = new int[0];
+    private static final Attribute[]     EMPTY_ATTRIBUTES  = new Attribute[0];
+    private static final ExceptionInfo[] EMPTY_EXCEPTIONS  = new ExceptionInfo[0];
 
 
     private final ProgramClass  targetClass;
     private final ProgramMember targetMember;
-    private final Attribute     targetAttribute;
+    private final CodeAttribute targetCodeAttribute;
+    private final boolean       replaceAttributes;
 
-    private final ConstantAdder    constantAdder    = new ConstantAdder();
-    private final AttributesEditor attributesEditor = new AttributesEditor();
+    private final ConstantAdder    constantAdder;
+    private final AttributesEditor attributesEditor;
 
 
     /**
      * Creates a new AttributeAdder that will copy attributes into the given
      * target class.
      */
-    public AttributeAdder(ProgramClass targetClass)
+    public AttributeAdder(ProgramClass targetClass,
+                          boolean      replaceAttributes)
     {
-        this(targetClass, null, null);
+        this(targetClass, null, null, replaceAttributes);
     }
 
 
@@ -61,9 +68,10 @@ implements   AttributeVisitor
      * target class member.
      */
     public AttributeAdder(ProgramClass  targetClass,
-                          ProgramMember targetMember)
+                          ProgramMember targetMember,
+                          boolean       replaceAttributes)
     {
-        this(targetClass, targetMember, null);
+        this(targetClass, targetMember, null, replaceAttributes);
     }
 
 
@@ -73,138 +81,211 @@ implements   AttributeVisitor
      */
     public AttributeAdder(ProgramClass  targetClass,
                           ProgramMember targetMember,
-                          Attribute     targetAttribute)
+                          CodeAttribute targetCodeAttribute,
+                          boolean       replaceAttributes)
     {
-        this.targetClass     = targetClass;
-        this.targetMember    = targetMember;
-        this.targetAttribute = targetAttribute;
+        this.targetClass         = targetClass;
+        this.targetMember        = targetMember;
+        this.targetCodeAttribute = targetCodeAttribute;
+        this.replaceAttributes   = replaceAttributes;
 
-        constantAdder.setTargetClass(targetClass);
+        constantAdder    = new ConstantAdder(targetClass);
+        attributesEditor = new AttributesEditor(targetClass,
+                                                targetMember,
+                                                targetCodeAttribute,
+                                                replaceAttributes);
     }
 
 
-    // Implementations for AttibuteVisitor.
+    // Implementations for AttributeVisitor.
 
     public void visitUnknownAttribute(Clazz clazz, UnknownAttribute unknownAttribute)
     {
-        // TODO: Implement method.
+        // Create a copy of the attribute.
+        UnknownAttribute newUnknownAttribute =
+            new UnknownAttribute(constantAdder.addConstant(clazz, unknownAttribute.u2attributeNameIndex),
+                                 unknownAttribute.u4attributeLength,
+                                 unknownAttribute.info);
+
+        // Add it to the target class.
+        attributesEditor.addAttribute(newUnknownAttribute);
     }
 
 
     public void visitSourceFileAttribute(Clazz clazz, SourceFileAttribute sourceFileAttribute)
     {
-        // TODO: Implement method.
+        // Create a copy of the attribute.
+        SourceFileAttribute newSourceFileAttribute =
+            new SourceFileAttribute(constantAdder.addConstant(clazz, sourceFileAttribute.u2attributeNameIndex),
+                                    constantAdder.addConstant(clazz, sourceFileAttribute.u2sourceFileIndex));
+
+        // Add it to the target class.
+        attributesEditor.addAttribute(newSourceFileAttribute);
     }
 
 
     public void visitSourceDirAttribute(Clazz clazz, SourceDirAttribute sourceDirAttribute)
     {
-        // TODO: Implement method.
+        // Create a copy of the attribute.
+        SourceDirAttribute newSourceDirAttribute =
+            new SourceDirAttribute(constantAdder.addConstant(clazz, sourceDirAttribute.u2attributeNameIndex),
+                                   constantAdder.addConstant(clazz, sourceDirAttribute.u2sourceDirIndex));
+
+        // Add it to the target class.
+        attributesEditor.addAttribute(newSourceDirAttribute);
     }
 
 
     public void visitInnerClassesAttribute(Clazz clazz, InnerClassesAttribute innerClassesAttribute)
     {
         // TODO: Implement method.
+        // Note that the attribute may already be present.
+//        // Create a copy of the attribute.
+//        InnerClassesAttribute newInnerClassesAttribute =
+//            new InnerClassesAttribute(constantAdder.addConstant(clazz, innerClassesAttribute.u2attributeNameIndex),
+//                                      0,
+//                                      null);
+//
+//        // Add it to the target class.
+//        attributesEditor.addClassAttribute(newInnerClassesAttribute);
     }
 
 
     public void visitEnclosingMethodAttribute(Clazz clazz, EnclosingMethodAttribute enclosingMethodAttribute)
     {
-        // TODO: Implement method.
+        // Create a copy of the attribute.
+        EnclosingMethodAttribute newEnclosingMethodAttribute =
+            new EnclosingMethodAttribute(constantAdder.addConstant(clazz, enclosingMethodAttribute.u2attributeNameIndex),
+                                         constantAdder.addConstant(clazz, enclosingMethodAttribute.u2classIndex),
+                                         enclosingMethodAttribute.u2nameAndTypeIndex == 0 ? 0 :
+                                         constantAdder.addConstant(clazz, enclosingMethodAttribute.u2nameAndTypeIndex));
+
+        newEnclosingMethodAttribute.referencedClass  = enclosingMethodAttribute.referencedClass;
+        newEnclosingMethodAttribute.referencedMethod = enclosingMethodAttribute.referencedMethod;
+
+        // Add it to the target class.
+        attributesEditor.addAttribute(newEnclosingMethodAttribute);
     }
 
 
     public void visitDeprecatedAttribute(Clazz clazz, DeprecatedAttribute deprecatedAttribute)
     {
-        // TODO: Implement method.
-    }
+        // Create a copy of the attribute.
+        DeprecatedAttribute newDeprecatedAttribute =
+            new DeprecatedAttribute(constantAdder.addConstant(clazz, deprecatedAttribute.u2attributeNameIndex));
 
-
-    public void visitDeprecatedAttribute(Clazz clazz, Field field, DeprecatedAttribute deprecatedAttribute)
-    {
-        // TODO: Implement method.
-    }
-
-
-    public void visitDeprecatedAttribute(Clazz clazz, Method method, DeprecatedAttribute deprecatedAttribute)
-    {
-        // TODO: Implement method.
+        // Add it to the target.
+        attributesEditor.addAttribute(newDeprecatedAttribute);
     }
 
 
     public void visitSyntheticAttribute(Clazz clazz, SyntheticAttribute syntheticAttribute)
     {
-        // TODO: Implement method.
-    }
+        // Create a copy of the attribute.
+        SyntheticAttribute newSyntheticAttribute =
+            new SyntheticAttribute(constantAdder.addConstant(clazz, syntheticAttribute.u2attributeNameIndex));
 
-
-    public void visitSyntheticAttribute(Clazz clazz, Field field, SyntheticAttribute syntheticAttribute)
-    {
-        // TODO: Implement method.
-    }
-
-
-    public void visitSyntheticAttribute(Clazz clazz, Method method, SyntheticAttribute syntheticAttribute)
-    {
-        // TODO: Implement method.
+        // Add it to the target.
+        attributesEditor.addAttribute(newSyntheticAttribute);
     }
 
 
     public void visitSignatureAttribute(Clazz clazz, SignatureAttribute signatureAttribute)
     {
-        // TODO: Implement method.
-    }
+        // Create a copy of the attribute.
+        SignatureAttribute newSignatureAttribute =
+            new SignatureAttribute(constantAdder.addConstant(clazz, signatureAttribute.u2attributeNameIndex),
+                                   constantAdder.addConstant(clazz, signatureAttribute.u2signatureIndex));
 
+        newSignatureAttribute.referencedClasses = signatureAttribute.referencedClasses;
 
-    public void visitSignatureAttribute(Clazz clazz, Field field, SignatureAttribute signatureAttribute)
-    {
-        // TODO: Implement method.
-    }
-
-
-    public void visitSignatureAttribute(Clazz clazz, Method method, SignatureAttribute signatureAttribute)
-    {
-        // TODO: Implement method.
+        // Add it to the target.
+        attributesEditor.addAttribute(newSignatureAttribute);
     }
 
 
     public void visitConstantValueAttribute(Clazz clazz, Field field, ConstantValueAttribute constantValueAttribute)
     {
-        // TODO: Implement method.
+        // Create a copy of the attribute.
+        ConstantValueAttribute newConstantValueAttribute =
+            new ConstantValueAttribute(constantAdder.addConstant(clazz, constantValueAttribute.u2attributeNameIndex),
+                                       constantAdder.addConstant(clazz, constantValueAttribute.u2constantValueIndex));
+
+        // Add it to the target field.
+        attributesEditor.addAttribute(newConstantValueAttribute);
     }
 
 
     public void visitExceptionsAttribute(Clazz clazz, Method method, ExceptionsAttribute exceptionsAttribute)
     {
         // Create a new exceptions attribute.
-        ExceptionsAttribute newExceptionsAttribute = new ExceptionsAttribute();
-
-        // Make sure the name is set in the constant pool.
-        clazz.constantPoolEntryAccept(exceptionsAttribute.u2attributeNameIndex,
-                                      constantAdder);
-
-        newExceptionsAttribute.u2attributeNameIndex = constantAdder.getConstantIndex();
-
-        // Start with an empty exception index table.
-        newExceptionsAttribute.u2exceptionIndexTableLength = 0;
-        newExceptionsAttribute.u2exceptionIndexTable       = EMPTY_INTS;
+        ExceptionsAttribute newExceptionsAttribute =
+            new ExceptionsAttribute(constantAdder.addConstant(clazz, exceptionsAttribute.u2attributeNameIndex),
+                                    0,
+                                    exceptionsAttribute.u2exceptionIndexTableLength > 0 ?
+                                        new int[exceptionsAttribute.u2exceptionIndexTableLength] :
+                                        EMPTY_INTS);
 
         // Add the exceptions.
         exceptionsAttribute.exceptionEntriesAccept((ProgramClass)clazz,
                                                    new ExceptionAdder(targetClass,
                                                                       newExceptionsAttribute));
 
-        // Add the completed exceptions attribute.
-        attributesEditor.addAttribute(targetClass,
-                                      (ProgramMethod)targetMember,
-                                      newExceptionsAttribute);
+        // Add it to the target method.
+        attributesEditor.addAttribute(newExceptionsAttribute);
     }
 
 
     public void visitCodeAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute)
     {
-        // TODO: Implement method.
+        // Create a new code attribute.
+        CodeAttribute newCodeAttribute =
+            new CodeAttribute(constantAdder.addConstant(clazz, codeAttribute.u2attributeNameIndex),
+                              codeAttribute.u2maxStack,
+                              codeAttribute.u2maxLocals,
+                              0,
+                              EMPTY_BYTES,
+                              0,
+                              codeAttribute.u2exceptionTableLength > 0 ?
+                                  new ExceptionInfo[codeAttribute.u2exceptionTableLength] :
+                                  EMPTY_EXCEPTIONS,
+                              0,
+                              codeAttribute.u2attributesCount > 0 ?
+                                  new Attribute[codeAttribute.u2attributesCount] :
+                                  EMPTY_ATTRIBUTES);
+
+        CodeAttributeComposer codeAttributeComposer = new CodeAttributeComposer();
+
+        codeAttributeComposer.beginCodeFragment(codeAttribute.u4codeLength + 32);
+
+        // Add the instructions.
+        codeAttribute.instructionsAccept(clazz,
+                                         method,
+                                         new InstructionAdder(targetClass,
+                                                              codeAttributeComposer));
+        // Add the exceptions.
+        codeAttribute.exceptionsAccept(clazz,
+                                       method,
+                                       new ExceptionInfoAdder(targetClass,
+                                                              codeAttributeComposer));
+
+        codeAttributeComposer.endCodeFragment();
+
+        // Add the attributes.
+        codeAttribute.attributesAccept(clazz,
+                                       method,
+                                       new AttributeAdder(targetClass,
+                                                          targetMember,
+                                                          newCodeAttribute,
+                                                          replaceAttributes));
+
+        // Apply these changes to the new code attribute.
+        codeAttributeComposer.visitCodeAttribute(targetClass,
+                                                 (Method)targetMember,
+                                                 newCodeAttribute);
+
+        // Add the completed code attribute to the target method.
+        attributesEditor.addAttribute(newCodeAttribute);
     }
 
 
@@ -240,37 +321,37 @@ implements   AttributeVisitor
 
     public void visitRuntimeVisibleAnnotationsAttribute(Clazz clazz, RuntimeVisibleAnnotationsAttribute runtimeVisibleAnnotationsAttribute)
     {
-        // TODO: Implement method.
-    }
+        // Create a new annotations attribute.
+        RuntimeVisibleAnnotationsAttribute newAnnotationsAttribute =
+            new RuntimeVisibleAnnotationsAttribute(constantAdder.addConstant(clazz, runtimeVisibleAnnotationsAttribute.u2attributeNameIndex),
+                                                   0,
+                                                   new Annotation[runtimeVisibleAnnotationsAttribute.u2annotationsCount]);
 
+        // Add the annotations.
+        runtimeVisibleAnnotationsAttribute.annotationsAccept(clazz,
+                                                             new AnnotationAdder(targetClass,
+                                                                                 newAnnotationsAttribute));
 
-    public void visitRuntimeVisibleAnnotationsAttribute(Clazz clazz, Field field, RuntimeVisibleAnnotationsAttribute runtimeVisibleAnnotationsAttribute)
-    {
-        // TODO: Implement method.
-    }
-
-
-    public void visitRuntimeVisibleAnnotationsAttribute(Clazz clazz, Method method, RuntimeVisibleAnnotationsAttribute runtimeVisibleAnnotationsAttribute)
-    {
-        // TODO: Implement method.
+        // Add it to the target.
+        attributesEditor.addAttribute(newAnnotationsAttribute);
     }
 
 
     public void visitRuntimeInvisibleAnnotationsAttribute(Clazz clazz, RuntimeInvisibleAnnotationsAttribute runtimeInvisibleAnnotationsAttribute)
     {
-        // TODO: Implement method.
-    }
+        // Create a new annotations attribute.
+        RuntimeInvisibleAnnotationsAttribute newAnnotationsAttribute =
+            new RuntimeInvisibleAnnotationsAttribute(constantAdder.addConstant(clazz, runtimeInvisibleAnnotationsAttribute.u2attributeNameIndex),
+                                                     0,
+                                                     new Annotation[runtimeInvisibleAnnotationsAttribute.u2annotationsCount]);
 
+        // Add the annotations.
+        runtimeInvisibleAnnotationsAttribute.annotationsAccept(clazz,
+                                                               new AnnotationAdder(targetClass,
+                                                                                   newAnnotationsAttribute));
 
-    public void visitRuntimeInvisibleAnnotationsAttribute(Clazz clazz, Field field, RuntimeInvisibleAnnotationsAttribute runtimeInvisibleAnnotationsAttribute)
-    {
-        // TODO: Implement method.
-    }
-
-
-    public void visitRuntimeInvisibleAnnotationsAttribute(Clazz clazz, Method method, RuntimeInvisibleAnnotationsAttribute runtimeInvisibleAnnotationsAttribute)
-    {
-        // TODO: Implement method.
+        // Add it to the target.
+        attributesEditor.addAttribute(newAnnotationsAttribute);
     }
 
 
@@ -288,6 +369,18 @@ implements   AttributeVisitor
 
     public void visitAnnotationDefaultAttribute(Clazz clazz, Method method, AnnotationDefaultAttribute annotationDefaultAttribute)
     {
-        // TODO: Implement method.
+        // Create a new annotation default attribute.
+        AnnotationDefaultAttribute newAnnotationDefaultAttribute =
+            new AnnotationDefaultAttribute(constantAdder.addConstant(clazz, annotationDefaultAttribute.u2attributeNameIndex),
+                                           null);
+
+        // Add the annotations.
+        annotationDefaultAttribute.defaultValueAccept(clazz,
+                                                      new ElementValueAdder(targetClass,
+                                                                            newAnnotationDefaultAttribute,
+                                                                            false));
+
+        // Add it to the target.
+        attributesEditor.addAttribute(newAnnotationDefaultAttribute);
     }
 }

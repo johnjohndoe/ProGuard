@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -53,11 +53,27 @@ public class ShortestUsageMarker extends UsageMarker
         ShortestUsageMark previousUsageMark = currentUsageMark;
 
         currentUsageMark = new ShortestUsageMark(getShortestUsageMark(programClass),
-                                                 "is extended by ",
+                                                 "is extended by   ",
                                                  10000,
                                                  programClass);
 
         super.markProgramClassBody(programClass);
+
+        currentUsageMark = previousUsageMark;
+    }
+
+
+    protected void markProgramFieldBody(ProgramClass programClass, ProgramField programField)
+    {
+        ShortestUsageMark previousUsageMark = currentUsageMark;
+
+        currentUsageMark = new ShortestUsageMark(getShortestUsageMark(programField),
+                                                 "is referenced by ",
+                                                 1,
+                                                 programClass,
+                                                 programField);
+
+        super.markProgramFieldBody(programClass, programField);
 
         currentUsageMark = previousUsageMark;
     }
@@ -68,7 +84,7 @@ public class ShortestUsageMarker extends UsageMarker
         ShortestUsageMark previousUsageMark = currentUsageMark;
 
         currentUsageMark = new ShortestUsageMark(getShortestUsageMark(programMethod),
-                                                 "is invoked by  ",
+                                                 "is invoked by    ",
                                                  1,
                                                  programClass,
                                                  programMethod);
@@ -84,7 +100,7 @@ public class ShortestUsageMarker extends UsageMarker
         ShortestUsageMark previousUsageMark = currentUsageMark;
 
         currentUsageMark = new ShortestUsageMark(getShortestUsageMark(method),
-                                                 "implements     ",
+                                                 "implements       ",
                                                  100,
                                                  clazz,
                                                  method);
@@ -193,7 +209,7 @@ public class ShortestUsageMarker extends UsageMarker
             isRecursing = false;
 
             shortestUsageMark.acceptClassVisitor(this);
-            shortestUsageMark.acceptMethodVisitor(this);
+            shortestUsageMark.acceptMemberVisitor(this);
 
             return isRecursing;
         }
@@ -253,7 +269,7 @@ public class ShortestUsageMarker extends UsageMarker
                 if (!isRecursing)
                 {
                     shortestUsageMark.acceptClassVisitor(this);
-                    shortestUsageMark.acceptMethodVisitor(this);
+                    shortestUsageMark.acceptMemberVisitor(this);
                 }
             }
         }

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -63,7 +63,8 @@ implements   ClassVisitor,
 {
     private final ClassPool      programClassPool;
     private final ClassPool      libraryClassPool;
-    private final WarningPrinter warningPrinter;
+    private final WarningPrinter missingWarningPrinter;
+    private final WarningPrinter dependencyWarningPrinter;
 
     private final MemberFinder memberFinder = new MemberFinder();
 
@@ -71,15 +72,17 @@ implements   ClassVisitor,
     /**
      * Creates a new ClassReferenceInitializer that initializes the references
      * of all visited class files, optionally printing warnings if some classes
-     * can't be found.
+     * can't be found or if they are in the program class pool.
      */
     public ClassReferenceInitializer(ClassPool      programClassPool,
                                      ClassPool      libraryClassPool,
-                                     WarningPrinter warningPrinter)
+                                     WarningPrinter missingWarningPrinter,
+                                     WarningPrinter dependencyWarningPrinter)
     {
-        this.programClassPool = programClassPool;
-        this.libraryClassPool = libraryClassPool;
-        this.warningPrinter   = warningPrinter;
+        this.programClassPool         = programClassPool;
+        this.libraryClassPool         = libraryClassPool;
+        this.missingWarningPrinter    = missingWarningPrinter;
+        this.dependencyWarningPrinter = dependencyWarningPrinter;
     }
 
 
@@ -112,7 +115,8 @@ implements   ClassVisitor,
     public void visitProgramField(ProgramClass programClass, ProgramField programField)
     {
         programField.referencedClass =
-            findReferencedClass(programField.getDescriptor(programClass));
+            findReferencedClass(programClass.getName(),
+                                programField.getDescriptor(programClass));
 
         // Initialize the attributes.
         programField.attributesAccept(programClass, this);
@@ -122,7 +126,8 @@ implements   ClassVisitor,
     public void visitProgramMethod(ProgramClass programClass, ProgramMethod programMethod)
     {
         programMethod.referencedClasses =
-            findReferencedClasses(programMethod.getDescriptor(programClass));
+            findReferencedClasses(programClass.getName(),
+                                  programMethod.getDescriptor(programClass));
 
         // Initialize the attributes.
         programMethod.attributesAccept(programClass, this);
@@ -132,14 +137,16 @@ implements   ClassVisitor,
     public void visitLibraryField(LibraryClass libraryClass, LibraryField libraryField)
     {
         libraryField.referencedClass =
-            findReferencedClass(libraryField.getDescriptor(libraryClass));
+            findReferencedClass(libraryClass.getName(),
+                                libraryField.getDescriptor(libraryClass));
     }
 
 
     public void visitLibraryMethod(LibraryClass libraryClass, LibraryMethod libraryMethod)
     {
         libraryMethod.referencedClasses =
-            findReferencedClasses(libraryMethod.getDescriptor(libraryClass));
+            findReferencedClasses(libraryClass.getName(),
+                                  libraryMethod.getDescriptor(libraryClass));
     }
 
 
@@ -152,7 +159,7 @@ implements   ClassVisitor,
     {
         // Fill out the String class.
         stringConstant.javaLangStringClass =
-            findClass(ClassConstants.INTERNAL_NAME_JAVA_LANG_STRING);
+            findClass(clazz.getName(), ClassConstants.INTERNAL_NAME_JAVA_LANG_STRING);
     }
 
 
@@ -163,7 +170,7 @@ implements   ClassVisitor,
         // See if we can find the referenced class.
         // Unresolved references are assumed to refer to library classes
         // that will not change anyway.
-        Clazz referencedClass = findClass(className);
+        Clazz referencedClass = findClass(clazz.getName(), className);
 
         if (referencedClass != null &&
             !ClassUtil.isInternalArrayType(className))
@@ -183,10 +190,10 @@ implements   ClassVisitor,
             refConstant.referencedClass  = memberFinder.correspondingClass();
 
             if (refConstant.referencedMember == null &&
-                warningPrinter != null)
+                missingWarningPrinter != null)
             {
                 // We've haven't found the class member anywhere in the hierarchy.
-                warningPrinter.print("Warning: " +
+                missingWarningPrinter.print("Warning: " +
                                      ClassUtil.externalClassName(clazz.getName()) +
                                      ": can't find referenced " +
                                      (isFieldRef ?
@@ -201,13 +208,15 @@ implements   ClassVisitor,
 
     public void visitClassConstant(Clazz clazz, ClassConstant classConstant)
     {
+        String className = clazz.getName();
+
         // Fill out the referenced class.
         classConstant.referencedClass =
-            findClass(classConstant.getName(clazz));
+            findClass(className, classConstant.getName(clazz));
 
         // Fill out the Class class.
         classConstant.javaLangClassClass =
-            findClass(ClassConstants.INTERNAL_NAME_JAVA_LANG_CLASS);
+            findClass(className, ClassConstants.INTERNAL_NAME_JAVA_LANG_CLASS);
     }
 
 
@@ -218,20 +227,21 @@ implements   ClassVisitor,
 
     public void visitEnclosingMethodAttribute(Clazz clazz, EnclosingMethodAttribute enclosingMethodAttribute)
     {
-        String className = enclosingMethodAttribute.getClassName(clazz);
+        String className          = clazz.getName();
+        String enclosingClassName = enclosingMethodAttribute.getClassName(clazz);
 
         // See if we can find the referenced class.
-        Clazz referencedClass = findClass(className);
+        Clazz referencedClass = findClass(className, enclosingClassName);
 
         if (referencedClass == null)
         {
             // We couldn't find the enclosing class.
-            if (warningPrinter != null)
+            if (missingWarningPrinter != null)
             {
-                warningPrinter.print("Warning: " +
-                                     ClassUtil.externalClassName(clazz.getName()) +
+                missingWarningPrinter.print("Warning: " +
+                                     ClassUtil.externalClassName(className) +
                                      ": can't find enclosing class " +
-                                     ClassUtil.externalClassName(className));
+                                     ClassUtil.externalClassName(enclosingClassName));
             }
 
             return;
@@ -252,14 +262,14 @@ implements   ClassVisitor,
         if (referencedMethod == null)
         {
             // We couldn't find the enclosing method.
-            if (warningPrinter != null)
+            if (missingWarningPrinter != null)
             {
-                warningPrinter.print("Warning: " +
-                                     ClassUtil.externalClassName(clazz.getName()) +
+                missingWarningPrinter.print("Warning: " +
+                                     ClassUtil.externalClassName(className) +
                                      ": can't find enclosing method '" +
-                                     ClassUtil.externalFullMethodDescription(className, 0, name, type) +
+                                     ClassUtil.externalFullMethodDescription(enclosingClassName, 0, name, type) +
                                      "' in class " +
-                                     ClassUtil.externalClassName(className));
+                                     ClassUtil.externalClassName(enclosingClassName));
             }
 
             return;
@@ -295,7 +305,8 @@ implements   ClassVisitor,
     public void visitSignatureAttribute(Clazz clazz, SignatureAttribute signatureAttribute)
     {
         signatureAttribute.referencedClasses =
-            findReferencedClasses(clazz.getString(signatureAttribute.u2signatureIndex));
+            findReferencedClasses(clazz.getName(),
+                                  clazz.getString(signatureAttribute.u2signatureIndex));
     }
 
 
@@ -325,7 +336,8 @@ implements   ClassVisitor,
     public void visitLocalVariableInfo(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableInfo localVariableInfo)
     {
         localVariableInfo.referencedClass =
-            findReferencedClass(clazz.getString(localVariableInfo.u2descriptorIndex));
+            findReferencedClass(clazz.getName(),
+                                clazz.getString(localVariableInfo.u2descriptorIndex));
     }
 
 
@@ -334,7 +346,8 @@ implements   ClassVisitor,
     public void visitLocalVariableTypeInfo(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableTypeInfo localVariableTypeInfo)
     {
         localVariableTypeInfo.referencedClasses =
-            findReferencedClasses(clazz.getString(localVariableTypeInfo.u2signatureIndex));
+            findReferencedClasses(clazz.getName(),
+                                  clazz.getString(localVariableTypeInfo.u2signatureIndex));
     }
 
 
@@ -343,7 +356,8 @@ implements   ClassVisitor,
     public void visitAnnotation(Clazz clazz, Annotation annotation)
     {
         annotation.referencedClasses =
-            findReferencedClasses(clazz.getString(annotation.u2typeIndex));
+            findReferencedClasses(clazz.getName(),
+                                  clazz.getString(annotation.u2typeIndex));
 
         // Initialize the element values.
         annotation.elementValuesAccept(clazz, this);
@@ -363,7 +377,8 @@ implements   ClassVisitor,
         initializeElementValue(clazz, annotation, enumConstantElementValue);
 
         enumConstantElementValue.referencedClasses =
-            findReferencedClasses(clazz.getString(enumConstantElementValue.u2typeNameIndex));
+            findReferencedClasses(clazz.getName(),
+                                  clazz.getString(enumConstantElementValue.u2typeNameIndex));
     }
 
 
@@ -372,7 +387,8 @@ implements   ClassVisitor,
         initializeElementValue(clazz, annotation, classElementValue);
 
         classElementValue.referencedClasses =
-            findReferencedClasses(clazz.getString(classElementValue.u2classInfoIndex));
+            findReferencedClasses(clazz.getName(),
+                                  clazz.getString(classElementValue.u2classInfoIndex));
     }
 
 
@@ -421,7 +437,8 @@ implements   ClassVisitor,
      * Returns the single class referenced by the given descriptor, or
      * <code>null</code> if there isn't any useful reference.
      */
-    private Clazz findReferencedClass(String descriptor)
+    private Clazz findReferencedClass(String referencingClassName,
+                                      String descriptor)
     {
         DescriptorClassEnumeration enumeration =
             new DescriptorClassEnumeration(descriptor);
@@ -430,7 +447,7 @@ implements   ClassVisitor,
 
         if (enumeration.hasMoreClassNames())
         {
-            return findClass(enumeration.nextClassName());
+            return findClass(referencingClassName, enumeration.nextClassName());
         }
 
         return null;
@@ -441,7 +458,8 @@ implements   ClassVisitor,
      * Returns an array of classes referenced by the given descriptor, or
      * <code>null</code> if there aren't any useful references.
      */
-    private Clazz[] findReferencedClasses(String descriptor)
+    private Clazz[] findReferencedClasses(String referencingClassName,
+                                          String descriptor)
     {
         DescriptorClassEnumeration enumeration =
             new DescriptorClassEnumeration(descriptor);
@@ -458,7 +476,7 @@ implements   ClassVisitor,
                 String fluff = enumeration.nextFluff();
                 String name  = enumeration.nextClassName();
 
-                Clazz referencedClass = findClass(name);
+                Clazz referencedClass = findClass(referencingClassName, name);
 
                 if (referencedClass != null)
                 {
@@ -481,8 +499,15 @@ implements   ClassVisitor,
      * Returns the class with the given name, either for the program class pool
      * or from the library class pool, or <code>null</code> if it can't be found.
      */
-    private Clazz findClass(String name)
+    private Clazz findClass(String referencingClassName, String name)
     {
+        // Ignore any primitive array types.
+        if (ClassUtil.isInternalArrayType(name) &&
+            !ClassUtil.isInternalClassType(name))
+        {
+            return null;
+        }
+
         // First look for the class in the program class pool.
         Clazz clazz = programClassPool.getClass(name);
 
@@ -490,6 +515,25 @@ implements   ClassVisitor,
         if (clazz == null)
         {
             clazz = libraryClassPool.getClass(name);
+
+            if (clazz == null &&
+                missingWarningPrinter != null)
+            {
+                // We didn't find the superclass or interface. Print a warning.
+                missingWarningPrinter.print("Warning: " +
+                                            ClassUtil.externalClassName(referencingClassName) +
+                                            ": can't find referenced class " +
+                                            ClassUtil.externalClassName(name));
+            }
+        }
+        else if (dependencyWarningPrinter != null)
+        {
+            // The superclass or interface was found in the program class pool.
+            // Print a warning.
+            dependencyWarningPrinter.print("Warning: library class " +
+                                           ClassUtil.externalClassName(referencingClassName) +
+                                           " depends on program class " +
+                                           ClassUtil.externalClassName(name));
         }
 
         return clazz;

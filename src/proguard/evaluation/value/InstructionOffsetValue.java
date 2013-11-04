@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -209,6 +209,16 @@ public class InstructionOffsetValue extends Category1Value
         return this;
     }
 
+    public boolean isSpecific()
+    {
+        return true;
+    }
+
+    public boolean isParticular()
+    {
+        return true;
+    }
+
     public final Value generalize(Value other)
     {
         return this.generalize(other.instructionOffsetValue());
@@ -278,7 +288,7 @@ public class InstructionOffsetValue extends Category1Value
 
     public String toString()
     {
-        StringBuffer buffer = new StringBuffer("o:");
+        StringBuffer buffer = new StringBuffer();
 
         if (values != null)
         {
@@ -292,6 +302,6 @@ public class InstructionOffsetValue extends Category1Value
             }
         }
 
-        return buffer.toString();
+        return buffer.append(':').toString();
     }
 }

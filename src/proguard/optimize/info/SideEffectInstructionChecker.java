@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -27,7 +27,7 @@ import proguard.classfile.constant.visitor.ConstantVisitor;
 import proguard.classfile.instruction.*;
 import proguard.classfile.instruction.visitor.InstructionVisitor;
 import proguard.classfile.util.SimplifiedVisitor;
-import proguard.classfile.visitor.MemberVisitor;
+import proguard.classfile.visitor.*;
 
 /**
  * This class can tell whether an instruction has any side effects. Return
@@ -181,11 +181,15 @@ implements   InstructionVisitor,
                 Clazz  referencedClass  = refConstant.referencedClass;
                 Method referencedMethod = (Method)referencedMember;
 
-                // Check all other implementations of the method in the class
+                // Check all other implementations of the method down the class
                 // hierarchy.
-                referencedClass.methodImplementationsAccept(referencedMethod,
-                                                            false,
-                                                            this);
+                if ((referencedMethod.getAccessFlags() & ClassConstants.INTERNAL_ACC_PRIVATE) == 0)
+                {
+                    clazz.hierarchyAccept(false, false, false, true,
+                                          new NamedMethodVisitor(referencedMethod.getName(referencedClass),
+                                                                 referencedMethod.getDescriptor(referencedClass),
+                                          this));
+                }
             }
         }
     }

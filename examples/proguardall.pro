@@ -17,7 +17,7 @@
 # You may have to adapt the paths below.
 
 -libraryjars <java.home>/lib/rt.jar
--libraryjars /usr/local/java/ant1.6.5/lib/ant.jar
+-libraryjars /usr/local/java/ant1.5.0/lib/ant.jar
 -libraryjars /usr/local/java/wtk2.1/wtklib/kenv.zip
 
 # Allow methods with the same signature, except for the return type,
@@ -28,6 +28,11 @@
 # Put all obfuscated classes into the nameless root package.
 
 -repackageclasses ''
+
+# Adapt the names and contents of the resource files.
+
+-adaptresourcefilenames    **.properties,**.gif,**.jpg
+-adaptresourcefilecontents proguard/ant/task.properties
 
 # The main entry points.
 
@@ -45,7 +50,9 @@
 
 # If we have ant.jar, we can properly process the Ant task.
 
--keep public class proguard.ant.* {
+-keep,allowobfuscation class proguard.ant.*
+-keepclassmembers public class proguard.ant.* {
+    <init>(org.apache.tools.ant.Project);
     public void set*(***);
     public void add*(***);
 }

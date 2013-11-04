@@ -29,11 +29,11 @@ which are easily avoided or resolved:
     ArrayIndexOutOfBoundsExceptions, or even OutOfMemoryErrors or
     StackOverflowErrors, in order to achieve something useful. For instance,
     it may remove a method call <code>myObject.myMethod()</code> if that call
-    wouldn't have any effect. It ignores that <code>myObject</code> might be
-    null, causing a NullPointerException. In some way this is a good thing:
-    optimized code may throw fewer exceptions. Should this entire assumption
-    be false, you'll have to switch off optimization using the
-    <code>-dontoptimize</code> option.
+    wouldn't have any effect. It ignores the possibility that
+    <code>myObject</code> might be null, causing a NullPointerException. In
+    some way this is a good thing: optimized code may throw fewer exceptions.
+    Should this entire assumption be false, you'll have to switch off
+    optimization using the <code>-dontoptimize</code> option.
     <p>
 
 <li>If an input jar and a library jar contain classes in the <b>same
@@ -57,7 +57,7 @@ which are easily avoided or resolved:
 
 <hr>
 <address>
-Copyright &copy; 2002-2007
+Copyright &copy; 2002-2008
 <a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>

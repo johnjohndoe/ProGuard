@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -35,8 +35,8 @@ public class DictionaryNameFactory implements NameFactory
     private static final char COMMENT_CHARACTER = '#';
 
 
+    private final List        names;
     private final NameFactory nameFactory;
-    private final List        names = new ArrayList();
 
     private int index = 0;
 
@@ -50,6 +50,7 @@ public class DictionaryNameFactory implements NameFactory
     public DictionaryNameFactory(File        file,
                                  NameFactory nameFactory) throws IOException
     {
+        this.names       = new ArrayList();
         this.nameFactory = nameFactory;
 
         Reader reader = new FileReader(file);
@@ -115,6 +116,22 @@ public class DictionaryNameFactory implements NameFactory
         {
             reader.close();
         }
+    }
+
+
+    /**
+     * Creates a new <code>DictionaryNameFactory</code>.
+     * @param dictionaryNameFactory the dictionary name factory whose dictionary
+     *                              will be used.
+     * @param nameFactory           the name factory from which names will be
+     *                              retrieved if the list of read names has been
+     *                              exhausted.
+     */
+    public DictionaryNameFactory(DictionaryNameFactory dictionaryNameFactory,
+                                 NameFactory           nameFactory)
+    {
+        this.names       = dictionaryNameFactory.names;
+        this.nameFactory = nameFactory;
     }
 
 

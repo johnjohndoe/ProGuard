@@ -317,7 +317,7 @@ serialization code:
     native &lt;methods&gt;;
 }
 
--keepclassmembers class * extends java.lang.Enum {
+-keepclassmembers enum * {
     public static **[] values();
     public static ** valueOf(java.lang.String);
 }
@@ -416,7 +416,7 @@ that just grand? Introspection is the self-modifying code of a new
 generation). You have to specify these explicitly, to make sure they aren't
 removed or obfuscated:
 <pre>
--keepclassmembers class * extends java.lang.Enum {
+-keepclassmembers enum * {
     public static **[] values();
     public static ** valueOf(java.lang.String);
 }
@@ -1143,7 +1143,7 @@ illustrate some of the possibilities.
 
 <hr>
 <address>
-Copyright &copy; 2002-2007
+Copyright &copy; 2002-2008
 <a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>

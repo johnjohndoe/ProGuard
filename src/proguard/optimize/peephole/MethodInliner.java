@@ -2,21 +2,21 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
- * This library is free software; you can redistribute it and/or modify it
+ * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
  * Software Foundation; either version 2 of the License, or (at your option)
  * any later version.
  *
- * This library is distributed in the hope that it will be useful, but WITHOUT
+ * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
- * for more details.
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this library; if not, write to the Free Software Foundation,
- * Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 package proguard.optimize.peephole;
 
@@ -44,7 +44,6 @@ public class MethodInliner
 extends      SimplifiedVisitor
 implements   AttributeVisitor,
              InstructionVisitor,
-             ExceptionInfoVisitor,
              ConstantVisitor,
              MemberVisitor
 {
@@ -69,19 +68,20 @@ implements   AttributeVisitor,
     private final CodeAttributeComposer codeAttributeComposer = new CodeAttributeComposer();
     private final AccessMethodMarker    accessMethodMarker    = new AccessMethodMarker();
     private final CatchExceptionMarker  catchExceptionMarker  = new CatchExceptionMarker();
-    private final ConstantAdder         constantAdder         = new ConstantAdder();
     private final StackSizeComputer     stackSizeComputer     = new StackSizeComputer();
 
-    private ProgramClass  targetClass;
-    private ProgramMethod targetMethod;
-    private int           estimatedResultingCodeLength;
-    private boolean       inlining;
-    private Stack         inliningMethods = new Stack();
-    private boolean       emptyInvokingStack;
-    private int           uninitializedObjectCount;
-    private int           variableOffset;
-    private boolean       inlined;
-    private boolean       inlinedAny;
+    private ProgramClass       targetClass;
+    private ProgramMethod      targetMethod;
+    private ConstantAdder      constantAdder;
+    private ExceptionInfoAdder exceptionInfoAdder;
+    private int                estimatedResultingCodeLength;
+    private boolean            inlining;
+    private Stack              inliningMethods              = new Stack();
+    private boolean            emptyInvokingStack;
+    private int                uninitializedObjectCount;
+    private int                variableOffset;
+    private boolean            inlined;
+    private boolean            inlinedAny;
 
 
     /**
@@ -146,20 +146,21 @@ implements   AttributeVisitor,
 
             targetClass                  = (ProgramClass)clazz;
             targetMethod                 = (ProgramMethod)method;
+            constantAdder                = new ConstantAdder(targetClass);
+            exceptionInfoAdder           = new ExceptionInfoAdder(targetClass, codeAttributeComposer);
             estimatedResultingCodeLength = codeAttribute.u4codeLength;
             inliningMethods.clear();
             uninitializedObjectCount     = method.getName(clazz).equals(ClassConstants.INTERNAL_METHOD_NAME_INIT) ? 1 : 0;
             inlinedAny                   = false;
             codeAttributeComposer.reset();
-            constantAdder.setTargetClass(targetClass);
             stackSizeComputer.visitCodeAttribute(clazz, method, codeAttribute);
 
             // Append the body of the code.
             copyCode(clazz, method, codeAttribute);
 
-            targetClass  = null;
-            targetMethod = null;
-            constantAdder.setTargetClass(null);
+            targetClass   = null;
+            targetMethod  = null;
+            constantAdder = null;
 
             // Update the code attribute if any code has been inlined.
             if (inlinedAny)
@@ -213,7 +214,6 @@ implements   AttributeVisitor,
      */
     private void storeParameters(Clazz clazz, Method method)
     {
-
         String descriptor = method.getDescriptor(clazz);
 
         boolean isStatic =
@@ -307,7 +307,7 @@ implements   AttributeVisitor,
         codeAttribute.instructionsAccept(clazz, method, this);
 
         // Copy the exceptions.
-        codeAttribute.exceptionsAccept(clazz, method, this);
+        codeAttribute.exceptionsAccept(clazz, method, exceptionInfoAdder);
 
         // Append a label just after the code.
         codeAttributeComposer.appendLabel(codeAttribute.u4codeLength);
@@ -427,36 +427,11 @@ implements   AttributeVisitor,
         {
             // Make sure the constant is present in the constant pool of the
             // target class.
-            clazz.constantPoolEntryAccept(constantInstruction.constantIndex, constantAdder);
-
-            // Let the instruction point to this constant.
-            constantInstruction.constantIndex = constantAdder.getConstantIndex();
+            constantInstruction.constantIndex =
+                constantAdder.addConstant(clazz, constantInstruction.constantIndex);
         }
 
         codeAttributeComposer.appendInstruction(offset, constantInstruction.shrink());
-    }
-
-
-    // Implementations for ExceptionInfoVisitor.
-
-    public void visitExceptionInfo(Clazz clazz, Method method, CodeAttribute codeAttribute, ExceptionInfo exceptionInfo)
-    {
-        int catchType = exceptionInfo.u2catchType;
-
-        if (inlining && catchType != 0)
-        {
-            // Make sure the constant is present in the constant pool of the
-            // target class.
-            clazz.constantPoolEntryAccept(catchType, constantAdder);
-
-            // Let the exception point to this constant.
-            catchType = constantAdder.getConstantIndex();
-        }
-
-        codeAttributeComposer.appendException(new ExceptionInfo(exceptionInfo.u2startPC,
-                                                                exceptionInfo.u2endPC,
-                                                                exceptionInfo.u2handlerPC,
-                                                                catchType));
     }
 
 

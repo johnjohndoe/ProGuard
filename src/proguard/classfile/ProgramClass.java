@@ -2,21 +2,21 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
- * This library is free software; you can redistribute it and/or modify it
+ * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
  * Software Foundation; either version 2 of the License, or (at your option)
  * any later version.
  *
- * This library is distributed in the hope that it will be useful, but WITHOUT
+ * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
- * for more details.
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this library; if not, write to the Free Software Foundation,
- * Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 package proguard.classfile;
 
@@ -311,13 +311,28 @@ public class ProgramClass implements Clazz
         // Then visit its interfaces, recursively.
         if (visitInterfaces)
         {
+            // Visit the interfaces of the superclasses, if we haven't done so yet.
+            if (!visitSuperClass)
+            {
+                Clazz superClass = getSuperClass();
+                if (superClass != null)
+                {
+                    superClass.hierarchyAccept(false,
+                                               false,
+                                               true,
+                                               false,
+                                               classVisitor);
+                }
+            }
+
+            // Visit the interfaces.
             for (int index = 0; index < u2interfacesCount; index++)
             {
                 Clazz interfaceClass = getInterface(index);
                 if (interfaceClass != null)
                 {
                     interfaceClass.hierarchyAccept(true,
-                                                   true,
+                                                   false,
                                                    true,
                                                    false,
                                                    classVisitor);
@@ -344,6 +359,18 @@ public class ProgramClass implements Clazz
     }
 
 
+    public void subclassesAccept(ClassVisitor classVisitor)
+    {
+        if (subClasses != null)
+        {
+            for (int index = 0; index < subClasses.length; index++)
+            {
+                subClasses[index].accept(classVisitor);
+            }
+        }
+    }
+
+
     public void constantPoolEntriesAccept(ConstantVisitor constantVisitor)
     {
         for (int index = 1; index < u2constantPoolCount; index++)
@@ -359,6 +386,30 @@ public class ProgramClass implements Clazz
     public void constantPoolEntryAccept(int index, ConstantVisitor constantVisitor)
     {
         constantPool[index].accept(this, constantVisitor);
+    }
+
+
+    public void thisClassConstantAccept(ConstantVisitor constantVisitor)
+    {
+        constantPool[u2thisClass].accept(this, constantVisitor);
+    }
+
+
+    public void superClassConstantAccept(ConstantVisitor constantVisitor)
+    {
+        if (u2superClass != 0)
+        {
+            constantPool[u2superClass].accept(this, constantVisitor);
+        }
+    }
+
+
+    public void interfaceConstantsAccept(ConstantVisitor constantVisitor)
+    {
+        for (int index = 0; index < u2interfacesCount; index++)
+        {
+            constantPool[u2interfaces[index]].accept(this, constantVisitor);
+        }
     }
 
 
@@ -412,158 +463,6 @@ public class ProgramClass implements Clazz
     }
 
 
-    private boolean isSpecial(Method method)
-    {
-        return
-            (method.getAccessFlags() & (ClassConstants.INTERNAL_ACC_PRIVATE |
-                                        ClassConstants.INTERNAL_ACC_STATIC)) != 0 ||
-            method.getName(this).equals(ClassConstants.INTERNAL_METHOD_NAME_INIT);
-    }
-
-
-    public void methodImplementationsAccept(Method        method,
-                                            boolean       visitThisMethod,
-                                            MemberVisitor memberVisitor)
-    {
-        methodImplementationsAccept(method.getName(this),
-                                    method.getDescriptor(this),
-                                    method,
-                                    visitThisMethod,
-                                    true,
-                                    true,
-                                    true,
-                                    memberVisitor);
-    }
-
-
-    public void methodImplementationsAccept(String        name,
-                                            String        descriptor,
-                                            boolean       visitThisMethod,
-                                            MemberVisitor memberVisitor)
-    {
-        methodImplementationsAccept(name,
-                                    descriptor,
-                                    visitThisMethod,
-                                    true,
-                                    true,
-                                    true,
-                                    memberVisitor);
-    }
-
-
-    public void methodImplementationsAccept(String        name,
-                                            String        descriptor,
-                                            boolean       visitThisMethod,
-                                            boolean       visitSpecialMethods,
-                                            boolean       visitSuperMethods,
-                                            boolean       visitOverridingMethods,
-                                            MemberVisitor memberVisitor)
-    {
-        methodImplementationsAccept(name,
-                                    descriptor,
-                                    findMethod(name, descriptor),
-                                    visitThisMethod,
-                                    visitSpecialMethods,
-                                    visitSuperMethods,
-                                    visitOverridingMethods,
-                                    memberVisitor);
-    }
-
-
-    public void methodImplementationsAccept(String        name,
-                                            String        descriptor,
-                                            Method        method,
-                                            boolean       visitThisMethod,
-                                            boolean       visitSpecialMethods,
-                                            boolean       visitSuperMethods,
-                                            boolean       visitOverridingMethods,
-                                            MemberVisitor memberVisitor)
-    {
-        // Do we have the method in this class?
-        if (method != null)
-        {
-            // Is it a special method?
-            if (isSpecial(method))
-            {
-                // Visit the special method in this class, if allowed.
-                if (visitSpecialMethods)
-                {
-                    method.accept(this, memberVisitor);
-
-                    // The method can't have any other implementations.
-                    return;
-                }
-            }
-            else
-            {
-                // Visit the method in this class, if allowed.
-                if (visitThisMethod)
-                {
-                    method.accept(this, memberVisitor);
-                }
-
-                // We don't have to look in subclasses if there can't be
-                // any overriding implementations.
-                if (!mayHaveImplementations(method))
-                {
-                    visitOverridingMethods = false;
-                }
-
-                // We don't have to look in superclasses if we have a concrete
-                // implementation here.
-                if ((method.getAccessFlags() & ClassConstants.INTERNAL_ACC_ABSTRACT) == 0)
-                {
-                    visitSuperMethods = false;
-                }
-            }
-        }
-
-        // Then visit the method in its subclasses, recursively.
-        if (visitOverridingMethods)
-        {
-            // Go looking for implementations in all of the subclasses.
-            if (subClasses != null)
-            {
-                for (int index = 0; index < subClasses.length; index++)
-                {
-                    Clazz subClass = subClasses[index];
-                    subClass.methodImplementationsAccept(name,
-                                                         descriptor,
-                                                         true,
-                                                         false,
-                                                         visitSuperMethods,
-                                                         true,
-                                                         memberVisitor);
-                }
-            }
-
-            // We don't have to look in superclasses right away if we dont't
-            // have a concrete class here.
-            if ((u2accessFlags & (ClassConstants.INTERNAL_ACC_INTERFACE |
-                                  ClassConstants.INTERNAL_ACC_ABSTRACT)) != 0)
-            {
-                visitSuperMethods = false;
-            }
-        }
-
-        // Then visit the method in its superclass, recursively.
-        if (visitSuperMethods)
-        {
-            Clazz superClass = getSuperClass();
-            if (superClass != null)
-            {
-                superClass.methodImplementationsAccept(name,
-                                                       descriptor,
-                                                       true,
-                                                       false,
-                                                       true,
-                                                       false,
-                                                       memberVisitor);
-            }
-        }
-    }
-
-
     public void attributesAccept(AttributeVisitor attributeVisitor)
     {
         for (int index = 0; index < u2attributesCount; index++)
@@ -583,5 +482,13 @@ public class ProgramClass implements Clazz
     public void setVisitorInfo(Object visitorInfo)
     {
         this.visitorInfo = visitorInfo;
+    }
+
+
+    // Implementations for Object.
+
+    public String toString()
+    {
+        return "ProgramClass("+getName()+")";
     }
 }

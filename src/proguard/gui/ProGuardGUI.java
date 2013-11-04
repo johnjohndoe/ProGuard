@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -87,24 +87,27 @@ public class ProGuardGUI extends JFrame
     private final JCheckBox shrinkCheckBox     = new JCheckBox(msg("shrink"));
     private final JCheckBox printUsageCheckBox = new JCheckBox(msg("printUsage"));
 
-    private final JCheckBox optimizeCheckBox                = new JCheckBox(msg("optimize"));
-    private final JCheckBox allowAccessModificationCheckBox = new JCheckBox(msg("allowAccessModification"));
-    private final JLabel    optimizationPassesLabel         = new JLabel(msg("optimizationPasses"));
-    private final JSpinner  optimizationPassesSpinner       = new JSpinner(new SpinnerNumberModel(1, 1, 9, 1));
+    private final JCheckBox optimizeCheckBox                    = new JCheckBox(msg("optimize"));
+    private final JCheckBox allowAccessModificationCheckBox     = new JCheckBox(msg("allowAccessModification"));
+    private final JCheckBox mergeInterfacesAggressivelyCheckBox = new JCheckBox(msg("mergeInterfacesAggressively"));
+    private final JLabel    optimizationPassesLabel             = new JLabel(msg("optimizationPasses"));
+    private final JSpinner  optimizationPassesSpinner           = new JSpinner(new SpinnerNumberModel(1, 1, 9, 1));
 
-    private final JCheckBox obfuscateCheckBox                 = new JCheckBox(msg("obfuscate"));
-    private final JCheckBox printMappingCheckBox              = new JCheckBox(msg("printMapping"));
-    private final JCheckBox applyMappingCheckBox              = new JCheckBox(msg("applyMapping"));
-    private final JCheckBox obfuscationDictionaryCheckBox     = new JCheckBox(msg("obfuscationDictionary"));
-    private final JCheckBox overloadAggressivelyCheckBox      = new JCheckBox(msg("overloadAggressively"));
-    private final JCheckBox useUniqueClassMemberNamesCheckBox = new JCheckBox(msg("useUniqueClassMemberNames"));
-    private final JCheckBox useMixedCaseClassNamesCheckBox    = new JCheckBox(msg("useMixedCaseClassNames"));
-    private final JCheckBox flattenPackageHierarchyCheckBox   = new JCheckBox(msg("flattenPackageHierarchy"));
-    private final JCheckBox repackageClassesCheckBox          = new JCheckBox(msg("repackageClasses"));
-    private final JCheckBox keepAttributesCheckBox            = new JCheckBox(msg("keepAttributes"));
-    private final JCheckBox newSourceFileAttributeCheckBox    = new JCheckBox(msg("renameSourceFileAttribute"));
-    private final JCheckBox adaptResourceFileNamesCheckBox    = new JCheckBox(msg("adaptResourceFileNames"));
-    private final JCheckBox adaptResourceFileContentsCheckBox = new JCheckBox(msg("adaptResourceFileContents"));
+    private final JCheckBox obfuscateCheckBox                    = new JCheckBox(msg("obfuscate"));
+    private final JCheckBox printMappingCheckBox                 = new JCheckBox(msg("printMapping"));
+    private final JCheckBox applyMappingCheckBox                 = new JCheckBox(msg("applyMapping"));
+    private final JCheckBox obfuscationDictionaryCheckBox        = new JCheckBox(msg("obfuscationDictionary"));
+    private final JCheckBox classObfuscationDictionaryCheckBox   = new JCheckBox(msg("classObfuscationDictionary"));
+    private final JCheckBox packageObfuscationDictionaryCheckBox = new JCheckBox(msg("packageObfuscationDictionary"));
+    private final JCheckBox overloadAggressivelyCheckBox         = new JCheckBox(msg("overloadAggressively"));
+    private final JCheckBox useUniqueClassMemberNamesCheckBox    = new JCheckBox(msg("useUniqueClassMemberNames"));
+    private final JCheckBox useMixedCaseClassNamesCheckBox       = new JCheckBox(msg("useMixedCaseClassNames"));
+    private final JCheckBox flattenPackageHierarchyCheckBox      = new JCheckBox(msg("flattenPackageHierarchy"));
+    private final JCheckBox repackageClassesCheckBox             = new JCheckBox(msg("repackageClasses"));
+    private final JCheckBox keepAttributesCheckBox               = new JCheckBox(msg("keepAttributes"));
+    private final JCheckBox newSourceFileAttributeCheckBox       = new JCheckBox(msg("renameSourceFileAttribute"));
+    private final JCheckBox adaptResourceFileNamesCheckBox       = new JCheckBox(msg("adaptResourceFileNames"));
+    private final JCheckBox adaptResourceFileContentsCheckBox    = new JCheckBox(msg("adaptResourceFileContents"));
 
     private final JCheckBox preverifyCheckBox    = new JCheckBox(msg("preverify"));
     private final JCheckBox microEditionCheckBox = new JCheckBox(msg("microEdition"));
@@ -123,19 +126,21 @@ public class ProGuardGUI extends JFrame
     private final JCheckBox printConfigurationCheckBox               = new JCheckBox(msg("printConfiguration"));
     private final JCheckBox dumpCheckBox                             = new JCheckBox(msg("dump"));
 
-    private final JTextField printUsageTextField                = new JTextField(40);
-    private final JTextField printMappingTextField              = new JTextField(40);
-    private final JTextField applyMappingTextField              = new JTextField(40);
-    private final JTextField obfuscationDictionaryTextField     = new JTextField(40);
-    private final JTextField flattenPackageHierarchyTextField   = new JTextField(40);
-    private final JTextField repackageClassesTextField          = new JTextField(40);
-    private final JTextField keepAttributesTextField            = new JTextField(40);
-    private final JTextField newSourceFileAttributeTextField    = new JTextField(40);
-    private final JTextField adaptResourceFileNamesTextField    = new JTextField(40);
-    private final JTextField adaptResourceFileContentsTextField = new JTextField(40);
-    private final JTextField printSeedsTextField                = new JTextField(40);
-    private final JTextField printConfigurationTextField        = new JTextField(40);
-    private final JTextField dumpTextField                      = new JTextField(40);
+    private final JTextField printUsageTextField                   = new JTextField(40);
+    private final JTextField printMappingTextField                 = new JTextField(40);
+    private final JTextField applyMappingTextField                 = new JTextField(40);
+    private final JTextField obfuscationDictionaryTextField        = new JTextField(40);
+    private final JTextField classObfuscationDictionaryTextField   = new JTextField(40);
+    private final JTextField packageObfuscationDictionaryTextField = new JTextField(40);
+    private final JTextField flattenPackageHierarchyTextField      = new JTextField(40);
+    private final JTextField repackageClassesTextField             = new JTextField(40);
+    private final JTextField keepAttributesTextField               = new JTextField(40);
+    private final JTextField newSourceFileAttributeTextField       = new JTextField(40);
+    private final JTextField adaptResourceFileNamesTextField       = new JTextField(40);
+    private final JTextField adaptResourceFileContentsTextField    = new JTextField(40);
+    private final JTextField printSeedsTextField                   = new JTextField(40);
+    private final JTextField printConfigurationTextField           = new JTextField(40);
+    private final JTextField dumpTextField                         = new JTextField(40);
 
     private final JTextArea  consoleTextArea = new JTextArea(msg("processingInfo"), 3, 40);
 
@@ -344,41 +349,51 @@ public class ProGuardGUI extends JFrame
         boilerplateKeepNamesCheckBoxes = new JCheckBox[boilerplateKeepNames.length];
         boilerplateKeepNamesTextFields = new JTextField[boilerplateKeepNames.length];
 
-        JButton printMappingBrowseButton = createBrowseButton(printMappingTextField,
-                                                              msg("selectPrintMappingFile"));
-        JButton applyMappingBrowseButton = createBrowseButton(applyMappingTextField,
-                                                              msg("selectApplyMappingFile"));
-        JButton obfucationDictionaryBrowseButton = createBrowseButton(obfuscationDictionaryTextField,
-                                                                      msg("selectObfuscationDictionaryFile"));
+        JButton printMappingBrowseButton                = createBrowseButton(printMappingTextField,
+                                                                             msg("selectPrintMappingFile"));
+        JButton applyMappingBrowseButton                = createBrowseButton(applyMappingTextField,
+                                                                             msg("selectApplyMappingFile"));
+        JButton obfucationDictionaryBrowseButton        = createBrowseButton(obfuscationDictionaryTextField,
+                                                                             msg("selectObfuscationDictionaryFile"));
+        JButton classObfucationDictionaryBrowseButton   = createBrowseButton(classObfuscationDictionaryTextField,
+                                                                             msg("selectObfuscationDictionaryFile"));
+        JButton packageObfucationDictionaryBrowseButton = createBrowseButton(packageObfuscationDictionaryTextField,
+                                                                             msg("selectObfuscationDictionaryFile"));
 
         JPanel obfuscationOptionsPanel = new JPanel(layout);
         addBorder(obfuscationOptionsPanel, "options");
 
-        obfuscationOptionsPanel.add(tip(obfuscateCheckBox,                  "obfuscateTip"),                    constraintsLastStretch);
-        obfuscationOptionsPanel.add(tip(printMappingCheckBox,               "printMappingTip"),                 constraints);
-        obfuscationOptionsPanel.add(tip(printMappingTextField,              "outputFileTip"),                   constraintsStretch);
-        obfuscationOptionsPanel.add(tip(printMappingBrowseButton,           "selectPrintMappingFile"),          constraintsLast);
-        obfuscationOptionsPanel.add(tip(applyMappingCheckBox,               "applyMappingTip"),                 constraints);
-        obfuscationOptionsPanel.add(tip(applyMappingTextField,              "inputFileTip"),                    constraintsStretch);
-        obfuscationOptionsPanel.add(tip(applyMappingBrowseButton,           "selectApplyMappingFile"),          constraintsLast);
-        obfuscationOptionsPanel.add(tip(obfuscationDictionaryCheckBox,      "obfuscationDictionaryTip"),        constraints);
-        obfuscationOptionsPanel.add(tip(obfuscationDictionaryTextField,     "inputFileTip"),                    constraintsStretch);
-        obfuscationOptionsPanel.add(tip(obfucationDictionaryBrowseButton,   "selectObfuscationDictionaryFile"), constraintsLast);
-        obfuscationOptionsPanel.add(tip(overloadAggressivelyCheckBox,       "overloadAggressivelyTip"),         constraintsLastStretch);
-        obfuscationOptionsPanel.add(tip(useUniqueClassMemberNamesCheckBox,  "useUniqueClassMemberNamesTip"),    constraintsLastStretch);
-        obfuscationOptionsPanel.add(tip(useMixedCaseClassNamesCheckBox,     "useMixedCaseClassNamesTip"),       constraintsLastStretch);
-        obfuscationOptionsPanel.add(tip(flattenPackageHierarchyCheckBox,    "flattenPackageHierarchyTip"),      constraints);
-        obfuscationOptionsPanel.add(tip(flattenPackageHierarchyTextField,   "packageTip"),                      constraintsLastStretch);
-        obfuscationOptionsPanel.add(tip(repackageClassesCheckBox,           "repackageClassesTip"),             constraints);
-        obfuscationOptionsPanel.add(tip(repackageClassesTextField,          "packageTip"),                      constraintsLastStretch);
-        obfuscationOptionsPanel.add(tip(keepAttributesCheckBox,             "keepAttributesTip"),               constraints);
-        obfuscationOptionsPanel.add(tip(keepAttributesTextField,            "attributesTip"),                   constraintsLastStretch);
-        obfuscationOptionsPanel.add(tip(newSourceFileAttributeCheckBox,     "renameSourceFileAttributeTip"),    constraints);
-        obfuscationOptionsPanel.add(tip(newSourceFileAttributeTextField,    "sourceFileAttributeTip"),          constraintsLastStretch);
-        obfuscationOptionsPanel.add(tip(adaptResourceFileNamesCheckBox,     "adaptResourceFileNamesTip"),       constraints);
-        obfuscationOptionsPanel.add(tip(adaptResourceFileNamesTextField,    "fileNameFilterTip"),               constraintsLastStretch);
-        obfuscationOptionsPanel.add(tip(adaptResourceFileContentsCheckBox,  "adaptResourceFileContentsTip"),    constraints);
-        obfuscationOptionsPanel.add(tip(adaptResourceFileContentsTextField, "fileNameFilterTip"),               constraintsLastStretch);
+        obfuscationOptionsPanel.add(tip(obfuscateCheckBox,                       "obfuscateTip"),                    constraintsLastStretch);
+        obfuscationOptionsPanel.add(tip(printMappingCheckBox,                    "printMappingTip"),                 constraints);
+        obfuscationOptionsPanel.add(tip(printMappingTextField,                   "outputFileTip"),                   constraintsStretch);
+        obfuscationOptionsPanel.add(tip(printMappingBrowseButton,                "selectPrintMappingFile"),          constraintsLast);
+        obfuscationOptionsPanel.add(tip(applyMappingCheckBox,                    "applyMappingTip"),                 constraints);
+        obfuscationOptionsPanel.add(tip(applyMappingTextField,                   "inputFileTip"),                    constraintsStretch);
+        obfuscationOptionsPanel.add(tip(applyMappingBrowseButton,                "selectApplyMappingFile"),          constraintsLast);
+        obfuscationOptionsPanel.add(tip(obfuscationDictionaryCheckBox,           "obfuscationDictionaryTip"),        constraints);
+        obfuscationOptionsPanel.add(tip(obfuscationDictionaryTextField,          "inputFileTip"),                    constraintsStretch);
+        obfuscationOptionsPanel.add(tip(obfucationDictionaryBrowseButton,        "selectObfuscationDictionaryFile"), constraintsLast);
+        obfuscationOptionsPanel.add(tip(classObfuscationDictionaryCheckBox,      "classObfuscationDictionaryTip"),   constraints);
+        obfuscationOptionsPanel.add(tip(classObfuscationDictionaryTextField,     "inputFileTip"),                    constraintsStretch);
+        obfuscationOptionsPanel.add(tip(classObfucationDictionaryBrowseButton,   "selectObfuscationDictionaryFile"), constraintsLast);
+        obfuscationOptionsPanel.add(tip(packageObfuscationDictionaryCheckBox,    "packageObfuscationDictionaryTip"), constraints);
+        obfuscationOptionsPanel.add(tip(packageObfuscationDictionaryTextField,   "inputFileTip"),                    constraintsStretch);
+        obfuscationOptionsPanel.add(tip(packageObfucationDictionaryBrowseButton, "selectObfuscationDictionaryFile"), constraintsLast);
+        obfuscationOptionsPanel.add(tip(overloadAggressivelyCheckBox,            "overloadAggressivelyTip"),         constraintsLastStretch);
+        obfuscationOptionsPanel.add(tip(useUniqueClassMemberNamesCheckBox,       "useUniqueClassMemberNamesTip"),    constraintsLastStretch);
+        obfuscationOptionsPanel.add(tip(useMixedCaseClassNamesCheckBox,          "useMixedCaseClassNamesTip"),       constraintsLastStretch);
+        obfuscationOptionsPanel.add(tip(flattenPackageHierarchyCheckBox,         "flattenPackageHierarchyTip"),      constraints);
+        obfuscationOptionsPanel.add(tip(flattenPackageHierarchyTextField,        "packageTip"),                      constraintsLastStretch);
+        obfuscationOptionsPanel.add(tip(repackageClassesCheckBox,                "repackageClassesTip"),             constraints);
+        obfuscationOptionsPanel.add(tip(repackageClassesTextField,               "packageTip"),                      constraintsLastStretch);
+        obfuscationOptionsPanel.add(tip(keepAttributesCheckBox,                  "keepAttributesTip"),               constraints);
+        obfuscationOptionsPanel.add(tip(keepAttributesTextField,                 "attributesTip"),                   constraintsLastStretch);
+        obfuscationOptionsPanel.add(tip(newSourceFileAttributeCheckBox,          "renameSourceFileAttributeTip"),    constraints);
+        obfuscationOptionsPanel.add(tip(newSourceFileAttributeTextField,         "sourceFileAttributeTip"),          constraintsLastStretch);
+        obfuscationOptionsPanel.add(tip(adaptResourceFileNamesCheckBox,          "adaptResourceFileNamesTip"),       constraints);
+        obfuscationOptionsPanel.add(tip(adaptResourceFileNamesTextField,         "fileNameFilterTip"),               constraintsLastStretch);
+        obfuscationOptionsPanel.add(tip(adaptResourceFileContentsCheckBox,       "adaptResourceFileContentsTip"),    constraints);
+        obfuscationOptionsPanel.add(tip(adaptResourceFileContentsTextField,      "fileNameFilterTip"),               constraintsLastStretch);
 
         JPanel obfuscationPanel = new JPanel(layout);
 
@@ -397,10 +412,11 @@ public class ProGuardGUI extends JFrame
         JPanel optimizationOptionsPanel = new JPanel(layout);
         addBorder(optimizationOptionsPanel, "options");
 
-        optimizationOptionsPanel.add(tip(optimizeCheckBox,                "optimizeTip"),                constraintsLastStretch);
-        optimizationOptionsPanel.add(tip(allowAccessModificationCheckBox, "allowAccessModificationTip"), constraintsLastStretch);
-        optimizationOptionsPanel.add(tip(optimizationPassesLabel,         "optimizationPassesTip"),      constraints);
-        optimizationOptionsPanel.add(tip(optimizationPassesSpinner,       "optimizationPassesTip"),      constraintsLast);
+        optimizationOptionsPanel.add(tip(optimizeCheckBox,                    "optimizeTip"),                    constraintsLastStretch);
+        optimizationOptionsPanel.add(tip(allowAccessModificationCheckBox,     "allowAccessModificationTip"),     constraintsLastStretch);
+        optimizationOptionsPanel.add(tip(mergeInterfacesAggressivelyCheckBox, "mergeInterfacesAggressivelyTip"), constraintsLastStretch);
+        optimizationOptionsPanel.add(tip(optimizationPassesLabel,             "optimizationPassesTip"),          constraints);
+        optimizationOptionsPanel.add(tip(optimizationPassesSpinner,           "optimizationPassesTip"),          constraintsLast);
 
         JPanel optimizationPanel = new JPanel(layout);
 
@@ -934,20 +950,23 @@ public class ProGuardGUI extends JFrame
         optimizeCheckBox                        .setSelected(configuration.optimize);
         optimizationPassesSpinner.getModel()    .setValue(new Integer(configuration.optimizationPasses));
         allowAccessModificationCheckBox         .setSelected(configuration.allowAccessModification);
+        mergeInterfacesAggressivelyCheckBox     .setSelected(configuration.mergeInterfacesAggressively);
 
         obfuscateCheckBox                       .setSelected(configuration.obfuscate);
-        printMappingCheckBox                    .setSelected(configuration.printMapping              != null);
-        applyMappingCheckBox                    .setSelected(configuration.applyMapping              != null);
-        obfuscationDictionaryCheckBox           .setSelected(configuration.obfuscationDictionary     != null);
+        printMappingCheckBox                    .setSelected(configuration.printMapping                 != null);
+        applyMappingCheckBox                    .setSelected(configuration.applyMapping                 != null);
+        obfuscationDictionaryCheckBox           .setSelected(configuration.obfuscationDictionary        != null);
+        classObfuscationDictionaryCheckBox      .setSelected(configuration.classObfuscationDictionary   != null);
+        packageObfuscationDictionaryCheckBox    .setSelected(configuration.packageObfuscationDictionary != null);
         overloadAggressivelyCheckBox            .setSelected(configuration.overloadAggressively);
         useUniqueClassMemberNamesCheckBox       .setSelected(configuration.useUniqueClassMemberNames);
         useMixedCaseClassNamesCheckBox          .setSelected(configuration.useMixedCaseClassNames);
-        flattenPackageHierarchyCheckBox         .setSelected(configuration.flattenPackageHierarchy   != null);
-        repackageClassesCheckBox                .setSelected(configuration.repackageClasses          != null);
-        keepAttributesCheckBox                  .setSelected(configuration.keepAttributes            != null);
-        newSourceFileAttributeCheckBox          .setSelected(configuration.newSourceFileAttribute    != null);
-        adaptResourceFileNamesCheckBox          .setSelected(configuration.adaptResourceFileNames    != null);
-        adaptResourceFileContentsCheckBox       .setSelected(configuration.adaptResourceFileContents != null);
+        flattenPackageHierarchyCheckBox         .setSelected(configuration.flattenPackageHierarchy      != null);
+        repackageClassesCheckBox                .setSelected(configuration.repackageClasses             != null);
+        keepAttributesCheckBox                  .setSelected(configuration.keepAttributes               != null);
+        newSourceFileAttributeCheckBox          .setSelected(configuration.newSourceFileAttribute       != null);
+        adaptResourceFileNamesCheckBox          .setSelected(configuration.adaptResourceFileNames       != null);
+        adaptResourceFileContentsCheckBox       .setSelected(configuration.adaptResourceFileContents    != null);
 
         preverifyCheckBox                       .setSelected(configuration.preverify);
         microEditionCheckBox                    .setSelected(configuration.microEdition);
@@ -1084,11 +1103,14 @@ public class ProGuardGUI extends JFrame
         configuration.optimize                         = optimizeCheckBox                        .isSelected();
         configuration.optimizationPasses               = ((SpinnerNumberModel)optimizationPassesSpinner.getModel()).getNumber().intValue();
         configuration.allowAccessModification          = allowAccessModificationCheckBox         .isSelected();
+        configuration.mergeInterfacesAggressively      = mergeInterfacesAggressivelyCheckBox     .isSelected();
 
         configuration.obfuscate                        = obfuscateCheckBox                       .isSelected();
         configuration.printMapping                     = printMappingCheckBox                    .isSelected() ? new File(printMappingTextField                                .getText()) : null;
         configuration.applyMapping                     = applyMappingCheckBox                    .isSelected() ? new File(applyMappingTextField                                .getText()) : null;
         configuration.obfuscationDictionary            = obfuscationDictionaryCheckBox           .isSelected() ? new File(obfuscationDictionaryTextField                       .getText()) : null;
+        configuration.classObfuscationDictionary       = classObfuscationDictionaryCheckBox      .isSelected() ? new File(classObfuscationDictionaryTextField                  .getText()) : null;
+        configuration.packageObfuscationDictionary     = packageObfuscationDictionaryCheckBox    .isSelected() ? new File(packageObfuscationDictionaryTextField                .getText()) : null;
         configuration.overloadAggressively             = overloadAggressivelyCheckBox            .isSelected();
         configuration.useUniqueClassMemberNames        = useUniqueClassMemberNamesCheckBox       .isSelected();
         configuration.useMixedCaseClassNames           = useMixedCaseClassNamesCheckBox          .isSelected();

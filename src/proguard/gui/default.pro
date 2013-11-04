@@ -10,7 +10,7 @@
 
 # Also keep - Enumerations. Keep the special static methods that are required in
 # enumeration classes.
--keepclassmembers class * extends java.lang.Enum {
+-keepclassmembers enum * {
     public static **[] values();
     public static ** valueOf(java.lang.String);
 }

@@ -12,13 +12,65 @@
 
 While preparing a configuration for processing your code, you may bump into a
 few problems. The following sections discuss some common issues and solutions:
+
+<h3><a href="#processing">Problems while processing</a></h3>
 <ul>
-<li><a href="#processing">Problems while processing</a>
-<li><a href="#afterprocessing">Unexpected observations after processing</a>
-<li><a href="#preverifying">Problems while preverifying for Java Micro
-    Edition</a>
-<li><a href="#runtime">Problems at run-time</a>
+<li><a href="#dynamicalclass">Note: can't find dynamically referenced class</a></li>
+<li><a href="#dynamicalclasscast">Note: ... calls '(...)Class.forName(variable).newInstance()'</a></li>
+<li><a href="#dynamicalclassmember">Note: ... accesses a field/method '...' dynamically</a></li>
+<li><a href="#descriptorclass">Note: the configuration keeps the entry point '...', but not the descriptor class '...'</a></li>
+<li><a href="#duplicateclass">Note: duplicate definition of program/library class</a></li>
+<li><a href="#duplicatezipentry">Warning: can't write resource ... Duplicate zip entry</a></li>
+<li><a href="#unresolvedclass">Warning: can't find superclass or interface</a></li>
+<li><a href="#unresolvedclassmember">Warning: can't find referenced field/method</a></li>
+<li><a href="#unresolvedenclosingmethod">Warning: can't find enclosing class/method</a></li>
+<li><a href="#dependency">Warning: library class ... depends on program class ...</a></li>
+<li><a href="#unexpectedclass">Warning: class file ... unexpectedly contains class ...</a></li>
+<li><a href="#mappingconflict1">Warning: ... is not being kept as ..., but remapped to ...</a></li>
+<li><a href="#mappingconflict2">Warning: field/method ... can't be mapped to ...</a></li>
+<li><a href="#keep">Error: You have to specify '-keep' options</a></li>
+<li><a href="#filename">Error: Expecting class path separator ';' before 'Files\Java\...' (in Windows)</a></li>
+<li><a href="#macosx">Error: Can't read [.../lib/rt.jar] (No such file or directory) (in MacOS X)</a></li>
+<li><a href="#outofmemoryerror">OutOfMemoryError</a></li>
+<li><a href="#stackoverflowerror">StackOverflowError</a></li>
+<li><a href="#unexpectederror">Unexpected error</a></li>
+<li><a href="#otherwise">Otherwise...</a></li>
 </ul>
+
+<h3><a href="#afterprocessing">Unexpected observations after processing</a></h3>
+<ul>
+<li><a href="#disappearingclasses">Disappearing classes</a></li>
+<li><a href="#notkept">Classes or class members not being kept</a></li>
+<li><a href="#notobfuscated">Variable names not being obfuscated</a></li>
+</ul>
+
+<h3><a href="#preverifying">Problems while preverifying for Java Micro Edition</a></h3>
+
+<ul>
+<li><a href="#invalidclassexception1">InvalidClassException, class loading error, or verification error</a></li>
+</ul>
+
+<h3><a href="#runtime">Problems at run-time</a></h3>
+<ul>
+<li><a href="#stacktraces">Stack traces without class names or line numbers</a></li>
+<li><a href="#noclassdeffounderror">NoClassDefFoundError</a></li>
+<li><a href="#classnotfoundexception">ClassNotFoundException</a></li>
+<li><a href="#nosuchmethodexception">NoSuchMethodException</a></li>
+<li><a href="#missingresourceexception">MissingResourceException or NullPointerException</a></li>
+<li><a href="#invalidjarfile">Invalid or corrupt jarfile</a></li>
+<li><a href="#invalidclassexception2">InvalidClassException, class loading error, or verification error (in Java Micro Edition)</a></li>
+<li><a href="#nosuchfieldormethod">Error: No Such Field or Method, Error verifying method (in a Java Micro Edition emulator)</a></li>
+<li><a href="#failingmidlets">Failing midlets (on a Java Micro Edition device)</a></li>
+<li><a href="#disappearingloops">Disappearing loops</a></li>
+<li><a href="#securityexception">SecurityException: SHA1 digest error</a></li>
+<li><a href="#classcastexception">ClassCastException: class not an enum</a></li><li><a href="#classcastexception">IllegalArgumentException: class not an enum type</a></li>
+<li><a href="#arraystoreexception">ArrayStoreException: sun.reflect.annotation.EnumConstantNotPresentExceptionProxy</a></li>
+<li><a href="#compilererror">CompilerError: duplicate addition</a></li>
+<li><a href="#classformaterror">ClassFormatError: repetitive field name/signature</a></li>
+<li><a href="#nosuchmethoderror">NoSuchMethodError or AbstractMethodError</a></li>
+<li><a href="#verifyerror">VerifyError</a></li>
+</ul>
+
 
 <a name="processing">&nbsp;</a>
 <h2>Problems while processing</h2>
@@ -26,7 +78,13 @@ few problems. The following sections discuss some common issues and solutions:
 ProGuard may print out some notes and non-fatal warnings:
 
 <dl>
-<dt><a name="dynamicalclass"><b>Note: ... calls '(...)Class.forName(variable).newInstance()'</b></a></dt>
+<dt><a name="dynamicalclass"><b>Note: can't find dynamically referenced class</b></a></dt>
+
+<dd>ProGuard can't find a class or interface that your code is accessing by
+    means of introspection. You should check if you want to add the jar that
+    contains this class.</dd>
+
+<dt><a name="dynamicalclasscast"><b>Note: ... calls '(...)Class.forName(variable).newInstance()'</b></a></dt>
 
 <dd>ProGuard lists all class casts of dynamically created class instances,
     like "<code>(MyClass)Class.forName(variable).newInstance()</code>".
@@ -42,8 +100,22 @@ ProGuard may print out some notes and non-fatal warnings:
     "<code>.getField("myField")</code>". Depending on your application, you
     may need to figure out where the mentioned class members are defined and
     keep them with an option like "<code>-keep class MyClass { MyFieldType
-    myField; }</code>". You can switch off these notes by specifying the
-    <a href="usage.html#dontnote"><code>-dontnote</code></a> option.</dd>
+    myField; }</code>". Otherwise, ProGuard might remove or obfuscate the
+    class members, since it can't know which ones they are exactly. It does
+    list possible candidates, for your information. You can switch off these
+    notes by specifying the <a
+    href="usage.html#dontnote"><code>-dontnote</code></a> option.</dd>
+
+<dt><a name="descriptorclass"><b>Note: the configuration keeps the entry point '...', but not the descriptor class '...'</b></a></dt>
+
+<dd>Your configuration contains a <code>-keep</code> option to preserve the
+    given method (or field), but no <code>-keep</code> option for the given
+    class that is an argument type or return type in the method's descriptor.
+    You may then want to keep the class too. Otherwise, ProGuard will
+    obfuscate its name, thus changing the method's signature. The method might
+    then become unfindable as an entry point, e.g. if it is part of a public
+    API. You can switch off these notes by specifying the <a
+    href="usage.html#dontnote"><code>-dontnote</code></a> option.</dd>
 
 <dt><a name="duplicateclass"><b>Note: duplicate definition of program/library class</b></a></dt>
 
@@ -126,6 +198,17 @@ some more serious warnings:
     removing all class files, recompiling them, zipping them up, and running
     ProGuard again.</dd>
 
+<dt><a name="dependency"><b>Warning: library class ... depends on program class ...</b></a></dt>
+
+<dd>If any of your library classes depend on your program classes, by
+    extending, implementing or just referencing them, your processed code will
+    generally be unusable. Program classes can depend on library classes, but
+    not the other way around. Program classes are processed, while library
+    classes always remain unchanged. It is therefore impossible to adapt
+    references from library classes to program classes, for instance if the
+    program classes are renamed. You should define a clean separation between
+    program code and library code, and try again.</dd>
+
 <dt><a name="unexpectedclass"><b>Warning: class file ... unexpectedly contains class ...</b></a></dt>
 
 <dd>The given class file contains a definition for the given class, but the
@@ -186,7 +269,7 @@ some more serious warnings:
 <dd>If the path of your run-time jar contains spaces, like in "Program Files",
     you have to enclose it with single or double quotes, as explained in the
     section on <a href="usage.html#filename">file names</a>. This is actually
-    true for all file names containing special character, on all
+    true for all file names containing special characters, on all
     platforms.</dd>
 
 <dt><a name="macosx"><b>Error: Can't read [</b>...<b>/lib/rt.jar] (No such file or directory)</b> (in MacOS X)</a></dt>
@@ -221,6 +304,15 @@ Should ProGuard crash while processing your application:
     href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4362291">Sun Bug
     #4362291</a>. As a result, this solution will only work when running
     ProGuard in a different thread, e.g. from its GUI.</dd>
+
+<dt><a name="unexpectederror"><b>Unexpected error</b></a></dt>
+
+<dd>ProGuard has encountered an unexpected condition, typically in the
+    optimization step. It may or may not recover. You should be able to avoid
+    it using the <a
+    href="usage.html#dontoptimize"><code>-dontoptimize</code></a> option. In
+    any case, please report the problem, preferably with the simplest example
+    that causes ProGuard to crash.</dd>
 
 <dt><a name="otherwise"><b>Otherwise...</b></a></dt>
 
@@ -289,9 +381,7 @@ If ProGuard seems to run fine, but the external preverifier subsequently
 produces errors, it's usually for a single reason:
 
 <dl>
-<dt><a name="invalidclassexception1"><b>InvalidClassException</b>,
-    <b>class loading error</b>, or
-    <b>verification error</b></a></dt>
+<dt><a name="invalidclassexception1"><b>InvalidClassException</b>, <b>class loading error</b>, or <b>verification error</b></a></dt>
 
 <dd>If you get any such message from the preverifier, you are probably working
     on a platform with a case-insensitive file system, such as Windows. The
@@ -355,8 +445,7 @@ might be several reasons:
     href="usage.html#keep"><code>-keep</code></a> option, e.g. "<code>-keep
     class mypackage.MyClass { void myMethod(); }</code>".</dd>
 
-<dt><a name="missingresourceexception"><b>MissingResourceException</b> or
-    <b>NullPointerException</b></a></dt>
+<dt><a name="missingresourceexception"><b>MissingResourceException</b> or <b>NullPointerException</b></a></dt>
 
 <dd>Your processed code may be unable to find some resource files. ProGuard
     simply copies resource files over from the input jars to the output jars.
@@ -382,14 +471,40 @@ might be several reasons:
     manifest file is the one that is copied (the first manifest file that is
     encountered), and that the main class is kept in your configuration,</dd>
 
-<dt><a name="invalidclassexception2"><b>InvalidClassException</b>,
-    <b>class loading error</b>, or
-    <b>verification error</b> (in Java Micro Edition)</a></dt>
+<dt><a name="invalidclassexception2"><b>InvalidClassException</b>, <b>class loading error</b>, or <b>verification error</b> (in Java Micro Edition)</a></dt>
 
 <dd>If you get such an error in Java Micro Edition, you may have forgotten to
     specify the <a
     href="usage.html#microedition"><code>-microedition</code></a> option, so
     the processed class files are preverified properly.</dd>
+
+<dt><a name="nosuchfieldormethod"><b>Error: No Such Field or Method</b>, <b>Error verifying method</b> (in a Java Micro Edition emulator)</a></dt>
+
+<dd>If you get such a message in a Motorola or Sony Ericsson phone emulator,
+    it's because these emulators don't like packageless classes and/or
+    overloaded fields and methods. You can work around it by not using the
+    options <code><a href="usage.html#repackageclasses">-repackageclasses</a>
+    ''</code> and <a
+    href="usage.html#overloadaggressively"><code>-overloadaggressively</code></a>.
+    If you're using the JME WTK plugin, you can adapt the configuration
+    <code>proguard/wtk/default.pro</code> that's inside the
+    <code>proguard.jar</code>.</dd>
+
+<dt><a name="failingmidlets"><b>Failing midlets</b> (on a Java Micro Edition device)</a></dt>
+
+<dd>If your midlet runs in an emulator and on some devices, but not on some
+    other devices, this is probably due to a bug in the latter devices. For
+    some older Motorola and Nokia phones, you might try specifying the <a
+    href="usage.html#useuniqueclassmembernames"><code>-useuniqueclassmembernames</code></a>
+    option. It avoids overloading class member names, which triggers a bug in
+    their java virtual machine.
+    <p>
+    You might also try using the <a
+    href="usage.html#dontusemixedcaseclassnames"><code>-dontusemixedcaseclassnames</code></a>
+    option. Even if the midlet has been properly processed and then
+    preverified on a case-sensitive file system, the device itself might not
+    like the mixed-case class names. Notably, the Nokia N-Gage emulator works
+    fine, but the actual device seems to exhibit this problem.</dd>
 
 <dt><a name="disappearingloops"><b>Disappearing loops</b></a></dt>
 
@@ -403,45 +518,23 @@ might be several reasons:
     <a href="usage.html#dontoptimize"><code>-dontoptimize</code></a>
     option.</dd>
 
-<dt><a name="failingmidlets"><b>Failing midlets</b> (in Java Micro Edition)</a></dt>
-
-<dd>If your midlet simply won't start, you might try using the <a
-    href="usage.html#dontusemixedcaseclassnames"><code>-dontusemixedcaseclassnames</code></a>
-    option. Even if it has been properly processed and then preverified on a
-    case-sensitive file system, the device itself might not like the
-    mixed-case class names. Notably, the Nokia N-Gage emulator works fine, but
-    the actual device seems to exhibit this problem.</dd>
-
 <dt><a name="securityexception"><b>SecurityException: SHA1 digest error</b></a></dt>
 
 <dd>You may have forgotten to sign your program jar <i>after</i> having
     processed it with ProGuard.</dd>
 
-<dt><a name="classcastexception"><b>ClassCastException: class not an enum</b>
-    or <br><b>IllegalArgumentException: class not an enum type</b></a></dt>
+<dt><a name="classcastexception"><b>ClassCastException: class not an enum</b>, or <br><b>IllegalArgumentException: class not an enum type</b></a></dt>
 
 <dd>You should make sure you're preserving the special methods of enumeration
     types, which the run-time environment calls by introspection. The required
-    options are shown in the examples.</dd>
+    options are shown in the <a
+    href="examples.html#enumerations">examples</a>.</dd>
 
 <dt><a name="arraystoreexception"><b>ArrayStoreException: sun.reflect.annotation.EnumConstantNotPresentExceptionProxy</b></a></dt>
 
 <dd>You are probably processing annotations involving enumerations. Again, you
     should make sure you're preserving the special methods of the enumeration
     type, as shown in the examples.</dd>
-
-<dt><a name="nosuchfieldormethod"><b>Error: No Such Field or Method</b>,
-    <b>Error verifying method</b> (in a Java Micro Edition emulator)</a></dt>
-
-<dd>If you get such a message in a Motorola or Sony Ericsson phone emulator,
-    it's because these emulators don't like packageless classes and/or
-    overloaded fields and methods. You can work around it by not using the
-    options <code><a href="usage.html#repackageclasses">-repackageclasses</a>
-    ''</code> and <a
-    href="usage.html#overloadaggressively"><code>-overloadaggressively</code></a>.
-    If you're using the JME WTK plugin, you can adapt the configuration
-    <code>proguard/wtk/default.pro</code> that's inside the
-    <code>proguard.jar</code>.</dd>
 
 <dt><a name="compilererror"><b>CompilerError: duplicate addition</b></a></dt>
 
@@ -460,12 +553,12 @@ might be several reasons:
     option. You should then use the same option again in the second processing
     round.</dd>
 
-<dt><a name="nosuchmethoderror"><b>NoSuchMethodError</b> or
-    <b>AbstractMethodError</b></a></dt>
+<dt><a name="nosuchmethoderror"><b>NoSuchMethodError</b> or <b>AbstractMethodError</b></a></dt>
 
-<dd>Again, you should make sure you're not writing your output class files to a
+<dd>You should make sure you're not writing your output class files to a
     directory on a platform with a case-insensitive file system, such as
-    Windows. Please refer to the first item on this list for details.
+    Windows. Please refer to the section about <a
+    href="#disappearingclasses">disappearing classes</a> for details.
     <p>
     Furthermore, you should check whether you have specified your program jars
     and library jars properly. Program classes can refer to library classes,
@@ -489,7 +582,7 @@ might be several reasons:
 
 <hr>
 <address>
-Copyright &copy; 2002-2007
+Copyright &copy; 2002-2008
 <a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>

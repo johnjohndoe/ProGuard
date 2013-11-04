@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -24,7 +24,7 @@ import proguard.classfile.*;
 import proguard.classfile.constant.*;
 
 /**
- * This class can add constant pool entries to given classes.
+ * This class can add constant pool entries to a given class.
  *
  * @author Eric Lafortune
  */
@@ -32,17 +32,28 @@ public class ConstantPoolEditor
 {
     private static final boolean DEBUG = false;
 
+    private ProgramClass targetClass;
+
 
     /**
-     * Finds or creates a IntegerConstant constant pool entry with the given value,
-     * in the given class.
-     * @return the constant pool index of the   Utf8Constant.
+     * Creates a new ConstantPoolEditor that will edit constants in the given
+     * target class.
      */
-    public int addIntegerConstant(ProgramClass programClass,
-                                  int          value)
+    public ConstantPoolEditor(ProgramClass targetClass)
     {
-        int        constantPoolCount = programClass.u2constantPoolCount;
-        Constant[] constantPool      = programClass.constantPool;
+        this.targetClass = targetClass;
+    }
+
+
+    /**
+     * Finds or creates a IntegerConstant constant pool entry with the given
+     * value.
+     * @return the constant pool index of the Utf8Constant.
+     */
+    public int addIntegerConstant(int value)
+    {
+        int        constantPoolCount = targetClass.u2constantPoolCount;
+        Constant[] constantPool      = targetClass.constantPool;
 
         // Check if the entry already exists.
         for (int index = 1; index < constantPoolCount; index++)
@@ -60,20 +71,18 @@ public class ConstantPoolEditor
             }
         }
 
-        return addConstant(programClass, new IntegerConstant(value));
+        return addConstant(new IntegerConstant(value));
     }
 
 
     /**
-     * Finds or creates a LongConstant constant pool entry with the given value,
-     * in the given class.
-     * @return the constant pool index of the   Utf8Constant.
+     * Finds or creates a LongConstant constant pool entry with the given value.
+     * @return the constant pool index of the LongConstant.
      */
-    public int addLongConstant(ProgramClass programClass,
-                               long         value)
+    public int addLongConstant(long value)
     {
-        int        constantPoolCount = programClass.u2constantPoolCount;
-        Constant[] constantPool      = programClass.constantPool;
+        int        constantPoolCount = targetClass.u2constantPoolCount;
+        Constant[] constantPool      = targetClass.constantPool;
 
         // Check if the entry already exists.
         for (int index = 1; index < constantPoolCount; index++)
@@ -91,20 +100,19 @@ public class ConstantPoolEditor
             }
         }
 
-        return addConstant(programClass, new LongConstant(value));
+        return addConstant(new LongConstant(value));
     }
 
 
     /**
-     * Finds or creates a FloatConstant constant pool entry with the given value,
-     * in the given class.
-     * @return the constant pool index of the   Utf8Constant.
+     * Finds or creates a FloatConstant constant pool entry with the given
+     * value.
+     * @return the constant pool index of the FloatConstant.
      */
-    public int addFloatConstant(ProgramClass programClass,
-                                float        value)
+    public int addFloatConstant(float value)
     {
-        int        constantPoolCount = programClass.u2constantPoolCount;
-        Constant[] constantPool      = programClass.constantPool;
+        int        constantPoolCount = targetClass.u2constantPoolCount;
+        Constant[] constantPool      = targetClass.constantPool;
 
         // Check if the entry already exists.
         for (int index = 1; index < constantPoolCount; index++)
@@ -122,20 +130,19 @@ public class ConstantPoolEditor
             }
         }
 
-        return addConstant(programClass, new FloatConstant(value));
+        return addConstant(new FloatConstant(value));
     }
 
 
     /**
-     * Finds or creates a DoubleConstant constant pool entry with the given value,
-     * in the given class.
-     * @return the constant pool index of the   Utf8Constant.
+     * Finds or creates a DoubleConstant constant pool entry with the given
+     * value.
+     * @return the constant pool index of the DoubleConstant.
      */
-    public int addDoubleConstant(ProgramClass programClass,
-                                  double      value)
+    public int addDoubleConstant(double value)
     {
-        int        constantPoolCount = programClass.u2constantPoolCount;
-        Constant[] constantPool      = programClass.constantPool;
+        int        constantPoolCount = targetClass.u2constantPoolCount;
+        Constant[] constantPool      = targetClass.constantPool;
 
         // Check if the entry already exists.
         for (int index = 1; index < constantPoolCount; index++)
@@ -153,22 +160,21 @@ public class ConstantPoolEditor
             }
         }
 
-        return addConstant(programClass, new DoubleConstant(value));
+        return addConstant(new DoubleConstant(value));
     }
 
 
     /**
-     * Finds or creates a StringConstant constant pool entry with the given value,
-     * in the given class.
-     * @return the constant pool index of the ClassConstant.
+     * Finds or creates a StringConstant constant pool entry with the given
+     * value.
+     * @return the constant pool index of the StringConstant.
      */
-    public int addStringConstant(ProgramClass programClass,
-                                 String       string,
-                                 Clazz        referencedClass,
-                                 Member       referencedMember)
+    public int addStringConstant(String string,
+                                 Clazz  referencedClass,
+                                 Member referencedMember)
     {
-        int        constantPoolCount = programClass.u2constantPoolCount;
-        Constant[] constantPool      = programClass.constantPool;
+        int        constantPoolCount = targetClass.u2constantPoolCount;
+        Constant[] constantPool      = targetClass.constantPool;
 
         // Check if the entry already exists.
         for (int index = 1; index < constantPoolCount; index++)
@@ -178,18 +184,15 @@ public class ConstantPoolEditor
             if (constant != null &&
                 constant.getTag() == ClassConstants.CONSTANT_String)
             {
-                StringConstant classConstant = (StringConstant)constant;
-                if (classConstant.getString(programClass).equals(string))
+                StringConstant stringConstant = (StringConstant)constant;
+                if (stringConstant.getString(targetClass).equals(string))
                 {
                     return index;
                 }
             }
         }
 
-        int nameIndex = addUtf8Constant(programClass, string);
-
-        return addConstant(programClass,
-                           new StringConstant(nameIndex,
+        return addConstant(new StringConstant(addUtf8Constant(string),
                                               referencedClass,
                                               referencedMember));
     }
@@ -197,15 +200,13 @@ public class ConstantPoolEditor
 
     /**
      * Finds or creates a FieldrefConstant constant pool entry for the given
-     * class and field, in the given class.
+     * class and field.
      * @return the constant pool index of the FieldrefConstant.
      */
-    public int addFieldrefConstant(ProgramClass programClass,
-                                   Clazz        referencedClass,
-                                   Member       referencedMember)
+    public int addFieldrefConstant(Clazz  referencedClass,
+                                   Member referencedMember)
     {
-        return addFieldrefConstant(programClass,
-                                   referencedClass.getName(),
+        return addFieldrefConstant(referencedClass.getName(),
                                    referencedMember.getName(referencedClass),
                                    referencedMember.getDescriptor(referencedClass),
                                    referencedClass,
@@ -215,21 +216,17 @@ public class ConstantPoolEditor
 
     /**
      * Finds or creates a FieldrefConstant constant pool entry with the given
-     * class name, field name, and descriptor, in the given class.
+     * class name, field name, and descriptor.
      * @return the constant pool index of the FieldrefConstant.
      */
-    public int addFieldrefConstant(ProgramClass programClass,
-                                   String       className,
-                                   String       name,
-                                   String       descriptor,
-                                   Clazz        referencedClass,
-                                   Member       referencedMember)
+    public int addFieldrefConstant(String className,
+                                   String name,
+                                   String descriptor,
+                                   Clazz  referencedClass,
+                                   Member referencedMember)
     {
-        return addFieldrefConstant(programClass,
-                                   className,
-                                   addNameAndTypeConstant(programClass,
-                                                          name,
-                                                          descriptor),
+        return addFieldrefConstant(className,
+                                   addNameAndTypeConstant(name, descriptor),
                                    referencedClass,
                                    referencedMember);
     }
@@ -237,19 +234,15 @@ public class ConstantPoolEditor
 
     /**
      * Finds or creates a FieldrefConstant constant pool entry with the given
-     * class name, field name, and descriptor, in the given class.
+     * class name, field name, and descriptor.
      * @return the constant pool index of the FieldrefConstant.
      */
-    public int addFieldrefConstant(ProgramClass programClass,
-                                   String       className,
-                                   int          nameAndTypeIndex,
-                                   Clazz        referencedClass,
-                                   Member       referencedMember)
+    public int addFieldrefConstant(String className,
+                                   int    nameAndTypeIndex,
+                                   Clazz  referencedClass,
+                                   Member referencedMember)
     {
-        return addFieldrefConstant(programClass,
-                                   addClassConstant(programClass,
-                                                    className,
-                                                    referencedClass),
+        return addFieldrefConstant(addClassConstant(className, referencedClass),
                                    nameAndTypeIndex,
                                    referencedClass,
                                    referencedMember);
@@ -258,22 +251,17 @@ public class ConstantPoolEditor
 
     /**
      * Finds or creates a FieldrefConstant constant pool entry with the given
-     * class constant pool entry index, field name, and descriptor, in the
-     * given class.
-     * @return the constant pool index of the   FieldrefConstant.
+     * class constant pool entry index, field name, and descriptor.
+     * @return the constant pool index of the FieldrefConstant.
      */
-    public int addFieldrefConstant(ProgramClass programClass,
-                                   int          classIndex,
-                                   String       name,
-                                   String       descriptor,
-                                   Clazz        referencedClass,
-                                   Member       referencedMember)
+    public int addFieldrefConstant(int    classIndex,
+                                   String name,
+                                   String descriptor,
+                                   Clazz  referencedClass,
+                                   Member referencedMember)
     {
-        return addFieldrefConstant(programClass,
-                                   classIndex,
-                                   addNameAndTypeConstant(programClass,
-                                                          name,
-                                                          descriptor),
+        return addFieldrefConstant(classIndex,
+                                   addNameAndTypeConstant(name, descriptor),
                                    referencedClass,
                                    referencedMember);
     }
@@ -281,18 +269,17 @@ public class ConstantPoolEditor
 
     /**
      * Finds or creates a FieldrefConstant constant pool entry with the given
-     * class constant pool entry index and name and type constant pool entry index
-     * the given class.
+     * class constant pool entry index and name and type constant pool entry
+     * index.
      * @return the constant pool index of the FieldrefConstant.
      */
-    public int addFieldrefConstant(ProgramClass programClass,
-                                   int          classIndex,
-                                   int          nameAndTypeIndex,
-                                   Clazz        referencedClass,
-                                   Member       referencedMember)
+    public int addFieldrefConstant(int    classIndex,
+                                   int    nameAndTypeIndex,
+                                   Clazz  referencedClass,
+                                   Member referencedMember)
     {
-        int        constantPoolCount = programClass.u2constantPoolCount;
-        Constant[] constantPool      = programClass.constantPool;
+        int        constantPoolCount = targetClass.u2constantPoolCount;
+        Constant[] constantPool      = targetClass.constantPool;
 
         // Check if the entry already exists.
         for (int index = 1; index < constantPoolCount; index++)
@@ -311,8 +298,7 @@ public class ConstantPoolEditor
             }
         }
 
-        return addConstant(programClass,
-                           new FieldrefConstant(classIndex,
+        return addConstant(new FieldrefConstant(classIndex,
                                                 nameAndTypeIndex,
                                                 referencedClass,
                                                 referencedMember));
@@ -321,58 +307,48 @@ public class ConstantPoolEditor
 
     /**
      * Finds or creates a InterfaceMethodrefConstant constant pool entry with the
-     * given class name, method name, and descriptor, in the given class.
+     * given class name, method name, and descriptor.
      * @return the constant pool index of the InterfaceMethodrefConstant.
      */
-    public int addInterfaceMethodrefConstant(ProgramClass programClass,
-                                             String       className,
-                                             String       name,
-                                             String       descriptor,
-                                             Clazz        referencedClass,
-                                             Member       referencedMember)
+    public int addInterfaceMethodrefConstant(String className,
+                                             String name,
+                                             String descriptor,
+                                             Clazz  referencedClass,
+                                             Member referencedMember)
     {
-        return addInterfaceMethodrefConstant(programClass,
-                                             className,
-                                             addNameAndTypeConstant(programClass,
-                                                                    name,
-                                                                    descriptor),
-                                                                    referencedClass,
-                                                                    referencedMember);
+        return addInterfaceMethodrefConstant(className,
+                                             addNameAndTypeConstant(name, descriptor),
+                                             referencedClass,
+                                             referencedMember);
     }
 
 
     /**
      * Finds or creates a InterfaceMethodrefConstant constant pool entry with the
-     * given class name, method name, and descriptor, in the given class.
+     * given class name, method name, and descriptor.
      * @return the constant pool index of the InterfaceMethodrefConstant.
      */
-    public int addInterfaceMethodrefConstant(ProgramClass programClass,
-                                             String       className,
-                                             int          nameAndTypeIndex,
-                                             Clazz        referencedClass,
-                                             Member       referencedMember)
+    public int addInterfaceMethodrefConstant(String className,
+                                             int    nameAndTypeIndex,
+                                             Clazz  referencedClass,
+                                             Member referencedMember)
     {
-        return addInterfaceMethodrefConstant(programClass,
-                                             addClassConstant(programClass,
-                                                              className,
-                                                              referencedClass),
-                                                              nameAndTypeIndex,
-                                                              referencedClass,
-                                                              referencedMember);
+        return addInterfaceMethodrefConstant(addClassConstant(className, referencedClass),
+                                             nameAndTypeIndex,
+                                             referencedClass,
+                                             referencedMember);
     }
 
 
     /**
      * Finds or creates a InterfaceMethodrefConstant constant pool entry for the
-     * given class and method, in the given class.
+     * given class and method.
      * @return the constant pool index of the InterfaceMethodrefConstant.
      */
-    public int addInterfaceMethodrefConstant(ProgramClass programClass,
-                                             Clazz        referencedClass,
-                                             Member       referencedMember)
+    public int addInterfaceMethodrefConstant(Clazz  referencedClass,
+                                             Member referencedMember)
     {
-        return addInterfaceMethodrefConstant(programClass,
-                                             referencedClass.getName(),
+        return addInterfaceMethodrefConstant(referencedClass.getName(),
                                              referencedMember.getName(referencedClass),
                                              referencedMember.getDescriptor(referencedClass),
                                              referencedClass,
@@ -382,22 +358,17 @@ public class ConstantPoolEditor
 
     /**
      * Finds or creates a InterfaceMethodrefConstant constant pool entry with the
-     * given class constant pool entry index, method name, and descriptor, in
-     * the given class.
+     * given class constant pool entry index, method name, and descriptor.
      * @return the constant pool index of the InterfaceMethodrefConstant.
      */
-    public int addInterfaceMethodrefConstant(ProgramClass programClass,
-                                             int          classIndex,
-                                             String       name,
-                                             String       descriptor,
-                                             Clazz        referencedClass,
-                                             Member       referencedMember)
+    public int addInterfaceMethodrefConstant(int    classIndex,
+                                             String name,
+                                             String descriptor,
+                                             Clazz  referencedClass,
+                                             Member referencedMember)
     {
-        return addInterfaceMethodrefConstant(programClass,
-                                             classIndex,
-                                             addNameAndTypeConstant(programClass,
-                                                                    name,
-                                                                    descriptor),
+        return addInterfaceMethodrefConstant(classIndex,
+                                             addNameAndTypeConstant(name, descriptor),
                                              referencedClass,
                                              referencedMember);
     }
@@ -406,17 +377,16 @@ public class ConstantPoolEditor
     /**
      * Finds or creates a InterfaceMethodrefConstant constant pool entry with the
      * given class constant pool entry index and name and type constant pool
-     * entry index the given class.
+     * entry index.
      * @return the constant pool index of the InterfaceMethodrefConstant.
      */
-    public int addInterfaceMethodrefConstant(ProgramClass programClass,
-                                             int          classIndex,
-                                             int          nameAndTypeIndex,
-                                             Clazz        referencedClass,
-                                             Member       referencedMember)
+    public int addInterfaceMethodrefConstant(int    classIndex,
+                                             int    nameAndTypeIndex,
+                                             Clazz  referencedClass,
+                                             Member referencedMember)
     {
-        int        constantPoolCount = programClass.u2constantPoolCount;
-        Constant[] constantPool      = programClass.constantPool;
+        int        constantPoolCount = targetClass.u2constantPoolCount;
+        Constant[] constantPool      = targetClass.constantPool;
 
         // Check if the entry already exists.
         for (int index = 1; index < constantPoolCount; index++)
@@ -428,15 +398,14 @@ public class ConstantPoolEditor
             {
                 InterfaceMethodrefConstant methodrefConstant = (InterfaceMethodrefConstant)constant;
                 if (methodrefConstant.u2classIndex       == classIndex &&
-                                methodrefConstant.u2nameAndTypeIndex ==   nameAndTypeIndex)
+                    methodrefConstant.u2nameAndTypeIndex == nameAndTypeIndex)
                 {
                     return index;
                 }
             }
         }
 
-        return addConstant(programClass,
-                           new InterfaceMethodrefConstant(classIndex,
+        return addConstant(new InterfaceMethodrefConstant(classIndex,
                                                           nameAndTypeIndex,
                                                           referencedClass,
                                                           referencedMember));
@@ -445,15 +414,13 @@ public class ConstantPoolEditor
 
     /**
      * Finds or creates a MethodrefConstant constant pool entry for the given
-     * class and method, in the given class.
-     * @return the constant pool index of   the MethodrefConstant.
+     * class and method.
+     * @return the constant pool index of the MethodrefConstant.
      */
-    public int addMethodrefConstant(ProgramClass programClass,
-                                    Clazz        referencedClass,
-                                    Member       referencedMember)
+    public int addMethodrefConstant(Clazz  referencedClass,
+                                    Member referencedMember)
     {
-        return addMethodrefConstant(programClass,
-                                    referencedClass.getName(),
+        return addMethodrefConstant(referencedClass.getName(),
                                     referencedMember.getName(referencedClass),
                                     referencedMember.getDescriptor(referencedClass),
                                     referencedClass,
@@ -463,21 +430,17 @@ public class ConstantPoolEditor
 
     /**
      * Finds or creates a MethodrefConstant constant pool entry with the given
-     * class name, method name, and descriptor, in the given class.
-     * @return the constant pool index of   the MethodrefConstant.
+     * class name, method name, and descriptor.
+     * @return the constant pool index of the MethodrefConstant.
      */
-    public int addMethodrefConstant(ProgramClass programClass,
-                                    String       className,
-                                    String       name,
-                                    String       descriptor,
-                                    Clazz        referencedClass,
-                                    Member       referencedMember)
+    public int addMethodrefConstant(String className,
+                                    String name,
+                                    String descriptor,
+                                    Clazz  referencedClass,
+                                    Member referencedMember)
     {
-        return addMethodrefConstant(programClass,
-                                    className,
-                                    addNameAndTypeConstant(programClass,
-                                                           name,
-                                                           descriptor),
+        return addMethodrefConstant(className,
+                                    addNameAndTypeConstant(name, descriptor),
                                     referencedClass,
                                     referencedMember);
     }
@@ -485,19 +448,15 @@ public class ConstantPoolEditor
 
     /**
      * Finds or creates a MethodrefConstant constant pool entry with the given
-     * class name, method name, and descriptor, in the given class.
-     * @return the constant pool index of   the MethodrefConstant.
+     * class name, method name, and descriptor.
+     * @return the constant pool index of the MethodrefConstant.
      */
-    public int addMethodrefConstant(ProgramClass programClass,
-                                    String       className,
-                                    int          nameAndTypeIndex,
-                                    Clazz        referencedClass,
-                                    Member       referencedMember)
+    public int addMethodrefConstant(String className,
+                                    int    nameAndTypeIndex,
+                                    Clazz  referencedClass,
+                                    Member referencedMember)
     {
-        return addMethodrefConstant(programClass,
-                                    addClassConstant(programClass,
-                                                     className,
-                                                     referencedClass),
+        return addMethodrefConstant(addClassConstant(className, referencedClass),
                                     nameAndTypeIndex,
                                     referencedClass,
                                     referencedMember);
@@ -506,22 +465,17 @@ public class ConstantPoolEditor
 
     /**
      * Finds or creates a MethodrefConstant constant pool entry with the given
-     * class constant pool entry index, method name, and descriptor, in the
-     * given class.
-     * @return the constant pool index of   the MethodrefConstant.
+     * class constant pool entry index, method name, and descriptor.
+     * @return the constant pool index of the MethodrefConstant.
      */
-    public int addMethodrefConstant(ProgramClass programClass,
-                                    int          classIndex,
-                                    String       name,
-                                    String       descriptor,
-                                    Clazz        referencedClass,
-                                    Member       referencedMember)
+    public int addMethodrefConstant(int    classIndex,
+                                    String name,
+                                    String descriptor,
+                                    Clazz  referencedClass,
+                                    Member referencedMember)
     {
-        return addMethodrefConstant(programClass,
-                                    classIndex,
-                                    addNameAndTypeConstant(programClass,
-                                                           name,
-                                                           descriptor),
+        return addMethodrefConstant(classIndex,
+                                    addNameAndTypeConstant(name, descriptor),
                                     referencedClass,
                                     referencedMember);
     }
@@ -529,18 +483,17 @@ public class ConstantPoolEditor
 
     /**
      * Finds or creates a MethodrefConstant constant pool entry with the given
-     * class constant pool entry index and name and type constant pool entry index
-     * the given class.
+     * class constant pool entry index and name and type constant pool entry
+     * index.
      * @return the constant pool index of the MethodrefConstant.
      */
-    public int addMethodrefConstant(ProgramClass programClass,
-                                    int          classIndex,
-                                    int          nameAndTypeIndex,
-                                    Clazz        referencedClass,
-                                    Member       referencedMember)
+    public int addMethodrefConstant(int    classIndex,
+                                    int    nameAndTypeIndex,
+                                    Clazz  referencedClass,
+                                    Member referencedMember)
     {
-        int        constantPoolCount = programClass.u2constantPoolCount;
-        Constant[] constantPool      = programClass.constantPool;
+        int        constantPoolCount = targetClass.u2constantPoolCount;
+        Constant[] constantPool      = targetClass.constantPool;
 
         // Check if the entry already exists.
         for (int index = 1; index < constantPoolCount; index++)
@@ -551,16 +504,15 @@ public class ConstantPoolEditor
                 constant.getTag() == ClassConstants.CONSTANT_Methodref)
             {
                 MethodrefConstant methodrefConstant = (MethodrefConstant)constant;
-                if (methodrefConstant.u2classIndex         == classIndex &&
-                    methodrefConstant.u2nameAndTypeIndex   == nameAndTypeIndex)
+                if (methodrefConstant.u2classIndex       == classIndex &&
+                    methodrefConstant.u2nameAndTypeIndex == nameAndTypeIndex)
                 {
                     return index;
                 }
             }
         }
 
-        return addConstant(programClass,
-                           new MethodrefConstant(classIndex,
+        return addConstant(new MethodrefConstant(classIndex,
                                                  nameAndTypeIndex,
                                                  referencedClass,
                                                  referencedMember));
@@ -568,30 +520,25 @@ public class ConstantPoolEditor
 
 
     /**
-     * Finds or creates a ClassConstant constant pool entry for the given class,
-     * in the given class.
+     * Finds or creates a ClassConstant constant pool entry for the given class.
      * @return the constant pool index of the ClassConstant.
      */
-    public int addClassConstant(ProgramClass programClass,
-                                Clazz        referencedClass)
+    public int addClassConstant(Clazz referencedClass)
     {
-        return addClassConstant(programClass,
-                                referencedClass.getName(),
+        return addClassConstant(referencedClass.getName(),
                                 referencedClass);
     }
 
 
     /**
-     * Finds or creates a ClassConstant constant pool entry with the given name,
-     * in the given class.
+     * Finds or creates a ClassConstant constant pool entry with the given name.
      * @return the constant pool index of the ClassConstant.
      */
-    public int addClassConstant(ProgramClass programClass,
-                                String       name,
-                                Clazz        referencedClass)
+    public int addClassConstant(String name,
+                                Clazz  referencedClass)
     {
-        int        constantPoolCount = programClass.u2constantPoolCount;
-        Constant[] constantPool      = programClass.constantPool;
+        int        constantPoolCount = targetClass.u2constantPoolCount;
+        Constant[] constantPool      = targetClass.constantPool;
 
         // Check if the entry already exists.
         for (int index = 1; index < constantPoolCount; index++)
@@ -602,32 +549,29 @@ public class ConstantPoolEditor
                 constant.getTag() == ClassConstants.CONSTANT_Class)
             {
                 ClassConstant classConstant = (ClassConstant)constant;
-                if (classConstant.getName(programClass).equals(name))
+                if (classConstant.getName(targetClass).equals(name))
                 {
                     return index;
                 }
             }
         }
 
-        int nameIndex = addUtf8Constant(programClass, name);
+        int nameIndex = addUtf8Constant(name);
 
-        return addConstant(programClass,
-                           new ClassConstant(nameIndex,
-                                             referencedClass));
+        return addConstant(new ClassConstant(nameIndex, referencedClass));
     }
 
 
     /**
      * Finds or creates a NameAndTypeConstant constant pool entry with the given
-     * name and type, in the given class.
+     * name and type.
      * @return the constant pool index of the NameAndTypeConstant.
      */
-    public int addNameAndTypeConstant(ProgramClass programClass,
-                                      String       name,
-                                      String       type)
+    public int addNameAndTypeConstant(String name,
+                                      String type)
     {
-        int        constantPoolCount = programClass.u2constantPoolCount;
-        Constant[] constantPool      = programClass.constantPool;
+        int        constantPoolCount = targetClass.u2constantPoolCount;
+        Constant[] constantPool      = targetClass.constantPool;
 
         // Check if the entry already exists.
         for (int index = 1; index < constantPoolCount; index++)
@@ -638,33 +582,27 @@ public class ConstantPoolEditor
                 constant.getTag() == ClassConstants.CONSTANT_NameAndType)
             {
                 NameAndTypeConstant nameAndTypeConstant = (NameAndTypeConstant)constant;
-                if (nameAndTypeConstant.getName(programClass).equals(name) &&
-                    nameAndTypeConstant.getType(programClass).equals(type))
+                if (nameAndTypeConstant.getName(targetClass).equals(name) &&
+                    nameAndTypeConstant.getType(targetClass).equals(type))
                 {
                     return index;
                 }
             }
         }
 
-        int nameIndex       = addUtf8Constant(programClass, name);
-        int descriptorIndex = addUtf8Constant(programClass, type);
-
-        return addConstant(programClass,
-                           new NameAndTypeConstant(nameIndex,
-                                                   descriptorIndex));
+        return addConstant(new NameAndTypeConstant(addUtf8Constant(name),
+                                                   addUtf8Constant(type)));
     }
 
 
     /**
-     * Finds or creates a Utf8Constant constant pool entry for the given string,
-     * in the given class.
-     * @return the constant pool index of the   Utf8Constant.
+     * Finds or creates a Utf8Constant constant pool entry for the given string.
+     * @return the constant pool index of the Utf8Constant.
      */
-    public int addUtf8Constant(ProgramClass programClass,
-                               String       string)
+    public int addUtf8Constant(String string)
     {
-        int        constantPoolCount = programClass.u2constantPoolCount;
-        Constant[] constantPool      = programClass.constantPool;
+        int        constantPoolCount = targetClass.u2constantPoolCount;
+        Constant[] constantPool      = targetClass.constantPool;
 
         // Check if the entry already exists.
         for (int index = 1; index < constantPoolCount; index++)
@@ -682,38 +620,36 @@ public class ConstantPoolEditor
             }
         }
 
-        return addConstant(programClass, new Utf8Constant(string));
+        return addConstant(new Utf8Constant(string));
     }
 
 
     /**
-     * Adds a given constant pool entry to the end of the constant pool
-     * in the given class.
+     * Adds a given constant pool entry to the end of the constant pool/
      * @return the constant pool index for the added entry.
      */
-    public int addConstant(ProgramClass programClass,
-                           Constant     constant)
+    public int addConstant(Constant constant)
     {
-        int        constantPoolCount = programClass.u2constantPoolCount;
-        Constant[] constantPool      = programClass.constantPool;
+        int        constantPoolCount = targetClass.u2constantPoolCount;
+        Constant[] constantPool      = targetClass.constantPool;
 
         // Make sure there is enough space for another constant pool entry.
         if (constantPool.length < constantPoolCount+2)
         {
-            programClass.constantPool = new Constant[constantPoolCount+2];
+            targetClass.constantPool = new Constant[constantPoolCount+2];
             System.arraycopy(constantPool, 0,
-                             programClass.constantPool, 0,
+                             targetClass.constantPool, 0,
                              constantPoolCount);
-            constantPool = programClass.constantPool;
+            constantPool = targetClass.constantPool;
         }
 
         if (DEBUG)
         {
-            System.out.println(programClass.getName()+": adding ["+constant.getClass().getName()+"] at index "+programClass.u2constantPoolCount);
+            System.out.println(targetClass.getName()+": adding ["+constant.getClass().getName()+"] at index "+targetClass.u2constantPoolCount);
         }
 
         // Create a new Utf8Constant for the given string.
-        constantPool[programClass.u2constantPoolCount++] = constant;
+        constantPool[targetClass.u2constantPoolCount++] = constant;
 
         // Long constants and double constants take up two entries in the
         // constant pool.
@@ -721,7 +657,7 @@ public class ConstantPoolEditor
         if (tag == ClassConstants.CONSTANT_Long ||
             tag == ClassConstants.CONSTANT_Double)
         {
-            constantPool[programClass.u2constantPoolCount++] = null;
+            constantPool[targetClass.u2constantPoolCount++] = null;
         }
 
         return constantPoolCount;

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -98,7 +98,7 @@ public abstract class Value
     }
 
     /**
-     * Returns this Value as a InstructionOffsetValue.
+     * Returns this Value as an InstructionOffsetValue.
      */
     public InstructionOffsetValue instructionOffsetValue()
     {
@@ -107,9 +107,20 @@ public abstract class Value
 
 
     /**
-     * Returns whether this Value represents a single specific value.
+     * Returns whether this Value represents a single specific (but possibly
+     * unknown) value.
      */
     public boolean isSpecific()
+    {
+        return false;
+    }
+
+
+    /**
+     * Returns whether this Value represents a single particular (known)
+     * value.
+     */
+    public boolean isParticular()
     {
         return false;
     }

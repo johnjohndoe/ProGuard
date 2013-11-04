@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -707,7 +707,7 @@ public abstract class Instruction
 
 
     /**
-     * Returns whether the instruction is wide, index.e. preceded by a wide opcode.
+     * Returns whether the instruction is wide, i.e. preceded by a wide opcode.
      * With the current specifications, only variable instructions can be wide.
      */
     protected boolean isWide()

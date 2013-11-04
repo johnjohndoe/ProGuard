@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -46,7 +46,22 @@ public class ClassNameFilter implements ClassVisitor
     public ClassNameFilter(String       regularExpression,
                            ClassVisitor classVisitor)
     {
-        this.regularExpressionMatcher = new ListParser(new ClassNameParser()).parse(regularExpression);
+        this(new ListParser(new ClassNameParser()).parse(regularExpression),
+             classVisitor);
+    }
+
+
+    /**
+     * Creates a new ClassNameFilter.
+     * @param regularExpressionMatcher the regular expression against which
+     *                                 class names will be matched.
+     * @param classVisitor             the <code>ClassVisitor</code> to which
+     *                                 visits will be delegated.
+     */
+    public ClassNameFilter(StringMatcher regularExpressionMatcher,
+                           ClassVisitor  classVisitor)
+    {
+        this.regularExpressionMatcher = regularExpressionMatcher;
         this.classVisitor             = classVisitor;
     }
 

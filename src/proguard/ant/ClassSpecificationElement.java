@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -219,9 +219,10 @@ public class ClassSpecificationElement extends DataType
                         token;
 
                     int accessFlag =
-                        strippedToken.equals(ClassConstants.EXTERNAL_ACC_PUBLIC)   ? ClassConstants.INTERNAL_ACC_PUBLIC   :
-                        strippedToken.equals(ClassConstants.EXTERNAL_ACC_FINAL)    ? ClassConstants.INTERNAL_ACC_FINAL    :
-                        strippedToken.equals(ClassConstants.EXTERNAL_ACC_ABSTRACT) ? ClassConstants.INTERNAL_ACC_ABSTRACT :
+                        strippedToken.equals(ClassConstants.EXTERNAL_ACC_PUBLIC)     ? ClassConstants.INTERNAL_ACC_PUBLIC      :
+                        strippedToken.equals(ClassConstants.EXTERNAL_ACC_FINAL)      ? ClassConstants.INTERNAL_ACC_FINAL       :
+                        strippedToken.equals(ClassConstants.EXTERNAL_ACC_ABSTRACT)   ? ClassConstants.INTERNAL_ACC_ABSTRACT    :
+                        strippedToken.equals(ClassConstants.EXTERNAL_ACC_ANNOTATION) ? ClassConstants.INTERNAL_ACC_ANNOTATTION :
                         0;
 
                     if (accessFlag == 0)
@@ -237,9 +238,11 @@ public class ClassSpecificationElement extends DataType
         if (type != null && (type.startsWith("!") ^ set))
         {
             int accessFlag =
+                type.equals("class")                                     ? 0                                     :
                 type.equals(      ClassConstants.EXTERNAL_ACC_INTERFACE) ||
                 type.equals("!" + ClassConstants.EXTERNAL_ACC_INTERFACE) ? ClassConstants.INTERNAL_ACC_INTERFACE :
-                type.equals("class")                                     ? 0                                     :
+                type.equals(      ClassConstants.EXTERNAL_ACC_ENUM)      ||
+                type.equals("!" + ClassConstants.EXTERNAL_ACC_ENUM)      ? ClassConstants.INTERNAL_ACC_ENUM      :
                                                                            -1;
             if (accessFlag == -1)
             {

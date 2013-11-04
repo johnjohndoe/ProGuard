@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -48,8 +48,6 @@ implements   MemberVisitor,
 
 
     private final MemberVisitor extraParameterMemberVisitor;
-
-    private final ConstantPoolEditor constantPoolEditor = new ConstantPoolEditor();
 
 
     /**
@@ -105,11 +103,14 @@ implements   MemberVisitor,
                 System.out.println("                   -> "+newDescriptor);
             }
 
+            ConstantPoolEditor constantPoolEditor =
+                new ConstantPoolEditor(programClass);
+
             // Update the name, if necessary.
             if (!newName.equals(name))
             {
                 programMethod.u2nameIndex =
-                constantPoolEditor.addUtf8Constant(programClass, newName);
+                    constantPoolEditor.addUtf8Constant(newName);
             }
 
             // Update the referenced classes.
@@ -120,7 +121,7 @@ implements   MemberVisitor,
 
             // Finally, update the descriptor itself.
             programMethod.u2descriptorIndex =
-                constantPoolEditor.addUtf8Constant(programClass, newDescriptor);
+                constantPoolEditor.addUtf8Constant(newDescriptor);
 
             // Visit the method, if required.
             if (extraParameterMemberVisitor != null)
@@ -144,8 +145,7 @@ implements   MemberVisitor,
 
         // Update the signature.
         signatureAttribute.u2signatureIndex =
-            constantPoolEditor.addUtf8Constant((ProgramClass)clazz,
-                                               newSignature);
+            new ConstantPoolEditor((ProgramClass)clazz).addUtf8Constant(newSignature);
 
         // Update the referenced classes.
         signatureAttribute.referencedClasses =
@@ -218,6 +218,8 @@ implements   MemberVisitor,
             new InternalTypeEnumeration(descriptor);
 
         StringBuffer newDescriptorBuffer = new StringBuffer();
+
+        newDescriptorBuffer.append(internalTypeEnumeration.formalTypeParameters());
         newDescriptorBuffer.append(ClassConstants.INTERNAL_METHOD_ARGUMENTS_OPEN);
 
         while (internalTypeEnumeration.hasMoreTypes())
@@ -264,16 +266,25 @@ implements   MemberVisitor,
             InternalTypeEnumeration internalTypeEnumeration =
                 new InternalTypeEnumeration(descriptor);
 
+            // Also look at the formal type parameters.
+            String type  = internalTypeEnumeration.formalTypeParameters();
+            int    count = new DescriptorClassEnumeration(type).classCount();
+            for (int counter = 0; counter < count; counter++)
+            {
+                referencedClasses[newReferencedClassIndex++] =
+                    referencedClasses[referencedClassIndex++];
+            }
+
             while (internalTypeEnumeration.hasMoreTypes())
             {
                 // Consider the classes referenced by this parameter type.
-                String type       = internalTypeEnumeration.nextType();
-                int    classCount = new DescriptorClassEnumeration(type).classCount();
+                type  = internalTypeEnumeration.nextType();
+                count = new DescriptorClassEnumeration(type).classCount();
 
                 if (ParameterUsageMarker.isParameterUsed(method, parameterIndex))
                 {
                     // Copy the referenced classes.
-                    for (int counter = 0; counter < classCount; counter++)
+                    for (int counter = 0; counter < count; counter++)
                     {
                         referencedClasses[newReferencedClassIndex++] =
                             referencedClasses[referencedClassIndex++];
@@ -282,15 +293,15 @@ implements   MemberVisitor,
                 else
                 {
                     // Skip the referenced classes.
-                    referencedClassIndex += classCount;
+                    referencedClassIndex += count;
                 }
 
                 parameterIndex += ClassUtil.isInternalCategory2Type(type) ? 2 : 1;
             }
 
             // Also look at the return value.
-            String type = internalTypeEnumeration.returnType();
-            int count = new DescriptorClassEnumeration(type).classCount();
+            type  = internalTypeEnumeration.returnType();
+            count = new DescriptorClassEnumeration(type).classCount();
             for (int counter = 0; counter < count; counter++)
             {
                 referencedClasses[newReferencedClassIndex++] =

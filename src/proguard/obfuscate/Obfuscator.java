@@ -2,13 +2,12 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
  * Software Foundation; either version 2 of the License, or (at your option)
  * any later version.
- *
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -70,6 +69,25 @@ public class Obfuscator
         // Clean up any old visitor info.
         programClassPool.classesAccept(new ClassCleaner());
         libraryClassPool.classesAccept(new ClassCleaner());
+
+        // Mark attributes that have to be kept.
+        AttributeUsageMarker requiredAttributeUsageMarker =
+            new AttributeUsageMarker();
+
+        AttributeVisitor optionalAttributeUsageMarker =
+            configuration.keepAttributes == null     ? null :
+            configuration.keepAttributes.size() == 0 ?
+                (AttributeVisitor)requiredAttributeUsageMarker :
+                (AttributeVisitor)new AttributeNameFilter(new ListParser(new NameParser()).parse(configuration.keepAttributes),
+                                                          requiredAttributeUsageMarker);
+
+        programClassPool.classesAccept(
+            new AllAttributeVisitor(true,
+            new RequiredAttributeFilter(requiredAttributeUsageMarker,
+                                        optionalAttributeUsageMarker)));
+
+        // Remove the attributes that can be discarded.
+        programClassPool.classesAccept(new AttributeShrinker());
 
         // If the class member names have to correspond globally,
         // link all class members in all classes, otherwise
@@ -138,28 +156,19 @@ public class Obfuscator
             }
         }
 
-        // Mark attributes that have to be kept.
-        AttributeUsageMarker requiredAttributeUsageMarker =
-            new AttributeUsageMarker();
-
-        AttributeVisitor optionalAttributeUsageMarker =
-            configuration.keepAttributes == null     ? null :
-            configuration.keepAttributes.size() == 0 ?
-                (AttributeVisitor)requiredAttributeUsageMarker :
-                (AttributeVisitor)new AttributeNameFilter(new ListParser(new NameParser()).parse(configuration.keepAttributes),
-                                                          requiredAttributeUsageMarker);
-
-        programClassPool.classesAccept(
-            new AllAttributeVisitor(true,
-            new RequiredAttributeFilter(requiredAttributeUsageMarker,
-                                        optionalAttributeUsageMarker)));
-
-        // Remove the attributes that can be discarded.
-        programClassPool.classesAccept(new AttributeShrinker());
-
         // Come up with new names for all classes.
+        DictionaryNameFactory classNameFactory = configuration.classObfuscationDictionary != null ?
+            new DictionaryNameFactory(configuration.classObfuscationDictionary, null) :
+            null;
+
+        DictionaryNameFactory packageNameFactory = configuration.packageObfuscationDictionary != null ?
+            new DictionaryNameFactory(configuration.packageObfuscationDictionary, null) :
+            null;
+
         programClassPool.classesAccept(
             new ClassObfuscator(programClassPool,
+                                classNameFactory,
+                                packageNameFactory,
                                 configuration.useMixedCaseClassNames,
                                 configuration.flattenPackageHierarchy,
                                 configuration.repackageClasses,
@@ -397,7 +406,7 @@ public class Obfuscator
         {
             programClassPool.classesAccept(
                 new AllConstantVisitor(
-                new ClassOpener()));
+                new AccessFixer()));
         }
 
         // Rename the source file attributes, if requested.

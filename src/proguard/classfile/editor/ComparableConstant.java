@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -35,20 +35,20 @@ import proguard.classfile.util.SimplifiedVisitor;
  *
  * @author Eric Lafortune
  */
-final class      ComparableConstant
+class      ComparableConstant
 extends    SimplifiedVisitor
 implements Comparable, ConstantVisitor
 {
     private static final int[] PRIORITIES = new int[13];
     static
     {
-        PRIORITIES[ClassConstants.CONSTANT_Integer]            = 0;
+        PRIORITIES[ClassConstants.CONSTANT_Integer]            = 0; // Possibly byte index (ldc).
         PRIORITIES[ClassConstants.CONSTANT_Float]              = 1;
-        PRIORITIES[ClassConstants.CONSTANT_Long]               = 2;
-        PRIORITIES[ClassConstants.CONSTANT_Double]             = 3;
-        PRIORITIES[ClassConstants.CONSTANT_String]             = 4;
-        PRIORITIES[ClassConstants.CONSTANT_Class]              = 5;
-        PRIORITIES[ClassConstants.CONSTANT_Fieldref]           = 6;
+        PRIORITIES[ClassConstants.CONSTANT_String]             = 2;
+        PRIORITIES[ClassConstants.CONSTANT_Class]              = 3;
+        PRIORITIES[ClassConstants.CONSTANT_Long]               = 4; // Always wide index (ldc2_w).
+        PRIORITIES[ClassConstants.CONSTANT_Double]             = 5;
+        PRIORITIES[ClassConstants.CONSTANT_Fieldref]           = 6; // Always wide index.
         PRIORITIES[ClassConstants.CONSTANT_Methodref]          = 7;
         PRIORITIES[ClassConstants.CONSTANT_InterfaceMethodref] = 8;
         PRIORITIES[ClassConstants.CONSTANT_NameAndType]        = 9;
@@ -58,6 +58,7 @@ implements Comparable, ConstantVisitor
     private final Clazz    clazz;
     private final int      thisIndex;
     private final Constant thisConstant;
+
     private Constant otherConstant;
     private int      result;
 
@@ -98,7 +99,7 @@ implements Comparable, ConstantVisitor
 
             return thisIndex <  otherIndex ? -1 :
                    thisIndex == otherIndex ?  0 :
-                   1;
+                                              1;
         }
 
         // Compare based on the tags, if they are different.
@@ -178,5 +179,22 @@ implements Comparable, ConstantVisitor
                  .compareTo
                  (otherNameAndTypeConstant.getName(clazz) + ' ' +
                   otherNameAndTypeConstant.getType(clazz));
+    }
+
+
+    // Implementations for Object.
+
+    public boolean equals(Object other)
+    {
+        return other != null &&
+               this.getClass().equals(other.getClass()) &&
+               this.getConstant().getClass().equals(((ComparableConstant)other).getConstant().getClass()) &&
+               this.compareTo(other) == 0;
+    }
+
+
+    public int hashCode()
+    {
+        return this.getClass().hashCode();
     }
 }

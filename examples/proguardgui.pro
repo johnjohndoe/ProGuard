@@ -16,6 +16,11 @@
 
 -libraryjars <java.home>/lib/rt.jar
 
+# In recent JREs, some public Swing classes depend on package visible classes,
+# so don't skip these package visible classes while parsing the library jar.
+
+-dontskipnonpubliclibraryclasses
+
 # If we wanted to reuse the previously obfuscated proguard_out.jar, we could
 # perform incremental obfuscation based on its mapping file, and only keep the
 # additional GUI files instead of all files.
@@ -41,7 +46,7 @@
 # class names. Notably, in this case, the GUI resource properties file will
 # have to be renamed.
 
--adaptresourcefilenames
+-adaptresourcefilenames **.properties,**.gif,**.jpg
 
 # The entry point: ProGuardGUI and its main method.
 

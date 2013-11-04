@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -52,15 +52,18 @@ class ConfigurationConstants
     public static final String PRINT_USAGE_OPTION         = "-printusage";
     public static final String WHY_ARE_YOU_KEEPING_OPTION = "-whyareyoukeeping";
 
-    public static final String DONT_OPTIMIZE_OPTION             = "-dontoptimize";
-    public static final String OPTIMIZATION_PASSES              = "-optimizationpasses";
-    public static final String ASSUME_NO_SIDE_EFFECTS_OPTION    = "-assumenosideeffects";
-    public static final String ALLOW_ACCESS_MODIFICATION_OPTION = "-allowaccessmodification";
+    public static final String DONT_OPTIMIZE_OPTION                 = "-dontoptimize";
+    public static final String OPTIMIZATION_PASSES                  = "-optimizationpasses";
+    public static final String ASSUME_NO_SIDE_EFFECTS_OPTION        = "-assumenosideeffects";
+    public static final String ALLOW_ACCESS_MODIFICATION_OPTION     = "-allowaccessmodification";
+    public static final String MERGE_INTERFACES_AGGRESSIVELY_OPTION = "-mergeinterfacesaggressively";
 
     public static final String DONT_OBFUSCATE_OPTION                  = "-dontobfuscate";
     public static final String PRINT_MAPPING_OPTION                   = "-printmapping";
     public static final String APPLY_MAPPING_OPTION                   = "-applymapping";
     public static final String OBFUSCATION_DICTIONARY_OPTION          = "-obfuscationdictionary";
+    public static final String CLASS_OBFUSCATION_DICTIONARY_OPTION    = "-classobfuscationdictionary";
+    public static final String PACKAGE_OBFUSCATION_DICTIONARY_OPTION  = "-packageobfuscationdictionary";
     public static final String OVERLOAD_AGGRESSIVELY_OPTION           = "-overloadaggressively";
     public static final String USE_UNIQUE_CLASS_MEMBER_NAMES_OPTION   = "-useuniqueclassmembernames";
     public static final String DONT_USE_MIXED_CASE_CLASS_NAMES_OPTION = "-dontusemixedcaseclassnames";

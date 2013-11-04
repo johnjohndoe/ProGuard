@@ -2,46 +2,66 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
- * This library is free software; you can redistribute it and/or modify it
+ * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
  * Software Foundation; either version 2 of the License, or (at your option)
  * any later version.
  *
- * This library is distributed in the hope that it will be useful, but WITHOUT
+ * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
- * for more details.
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this library; if not, write to the Free Software Foundation,
- * Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 package proguard.classfile.editor;
 
 import proguard.classfile.*;
+import proguard.classfile.util.SimplifiedVisitor;
 import proguard.classfile.visitor.ClassVisitor;
 
 import java.util.Arrays;
 
 /**
- * This ClassVisitor sorts the interfaces of the classes that it visits.
+ * This ClassVisitor sorts the interfaces of the program classes that it visits.
  *
  * @author Eric Lafortune
  */
-public class InterfaceSorter implements ClassVisitor
+public class InterfaceSorter
+extends      SimplifiedVisitor
+implements   ClassVisitor
 {
     // Implementations for ClassVisitor.
 
     public void visitProgramClass(ProgramClass programClass)
     {
+        int[] interfaces      = programClass.u2interfaces;
+        int   interfacesCount = programClass.u2interfacesCount;
+
         // Sort the interfaces.
-        Arrays.sort(programClass.u2interfaces, 0, programClass.u2interfacesCount);
-    }
+        Arrays.sort(interfaces, 0, interfacesCount);
 
+        // Remove any duplicate entries.
+        int newInterfacesCount     = 0;
+        int previousInterfaceIndex = 0;
+        for (int index = 0; index < interfacesCount; index++)
+        {
+            int interfaceIndex = interfaces[index];
 
-    public void visitLibraryClass(LibraryClass libraryClass)
-    {
+            // Isn't this a duplicate of the previous interface?
+            if (interfaceIndex != previousInterfaceIndex)
+            {
+                interfaces[newInterfacesCount++] = interfaceIndex;
+
+                // Remember the interface.
+                previousInterfaceIndex = interfaceIndex;
+            }
+        }
+
+        programClass.u2interfacesCount = newInterfacesCount;
     }
 }

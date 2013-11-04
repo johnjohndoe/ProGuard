@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -25,32 +25,32 @@ package proguard.evaluation.value;
  *
  * @author Eric Lafortune
  */
-final class SpecificLongValue extends LongValue
+abstract class SpecificLongValue extends LongValue
 {
-    private final long value;
+    // Implementations of unary methods of LongValue.
 
-
-    /**
-     * Creates a new specific long value.
-     */
-    public SpecificLongValue(long value)
+    public LongValue negate()
     {
-        this.value = value;
+        return new NegatedLongValue(this);
     }
 
-
-    // Implementations for LongValue.
-
-    public long value()
+    public IntegerValue convertToInteger()
     {
-        return value;
+        return new ConvertedIntegerValue(this);
+    }
+
+    public FloatValue convertToFloat()
+    {
+        return new ConvertedFloatValue(this);
+    }
+
+    public DoubleValue convertToDouble()
+    {
+        return new ConvertedDoubleValue(this);
     }
 
 
     // Implementations of binary methods of LongValue.
-
-    // Perhaps the other value arguments are more specific than apparent
-    // in these methods, so delegate to them.
 
     public LongValue generalize(LongValue other)
     {
@@ -78,21 +78,25 @@ final class SpecificLongValue extends LongValue
     }
 
     public LongValue divide(LongValue other)
+    throws ArithmeticException
     {
         return other.divideOf(this);
     }
 
     public LongValue divideOf(LongValue other)
+    throws ArithmeticException
     {
         return other.divide(this);
     }
 
     public LongValue remainder(LongValue other)
+    throws ArithmeticException
     {
         return other.remainderOf(this);
     }
 
     public LongValue remainderOf(LongValue other)
+    throws ArithmeticException
     {
         return other.remainder(this);
     }
@@ -127,32 +131,9 @@ final class SpecificLongValue extends LongValue
         return other.xor(this);
     }
 
-    public IntegerValue compare(LongValue other, ValueFactory valueFactory)
+    public IntegerValue compare(LongValue other)
     {
-        return other.compareReverse(this, valueFactory);
-    }
-
-
-    // Implementations of unary methods of LongValue.
-
-    public LongValue negate()
-    {
-        return new SpecificLongValue(-value);
-    }
-
-    public IntegerValue convertToInteger(ValueFactory valueFactory)
-    {
-        return valueFactory.createIntegerValue((int)value);
-    }
-
-    public FloatValue convertToFloat(ValueFactory valueFactory)
-    {
-        return valueFactory.createFloatValue((float)value);
-    }
-
-    public DoubleValue convertToDouble(ValueFactory valueFactory)
-    {
-        return valueFactory.createDoubleValue((double)value);
+        return other.compareReverse(this);
     }
 
 
@@ -161,84 +142,96 @@ final class SpecificLongValue extends LongValue
 
     public LongValue generalize(SpecificLongValue other)
     {
-        return this.value == other.value ? this : ValueFactory.LONG_VALUE;
+        return this.equals(other) ? this : ValueFactory.LONG_VALUE;
     }
 
     public LongValue add(SpecificLongValue other)
     {
-        return new SpecificLongValue(this.value + other.value);
+        return new CompositeLongValue(this, CompositeLongValue.ADD, other);
     }
 
     public LongValue subtract(SpecificLongValue other)
     {
-        return new SpecificLongValue(this.value - other.value);
+        return this.equals(other) ?
+            SpecificValueFactory.LONG_VALUE_0 :
+            new CompositeLongValue(this, CompositeLongValue.SUBTRACT, other);
     }
 
     public LongValue subtractFrom(SpecificLongValue other)
     {
-        return new SpecificLongValue(other.value - this.value);
+        return this.equals(other) ?
+            SpecificValueFactory.LONG_VALUE_0 :
+            new CompositeLongValue(other, CompositeLongValue.SUBTRACT, this);
     }
 
     public LongValue multiply(SpecificLongValue other)
     {
-        return new SpecificLongValue(this.value * other.value);
+        return new CompositeLongValue(this, CompositeLongValue.MULTIPLY, other);
     }
 
     public LongValue divide(SpecificLongValue other)
+    throws ArithmeticException
     {
-        return new SpecificLongValue(this.value / other.value);
+        return new CompositeLongValue(this, CompositeLongValue.DIVIDE, other);
     }
 
     public LongValue divideOf(SpecificLongValue other)
+    throws ArithmeticException
     {
-        return new SpecificLongValue(other.value / this.value);
+        return new CompositeLongValue(other, CompositeLongValue.DIVIDE, this);
     }
 
     public LongValue remainder(SpecificLongValue other)
+    throws ArithmeticException
     {
-        return new SpecificLongValue(this.value % other.value);
+        return new CompositeLongValue(this, CompositeLongValue.REMAINDER, other);
     }
 
     public LongValue remainderOf(SpecificLongValue other)
+    throws ArithmeticException
     {
-        return new SpecificLongValue(other.value % this.value);
+        return new CompositeLongValue(other, CompositeLongValue.REMAINDER, this);
     }
 
-    public LongValue shiftLeft(SpecificIntegerValue other)
+    public LongValue shiftLeft(SpecificLongValue other)
     {
-        return new SpecificLongValue(this.value << other.value());
+        return new CompositeLongValue(this, CompositeLongValue.SHIFT_LEFT, other);
     }
 
-    public LongValue shiftRight(SpecificIntegerValue other)
+    public LongValue shiftRight(SpecificLongValue other)
     {
-        return new SpecificLongValue(this.value >> other.value());
+        return new CompositeLongValue(this, CompositeLongValue.SHIFT_RIGHT, other);
     }
 
-    public LongValue unsignedShiftRight(SpecificIntegerValue other)
+    public LongValue unsignedShiftRight(SpecificLongValue other)
     {
-        return new SpecificLongValue(this.value >>> other.value());
+        return new CompositeLongValue(this, CompositeLongValue.UNSIGNED_SHIFT_RIGHT, other);
     }
 
     public LongValue and(SpecificLongValue other)
     {
-        return new SpecificLongValue(this.value & other.value);
+        return this.equals(other) ?
+            this :
+            new CompositeLongValue(other, CompositeLongValue.AND, this);
     }
 
     public LongValue or(SpecificLongValue other)
     {
-        return new SpecificLongValue(this.value | other.value);
+        return this.equals(other) ?
+            this :
+            new CompositeLongValue(other, CompositeLongValue.OR, this);
     }
 
     public LongValue xor(SpecificLongValue other)
     {
-        return new SpecificLongValue(this.value ^ other.value);
+        return this.equals(other) ?
+            SpecificValueFactory.LONG_VALUE_0 :
+            new CompositeLongValue(other, CompositeLongValue.XOR, this);
     }
 
-    public IntegerValue compare(SpecificLongValue other, ValueFactory valueFactory)
+    public IntegerValue compare(SpecificLongValue other)
     {
-        return this.value <  other.value ? valueFactory.createIntegerValue(-1) :
-               this.value == other.value ? valueFactory.createIntegerValue(0) :
-                                           valueFactory.createIntegerValue(1);
+        return new ComparisonValue(this, other);
     }
 
 
@@ -254,20 +247,13 @@ final class SpecificLongValue extends LongValue
 
     public boolean equals(Object object)
     {
-        return object          != null              &&
-               this.getClass() == object.getClass() &&
-               this.value      == ((SpecificLongValue)object).value;
+        return object != null &&
+               this.getClass() == object.getClass();
     }
 
 
     public int hashCode()
     {
-        return this.getClass().hashCode() ^ (int)value;
-    }
-
-
-    public String toString()
-    {
-        return "l:"+value;
+        return this.getClass().hashCode();
     }
 }

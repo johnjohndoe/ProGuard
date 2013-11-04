@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -27,7 +27,7 @@ import proguard.classfile.ClassConstants;
  *
  * @author Eric Lafortune
  */
-public class IntegerValue extends Category1Value
+public abstract class IntegerValue extends Category1Value
 {
     /**
      * Returns the specific integer value, if applicable.
@@ -38,217 +38,182 @@ public class IntegerValue extends Category1Value
     }
 
 
+    // Basic unary methods.
+
+    /**
+     * Returns the negated value of this IntegerValue.
+     */
+    public abstract IntegerValue negate();
+
+    /**
+     * Converts this IntegerValue to a byte IntegerValue.
+     */
+    public abstract IntegerValue convertToByte();
+
+    /**
+     * Converts this IntegerValue to a character IntegerValue.
+     */
+    public abstract IntegerValue convertToCharacter();
+
+    /**
+     * Converts this IntegerValue to a short IntegerValue.
+     */
+    public abstract IntegerValue convertToShort();
+
+    /**
+     * Converts this IntegerValue to a LongValue.
+     */
+    public abstract LongValue convertToLong();
+
+    /**
+     * Converts this IntegerValue to a FloatValue.
+     */
+    public abstract FloatValue convertToFloat();
+
+    /**
+     * Converts this IntegerValue to a DoubleValue.
+     */
+    public abstract DoubleValue convertToDouble();
+
+
     // Basic binary methods.
 
     /**
      * Returns the generalization of this IntegerValue and the given other
      * IntegerValue.
      */
-    public IntegerValue generalize(IntegerValue other)
-    {
-        return this;
-    }
-
+    public abstract IntegerValue generalize(IntegerValue other);
 
     /**
      * Returns the sum of this IntegerValue and the given IntegerValue.
      */
-    public IntegerValue add(IntegerValue other)
-    {
-        return this;
-    }
+    public abstract IntegerValue add(IntegerValue other);
 
     /**
      * Returns the difference of this IntegerValue and the given IntegerValue.
      */
-    public IntegerValue subtract(IntegerValue other)
-    {
-        return this;
-    }
+    public abstract IntegerValue subtract(IntegerValue other);
 
     /**
      * Returns the difference of the given IntegerValue and this IntegerValue.
      */
-    public IntegerValue subtractFrom(IntegerValue other)
-    {
-        return this;
-    }
+    public abstract IntegerValue subtractFrom(IntegerValue other);
 
     /**
      * Returns the product of this IntegerValue and the given IntegerValue.
      */
-    public IntegerValue multiply(IntegerValue other)
-    throws ArithmeticException
-    {
-        return this;
-    }
+    public abstract IntegerValue multiply(IntegerValue other)
+    throws ArithmeticException;
 
     /**
      * Returns the quotient of this IntegerValue and the given IntegerValue.
      */
-    public IntegerValue divide(IntegerValue other)
-    throws ArithmeticException
-    {
-        return this;
-    }
+    public abstract IntegerValue divide(IntegerValue other)
+    throws ArithmeticException;
 
     /**
      * Returns the quotient of the given IntegerValue and this IntegerValue.
      */
-    public IntegerValue divideOf(IntegerValue other)
-    throws ArithmeticException
-    {
-        return this;
-    }
+    public abstract IntegerValue divideOf(IntegerValue other)
+    throws ArithmeticException;
 
     /**
      * Returns the remainder of this IntegerValue divided by the given
      * IntegerValue.
      */
-    public IntegerValue remainder(IntegerValue other)
-    throws ArithmeticException
-    {
-        return this;
-    }
+    public abstract IntegerValue remainder(IntegerValue other)
+    throws ArithmeticException;
 
     /**
      * Returns the remainder of the given IntegerValue divided by this
      * IntegerValue.
      */
-    public IntegerValue remainderOf(IntegerValue other)
-    throws ArithmeticException
-    {
-        return this;
-    }
+    public abstract IntegerValue remainderOf(IntegerValue other)
+    throws ArithmeticException;
 
     /**
      * Returns this IntegerValue, shifted left by the given IntegerValue.
      */
-    public IntegerValue shiftLeft(IntegerValue other)
-    {
-        return this;
-    }
-
-    /**
-     * Returns the given IntegerValue, shifted left by this IntegerValue.
-     */
-    public IntegerValue shiftLeftOf(IntegerValue other)
-    {
-        return this;
-    }
+    public abstract IntegerValue shiftLeft(IntegerValue other);
 
     /**
      * Returns this IntegerValue, shifted right by the given IntegerValue.
      */
-    public IntegerValue shiftRight(IntegerValue other)
-    {
-        return this;
-    }
-
-    /**
-     * Returns the given IntegerValue, shifted right by this IntegerValue.
-     */
-    public IntegerValue shiftRightOf(IntegerValue other)
-    {
-        return this;
-    }
+    public abstract IntegerValue shiftRight(IntegerValue other);
 
     /**
      * Returns this unsigned IntegerValue, shifted left by the given
      * IntegerValue.
      */
-    public IntegerValue unsignedShiftRight(IntegerValue other)
-    {
-        return this;
-    }
+    public abstract IntegerValue unsignedShiftRight(IntegerValue other);
+
+    /**
+     * Returns the given IntegerValue, shifted left by this IntegerValue.
+     */
+    public abstract IntegerValue shiftLeftOf(IntegerValue other);
+
+    /**
+     * Returns the given IntegerValue, shifted right by this IntegerValue.
+     */
+    public abstract IntegerValue shiftRightOf(IntegerValue other);
 
     /**
      * Returns the given unsigned IntegerValue, shifted left by this
      * IntegerValue.
      */
-    public IntegerValue unsignedShiftRightOf(IntegerValue other)
-    {
-        return this;
-    }
+    public abstract IntegerValue unsignedShiftRightOf(IntegerValue other);
 
     /**
      * Returns the given LongValue, shifted left by this IntegerValue.
      */
-    public LongValue shiftLeftOf(LongValue other)
-    {
-        return ValueFactory.LONG_VALUE;
-    }
+    public abstract LongValue shiftLeftOf(LongValue other);
 
     /**
      * Returns the given LongValue, shifted right by this IntegerValue.
      */
-    public LongValue shiftRightOf(LongValue other)
-    {
-        return ValueFactory.LONG_VALUE;
-    }
+    public abstract LongValue shiftRightOf(LongValue other);
 
     /**
      * Returns the given unsigned LongValue, shifted right by this IntegerValue.
      */
-    public LongValue unsignedShiftRightOf(LongValue other)
-    {
-        return ValueFactory.LONG_VALUE;
-    }
+    public abstract LongValue unsignedShiftRightOf(LongValue other);
 
     /**
      * Returns the logical <i>and</i> of this IntegerValue and the given
      * IntegerValue.
      */
-    public IntegerValue and(IntegerValue other)
-    {
-        return this;
-    }
+    public abstract IntegerValue and(IntegerValue other);
 
     /**
      * Returns the logical <i>or</i> of this IntegerValue and the given
      * IntegerValue.
      */
-    public IntegerValue or(IntegerValue other)
-    {
-        return this;
-    }
+    public abstract IntegerValue or(IntegerValue other);
 
     /**
      * Returns the logical <i>xor</i> of this IntegerValue and the given
      * IntegerValue.
      */
-    public IntegerValue xor(IntegerValue other)
-    {
-        return this;
-    }
+    public abstract IntegerValue xor(IntegerValue other);
 
     /**
      * Returns whether this IntegerValue and the given IntegerValue are equal:
      * <code>NEVER</code>, <code>MAYBE</code>, or <code>ALWAYS</code>.
      */
-    public int equal(IntegerValue other)
-    {
-        return MAYBE;
-    }
+    public abstract int equal(IntegerValue other);
 
     /**
      * Returns whether this IntegerValue is less than the given IntegerValue:
      * <code>NEVER</code>, <code>MAYBE</code>, or <code>ALWAYS</code>.
      */
-    public int lessThan(IntegerValue other)
-    {
-        return MAYBE;
-    }
+    public abstract int lessThan(IntegerValue other);
 
     /**
      * Returns whether this IntegerValue is less than or equal to the given
      * IntegerValue: <code>NEVER</code>, <code>MAYBE</code>, or
      * <code>ALWAYS</code>.
      */
-    public int lessThanOrEqual(IntegerValue other)
-    {
-        return MAYBE;
-    }
+    public abstract int lessThanOrEqual(IntegerValue other);
 
 
     // Derived binary methods.
@@ -281,66 +246,251 @@ public class IntegerValue extends Category1Value
     }
 
 
-    // Basic unary methods.
+    // Similar binary methods, but this time with unknown arguments.
 
     /**
-     * Returns the negated value of this IntegerValue.
+     * Returns the generalization of this IntegerValue and the given other
+     * UnknownIntegerValue.
      */
-    public IntegerValue negate()
+    public IntegerValue generalize(UnknownIntegerValue other)
     {
-        return this;
-    }
-
-    /**
-     * Converts this IntegerValue to a byte IntegerValue.
-     */
-    public IntegerValue convertToByte(ValueFactory valueFactory)
-    {
-        return this;
-    }
-
-    /**
-     * Converts this IntegerValue to a character IntegerValue.
-     */
-    public IntegerValue convertToCharacter(ValueFactory valueFactory)
-    {
-        return this;
-    }
-
-    /**
-     * Converts this IntegerValue to a short IntegerValue.
-     */
-    public IntegerValue convertToShort(ValueFactory valueFactory)
-    {
-        return this;
-    }
-
-    /**
-     * Converts this IntegerValue to a LongValue.
-     */
-    public LongValue convertToLong(ValueFactory valueFactory)
-    {
-        return valueFactory.createLongValue();
-    }
-
-    /**
-     * Converts this IntegerValue to a FloatValue.
-     */
-    public FloatValue convertToFloat(ValueFactory valueFactory)
-    {
-        return valueFactory.createFloatValue();
-    }
-
-    /**
-     * Converts this IntegerValue to a DoubleValue.
-     */
-    public DoubleValue convertToDouble(ValueFactory valueFactory)
-    {
-        return valueFactory.createDoubleValue();
+        return generalize((IntegerValue)other);
     }
 
 
-    // Similar binary methods, but this time with more specific arguments.
+    /**
+     * Returns the sum of this IntegerValue and the given UnknownIntegerValue.
+     */
+    public IntegerValue add(UnknownIntegerValue other)
+    {
+        return add((IntegerValue)other);
+    }
+
+    /**
+     * Returns the difference of this IntegerValue and the given UnknownIntegerValue.
+     */
+    public IntegerValue subtract(UnknownIntegerValue other)
+    {
+        return subtract((IntegerValue)other);
+    }
+
+    /**
+     * Returns the difference of the given UnknownIntegerValue and this IntegerValue.
+     */
+    public IntegerValue subtractFrom(UnknownIntegerValue other)
+    {
+        return subtractFrom((IntegerValue)other);
+    }
+
+    /**
+     * Returns the product of this IntegerValue and the given UnknownIntegerValue.
+     */
+    public IntegerValue multiply(UnknownIntegerValue other)
+    {
+        return multiply((IntegerValue)other);
+    }
+
+    /**
+     * Returns the quotient of this IntegerValue and the given
+     * UnknownIntegerValue.
+     */
+    public IntegerValue divide(UnknownIntegerValue other)
+    {
+        return divide((IntegerValue)other);
+    }
+
+    /**
+     * Returns the quotient of the given UnknownIntegerValue and this
+     * IntegerValue.
+     */
+    public IntegerValue divideOf(UnknownIntegerValue other)
+    {
+        return divideOf((IntegerValue)other);
+    }
+
+    /**
+     * Returns the remainder of this IntegerValue divided by the given
+     * UnknownIntegerValue.
+     */
+    public IntegerValue remainder(UnknownIntegerValue other)
+    {
+        return remainder((IntegerValue)other);
+    }
+
+    /**
+     * Returns the remainder of the given UnknownIntegerValue divided by this
+     * IntegerValue.
+     */
+    public IntegerValue remainderOf(UnknownIntegerValue other)
+    {
+        return remainderOf((IntegerValue)other);
+    }
+
+    /**
+     * Returns this IntegerValue, shifted left by the given UnknownIntegerValue.
+     */
+    public IntegerValue shiftLeft(UnknownIntegerValue other)
+    {
+        return shiftLeft((IntegerValue)other);
+    }
+
+    /**
+     * Returns this IntegerValue, shifted right by the given UnknownIntegerValue.
+     */
+    public IntegerValue shiftRight(UnknownIntegerValue other)
+    {
+        return shiftRight((IntegerValue)other);
+    }
+
+    /**
+     * Returns this unsigned IntegerValue, shifted right by the given
+     * UnknownIntegerValue.
+     */
+    public IntegerValue unsignedShiftRight(UnknownIntegerValue other)
+    {
+        return unsignedShiftRight((IntegerValue)other);
+    }
+
+    /**
+     * Returns the given UnknownIntegerValue, shifted left by this IntegerValue.
+     */
+    public IntegerValue shiftLeftOf(UnknownIntegerValue other)
+    {
+        return shiftLeftOf((IntegerValue)other);
+    }
+
+    /**
+     * Returns the given UnknownIntegerValue, shifted right by this IntegerValue.
+     */
+    public IntegerValue shiftRightOf(UnknownIntegerValue other)
+    {
+        return shiftRightOf((IntegerValue)other);
+    }
+
+    /**
+     * Returns the given unsigned UnknownIntegerValue, shifted right by this
+     * IntegerValue.
+     */
+    public IntegerValue unsignedShiftRightOf(UnknownIntegerValue other)
+    {
+        return unsignedShiftRightOf((IntegerValue)other);
+    }
+
+    /**
+     * Returns the given UnknownLongValue, shifted left by this IntegerValue.
+     */
+    public LongValue shiftLeftOf(UnknownLongValue other)
+    {
+        return shiftLeftOf((LongValue)other);
+    }
+
+    /**
+     * Returns the given UnknownLongValue, shifted right by this IntegerValue.
+     */
+    public LongValue shiftRightOf(UnknownLongValue other)
+    {
+        return shiftRightOf((LongValue)other);
+    }
+
+    /**
+     * Returns the given unsigned UnknownLongValue, shifted right by this
+     * IntegerValue.
+     */
+    public LongValue unsignedShiftRightOf(UnknownLongValue other)
+    {
+        return unsignedShiftRightOf((LongValue)other);
+    }
+
+    /**
+     * Returns the logical <i>and</i> of this IntegerValue and the given
+     * UnknownIntegerValue.
+     */
+    public IntegerValue and(UnknownIntegerValue other)
+    {
+        return and((IntegerValue)other);
+    }
+
+    /**
+     * Returns the logical <i>or</i> of this IntegerValue and the given
+     * UnknownIntegerValue.
+     */
+    public IntegerValue or(UnknownIntegerValue other)
+    {
+        return or((IntegerValue)other);
+    }
+
+    /**
+     * Returns the logical <i>xor</i> of this IntegerValue and the given
+     * UnknownIntegerValue.
+     */
+    public IntegerValue xor(UnknownIntegerValue other)
+    {
+        return xor((IntegerValue)other);
+    }
+
+    /**
+     * Returns whether this IntegerValue and the given UnknownIntegerValue are
+     * equal: <code>NEVER</code>, <code>MAYBE</code>, or <code>ALWAYS</code>.
+     */
+    public int equal(UnknownIntegerValue other)
+    {
+        return equal((IntegerValue)other);
+    }
+
+    /**
+     * Returns whether this IntegerValue is less than the given
+     * UnknownIntegerValue: <code>NEVER</code>, <code>MAYBE</code>, or
+     * <code>ALWAYS</code>.
+     */
+    public int lessThan(UnknownIntegerValue other)
+    {
+        return lessThan((IntegerValue)other);
+    }
+
+    /**
+     * Returns whether this IntegerValue is less than or equal to the given
+     * UnknownIntegerValue: <code>NEVER</code>, <code>MAYBE</code>, or
+     * <code>ALWAYS</code>.
+     */
+    public int lessThanOrEqual(UnknownIntegerValue other)
+    {
+        return lessThanOrEqual((IntegerValue)other);
+    }
+
+
+    // Derived binary methods.
+
+    /**
+     * Returns whether this IntegerValue and the given UnknownIntegerValue are
+     * different: <code>NEVER</code>, <code>MAYBE</code>, or <code>ALWAYS</code>.
+     */
+    public final int notEqual(UnknownIntegerValue other)
+    {
+        return -equal(other);
+    }
+
+    /**
+     * Returns whether this IntegerValue is greater than the given
+     * UnknownIntegerValue: <code>NEVER</code>, <code>MAYBE</code>, or
+     * <code>ALWAYS</code>.
+     */
+    public final int greaterThan(UnknownIntegerValue other)
+    {
+        return -lessThanOrEqual(other);
+    }
+
+    /**
+     * Returns whether this IntegerValue is greater than or equal to the given
+     * UnknownIntegerValue: <code>NEVER</code>, <code>MAYBE</code>, or
+     * <code>ALWAYS</code>.
+     */
+    public final int greaterThanOrEqual(UnknownIntegerValue other)
+    {
+        return -lessThan(other);
+    }
+
+
+    // Similar binary methods, but this time with specific arguments.
 
     /**
      * Returns the generalization of this IntegerValue and the given other
@@ -348,7 +498,7 @@ public class IntegerValue extends Category1Value
      */
     public IntegerValue generalize(SpecificIntegerValue other)
     {
-        return this;
+        return generalize((IntegerValue)other);
     }
 
 
@@ -357,7 +507,7 @@ public class IntegerValue extends Category1Value
      */
     public IntegerValue add(SpecificIntegerValue other)
     {
-        return this;
+        return add((IntegerValue)other);
     }
 
     /**
@@ -365,7 +515,7 @@ public class IntegerValue extends Category1Value
      */
     public IntegerValue subtract(SpecificIntegerValue other)
     {
-        return this;
+        return subtract((IntegerValue)other);
     }
 
     /**
@@ -373,7 +523,7 @@ public class IntegerValue extends Category1Value
      */
     public IntegerValue subtractFrom(SpecificIntegerValue other)
     {
-        return this;
+        return subtractFrom((IntegerValue)other);
     }
 
     /**
@@ -381,7 +531,7 @@ public class IntegerValue extends Category1Value
      */
     public IntegerValue multiply(SpecificIntegerValue other)
     {
-        return this;
+        return multiply((IntegerValue)other);
     }
 
     /**
@@ -390,7 +540,7 @@ public class IntegerValue extends Category1Value
      */
     public IntegerValue divide(SpecificIntegerValue other)
     {
-        return this;
+        return divide((IntegerValue)other);
     }
 
     /**
@@ -399,7 +549,7 @@ public class IntegerValue extends Category1Value
      */
     public IntegerValue divideOf(SpecificIntegerValue other)
     {
-        return this;
+        return divideOf((IntegerValue)other);
     }
 
     /**
@@ -408,7 +558,7 @@ public class IntegerValue extends Category1Value
      */
     public IntegerValue remainder(SpecificIntegerValue other)
     {
-        return this;
+        return remainder((IntegerValue)other);
     }
 
     /**
@@ -417,7 +567,7 @@ public class IntegerValue extends Category1Value
      */
     public IntegerValue remainderOf(SpecificIntegerValue other)
     {
-        return this;
+        return remainderOf((IntegerValue)other);
     }
 
     /**
@@ -425,15 +575,7 @@ public class IntegerValue extends Category1Value
      */
     public IntegerValue shiftLeft(SpecificIntegerValue other)
     {
-        return this;
-    }
-
-    /**
-     * Returns the given SpecificIntegerValue, shifted left by this IntegerValue.
-     */
-    public IntegerValue shiftLeftOf(SpecificIntegerValue other)
-    {
-        return this;
+        return shiftLeft((IntegerValue)other);
     }
 
     /**
@@ -441,15 +583,7 @@ public class IntegerValue extends Category1Value
      */
     public IntegerValue shiftRight(SpecificIntegerValue other)
     {
-        return this;
-    }
-
-    /**
-     * Returns the given SpecificIntegerValue, shifted right by this IntegerValue.
-     */
-    public IntegerValue shiftRightOf(SpecificIntegerValue other)
-    {
-        return this;
+        return shiftRight((IntegerValue)other);
     }
 
     /**
@@ -458,7 +592,23 @@ public class IntegerValue extends Category1Value
      */
     public IntegerValue unsignedShiftRight(SpecificIntegerValue other)
     {
-        return this;
+        return unsignedShiftRight((IntegerValue)other);
+    }
+
+    /**
+     * Returns the given SpecificIntegerValue, shifted left by this IntegerValue.
+     */
+    public IntegerValue shiftLeftOf(SpecificIntegerValue other)
+    {
+        return shiftLeftOf((IntegerValue)other);
+    }
+
+    /**
+     * Returns the given SpecificIntegerValue, shifted right by this IntegerValue.
+     */
+    public IntegerValue shiftRightOf(SpecificIntegerValue other)
+    {
+        return shiftRightOf((IntegerValue)other);
     }
 
     /**
@@ -467,7 +617,7 @@ public class IntegerValue extends Category1Value
      */
     public IntegerValue unsignedShiftRightOf(SpecificIntegerValue other)
     {
-        return this;
+        return unsignedShiftRightOf((IntegerValue)other);
     }
 
     /**
@@ -475,7 +625,7 @@ public class IntegerValue extends Category1Value
      */
     public LongValue shiftLeftOf(SpecificLongValue other)
     {
-        return ValueFactory.LONG_VALUE;
+        return shiftLeftOf((LongValue)other);
     }
 
     /**
@@ -483,7 +633,7 @@ public class IntegerValue extends Category1Value
      */
     public LongValue shiftRightOf(SpecificLongValue other)
     {
-        return ValueFactory.LONG_VALUE;
+        return shiftRightOf((LongValue)other);
     }
 
     /**
@@ -492,7 +642,7 @@ public class IntegerValue extends Category1Value
      */
     public LongValue unsignedShiftRightOf(SpecificLongValue other)
     {
-        return ValueFactory.LONG_VALUE;
+        return unsignedShiftRightOf((LongValue)other);
     }
 
     /**
@@ -501,7 +651,7 @@ public class IntegerValue extends Category1Value
      */
     public IntegerValue and(SpecificIntegerValue other)
     {
-        return this;
+        return and((IntegerValue)other);
     }
 
     /**
@@ -510,7 +660,7 @@ public class IntegerValue extends Category1Value
      */
     public IntegerValue or(SpecificIntegerValue other)
     {
-        return this;
+        return or((IntegerValue)other);
     }
 
     /**
@@ -519,7 +669,7 @@ public class IntegerValue extends Category1Value
      */
     public IntegerValue xor(SpecificIntegerValue other)
     {
-        return this;
+        return xor((IntegerValue)other);
     }
 
     /**
@@ -528,7 +678,7 @@ public class IntegerValue extends Category1Value
      */
     public int equal(SpecificIntegerValue other)
     {
-        return MAYBE;
+        return equal((IntegerValue)other);
     }
 
     /**
@@ -538,7 +688,7 @@ public class IntegerValue extends Category1Value
      */
     public int lessThan(SpecificIntegerValue other)
     {
-        return MAYBE;
+        return lessThan((IntegerValue)other);
     }
 
     /**
@@ -548,7 +698,7 @@ public class IntegerValue extends Category1Value
      */
     public int lessThanOrEqual(SpecificIntegerValue other)
     {
-        return MAYBE;
+        return lessThanOrEqual((IntegerValue)other);
     }
 
 
@@ -584,6 +734,250 @@ public class IntegerValue extends Category1Value
     }
 
 
+    // Similar binary methods, but this time with particular arguments.
+
+    /**
+     * Returns the generalization of this IntegerValue and the given other
+     * ParticularIntegerValue.
+     */
+    public IntegerValue generalize(ParticularIntegerValue other)
+    {
+        return generalize((SpecificIntegerValue)other);
+    }
+
+
+    /**
+     * Returns the sum of this IntegerValue and the given ParticularIntegerValue.
+     */
+    public IntegerValue add(ParticularIntegerValue other)
+    {
+        return add((SpecificIntegerValue)other);
+    }
+
+    /**
+     * Returns the difference of this IntegerValue and the given ParticularIntegerValue.
+     */
+    public IntegerValue subtract(ParticularIntegerValue other)
+    {
+        return subtract((SpecificIntegerValue)other);
+    }
+
+    /**
+     * Returns the difference of the given ParticularIntegerValue and this IntegerValue.
+     */
+    public IntegerValue subtractFrom(ParticularIntegerValue other)
+    {
+        return subtractFrom((SpecificIntegerValue)other);
+    }
+
+    /**
+     * Returns the product of this IntegerValue and the given ParticularIntegerValue.
+     */
+    public IntegerValue multiply(ParticularIntegerValue other)
+    {
+        return multiply((SpecificIntegerValue)other);
+    }
+
+    /**
+     * Returns the quotient of this IntegerValue and the given
+     * ParticularIntegerValue.
+     */
+    public IntegerValue divide(ParticularIntegerValue other)
+    {
+        return divide((SpecificIntegerValue)other);
+    }
+
+    /**
+     * Returns the quotient of the given ParticularIntegerValue and this
+     * IntegerValue.
+     */
+    public IntegerValue divideOf(ParticularIntegerValue other)
+    {
+        return divideOf((SpecificIntegerValue)other);
+    }
+
+    /**
+     * Returns the remainder of this IntegerValue divided by the given
+     * ParticularIntegerValue.
+     */
+    public IntegerValue remainder(ParticularIntegerValue other)
+    {
+        return remainder((SpecificIntegerValue)other);
+    }
+
+    /**
+     * Returns the remainder of the given ParticularIntegerValue divided by this
+     * IntegerValue.
+     */
+    public IntegerValue remainderOf(ParticularIntegerValue other)
+    {
+        return remainderOf((SpecificIntegerValue)other);
+    }
+
+    /**
+     * Returns this IntegerValue, shifted left by the given ParticularIntegerValue.
+     */
+    public IntegerValue shiftLeft(ParticularIntegerValue other)
+    {
+        return shiftLeft((SpecificIntegerValue)other);
+    }
+
+    /**
+     * Returns this IntegerValue, shifted right by the given ParticularIntegerValue.
+     */
+    public IntegerValue shiftRight(ParticularIntegerValue other)
+    {
+        return shiftRight((SpecificIntegerValue)other);
+    }
+
+    /**
+     * Returns this unsigned IntegerValue, shifted right by the given
+     * ParticularIntegerValue.
+     */
+    public IntegerValue unsignedShiftRight(ParticularIntegerValue other)
+    {
+        return unsignedShiftRight((SpecificIntegerValue)other);
+    }
+
+    /**
+     * Returns the given ParticularIntegerValue, shifted left by this IntegerValue.
+     */
+    public IntegerValue shiftLeftOf(ParticularIntegerValue other)
+    {
+        return shiftLeftOf((SpecificIntegerValue)other);
+    }
+
+    /**
+     * Returns the given ParticularIntegerValue, shifted right by this IntegerValue.
+     */
+    public IntegerValue shiftRightOf(ParticularIntegerValue other)
+    {
+        return shiftRightOf((SpecificIntegerValue)other);
+    }
+
+    /**
+     * Returns the given unsigned ParticularIntegerValue, shifted right by this
+     * IntegerValue.
+     */
+    public IntegerValue unsignedShiftRightOf(ParticularIntegerValue other)
+    {
+        return unsignedShiftRightOf((SpecificIntegerValue)other);
+    }
+
+    /**
+     * Returns the given ParticularLongValue, shifted left by this IntegerValue.
+     */
+    public LongValue shiftLeftOf(ParticularLongValue other)
+    {
+        return shiftLeftOf((SpecificLongValue)other);
+    }
+
+    /**
+     * Returns the given ParticularLongValue, shifted right by this IntegerValue.
+     */
+    public LongValue shiftRightOf(ParticularLongValue other)
+    {
+        return shiftRightOf((SpecificLongValue)other);
+    }
+
+    /**
+     * Returns the given unsigned ParticularLongValue, shifted right by this
+     * IntegerValue.
+     */
+    public LongValue unsignedShiftRightOf(ParticularLongValue other)
+    {
+        return unsignedShiftRightOf((SpecificLongValue)other);
+    }
+
+    /**
+     * Returns the logical <i>and</i> of this IntegerValue and the given
+     * ParticularIntegerValue.
+     */
+    public IntegerValue and(ParticularIntegerValue other)
+    {
+        return and((SpecificIntegerValue)other);
+    }
+
+    /**
+     * Returns the logical <i>or</i> of this IntegerValue and the given
+     * ParticularIntegerValue.
+     */
+    public IntegerValue or(ParticularIntegerValue other)
+    {
+        return or((SpecificIntegerValue)other);
+    }
+
+    /**
+     * Returns the logical <i>xor</i> of this IntegerValue and the given
+     * ParticularIntegerValue.
+     */
+    public IntegerValue xor(ParticularIntegerValue other)
+    {
+        return xor((SpecificIntegerValue)other);
+    }
+
+    /**
+     * Returns whether this IntegerValue and the given ParticularIntegerValue are
+     * equal: <code>NEVER</code>, <code>MAYBE</code>, or <code>ALWAYS</code>.
+     */
+    public int equal(ParticularIntegerValue other)
+    {
+        return equal((SpecificIntegerValue)other);
+    }
+
+    /**
+     * Returns whether this IntegerValue is less than the given
+     * ParticularIntegerValue: <code>NEVER</code>, <code>MAYBE</code>, or
+     * <code>ALWAYS</code>.
+     */
+    public int lessThan(ParticularIntegerValue other)
+    {
+        return lessThan((SpecificIntegerValue)other);
+    }
+
+    /**
+     * Returns whether this IntegerValue is less than or equal to the given
+     * ParticularIntegerValue: <code>NEVER</code>, <code>MAYBE</code>, or
+     * <code>ALWAYS</code>.
+     */
+    public int lessThanOrEqual(ParticularIntegerValue other)
+    {
+        return lessThanOrEqual((SpecificIntegerValue)other);
+    }
+
+
+    // Derived binary methods.
+
+    /**
+     * Returns whether this IntegerValue and the given ParticularIntegerValue are
+     * different: <code>NEVER</code>, <code>MAYBE</code>, or <code>ALWAYS</code>.
+     */
+    public final int notEqual(ParticularIntegerValue other)
+    {
+        return -equal(other);
+    }
+
+    /**
+     * Returns whether this IntegerValue is greater than the given
+     * ParticularIntegerValue: <code>NEVER</code>, <code>MAYBE</code>, or
+     * <code>ALWAYS</code>.
+     */
+    public final int greaterThan(ParticularIntegerValue other)
+    {
+        return -lessThanOrEqual(other);
+    }
+
+    /**
+     * Returns whether this IntegerValue is greater than or equal to the given
+     * ParticularIntegerValue: <code>NEVER</code>, <code>MAYBE</code>, or
+     * <code>ALWAYS</code>.
+     */
+    public final int greaterThanOrEqual(ParticularIntegerValue other)
+    {
+        return -lessThan(other);
+    }
+
+
     // Implementations for Value.
 
     public final IntegerValue integerValue()
@@ -604,26 +998,5 @@ public class IntegerValue extends Category1Value
     public final String internalType()
     {
         return String.valueOf(ClassConstants.INTERNAL_TYPE_INT);
-    }
-
-
-    // Implementations for Object.
-
-    public boolean equals(Object object)
-    {
-        return object != null &&
-               this.getClass() == object.getClass();
-    }
-
-
-    public int hashCode()
-    {
-        return this.getClass().hashCode();
-    }
-
-
-    public String toString()
-    {
-        return "i";
     }
 }

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -113,14 +113,17 @@ public class ConfigurationWriter
         writeOption(ConfigurationConstants.DONT_SHRINK_OPTION, !configuration.shrink);
         writeOption(ConfigurationConstants.PRINT_USAGE_OPTION, configuration.printUsage);
 
-        writeOption(ConfigurationConstants.DONT_OPTIMIZE_OPTION,             !configuration.optimize);
-        writeOption(ConfigurationConstants.OPTIMIZATION_PASSES,              configuration.optimizationPasses);
-        writeOption(ConfigurationConstants.ALLOW_ACCESS_MODIFICATION_OPTION, configuration.allowAccessModification);
+        writeOption(ConfigurationConstants.DONT_OPTIMIZE_OPTION,                 !configuration.optimize);
+        writeOption(ConfigurationConstants.OPTIMIZATION_PASSES,                  configuration.optimizationPasses);
+        writeOption(ConfigurationConstants.ALLOW_ACCESS_MODIFICATION_OPTION,     configuration.allowAccessModification);
+        writeOption(ConfigurationConstants.MERGE_INTERFACES_AGGRESSIVELY_OPTION, configuration.mergeInterfacesAggressively);
 
         writeOption(ConfigurationConstants.DONT_OBFUSCATE_OPTION,                  !configuration.obfuscate);
         writeOption(ConfigurationConstants.PRINT_MAPPING_OPTION,                   configuration.printMapping);
         writeOption(ConfigurationConstants.APPLY_MAPPING_OPTION,                   configuration.applyMapping);
         writeOption(ConfigurationConstants.OBFUSCATION_DICTIONARY_OPTION,          configuration.obfuscationDictionary);
+        writeOption(ConfigurationConstants.CLASS_OBFUSCATION_DICTIONARY_OPTION,    configuration.classObfuscationDictionary);
+        writeOption(ConfigurationConstants.PACKAGE_OBFUSCATION_DICTIONARY_OPTION,  configuration.packageObfuscationDictionary);
         writeOption(ConfigurationConstants.OVERLOAD_AGGRESSIVELY_OPTION,           configuration.overloadAggressively);
         writeOption(ConfigurationConstants.USE_UNIQUE_CLASS_MEMBER_NAMES_OPTION,   configuration.useUniqueClassMemberNames);
         writeOption(ConfigurationConstants.DONT_USE_MIXED_CASE_CLASS_NAMES_OPTION, !configuration.useMixedCaseClassNames);
@@ -355,7 +358,8 @@ public class ConfigurationWriter
         // keyword earlier.
         if (((classSpecification.requiredSetAccessFlags |
               classSpecification.requiredUnsetAccessFlags) &
-             ClassConstants.INTERNAL_ACC_INTERFACE) == 0)
+             (ClassConstants.INTERNAL_ACC_INTERFACE |
+              ClassConstants.INTERNAL_ACC_ENUM)) == 0)
         {
             writer.print(ConfigurationConstants.CLASS_KEYWORD);
         }

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -77,11 +77,11 @@ implements   AttributeVisitor,
 
 
     /**
-     * Creates a new PartialEvaluator.
+     * Creates a simple PartialEvaluator.
      */
     public PartialEvaluator()
     {
-        this(new ValueFactory(), new BasicInvocationUnit(), true);
+        this(new ValueFactory(), new BasicInvocationUnit(new ValueFactory()), true);
     }
 
 
@@ -208,6 +208,12 @@ implements   AttributeVisitor,
 
                 if (isTraced(offset))
                 {
+                    int variableIndex = initializedVariable(offset);
+                    if (variableIndex >= 0)
+                    {
+                        System.out.println("     is initializing variable v"+variableIndex);
+                    }
+
                     int initializationOffset = branchTargetFinder.initializationOffset(offset);
                     if (initializationOffset != NONE)
                     {
@@ -545,6 +551,8 @@ implements   AttributeVisitor,
         // Execute all resulting instruction blocks on the execution stack.
         while (!instructionBlockStack.empty())
         {
+            if (DEBUG) System.out.println("Popping alternative branch out of "+instructionBlockStack.size()+" blocks");
+
             MyInstructionBlock instructionBlock =
                 (MyInstructionBlock)instructionBlockStack.pop();
 
@@ -628,6 +636,9 @@ implements   AttributeVisitor,
                 // Merge in the current context.
                 boolean variablesChanged = variablesBefore[instructionOffset].generalize(variables, true);
                 boolean stackChanged     = stacksBefore[instructionOffset].generalize(stack);
+
+                //System.out.println("GVars:  "+variablesBefore[instructionOffset]);
+                //System.out.println("GStack: "+stacksBefore[instructionOffset]);
 
                 // Bail out if the current context is the same as last time.
                 if (!variablesChanged &&
@@ -795,7 +806,7 @@ implements   AttributeVisitor,
                     // Push them on the execution stack and exit from this block.
                     for (int index = 0; index < branchTargetCount; index++)
                     {
-                        if (DEBUG) System.out.println("Alternative branch #"+index+" out of "+branchTargetCount+", from ["+instructionOffset+"] to ["+branchTargets.instructionOffset(index)+"]");
+                        if (DEBUG) System.out.println("Pushing alternative branch #"+index+" out of "+branchTargetCount+", from ["+instructionOffset+"] to ["+branchTargets.instructionOffset(index)+"]");
 
                         pushInstructionBlock(new TracedVariables(variables),
                                              new TracedStack(stack),

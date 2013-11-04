@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2008 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -53,9 +53,6 @@ implements   ClassVisitor,
     private final boolean ensureUniqueMemberNames;
 
 
-    private final ConstantPoolEditor constantPoolEditor = new ConstantPoolEditor();
-
-
     /**
      * Creates a new ClassReferenceFixer.
      * @param ensureUniqueMemberNames specifies whether class members whose
@@ -104,9 +101,12 @@ implements   ClassVisitor,
 
         if (!descriptor.equals(newDescriptor))
         {
+            ConstantPoolEditor constantPoolEditor =
+                new ConstantPoolEditor(programClass);
+
             // Update the descriptor.
             programField.u2descriptorIndex =
-                constantPoolEditor.addUtf8Constant(programClass, newDescriptor);
+                constantPoolEditor.addUtf8Constant(newDescriptor);
 
             // Update the name, if requested.
             if (ensureUniqueMemberNames)
@@ -114,7 +114,7 @@ implements   ClassVisitor,
                 String name    = programField.getName(programClass);
                 String newName = newUniqueMemberName(name, descriptor);
                 programField.u2nameIndex =
-                    constantPoolEditor.addUtf8Constant(programClass, newName);
+                    constantPoolEditor.addUtf8Constant(newName);
             }
         }
 
@@ -132,9 +132,12 @@ implements   ClassVisitor,
 
         if (!descriptor.equals(newDescriptor))
         {
+            ConstantPoolEditor constantPoolEditor =
+                new ConstantPoolEditor(programClass);
+
             // Update the descriptor.
             programMethod.u2descriptorIndex =
-                constantPoolEditor.addUtf8Constant(programClass, newDescriptor);
+                constantPoolEditor.addUtf8Constant(newDescriptor);
 
             // Update the name, if requested.
             if (ensureUniqueMemberNames)
@@ -142,7 +145,7 @@ implements   ClassVisitor,
                 String name    = programMethod.getName(programClass);
                 String newName = newUniqueMemberName(name, descriptor);
                 programMethod.u2nameIndex =
-                    constantPoolEditor.addUtf8Constant(programClass, newName);
+                    constantPoolEditor.addUtf8Constant(newName);
             }
         }
 
@@ -201,8 +204,7 @@ implements   ClassVisitor,
 
                 // Refer to a new Utf8 entry.
                 stringConstant.u2stringIndex =
-                    constantPoolEditor.addUtf8Constant((ProgramClass)clazz,
-                                                       newExternalClassName);
+                    new ConstantPoolEditor((ProgramClass)clazz).addUtf8Constant(newExternalClassName);
             }
         }
     }
@@ -221,12 +223,10 @@ implements   ClassVisitor,
             {
                 // Refer to a new Utf8 entry.
                 classConstant.u2nameIndex =
-                    constantPoolEditor.addUtf8Constant((ProgramClass)clazz,
-                                                       newClassName);
+                    new ConstantPoolEditor((ProgramClass)clazz).addUtf8Constant(newClassName);
             }
         }
     }
-
 
     // Implementations for AttributeVisitor.
 
@@ -271,8 +271,7 @@ implements   ClassVisitor,
         if (!signature.equals(newSignature))
         {
             signatureAttribute.u2signatureIndex =
-                constantPoolEditor.addUtf8Constant((ProgramClass)clazz,
-                                                   newSignature);
+                new ConstantPoolEditor((ProgramClass)clazz).addUtf8Constant(newSignature);
         }
     }
 
@@ -313,8 +312,7 @@ implements   ClassVisitor,
             if (index >= 0)
             {
                 innerClassesInfo.u2innerNameIndex =
-                    constantPoolEditor.addUtf8Constant((ProgramClass)clazz,
-                                                       newInnerName.substring(index + 1));
+                    new ConstantPoolEditor((ProgramClass)clazz).addUtf8Constant(newInnerName.substring(index + 1));
             }
         }
     }
@@ -333,11 +331,9 @@ implements   ClassVisitor,
         {
             // Refer to a new Utf8 entry.
             localVariableInfo.u2descriptorIndex =
-                constantPoolEditor.addUtf8Constant((ProgramClass)clazz,
-                                                   newDescriptor);
+                new ConstantPoolEditor((ProgramClass)clazz).addUtf8Constant(newDescriptor);
         }
     }
-
 
     // Implementations for LocalVariableTypeInfoVisitor.
 
@@ -351,11 +347,9 @@ implements   ClassVisitor,
         if (!signature.equals(newSignature))
         {
             localVariableTypeInfo.u2signatureIndex =
-                constantPoolEditor.addUtf8Constant((ProgramClass)clazz,
-                                                   newSignature);
+                new ConstantPoolEditor((ProgramClass)clazz).addUtf8Constant(newSignature);
         }
     }
-
 
     // Implementations for AnnotationVisitor.
 
@@ -370,8 +364,7 @@ implements   ClassVisitor,
         {
             // Refer to a new Utf8 entry.
             annotation.u2typeIndex =
-                constantPoolEditor.addUtf8Constant((ProgramClass)clazz,
-                                                   newTypeName);
+                new ConstantPoolEditor((ProgramClass)clazz).addUtf8Constant(newTypeName);
         }
 
         // Fix the element values.
@@ -397,8 +390,7 @@ implements   ClassVisitor,
         {
             // Refer to a new Utf8 entry.
             enumConstantElementValue.u2typeNameIndex =
-                constantPoolEditor.addUtf8Constant((ProgramClass)clazz,
-                                                   newTypeName);
+                new ConstantPoolEditor((ProgramClass)clazz).addUtf8Constant(newTypeName);
         }
     }
 
@@ -414,8 +406,7 @@ implements   ClassVisitor,
         {
             // Refer to a new Utf8 entry.
             classElementValue.u2classInfoIndex =
-                constantPoolEditor.addUtf8Constant((ProgramClass)clazz,
-                                                   newClassName);
+                new ConstantPoolEditor((ProgramClass)clazz).addUtf8Constant(newClassName);
         }
     }
 
@@ -517,7 +508,6 @@ implements   ClassVisitor,
      */
     private String newUniqueMemberName(String name, String descriptor)
     {
-        // TODO: Avoid duplicate constructors.
         return name.equals(ClassConstants.INTERNAL_METHOD_NAME_INIT) ?
             ClassConstants.INTERNAL_METHOD_NAME_INIT :
             name + ClassConstants.SPECIAL_MEMBER_SEPARATOR + Long.toHexString(Math.abs((descriptor).hashCode()));
