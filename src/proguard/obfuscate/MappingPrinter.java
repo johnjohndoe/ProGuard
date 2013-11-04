@@ -1,4 +1,4 @@
-/* $Id: MappingPrinter.java,v 1.6 2002/05/23 19:19:58 eric Exp $
+/* $Id: MappingPrinter.java,v 1.7 2002/08/23 16:31:17 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -95,19 +95,20 @@ public class MappingPrinter
 
     // Implementations for MemberInfoVisitor
 
-    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programfieldInfo)
+    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {
-        String newMemberName = MemberObfuscator.newMemberName(programfieldInfo);
+        String newMemberName = MemberObfuscator.newMemberName(programFieldInfo);
 
         if (newMemberName != null)
         {
             printClassNameHeader();
 
             ps.println("    " +
+                       lineNumberRange(programClassFile, programFieldInfo) +
                        ClassUtil.externalFullFieldDescription(
                            0,
-                           programfieldInfo.getName(programClassFile),
-                           programfieldInfo.getDescriptor(programClassFile)) +
+                           programFieldInfo.getName(programClassFile),
+                           programFieldInfo.getDescriptor(programClassFile)) +
                        " -> " +
                        newMemberName);
         }
@@ -123,6 +124,7 @@ public class MappingPrinter
             printClassNameHeader();
 
             ps.println("    " +
+                       lineNumberRange(programClassFile, programMethodInfo) +
                        ClassUtil.externalFullMethodDescription(
                        programClassFile.getName(),
                        0,
@@ -151,5 +153,18 @@ public class MappingPrinter
             ps.println(ClassUtil.externalClassName(className) + ":");
             className = null;
         }
+    }
+
+
+    /**
+     * Returns the line number range of the given class member, followed by a
+     * colon, or just an empty String if no range is available.
+     */
+    private static String lineNumberRange(ProgramClassFile programClassFile, ProgramMemberInfo programMemberInfo)
+    {
+        String range = programMemberInfo.getLineNumberRange(programClassFile);
+        return range != null ?
+            (range + ":") :
+            "";
     }
 }

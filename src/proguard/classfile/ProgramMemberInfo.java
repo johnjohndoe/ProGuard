@@ -1,4 +1,4 @@
-/* $Id: ProgramMemberInfo.java,v 1.14 2002/07/04 16:16:58 eric Exp $
+/* $Id: ProgramMemberInfo.java,v 1.15 2002/08/23 16:31:17 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -61,9 +61,37 @@ abstract public class ProgramMemberInfo implements MemberInfo
 
 
     /**
+     * Returns the line number range of the given class member as "m:n",
+     * if it can find it, or <code>null</code> otherwise.
+     */
+    public String getLineNumberRange(ClassFile classFile)
+    {
+        CodeAttrInfo codeAttribute =
+            (CodeAttrInfo)getAttribute(classFile, ClassConstants.ATTR_Code);
+        if (codeAttribute == null)
+        {
+            return null;
+        }
+
+        LineNumberTableAttrInfo lineNumberTableAttribute =
+            (LineNumberTableAttrInfo)codeAttribute.getAttribute(classFile,
+                                                                ClassConstants.ATTR_LineNumberTable);
+        if (lineNumberTableAttribute == null)
+        {
+            return null;
+        }
+
+        return "" +
+               lineNumberTableAttribute.getLineNumber(0) +
+               ":" +
+               lineNumberTableAttribute.getLineNumber(Integer.MAX_VALUE);
+    }
+
+
+    /**
      * Returns the (first) attribute with the given name.
      */
-    public AttrInfo getAttribute(ClassFile classFile, String name)
+    private AttrInfo getAttribute(ClassFile classFile, String name)
     {
         for (int i = 0; i < u2attributesCount; i++)
         {

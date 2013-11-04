@@ -1,4 +1,4 @@
-/* $Id: MultiMemberInfoVisitor.java,v 1.6 2002/05/23 19:19:58 eric Exp $
+/* $Id: MultiMemberInfoVisitor.java,v 1.8 2002/09/07 16:05:13 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -24,8 +24,8 @@ import proguard.classfile.*;
 
 
 /**
- * This MemberInfoVisitor delegates all method calls to each MemberInfoVisitor
- * from a given list.
+ * This MemberInfoVisitor delegates all visits to each MemberInfoVisitor
+ * in a given list.
  *
  * @author Eric Lafortune
  */
@@ -34,7 +34,7 @@ public class MultiMemberInfoVisitor implements MemberInfoVisitor
     private static final int ARRAY_SIZE_INCREMENT = 5;
 
     private MemberInfoVisitor[] memberInfoVisitors;
-    private int                    memberInfoVisitorCount;
+    private int                 memberInfoVisitorCount;
 
 
     public MultiMemberInfoVisitor()
@@ -76,11 +76,11 @@ public class MultiMemberInfoVisitor implements MemberInfoVisitor
     }
 
 
-    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programfieldInfo)
+    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {
         for (int i = 0; i < memberInfoVisitorCount; i++)
         {
-            memberInfoVisitors[i].visitProgramFieldInfo(programClassFile, programfieldInfo);
+            memberInfoVisitors[i].visitProgramFieldInfo(programClassFile, programFieldInfo);
         }
     }
 

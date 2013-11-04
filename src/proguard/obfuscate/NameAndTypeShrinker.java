@@ -1,4 +1,4 @@
-/* $Id: NameAndTypeShrinker.java,v 1.8 2002/07/28 16:57:22 eric Exp $
+/* $Id: NameAndTypeShrinker.java,v 1.9 2002/08/29 18:02:25 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -165,9 +165,9 @@ public class NameAndTypeShrinker
 
     // Implementations for MemberInfoVisitor
 
-    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programfieldInfo)
+    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {
-        visitMemberInfo(programClassFile, programfieldInfo);
+        visitMemberInfo(programClassFile, programFieldInfo);
     }
 
 

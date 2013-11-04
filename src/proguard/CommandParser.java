@@ -1,4 +1,4 @@
-/* $Id: CommandParser.java,v 1.17 2002/07/30 18:10:57 eric Exp $
+/* $Id: CommandParser.java,v 1.20 2002/09/01 16:41:35 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -59,6 +59,7 @@ public class CommandParser
     private static final String KEEP_NAMES_COMMAND                = "-keepnames";
     private static final String KEEP_CLASS_MEMBER_NAMES_COMMAND   = "-keepclassmembernames";
     private static final String KEEP_ATTRIBUTES_COMMAND           = "-keepattributes";
+    private static final String RENAME_SOURCE_FILE_COMMAND        = "-renamesourcefileattribute";
     private static final String DONTSHRINK_COMMAND                = "-dontshrink";
     private static final String DONTOBFUSCATE_COMMAND             = "-dontobfuscate";
     private static final String DEFAULT_PACKAGE_COMMAND           = "-defaultpackage";
@@ -157,32 +158,32 @@ public class CommandParser
                 return command;
             }
 
-            boolean readNextWordAfterwards = true;
-
             // See if it's a directive or an option setting.
-            if      (AT_DIRECTIVE           .startsWith(nextWord) ||
-                     INCLUDE_DIRECTIVE      .startsWith(nextWord)) parseIncludeDirective();
-            else if (VERBOSE_COMMAND        .startsWith(nextWord)) options.verbose = true;
-            else if (PRINT_SEEDS_COMMAND    .startsWith(nextWord)) options.printSeeds = true;
-            else if (PRINT_USAGE_COMMAND    .startsWith(nextWord)) options.printUsage = true;
-            else if (PRINT_MAPPING_COMMAND  .startsWith(nextWord)) options.printMapping = true;
-            else if (DUMP_COMMAND           .startsWith(nextWord)) options.dump = true;
-            else if (IGNORE_WARNINGS_COMMAND.startsWith(nextWord)) options.ignoreWarnings = true;
-            else if (DONT_WARN_COMMAND      .startsWith(nextWord)) options.warn = false;
-            else if (DONT_NOTE_COMMAND      .startsWith(nextWord)) options.note = false;
-            else if (DONT_SHRINK_COMMAND    .startsWith(nextWord)) options.shrink = false;
-            else if (DONT_OBFUSCATE_COMMAND .startsWith(nextWord)) options.obfuscate = false;
-            else if (OVERLOAD_COMMAND       .startsWith(nextWord)) options.overloadAggressively = true;
-            else if (DEFAULT_PACKAGE_COMMAND.startsWith(nextWord)) options.defaultPackage = parseDefaultPackageDirective();
-            else if (KEEP_ATTRIBUTES_COMMAND.startsWith(nextWord)){options.keepAttributes = parseKeepAttributesDirective();
-                                                                   readNextWordAfterwards = false;}
+            // First directives with optional arguments.
+            if          (PRINT_SEEDS_COMMAND       .startsWith(nextWord)) options.printSeeds             = parseOptionalArgument();
+            else     if (PRINT_USAGE_COMMAND       .startsWith(nextWord)) options.printUsage             = parseOptionalArgument();
+            else     if (PRINT_MAPPING_COMMAND     .startsWith(nextWord)) options.printMapping           = parseOptionalArgument();
+            else     if (DUMP_COMMAND              .startsWith(nextWord)) options.dump                   = parseOptionalArgument();
+            else     if (KEEP_ATTRIBUTES_COMMAND   .startsWith(nextWord)) parseKeepAttributesDirective();
+            else     if (RENAME_SOURCE_FILE_COMMAND.startsWith(nextWord)) options.newSourceFileAttribute = parseOptionalArgument();
+            else     if (DEFAULT_PACKAGE_COMMAND   .startsWith(nextWord)) options.defaultPackage         = ClassUtil.internalClassName(parseOptionalArgument());
             else
             {
-                throw new ParseException("Unknown command " + reader.locationDescription());
-            }
+                // Then directives without optional arguments.
+                if      (AT_DIRECTIVE              .startsWith(nextWord) ||
+                         INCLUDE_DIRECTIVE         .startsWith(nextWord)) parseIncludeDirective();
+                else if (VERBOSE_COMMAND           .startsWith(nextWord)) options.verbose              = true;
+                else if (IGNORE_WARNINGS_COMMAND   .startsWith(nextWord)) options.ignoreWarnings       = true;
+                else if (DONT_WARN_COMMAND         .startsWith(nextWord)) options.warn                 = false;
+                else if (DONT_NOTE_COMMAND         .startsWith(nextWord)) options.note                 = false;
+                else if (DONT_SHRINK_COMMAND       .startsWith(nextWord)) options.shrink               = false;
+                else if (DONT_OBFUSCATE_COMMAND    .startsWith(nextWord)) options.obfuscate            = false;
+                else if (OVERLOAD_COMMAND          .startsWith(nextWord)) options.overloadAggressively = true;
+                else
+                {
+                    throw new ParseException("Unknown command " + reader.locationDescription());
+                }
 
-            if (readNextWordAfterwards)
-            {
                 readNextWord();
             }
         }
@@ -199,34 +200,34 @@ public class CommandParser
     }
 
 
-    private String parseDefaultPackageDirective()
+    private void parseKeepAttributesDirective()
     throws ParseException, IOException
     {
-        // Read the package name.
-        readNextWord("package name");
+        if (options.keepAttributes == null)
+        {
+            options.keepAttributes = new Vector();
+        }
 
-        return ClassUtil.internalClassName(nextWord);
-    }
+        // Read the first attribute name.
+        readNextWord();
 
+        // Should we keep all attributes?
+        if (commandEnd())
+        {
+            options.keepAttributes.clear();
+            return;
+        }
 
-    private String[] parseKeepAttributesDirective()
-    throws ParseException, IOException
-    {
-        Vector attributes = new Vector();
+        if (nextWord.equals(ANY_ATTRIBUTE_KEYWORD))
+        {
+            readNextWord();
+            return;
+        }
 
         while (true)
         {
-            // Read the next attribute name.
-            readNextWord("attribute name");
-
-            // Should we keep all attributes?
-            if (nextWord.equals(ANY_ATTRIBUTE_KEYWORD))
-            {
-                return new String[0];
-            }
-
             // Add the attribute name to the list.
-            attributes.addElement(nextWord);
+            options.keepAttributes.addElement(nextWord);
 
             // Read the separator, if any.
             readNextWord();
@@ -237,16 +238,32 @@ public class CommandParser
 
             if (!nextWord.equals(ATTRIBUTE_SEPARATOR_KEYWORD))
             {
-                throw new ParseException("Missing attribute name separator '" + ATTRIBUTE_SEPARATOR_KEYWORD +
+                throw new ParseException("Expecting attribute name separator '" + ATTRIBUTE_SEPARATOR_KEYWORD +
                                          "' before " + reader.locationDescription());
             }
+
+            // Read the next attribute name.
+            readNextWord("attribute name");
+        }
+    }
+
+
+    private String parseOptionalArgument()
+    throws ParseException, IOException
+    {
+        readNextWord();
+
+        // Didn't the user specify a file name?
+        if (commandEnd())
+        {
+            return "";
         }
 
-        // Copy the attribute names into an array.
-        String[] keepAttributes = new String[attributes.size()];
-        attributes.copyInto(keepAttributes);
+        String fileName = nextWord;
 
-        return keepAttributes;
+        readNextWord();
+
+        return fileName;
     }
 
 
@@ -271,7 +288,7 @@ public class CommandParser
 
             if (!nextWord.equals(JAR_SEPARATOR_KEYWORD))
             {
-                throw new ParseException("Missing jar name separator '" + JAR_SEPARATOR_KEYWORD +
+                throw new ParseException("Expecting jar name separator '" + JAR_SEPARATOR_KEYWORD +
                                          "' before " + reader.locationDescription());
             }
         }
@@ -681,7 +698,7 @@ public class CommandParser
     /**
      * A main method for testing command parsing.
      */
-    public static void main(String[] args) {
+    private static void main(String[] args) {
         try
         {
             CommandParser parser = new CommandParser(new ProGuardOptions(), args);

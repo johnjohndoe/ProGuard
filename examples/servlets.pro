@@ -1,17 +1,18 @@
 #
-# This ProGuard configuration file illustrates how to process applets.
+# This ProGuard configuration file illustrates how to process servlets.
 #
 
 # Specify the library jars, input jars, and output jar.
 
 -libraryjars <java.home>/lib/rt.jar
+-libraryjars /usr/local/java/servlet/servlet.jar
 -injars      in.jar
 -outjar      out.jar
 
 
-# Preserve all public applets.
+# Preserve all public servlets.
 
--keep public class * extends java.applet.Applet
+-keep public class * implements javax.servlet.Servlet
 
 
 # Print out a list of what we're preserving.

@@ -1,4 +1,4 @@
-/* $Id: ClassFileObfuscator.java,v 1.7 2002/08/02 16:40:28 eric Exp $
+/* $Id: ClassFileObfuscator.java,v 1.9 2002/08/31 15:43:27 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -43,8 +43,8 @@ public class ClassFileObfuscator
     private String    defaultPackageName;
 
     // Hashtable: [package name - class name factory]
-    private final Hashtable           packageHashtable = new Hashtable();
-    private final NameFactory         defaultPackageClassNameFactory = new NameFactory();
+    private final Hashtable        packageHashtable = new Hashtable();
+    private final NameFactory      defaultPackageClassNameFactory = new NameFactory();
     private final MemberObfuscator memberObfuscator;
 
 
@@ -119,9 +119,9 @@ public class ClassFileObfuscator
                 }
 
                 // Isn't there a class file that has this name reserved?
-                ClassFile classFile = programClassPool.getClass(newClassName);
-                if (classFile == null ||
-                    newClassName(classFile) != newClassName)
+                ClassFile otherClassFile = programClassPool.getClass(newClassName);
+                if (otherClassFile == null ||
+                    !newClassName.equals(newClassName(otherClassFile)))
                 {
                     break;
                 }

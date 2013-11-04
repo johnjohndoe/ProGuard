@@ -1,4 +1,4 @@
-/* $Id: NamedFieldVisitor.java,v 1.7 2002/09/07 16:05:13 eric Exp $
+/* $Id: ProgramFilteredClassFileVisitor.java,v 1.1 2002/09/01 16:41:35 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -24,36 +24,39 @@ import proguard.classfile.*;
 
 
 /**
- * This class visits ProgramMemberInfo objects referring to fields, identified by
- * a name and descriptor pair.
+ * This <code>ClassFileVisitor</code> delegates its visits to another given
+ * <code>ClassFileVisitor</code>, but only when visiting program class files.
+ *
+ * @see ClassConstants
  *
  * @author Eric Lafortune
  */
-public class NamedFieldVisitor implements ClassFileVisitor
+public class ProgramFilteredClassFileVisitor implements ClassFileVisitor
 {
-    private MemberInfoVisitor memberInfoVisitor;
-    private String            name;
-    private String            descriptor;
+    private ClassFileVisitor classFileVisitor;
 
 
-    public NamedFieldVisitor(MemberInfoVisitor memberInfoVisitor,
-                             String            name,
-                             String            descriptor)
+    /**
+     * Creates a new ProgramFilteredClassFileVisitor.
+     * @param classFileVisitor the <code>ClassFileVisitor</code> to which visits
+     *                         will be delegated.
+     */
+    public ProgramFilteredClassFileVisitor(ClassFileVisitor classFileVisitor)
     {
-        this.memberInfoVisitor = memberInfoVisitor;
-        this.name              = name;
-        this.descriptor        = descriptor;
+        this.classFileVisitor = classFileVisitor;
     }
 
 
+    // Implementations for ClassFileVisitor
+
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
-        programClassFile.fieldAccept(memberInfoVisitor, name, descriptor);
+        classFileVisitor.visitProgramClassFile(programClassFile);
     }
 
 
     public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
     {
-        libraryClassFile.fieldAccept(memberInfoVisitor, name, descriptor);
+        // Don't delegate visits to library class files.
     }
 }

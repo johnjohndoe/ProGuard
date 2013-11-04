@@ -1,4 +1,4 @@
-/* $Id: ProGuard.java,v 1.20 2002/08/02 16:40:28 eric Exp $
+/* $Id: ProGuard.java,v 1.22 2002/08/30 16:27:43 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -38,7 +38,7 @@ import java.util.*;
  */
 public class ProGuard
 {
-    public static final String VERSION = "ProGuard, version 1.2";
+    public static final String VERSION = "ProGuard, version 1.3";
 
     private CompoundCommand commands         = new CompoundCommand();
     private ProGuardOptions options          = new ProGuardOptions();
@@ -117,7 +117,7 @@ public class ProGuard
         if (classFileWarningCount > 0)
         {
             System.err.println("Warning: there were " + classFileWarningCount +
-                               " unresolved references to superclasses or interfaces");
+                               " unresolved references to superclasses or interfaces.");
             System.err.println("         You may need to specify additional library jars.");
         }
 
@@ -125,7 +125,7 @@ public class ProGuard
         if (memberWarningCount > 0)
         {
             System.err.println("Warning: there were " + memberWarningCount +
-                               " unresolved references to program class members");
+                               " unresolved references to program class members.");
             System.err.println("         Your input class files appear to be inconsistent.");
             System.err.println("         You may need to recompile them and try again.");
         }
@@ -164,16 +164,19 @@ public class ProGuard
      */
     private void check()
     {
-        System.out.println("=== Start of kept classes, fields, and methods ===");
-        executeCommands(Command.PHASE_CHECK);
-        System.out.println("=== End of kept classes, fields, and methods ===");
+      if (options.verbose)
+      {
+          System.out.println("Printing kept classes, fields, and methods...");
+      }
+
+      executeCommands(Command.PHASE_CHECK);
     }
 
 
     /**
      * Performs the shrinking phase.
      */
-    private void shrink()
+    private void shrink() throws IOException
     {
         if (options.verbose)
         {
@@ -189,14 +192,24 @@ public class ProGuard
         // Mark the inner class information that has to be kept.
         programClassPool.classFilesAccept(new InnerUsageMarker());
 
-        if (options.printUsage)
+        if (options.printUsage != null)
         {
-            System.out.println("=== Start of unused classes, fields, and methods ===");
+            if (options.verbose)
+            {
+                System.out.println("Printing usage...");
+            }
+
+            PrintStream ps = options.printUsage.length() > 0 ?
+                new PrintStream(new BufferedOutputStream(new FileOutputStream(options.printUsage))) :
+                System.out;
 
             // Print out items that will be removed.
-            programClassPool.classFilesAcceptAlphabetically(new UsagePrinter(true));
+            programClassPool.classFilesAcceptAlphabetically(new UsagePrinter(true, ps));
 
-            System.out.println("=== End of unused classes, fields, and methods ===");
+            if (options.printUsage.length() > 0)
+            {
+                ps.close();
+            }
         }
 
         // Discard unused program classes.
@@ -232,7 +245,7 @@ public class ProGuard
     /**
      * Performs the obfuscation phase.
      */
-    private void obfuscate()
+    private void obfuscate() throws IOException
     {
         if (options.verbose)
         {
@@ -249,14 +262,24 @@ public class ProGuard
         programClassPool.classFilesAccept(new ClassFileObfuscator(programClassPool,
                                                                   options.defaultPackage,
                                                                   options.overloadAggressively));
-        if (options.printMapping)
+        if (options.printMapping != null)
         {
-            System.out.println("=== Start of remapped classes, fields, and methods ===");
+            if (options.verbose)
+            {
+                System.out.println("Printing mapping...");
+            }
+
+            PrintStream ps = options.printMapping.length() > 0 ?
+                new PrintStream(new BufferedOutputStream(new FileOutputStream(options.printMapping))) :
+                System.out;
 
             // Print out items that will be removed.
-            programClassPool.classFilesAcceptAlphabetically(new MappingPrinter());
+            programClassPool.classFilesAcceptAlphabetically(new MappingPrinter(ps));
 
-            System.out.println("=== End of remapped classes, fields, and methods ===");
+            if (options.printMapping.length() > 0)
+            {
+                ps.close();
+            }
         }
 
         if (options.verbose)
@@ -265,13 +288,13 @@ public class ProGuard
         }
 
         // Actually apply these new names.
-        programClassPool.classFilesAccept(new ClassFileRenamer());
+        programClassPool.classFilesAccept(new ClassFileRenamer(options.newSourceFileAttribute));
 
         // Mark attributes that have to be kept and remove the other ones.
         AttributeUsageMarker attributeUsageMarker = new AttributeUsageMarker();
         if (options.keepAttributes != null)
         {
-            if (options.keepAttributes.length > 0)
+            if (options.keepAttributes != null)
             {
                 attributeUsageMarker.keepAttributes(options.keepAttributes);
             }
@@ -312,14 +335,23 @@ public class ProGuard
     /**
      * Prints out the contents of the program class files.
      */
-    private void dump()
+    private void dump() throws IOException
     {
         if (options.verbose)
         {
             System.out.println("Printing classes...");
         }
 
-        programClassPool.classFilesAccept(new ClassFilePrinter());
+        PrintStream ps = options.dump.length() > 0 ?
+            new PrintStream(new BufferedOutputStream(new FileOutputStream(options.dump))) :
+            System.out;
+
+        programClassPool.classFilesAccept(new ClassFilePrinter(ps));
+
+        if (options.dump.length() > 0)
+        {
+            ps.close();
+        }
     }
 
 
@@ -343,7 +375,7 @@ public class ProGuard
 
             initialize();
 
-            if (options.printSeeds)
+            if (options.printSeeds != null)
             {
                 check();
             }
@@ -360,7 +392,7 @@ public class ProGuard
 
             write();
 
-            if (options.dump)
+            if (options.dump != null)
             {
                 dump();
             }

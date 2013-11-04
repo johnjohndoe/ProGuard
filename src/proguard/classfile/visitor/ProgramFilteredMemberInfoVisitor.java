@@ -1,4 +1,4 @@
-/* $Id: VariableMemberInfoVisitor.java,v 1.7 2002/08/29 18:02:25 eric Exp $
+/* $Id: ProgramFilteredMemberInfoVisitor.java,v 1.1 2002/09/01 16:41:35 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -24,36 +24,26 @@ import proguard.classfile.*;
 
 
 /**
- * This MemberInfoVisitor delegates all method calls to a MemberInfoVisitor
- * that can be changed at any time.
+ * This <code>MemberInfoVisitor</code> delegates its visits to another given
+ * <code>MemberInfoVisitor</code>, but only when visiting members of program
+ * class files.
  *
  * @author Eric Lafortune
  */
-public class VariableMemberInfoVisitor implements MemberInfoVisitor
+public class ProgramFilteredMemberInfoVisitor
+  implements MemberInfoVisitor
 {
     private MemberInfoVisitor memberInfoVisitor;
 
 
-    public VariableMemberInfoVisitor()
-    {
-        this(null);
-    }
-
-
-    public VariableMemberInfoVisitor(MemberInfoVisitor memberInfoVisitor)
-    {
-        this.memberInfoVisitor = memberInfoVisitor;
-    }
-
-
-    public void setMemberInfoVisitor(MemberInfoVisitor memberInfoVisitor)
+    /**
+     * Creates a new ProgramFilteredMemberInfoVisitor.
+     * @param memberInfoVisitor the <code>MemberInfoVisitor</code> to which
+     *                          visits will be delegated.
+     */
+    public ProgramFilteredMemberInfoVisitor(MemberInfoVisitor memberInfoVisitor)
     {
         this.memberInfoVisitor = memberInfoVisitor;
-    }
-
-    public MemberInfoVisitor getMemberInfoVisitor()
-    {
-        return memberInfoVisitor;
     }
 
 
@@ -61,36 +51,24 @@ public class VariableMemberInfoVisitor implements MemberInfoVisitor
 
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {
-        if (memberInfoVisitor != null)
-        {
-            memberInfoVisitor.visitProgramFieldInfo(programClassFile, programFieldInfo);
-        }
+        memberInfoVisitor.visitProgramFieldInfo(programClassFile, programFieldInfo);
     }
 
 
     public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
     {
-        if (memberInfoVisitor != null)
-        {
-            memberInfoVisitor.visitProgramMethodInfo(programClassFile, programMethodInfo);
-        }
+        memberInfoVisitor.visitProgramMethodInfo(programClassFile, programMethodInfo);
     }
 
 
     public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo)
     {
-        if (memberInfoVisitor != null)
-        {
-            memberInfoVisitor.visitLibraryFieldInfo(libraryClassFile, libraryFieldInfo);
-        }
+        // Don't delegate visits to library members.
     }
 
 
     public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo)
     {
-        if (memberInfoVisitor != null)
-        {
-            memberInfoVisitor.visitLibraryMethodInfo(libraryClassFile, libraryMethodInfo);
-        }
+        // Don't delegate visits to library members.
     }
 }

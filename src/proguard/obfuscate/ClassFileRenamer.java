@@ -1,4 +1,4 @@
-/* $Id: ClassFileRenamer.java,v 1.14 2002/08/05 16:59:28 eric Exp $
+/* $Id: ClassFileRenamer.java,v 1.16 2002/08/30 16:27:43 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -30,7 +30,8 @@ import java.util.*;
 /**
  * This <code>ClassFileVisitor</code> renames the class names and class member
  * names of the classes it visits, using names previously determined by the
- * obfuscator.
+ * obfuscator. It can also replace the source file attribute by a given
+ * constant string.
  *
  * @see ClassFileObfuscator
  *
@@ -39,10 +40,26 @@ import java.util.*;
 public class ClassFileRenamer
   implements ClassFileVisitor,
              MemberInfoVisitor,
-             CpInfoVisitor
+             CpInfoVisitor,
+             AttrInfoVisitor
 {
+    private String newSourceFileAttribute;
+
+
     private DescriptorClassEnumeration descriptorClassEnumeration =
         new DescriptorClassEnumeration();
+
+
+    /**
+     * Creates a new ClassFileObfuscator.
+     * @param newSourceFileAttribute the new string to be put in the source file
+     *                               attribute (if present) of the visited classes,
+     *                               or <code>null</code> to leave it unchanged.
+     */
+    public ClassFileRenamer(String newSourceFileAttribute)
+    {
+        this.newSourceFileAttribute = newSourceFileAttribute;
+    }
 
 
     // Implementations for ClassFileVisitor
@@ -58,6 +75,12 @@ public class ClassFileRenamer
 
         // Rename class references and class member references in the constant pool.
         programClassFile.constantPoolEntriesAccept(this);
+
+        // Rename the source file attribute, if specified.
+        if (newSourceFileAttribute != null)
+        {
+            programClassFile.attributesAccept(this);
+        }
     }
 
 
@@ -66,9 +89,9 @@ public class ClassFileRenamer
 
     // Implementations for MemberInfoVisitor
 
-    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programfieldInfo)
+    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {
-        visitMemberInfo(programClassFile, programfieldInfo);
+        visitMemberInfo(programClassFile, programFieldInfo);
     }
 
     public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
@@ -208,6 +231,26 @@ public class ClassFileRenamer
                                             refCpInfo.getType(classFile));
             }
         }
+    }
+
+
+    // Implementations for AttrInfoVisitor
+
+    public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo) {}
+    public void visitInnerClassesAttrInfo(ClassFile classFile, InnerClassesAttrInfo innerClassesAttrInfo) {}
+    public void visitConstantValueAttrInfo(ClassFile classFile, ConstantValueAttrInfo constantValueAttrInfo) {}
+    public void visitExceptionsAttrInfo(ClassFile classFile, ExceptionsAttrInfo exceptionsAttrInfo) {}
+    public void visitCodeAttrInfo(ClassFile classFile, CodeAttrInfo codeAttrInfo) {}
+    public void visitLineNumberTableAttrInfo(ClassFile classFile, LineNumberTableAttrInfo lineNumberTableAttrInfo) {}
+    public void visitLocalVariableTableAttrInfo(ClassFile classFile, LocalVariableTableAttrInfo localVariableTableAttrInfo) {}
+    public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo) {}
+    public void visitSyntheticAttrInfo(ClassFile classFile, SyntheticAttrInfo syntheticAttrInfo) {}
+
+
+    public void visitSourceFileAttrInfo(ClassFile classFile, SourceFileAttrInfo sourceFileAttrInfo)
+    {
+        sourceFileAttrInfo.u2sourceFileIndex =
+            createUtf8CpInfo((ProgramClassFile)classFile, newSourceFileAttribute);
     }
 
 

@@ -1,4 +1,4 @@
-/* $Id: MultiClassFileVisitor.java,v 1.3 2002/05/12 13:33:41 eric Exp $
+/* $Id: MultiClassFileVisitor.java,v 1.4 2002/09/07 16:05:13 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -24,8 +24,8 @@ import proguard.classfile.*;
 
 
 /**
- * This ClassFileVisitor delegates all method calls to each ClassFileVisitor
- * from a given list.
+ * This ClassFileVisitor delegates all visits to each ClassFileVisitor
+ * in a given list.
  *
  * @author Eric Lafortune
  */

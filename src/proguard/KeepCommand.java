@@ -1,4 +1,4 @@
-/* $Id: KeepCommand.java,v 1.11 2002/08/02 16:40:28 eric Exp $
+/* $Id: KeepCommand.java,v 1.14 2002/09/01 16:41:35 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -70,7 +70,8 @@ public class KeepCommand implements Command
      * @param requiredUnsetAccessFlags the class access flags that must be unset
      *                                 in order for the class to apply.
      * @param className                the class name. The name may be null to
-     *                                 specify any class.
+     *                                 specify any class, or it may contain
+     *                                 "**", "*", or "?" wildcards.
      * @param extendsClassName         the name of the class that the class must
      *                                 extend or implement in order to apply.
      *                                 The name may be null to specify any class.
@@ -146,29 +147,59 @@ public class KeepCommand implements Command
             classFileVisitor = newMultiClassFileVisitor;
         }
 
+        // By default, start visiting from the class name, if it's specified.
+        String namedClassName = className;
+
+        // If wildcarded, only visit class files with matching names.
+        if (className != null &&
+            (className.indexOf('*') >= 0 ||
+             className.indexOf('?') >= 0))
+        {
+            classFileVisitor =
+                new NameFilteredClassFileVisitor(classFileVisitor,
+                                                 className);
+
+            // We'll have to visit all classes now.
+            namedClassName = null;
+        }
+
         // If specified, only visit class files with the right access flags.
         if (requiredSetAccessFlags   != 0 ||
             requiredUnsetAccessFlags != 0)
         {
             classFileVisitor =
-                new FilteredClassFileVisitor(classFileVisitor,
-                                             requiredSetAccessFlags,
-                                             requiredUnsetAccessFlags);
+                new AccessFilteredClassFileVisitor(classFileVisitor,
+                                                   requiredSetAccessFlags,
+                                                   requiredUnsetAccessFlags);
         }
 
-        // Depending on what's specified, visit a single named class,
-        // all classes that extend a particular named class, or all classes.
-        classPoolMarker =
-            className        != null ? (ClassPoolVisitor)
-                new NamedClassFileVisitor(classFileVisitor, className) :
+        // If it's specified, start visiting from the extended class.
+        if (namedClassName   == null &&
+            extendsClassName != null)
+        {
+            classFileVisitor =
+                new ClassFileUpDownTraveler(false, false, false, true,
+                                            classFileVisitor);
 
-            extendsClassName != null ? (ClassPoolVisitor)
-                new NamedClassFileVisitor(new ClassFileUpDownTraveler(false, false, false, true,
-                                                                      classFileVisitor),
-                                          extendsClassName)
-                                     : (ClassPoolVisitor)
+            // If wildcarded, only visit class files with matching names.
+            if (extendsClassName.indexOf('*') >= 0 ||
+                extendsClassName.indexOf('?') >= 0)
+            {
+                classFileVisitor =
+                    new NameFilteredClassFileVisitor(classFileVisitor,
+                                                     extendsClassName);
+            }
+            else
+            {
+                // Start visiting from the extended class name.
+                namedClassName = extendsClassName;
+            }
+        }
 
-                new AllClassFileVisitor(classFileVisitor);
+        // If specified, visit a single named class, otherwise visit all classes.
+        classPoolMarker = namedClassName != null ?
+            (ClassPoolVisitor)new NamedClassFileVisitor(classFileVisitor, namedClassName) :
+            (ClassPoolVisitor)new AllClassFileVisitor(classFileVisitor);
     }
 
 
@@ -210,17 +241,15 @@ public class KeepCommand implements Command
             requiredUnsetAccessFlags != 0)
         {
             memberInfoVisitor =
-                new FilteredMemberInfoVisitor(memberInfoVisitor,
-                                                 requiredSetAccessFlags,
-                                                 requiredUnsetAccessFlags);
+                new AccessFilteredMemberInfoVisitor(memberInfoVisitor,
+                                                    requiredSetAccessFlags,
+                                                    requiredUnsetAccessFlags);
         }
 
         // Depending on what's specified, visit a single named field or all fields.
-        ClassFileVisitor marker =
-            name != null ? (ClassFileVisitor)
-                new NamedFieldVisitor(memberInfoVisitor, name, descriptor)
-                         : (ClassFileVisitor)
-                new AllFieldVisitor(memberInfoVisitor);
+        ClassFileVisitor marker = name != null ?
+            (ClassFileVisitor)new NamedFieldVisitor(memberInfoVisitor, name, descriptor) :
+            (ClassFileVisitor)new AllFieldVisitor(memberInfoVisitor);
 
         ensureMultiClassFileVisitorForMembers();
         multiClassFileVisitorForMembers.addClassFileVisitor(marker);
@@ -265,18 +294,15 @@ public class KeepCommand implements Command
             requiredUnsetAccessFlags != 0)
         {
             memberInfoVisitor =
-                new FilteredMemberInfoVisitor(memberInfoVisitor,
-                                                 requiredSetAccessFlags,
-                                                 requiredUnsetAccessFlags);
+                new AccessFilteredMemberInfoVisitor(memberInfoVisitor,
+                                                    requiredSetAccessFlags,
+                                                    requiredUnsetAccessFlags);
         }
 
         // Depending on what's specified, visit a single named method or all methods.
-        ClassFileVisitor marker =
-            name != null ? (ClassFileVisitor)
-                new NamedMethodVisitor(memberInfoVisitor, name, descriptor)
-
-                         : (ClassFileVisitor)
-                new AllMethodVisitor(memberInfoVisitor);
+        ClassFileVisitor marker = name != null ?
+            (ClassFileVisitor)new NamedMethodVisitor(memberInfoVisitor, name, descriptor) :
+            (ClassFileVisitor)new AllMethodVisitor(memberInfoVisitor);
 
         ensureMultiClassFileVisitorForMembers();
         multiClassFileVisitorForMembers.addClassFileVisitor(marker);
@@ -333,16 +359,16 @@ public class KeepCommand implements Command
 
         // Print the class(es) and class member(s).
         SimpleClassFilePrinter printer = new SimpleClassFilePrinter();
-        variableClassFileVisitor.setClassFileVisitor(printer);
-        variableMemberInfoVisitor.setMemberInfoVisitor(printer);
+        variableClassFileVisitor.setClassFileVisitor(
+            new ProgramFilteredClassFileVisitor(printer));
+        variableMemberInfoVisitor.setMemberInfoVisitor(
+            new LibraryFilteredMemberInfoVisitor(printer));
 
-        // Start processing from the program class pool or the library class pool.
-        if (extendsClassName == null ||
-            programClassPool.getClass(extendsClassName) != null)
-        {
-            programClassPool.accept(classPoolMarker);
-        }
-        else
+        // Start processing from the program class pool.
+        programClassPool.accept(classPoolMarker);
+
+        // Extended classes might be found in the library class pool.
+        if (extendsClassName != null)
         {
             libraryClassPool.accept(classPoolMarker);
         }
@@ -363,13 +389,11 @@ public class KeepCommand implements Command
         variableClassFileVisitor.setClassFileVisitor(usageMarker);
         variableMemberInfoVisitor.setMemberInfoVisitor(usageMarker);
 
-        // Start processing from the program class pool or the library class pool.
-        if (extendsClassName == null ||
-            programClassPool.getClass(extendsClassName) != null)
-        {
-            programClassPool.accept(classPoolMarker);
-        }
-        else
+        // Start processing from the program class pool.
+        programClassPool.accept(classPoolMarker);
+
+        // Extended classes might be found in the library class pool.
+        if (extendsClassName != null)
         {
             libraryClassPool.accept(classPoolMarker);
         }
@@ -385,13 +409,11 @@ public class KeepCommand implements Command
         variableClassFileVisitor.setClassFileVisitor(nameMarker);
         variableMemberInfoVisitor.setMemberInfoVisitor(nameMarker);
 
-        // Start processing from the program class pool or the library class pool.
-        if (extendsClassName == null ||
-            programClassPool.getClass(extendsClassName) != null)
-        {
-            programClassPool.accept(classPoolMarker);
-        }
-        else
+        // Start processing from the program class pool.
+        programClassPool.accept(classPoolMarker);
+
+        // Extended classes might be found in the library class pool.
+        if (extendsClassName != null)
         {
             libraryClassPool.accept(classPoolMarker);
         }
@@ -492,7 +514,7 @@ public class KeepCommand implements Command
 
         // Implementations for MemberInfoVisitor
 
-        public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programfieldInfo)
+        public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
         {
             if (countingMembers)
             {
@@ -500,7 +522,7 @@ public class KeepCommand implements Command
             }
             else
             {
-                memberInfoVisitor.visitProgramFieldInfo(programClassFile, programfieldInfo);
+                memberInfoVisitor.visitProgramFieldInfo(programClassFile, programFieldInfo);
             }
         }
 

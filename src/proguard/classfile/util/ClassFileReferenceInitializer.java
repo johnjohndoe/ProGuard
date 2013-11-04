@@ -1,4 +1,4 @@
-/* $Id: ClassFileReferenceInitializer.java,v 1.1 2002/08/01 17:12:40 eric Exp $
+/* $Id: ClassFileReferenceInitializer.java,v 1.2 2002/08/29 18:02:25 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -133,9 +133,9 @@ public class ClassFileReferenceInitializer
 
     // Implementations for MemberInfoVisitor
 
-    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programfieldInfo)
+    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {
-        visitMemberInfo(programClassFile, programfieldInfo);
+        visitMemberInfo(programClassFile, programFieldInfo);
     }
 
 

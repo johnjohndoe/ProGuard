@@ -1,4 +1,4 @@
-/* $Id: UsageMarker.java,v 1.13 2002/08/01 17:12:40 eric Exp $
+/* $Id: UsageMarker.java,v 1.15 2002/09/07 16:05:46 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -218,9 +218,9 @@ public class UsageMarker
 
     // Implementations for MemberInfoVisitor
 
-    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programfieldInfo)
+    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {
-        visitMemberInfo(programClassFile, programfieldInfo);
+        visitMemberInfo(programClassFile, programFieldInfo);
     }
 
 
@@ -390,8 +390,17 @@ public class UsageMarker
                 // Mark the referenced interface method itself.
                 interfaceMethodrefCpInfo.referencedMemberInfoAccept(this);
 
-                // Mark the all implementations of the method.
-                // First go to all concrete classes of the interface.
+                // When compiled with "-target 1.2", the interface actually
+                // containing the referenced method may be higher up the
+                // hierarchy. Make sure it's marked, in case it isn't
+                // used elsewhere.
+                interfaceMethodrefCpInfo.referencedClassAccept(this);
+
+                String name = interfaceMethodrefCpInfo.getName(classFile);
+                String type = interfaceMethodrefCpInfo.getType(classFile);
+
+                // Mark all implementations of the method.
+                // First go to  all concrete classes of the interface.
                 // From there, travel up and down the class hierarchy to mark
                 // the method.
                 //
@@ -400,10 +409,8 @@ public class UsageMarker
                 // higher up its class hierarchy.
                 interfaceMethodrefCpInfo.referencedClassAccept(
                     new ConcreteClassFileDownTraveler(
-                        new ClassFileUpDownTraveler(true, true, false, true,
-                            new NamedMethodVisitor(this,
-                                                   interfaceMethodrefCpInfo.getName(classFile),
-                                                   interfaceMethodrefCpInfo.getType(classFile)))));
+                    new ClassFileUpDownTraveler(true, true, false, true,
+                    new NamedMethodVisitor(this, name, type))));
             }
         }
     }
@@ -423,13 +430,19 @@ public class UsageMarker
                 // Mark the referenced method itself.
                 methodrefCpInfo.referencedMemberInfoAccept(this);
 
-                // Mark the all overriding implementations of the method,
+                // When compiled with "-target 1.2", the class actually
+                // containing the referenced method may be higher up the
+                // hierarchy. Being a superclass, it will be marked
+                // automatically.
+
+                String name = methodrefCpInfo.getName(classFile);
+                String type = methodrefCpInfo.getType(classFile);
+
+                // Mark all overriding implementations of the method,
                 // down the class hierarchy.
                 methodrefCpInfo.referencedClassAccept(
                     new ClassFileUpDownTraveler(false, false, false, true,
-                        new NamedMethodVisitor(this,
-                                               methodrefCpInfo.getName(classFile),
-                                               methodrefCpInfo.getType(classFile))));
+                    new NamedMethodVisitor(this, name, type)));
             }
         }
     }

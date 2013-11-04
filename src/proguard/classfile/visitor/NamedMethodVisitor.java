@@ -1,4 +1,4 @@
-/* $Id: NamedMethodVisitor.java,v 1.6 2002/08/02 16:40:28 eric Exp $
+/* $Id: NamedMethodVisitor.java,v 1.7 2002/09/07 16:05:13 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -32,17 +32,17 @@ import proguard.classfile.*;
 public class NamedMethodVisitor implements ClassFileVisitor
 {
     private MemberInfoVisitor memberInfoVisitor;
-    private String               name;
-    private String               descriptor;
+    private String            name;
+    private String            descriptor;
 
 
     public NamedMethodVisitor(MemberInfoVisitor memberInfoVisitor,
-                              String               name,
-                              String               descriptor)
+                              String            name,
+                              String            descriptor)
     {
         this.memberInfoVisitor = memberInfoVisitor;
-        this.name                 = name;
-        this.descriptor           = descriptor;
+        this.name              = name;
+        this.descriptor        = descriptor;
     }
 
 

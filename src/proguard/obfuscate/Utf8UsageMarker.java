@@ -1,4 +1,4 @@
-/* $Id: Utf8UsageMarker.java,v 1.9 2002/08/04 13:12:19 eric Exp $
+/* $Id: Utf8UsageMarker.java,v 1.10 2002/08/29 18:02:25 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -69,9 +69,9 @@ public class Utf8UsageMarker
 
     // Implementations for MemberInfoVisitor
 
-    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programfieldInfo)
+    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {
-        visitMemberInfo(programClassFile, programfieldInfo);
+        visitMemberInfo(programClassFile, programFieldInfo);
     }
 
 

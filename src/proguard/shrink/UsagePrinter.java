@@ -1,4 +1,4 @@
-/* $Id: UsagePrinter.java,v 1.9 2002/05/23 19:19:58 eric Exp $
+/* $Id: UsagePrinter.java,v 1.10 2002/08/23 16:31:17 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -107,18 +107,18 @@ public class UsagePrinter
 
     // Implementations for MemberInfoVisitor
 
-    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programfieldInfo)
+    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {
-        if (UsageMarker.isUsed(programfieldInfo) ^ printUnusedItems)
+        if (UsageMarker.isUsed(programFieldInfo) ^ printUnusedItems)
         {
             printClassNameHeader();
 
             ps.println("    " +
-                       lineNumberRange(programClassFile, programfieldInfo) + ":" +
+                       lineNumberRange(programClassFile, programFieldInfo) +
                        ClassUtil.externalFullFieldDescription(
-                           programfieldInfo.getAccessFlags(),
-                           programfieldInfo.getName(programClassFile),
-                           programfieldInfo.getDescriptor(programClassFile)));
+                           programFieldInfo.getAccessFlags(),
+                           programFieldInfo.getName(programClassFile),
+                           programFieldInfo.getDescriptor(programClassFile)));
         }
     }
 
@@ -130,7 +130,7 @@ public class UsagePrinter
             printClassNameHeader();
 
             ps.println("    " +
-                       lineNumberRange(programClassFile, programMethodInfo) + ":" +
+                       lineNumberRange(programClassFile, programMethodInfo) +
                        ClassUtil.externalFullMethodDescription(
                            programClassFile.getName(),
                            programMethodInfo.getAccessFlags(),
@@ -161,30 +161,14 @@ public class UsagePrinter
 
 
     /**
-     * Returns the line number range of the given class member as a String,
-     * if it can find it.
+     * Returns the line number range of the given class member, followed by a
+     * colon, or just an empty String if no range is available.
      */
-    private String lineNumberRange(ProgramClassFile programClassFile, ProgramMemberInfo programMemberInfo)
+    private static String lineNumberRange(ProgramClassFile programClassFile, ProgramMemberInfo programMemberInfo)
     {
-        CodeAttrInfo codeAttribute =
-            (CodeAttrInfo)programMemberInfo.getAttribute(programClassFile,
-                                                     ClassConstants.ATTR_Code);
-        if (codeAttribute == null)
-        {
-            return "0:0";
-        }
-
-        LineNumberTableAttrInfo lineNumberTableAttribute =
-            (LineNumberTableAttrInfo)codeAttribute.getAttribute(programClassFile,
-                                                                ClassConstants.ATTR_LineNumberTable);
-        if (lineNumberTableAttribute == null)
-        {
-            return "0:0";
-        }
-
-        return "" +
-               lineNumberTableAttribute.getLineNumber(0) +
-               ":" +
-               lineNumberTableAttribute.getLineNumber(Integer.MAX_VALUE);
+        String range = programMemberInfo.getLineNumberRange(programClassFile);
+        return range != null ?
+            (range + ":") :
+            "";
     }
 }

@@ -1,4 +1,4 @@
-/* $Id: JarReader.java,v 1.5 2002/05/12 13:33:41 eric Exp $
+/* $Id: JarReader.java,v 1.6 2002/09/01 16:41:35 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -94,9 +94,9 @@ public class JarReader
         {
             // We filter library class files, only keeping public ones.
             // E.g. about 60% of all rt.jar classes.
-            classFileVisitor = new FilteredClassFileVisitor(classFileVisitor,
-                                                            ClassConstants.INTERNAL_ACC_PUBLIC,
-                                                            0);
+            classFileVisitor = new AccessFilteredClassFileVisitor(classFileVisitor,
+                                                                  ClassConstants.INTERNAL_ACC_PUBLIC,
+                                                                  0);
         }
 
         JarInputStream jarInputStream = null;

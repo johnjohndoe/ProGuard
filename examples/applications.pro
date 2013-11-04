@@ -14,7 +14,7 @@
 -outjar      out.jar
 
 
-# Preserve all public applications, and print out which ones.
+# Preserve all public applications.
 
 -keepclasseswithmembers public class * {
     public static void main(java.lang.String[]);
@@ -33,13 +33,11 @@
 }
 
 
-# Preserve all serializable class names for backward compatibility with any
-# previously saved serialization data.
-
--keepnames class * implements java.io.Serializable
-
 # Explicitly preserve all serialization members. The Serializable interface
 # is only a marker interface, so it wouldn't save them.
+# You can comment this out if your application doesn't use serialization.
+# If your code contains serializable classes that have to be backward 
+# compatible, please refer to the manual.
 
 -keepclassmembers class * implements java.io.Serializable {
     static final long serialVersionUID;
@@ -50,7 +48,9 @@
 }
 
 
-# Some jars may contain more items that need to be preserved, e.g.:
+# Your application may contain more items that need to be preserved; 
+# typically classes that are dynamically created using Class.forName:
+
 # -keep public class mypackage.MyClass
 # -keep public interface mypackage.MyInterface
 # -keep public class * implements mypackage.MyInterface

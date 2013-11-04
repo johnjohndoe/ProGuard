@@ -14,13 +14,17 @@
 -overloadaggressively
 
 
-# Put all obfuscated classes into a single package 'pro'.
+# Put all obfuscated classes into the nameless root package.
 
--defaultpackage pro
+-defaultpackage ''
 
 
-# The main seed.
+# The main seeds: ProGuard and its companion tool ReTrace.
 
 -keep public class proguard.ProGuard {
+    public static void main(java.lang.String[]);
+}
+
+-keep public class proguard.ReTrace {
     public static void main(java.lang.String[]);
 }

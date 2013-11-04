@@ -20,13 +20,20 @@
 <li><a href="#examples">Examples</a>
 <li><a href="#troubleshooting">Troubleshooting</a>
 </ol>
+<p>
+For a brief overview, please refer to the <a href="refcard.html">ProGuard
+Reference Card</a>.
+<p>
+For restoring obfuscated stack traces, please refer to the <a
+href="retrace.html">ReTrace User Manual</a>.
+<p>
 
 <a name="introduction">&nbsp;</a>
 <table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
 <h2>Introduction</h2>
 </td></tr></table>
 <p>
-ProGuard is a Java class file shrinker and obfuscator. It detects and
+<b>ProGuard</b> is a Java class file shrinker and obfuscator. It detects and
 removes unused classes, fields, methods, and attributes, and it renames the
 remaining classes, fields, and methods using short meaningless names. The
 resulting jars are more compact and more difficult to reverse-engineer.
@@ -61,17 +68,13 @@ accordingly.
 To run ProGuard, just type:
 <p>
 <table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
-<code><b>
-java -jar proguard.jar &lt;options&gt; ...
-</b></code>
+<code><b>java -jar proguard.jar </b></code><i>options</i> ...
 </td></tr></table>
 <p>
 Or, assuming the ProGuard jar is in your class path:
 <p>
 <table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
-<code><b>
-java proguard.ProGuard &lt;options&gt; ...
-</b></code>
+<code><b>java proguard.ProGuard </b></code><i>options</i> ...
 </td></tr></table>
 <p>
 Options can also be put in one or more configuration files. Typically, you'll
@@ -79,7 +82,7 @@ put most options in a configuration file, and just call:
 <p>
 <table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
 <code><b>
-java proguard.ProGuard @myconfig.pro
+java -jar proguard.jar @myconfig.pro
 </b></code>
 </td></tr></table>
 <p>
@@ -90,7 +93,7 @@ files, e.g.:
 <p>
 <table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
 <code><b>
-java proguard.ProGuard @myconfig.pro -printusage -printmapping
+java -jar proguard.jar @myconfig.pro -printusage -printmapping
 </b></code>
 </td></tr></table>
 <p>
@@ -116,42 +119,61 @@ The following table lists all supported options.
 <p>
 <table cellspacing="10">
 <tr>
-<td valign="top"><code><b>@</b></code><i>filename</i><br></td>
-<td>Short for '<code>-include</code> <i>filename</i>'.
+<td valign="top"><code><b>@</b></code><i>filename</i></td>
+
+<td>Short for '<code>-include</code> <i>filename</i>'.</td>
+
 </tr>
 <tr>
 <td valign="top"><code><b>-include</b></code> <i>filename</i></td>
+
 <td>Recursively reads configuration commands from the given file
     <i>filename</i>.</td>
 </tr>
 <tr>
 <td valign="top"><code><b>-libraryjars</b></code>
     <i>jarname</i>[<b>:</b>...]</td>
+
 <td>Specifies the library jars of the application to be processed. The class
     files in these jars will not be included in the output jar. The specified
     library jars should at least contain the class files that are
     <i>extended</i> by application class files. Library class files that are
     only <i>called</i> needn't be present. The jars can be specified with one
     or more <code>-libraryjars</code> directives. Multiple jars can also be
-    specified with a single directive using the path separator (e.g. ':' on
-    Unix, or ';' on Windows platforms).</td>
+    specified using the path separator (e.g. ':' on Unix, or ';' on Windows
+    platforms).
+    <p>
+    Please note that the boot path and class path set for running ProGuard are
+    not considered when looking for library classes. This also means that you
+    explicitly have to specify the run-time jar that your code will use.
+    Although seemingly cumbersome, it allows you to process applications
+    targeted at different run-time environments. For example, you can process
+    <a href="#application">J2SE applications</a> as well as <a
+    href="#midlet">J2ME midlets</a>, just by specifying the appropriate
+    run-time jar.</td>
+
 </tr>
 <tr>
 <td valign="top"><code><b>-injars</b></code> <i>jarname</i>[<b>:</b>...]</td>
+
 <td>Specifies the program jars of the application to be processed. The class
     files in these jars will be processed and merged in the output jar. The
     jars can be specified with one or more <code>-injars</code> directives.
-    Multiple jars can also be specified with a single directive using the path
-    separator (e.g. ':' on Unix, or ';' on Windows platforms).</td>
+    Multiple jars can also be specified using the path separator (e.g. ':' on
+    Unix, or ';' on Windows platforms).</td>
+
 </tr>
 <tr>
 <td valign="top"><code><b>-outjar</b></code> <i>jarname</i></td>
+
 <td>Specifies the name of the output jar. Without this directive, no jars will
     be written. With multiple directives, several identical copies of the
     output jar will be written.</td>
+
 </tr>
 <tr>
 <td valign="top"><code><b>-keep</b></code> <i>class_specification</i></td>
+
 <td>Specifies the classes and their class members to be preserved. They will
     be preserved with their original names. This is typically the required
     seed for recursively determining which other classes and class members
@@ -159,125 +181,177 @@ The following table lists all supported options.
     an application</a>, you can specify the main class along with its main
     method. In order to <a href="#library">process a library</a>, you should
     specify all publicly accessible items.</td>
+
 </tr>
 <tr>
 <td valign="top"><code><b>-keepclassmembers</b></code>
     <i>class_specification</i></td>
+
 <td>Specifies any class members to be preserved, if their classes are
     preserved as well. For example, you may want to <a
     href="#serializable">keep all serialization fields and methods</a> of
     classes that implement the <code>Serializable</code> interface.</td>
+
 </tr>
 <tr>
 <td valign="top"><code><b>-keepclasseswithmembers</b></code>
     <i>class_specification</i></td>
+
 <td>Specifies the classes and their class members to be preserved, on the
     condition that all of the specified class members are present. For example,
     you may want to <a href="#applications">keep all applications</a> that have
     a main method, without having to list them explicitly.</td>
+
 </tr>
 <tr>
 <td valign="top"><code><b>-keepnames</b></code>
     <i>class_specification</i></td>
+
 <td>Specifies the classes and their class members whose names are to be
     preserved, if they aren't removed in the shrinking phase. For example, you
     may want to <a href="#serializable">keep all class names</a> of classes
     that implement the <code>Serializable</code> interface, so that the
     processed code remains compatible with any originally serialized classes.
     Classes that aren't used at all can still be removed.</td>
+
 </tr>
 <tr>
 <td valign="top"><code><b>-keepclassmembernames</b></code>
     <i>class_specification</i></td>
+
 <td>Specifies the class members whose the names are to be preserved, if they
     aren't removed in the shrinking phase. For example, you may want to
     <a href="#native">keep all method names</a> of native methods, so that
     the processed code can still link with the native library code. Native
     methods that aren't used at all can still be removed.</td>
+
 </tr>
 <tr>
 <td valign="top"><code><b>-keepattributes</b></code>
-    <i>attribute_name[<b>,</b>...]</i></td>
-<td>Specifies any optional attributes to be preserved. A <code><b>*</b></code>
-    wildcard can be used to preserve all attributes. Typical optional
-    attributes are <code>LineNumberTable</code>,
+    [<i>attribute_name<b>,</b>...</i>]</td>
+
+<td>Specifies any optional attributes to be preserved. The attributes can be
+    specified with one or more <code>-keepattributes</code> directives.
+    Multiple attributes can also be specified separated by commas. An empty
+    list or a <code><b>*</b></code> wildcard preserves all attributes. Typical
+    optional attributes are <code>LineNumberTable</code>,
     <code>LocalVariableTable</code>, <code>SourceFile</code>,
     <code>Deprecated</code>, and <code>Synthetic</code>. The
     <code>InnerClasses</code> attribute name can be specified as well,
-    referring to the source name part of this attribute.</td>
+    referring to the source name part of this attribute. Only applicable when
+    obfuscating.</td>
+
 </tr>
 <tr>
-<td valign="top"><code><b>-printseeds</b></code></td>
+<td valign="top"><code><b>-renamesourcefileattribute</b></code>
+    [<i>string</i>]</td>
+
+<td>Specifies a constant string to be put in the <code>SourceFile</code>
+    attributes of the class files. Note that the attribute also has to be
+    preserved explicitly using the <code>-keepattributes</code> directive, or
+    it will be removed anyway. For example, you may want to have your
+    processed libraries and applications produce <a
+    href="#stacktrace">useful obfuscated stack traces</a>. Only applicable when
+    obfuscating.</td>
+
+</tr>
+<tr>
+<td valign="top"><code><b>-printseeds</b></code><!--[<i>filename</i>]--></td>
+
 <td>Specifies to exhaustively list classes and class members matched by the
-    various <code>-keep</code> commands. This list can be useful to verify if
-    the intended class members are really found, especially when wildcarded.
-    For example, you may want to list all the <a
+    various <code>-keep</code> commands. The list is printed to the standard
+    output<!--or to the given file-->. The list can be useful to verify if the
+    intended class members are really found, especially if you're using
+    wildcards. For example, you may want to list all the <a
     href="#applications">applications</a> or all the <a
-    href="#applets">applets</a> that you are keeping.
+    href="#applets">applets</a> that you are keeping.</td>
+
 </tr>
 <tr>
-<td valign="top"><code><b>-printusage</b></code></td>
-<td>Specifies to list dead code of the input class files. For example, you can
-    <a href="#deadcode">list the unused code of an application</a>. Only
+<td valign="top"><code><b>-printusage</b></code> [<i>filename</i>]</td>
+
+<td>Specifies to list dead code of the input class files. The list is printed
+    to the standard output or to the given file. For example, you can <a
+    href="#deadcode">list the unused code of an application</a>. Only
     applicable when shrinking.</td>
+
 </tr>
 <tr>
-<td valign="top"><code><b>-printmapping</b></code></td>
+<td valign="top"><code><b>-printmapping</b></code> [<i>filename</i>]</td>
+
 <td>Specifies to print the mapping from old names to new names for classes and
-    class members that have been renamed.
-    Only applicable when obfuscating.</td>
+    class members that have been renamed. The mapping is printed to the
+    standard output or to the given file. Only applicable when
+    obfuscating.</td>
+
 </tr>
 <tr>
 <td valign="top"><code><b>-verbose</b></code></td>
+
 <td>Specifies to write out some more information during processing. If the
     program terminates with an exception, this option will print out the entire
     stack trace, instead of just the exception message.</td>
+
 </tr>
 <tr>
-<td valign="top"><code><b>-dump</b></code></td>
+<td valign="top"><code><b>-dump</b></code> [<i>filename</i>]</td>
+
 <td>Specifies to write out the internal structure of the class files, after
-    any processing. For example, you may want to <a href="#structure">write
-    out the contents of a given jar file</a>, without shrinking or obfuscating
-    it first.</td>
+    any processing. The structure is printed to the standard output or to the
+    given file. For example, you may want to <a href="#structure">write out
+    the contents of a given jar file</a>, without shrinking or obfuscating it
+    first.</td>
+
 </tr>
 <tr>
 <td valign="top"><code><b>-ignorewarnings</b></code></td>
+
 <td>Specifies to print any warnings about unresolved references to
     superclasses, interfaces, or class members, but to continue processing in
     any case. If the classes or class members are indeed required for
     processing, the output jar will not function properly. Only use this
     option if you know what you're doing!</td>
+
 </tr>
 <tr>
 <td valign="top"><code><b>-dontwarn</b></code></td>
+
 <td>Specifies not to warn about unresolved references at all. Again, if the
     unresolved classes or class members are indeed required for processing,
     the output jar will not function properly. Only use this option if you
     know what you're doing!</td>
+
 </tr>
 <tr>
 <td valign="top"><code><b>-dontnote</b></code></td>
+
 <td>Specifies not to print notes about class casts of variable dynamically
     created objects. These notes provide hints about classes that may have to
     be kept.</td>
+
 </tr>
 <tr>
 <td valign="top"><code><b>-dontshrink</b></code></td>
+
 <td>Specifies not to shrink the input class files. By default, shrinking is
     applied: all classes and class members are removed, except for the ones
     listed by the various <code>-keep</code> commands, and the ones they
     depend on, recursively.</td>
+
 </tr>
 <tr>
 <td valign="top"><code><b>-dontobfuscate</b></code></td>
+
 <td>Specifies not to obfuscate the input class files. By default, obfuscation
     is applied: classes and class members receive new short random names,
     except for the ones listed by the various <code>-keep</code> commands.
     Internal attributes that are useful for debugging, such as source files
     names, variable names, and line numbers are removed.</td>
+
 </tr>
 <tr>
 <td valign="top"><code><b>-overloadaggressively</b></code></td>
+
 <td>Specifies to apply aggressive overloading while obfuscating. Multiple
     fields and methods can then get the same names, as long as their arguments
     and return types are different (not just their arguments, in the case of
@@ -305,22 +379,29 @@ The following table lists all supported options.
     "http://developer.java.sun.com/developer/bugParade/bugs/4216736.html">Bug
     #4216736</a>). You therefore probably shouldn't use this option for
     processing libraries.</td>
+
 </tr>
 <tr>
-<td valign="top"><code><b>-defaultpackage</b></code> <i>package_name</i></td>
+<td valign="top"><code><b>-defaultpackage</b></code> [<i>package_name</i>]</td>
+
 <td>Specifies to repackage all class files that are renamed into the single
-    given package. This option can make the output jar even smaller (and less
-    comprehensible). Only applicable when obfuscating.
+    given package. Without argument or with an empty string (''), the package
+    is removed completely. This option can make the output jar even smaller
+    (and less comprehensible). Only applicable when obfuscating.
     <p>
     Note that this kind of repackaging may cause access permissions to become
     inconsistent, e.g. a class with default access may move to a different
-    package from some other class that is using it. Even though unusual, this
-    is formally allowed by Java's binary compatibility specifications (cfr. <a
-    href=
+    package from some other class that is using it. This may seem unusual, but
+    it is formally allowed by Java's binary compatibility specifications (cfr.
+    <a href=
     "http://java.sun.com/docs/books/jls/second_edition/html/j.title.doc.html"
     >The Java Language Specification, Second Edition</a>, <a href=
     "http://java.sun.com/docs/books/jls/second_edition/html/binaryComp.doc.html#47259"
-    >Section 13.4.6</a>).</td>
+    >Section 13.4.6</a>). Still, users have reported problems with applets in
+    J2SE and with midlets J2ME. These environments don't seem to follow the
+    compatibility specifications, strictly enforcing access permissions. When
+    in doubt, just leave the packaging untouched by not using this option.</td>
+
 </tr>
 </table>
 <p>
@@ -335,75 +416,112 @@ class members. The corresponding options are only applied to classes and class
 members with matching templates. It was designed to look very Java-like, with
 some extensions for wildcards:
 <p>
-<code>[[<b>!</b>]<b>public</b>|<b>final</b>|<b>abstract</b> ...]
-<b>interface</b>|<b>class</b>
-<b>*</b></code> | <i>classname</i><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;
-    [<code><b>extends</b>|<b>implements</b></code> <i>classname</i>]<br>
-[{<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;
-    <code>[[<b>!</b>]<b>public</b>|<b>private</b>|<b>protected</b>|<b>static</b>|<b>volatile</b>|<b>transient</b> ...]<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-    <b>&lt;fields&gt;</b></code> | (<i>fieldtype fieldname</i>)<b>;</b><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;
-    <code>[[<b>!</b>]<b>public</b>|<b>private</b>|<b>protected</b>|<b>static</b>|<b>synchronized</b>|<b>native</b>|<b>abstract</b>|<b>strictfp</b> ...]<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-    <b>&lt;methods&gt;</b> |
-    <b>&lt;init&gt;(</b></code><i>argumenttype,...</i><b>)</b> |
-    <i>classname</i><b>(</b><i>argumenttype,...</i><b>)</b> |
-    (<i>returntype methodname</i><b>(</b><i>argumenttype,...</i><b>)</b>)<b>;</b><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;
-    <code>[[<b>!</b>]<b>public</b>|<b>private</b>|<b>protected</b>|<b>static</b> ... ]
-    <b>*;</b></code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;<code>...</code><br>
-}]
+<pre>
+[[<b>!</b>]<b>public</b>|<b>final</b>|<b>abstract</b> ...] ([<b>!</b>]<b>interface</b>)|<b>class</b> <i>classname</i>
+    [<b>extends</b>|<b>implements</b> <i>classname</i>]
+[<b>{</b>
+    [[<b>!</b>]<b>public</b>|<b>private</b>|<b>protected</b>|<b>static</b>|<b>volatile</b>|<b>transient</b> ...] <b>&lt;fields&gt;</b> |
+                                                                (<i>fieldtype fieldname</i>)<b>;</b>
+    [[<b>!</b>]<b>public</b>|<b>private</b>|<b>protected</b>|<b>static</b>|<b>synchronized</b>|<b>native</b>|<b>abstract</b>|<b>strictfp</b> ...] <b>&lt;methods&gt;</b> |
+                                                                                   <b>&lt;init&gt;(</b><i>argumenttype,...</i><b>)</b> |
+                                                                                   <i>classname</i><b>(</b><i>argumenttype,...</i><b>)</b> |
+                                                                                   (<i>returntype methodname</i><b>(</b><i>argumenttype,...</i><b>)</b>)<b>;</b>
+    [[<b>!</b>]<b>public</b>|<b>private</b>|<b>protected</b>|<b>static</b> ... ] <b>*;</b>
+    ...
+<b>}</b>]
+</pre>
 <p>
 The above specification may look cluttered if your browser window isn't wide
 enough. Square brackets "[]" mean that something is optional. Ellipsis dots
 "..." mean that any number of items may be specified. A vertical bar "|"
 indicates a choice between alternatives. Non-bold parentheses "()" just group
-parts of the specification that belong together.
+parts of the specification that belong together. The indentation tries to
+clarify the intended meaning, but white-space is irrelevant in actual
+configuration files.
 <p>
-Every <i>classname</i> must be specified in full, e.g.
-<code>java.lang.String</code>. The wildcard class name <code><b>*</b></code>
-refers to any class.
+<ul>
 
-<p>
-The <code><b>extends</b></code> and <code><b>implements</b></code>
-specifications are typically used to restrict wildcard classes. They are
-currently equivalent, specifying that only classes extending or implementing
-the given class qualify. Note that the given class itself is not included in
-this set. If required, it should be specified in a separate option.
+<li>The <code><b>class</b></code> keyword refers to any interface or class.
+    The <code><b>interface</b></code> keyword restricts matches to interface
+    classes. Preceding the <code><b>interface</b></code> keyword by a
+    <code><b>!</b></code> restricts matches to classes that are not
+    interfaces.
+    <p>
 
-<p>
-Fields and methods are specified much like in Java, except that method
-argument list don't contain argument names. The wildcard field name
-<code><b>&lt;fields&gt;</b></code> refers to any field. The wildcard method
-name <code><b>&lt;methods&gt;</b></code> refers to any method. The wildcard
-class member name <code><b>*</b></code> refers to any field or method. Note
-that all of the above wildcards don't have return types.
+<li>Every <i>classname</i> must be specified in full, e.g.
+    <code>java.lang.String</code>. Class names may be specified as regular
+    expressions containing the following wildcards:
 
-<p>
-Constructors can be specified using their short class name (without package),
-using their full class name, or using the <code><b>&lt;init&gt;</b></code>
-wildcard. As in the Java language, the constructor specification has an
-argument list, but no return type.
+<table cellspacing="10">
 
-<p>
-The class access modifiers and class member access modifiers are typically
-used to restrict wildcard classes and class members. They specify that the
-corresponding access flags have to be set for the member to match. A preceding
-<code><b>!</b></code> specifies that the corresponding access flag should be
-unset.
+<tr><td valign="top"><code><b>?</b></code></td>
 
-<p>
-Combining multiple flags is allowed (e.g. <code>public static</code>). It
-means that both access flags have to be set (e.g. <code>public</code>
-<i>and</i> <code>static</code>), except when they are conflicting, in which
-case at least one of them has to be set (e.g. at least <code>public</code>
-<i>or</i> <code>protected</code>).
+<td>matches any single character, but not the package separator. For example,
+    "<code>mypackage.Test?</code>" matches "<code>mypackage.Test1</code>" and
+    "<code>mypackage.Test2</code>", but not
+    "<code>mypackage.Test12</code>".</td></tr>
 
-<p>
+<tr><td valign="top"><code><b>*</b></code></td>
+
+<td>matches any string not containing the package separator. For example,
+    "<code>mypackage.*Test*</code>" matches "<code>mypackage.Test</code>" and
+    "<code>mypackage.YourTestApplication</code>", but not
+    "<code>mypackage.mysubpackage.MyTest</code>". Or, more generally,
+    "<code>mypackage.*</code>" matches all classes in
+    "<code>mypackage</code>", but not in its subpackages.</td></tr>
+
+<tr><td valign="top"><code><b>**</b></code></td>
+
+<td>matches any string, possibly containing one or more package separators.
+    For example, "<code>**.Test</code>"
+    matches all <code>Test</code> classes in all packages except the root
+    package. Or, "<code>mypackage.**</code>" matches all classes in
+    "<code>mypackage</code>" and in its subpackages.</td></tr>
+
+</table>
+
+    For convenience and for backward compatibility, the class name
+    <code><b>*</b></code> refers to any class, irrespective of its package.
+    <p>
+
+<li>The <code><b>extends</b></code> and <code><b>implements</b></code>
+    specifications are typically used to restrict classes with wildcards. They
+    are currently equivalent, specifying that only classes extending or
+    implementing the given class qualify. Note that the given class itself is
+    not included in this set. If required, it should be specified in a
+    separate option.
+    <p>
+
+<li>Fields and methods are specified much like in Java, except that method
+    argument lists don't contain argument names. The wildcard field name
+    <code><b>&lt;fields&gt;</b></code> refers to any field. The wildcard
+    method name <code><b>&lt;methods&gt;</b></code> refers to any method. The
+    wildcard class member name <code><b>*</b></code> refers to any field or
+    method. Note that all of the above wildcards don't have return types. More
+    general regular expressions are not yet supported.
+    <p>
+
+<li>Constructors can be specified using their short class name (without
+    package), using their full class name, or using the
+    <code><b>&lt;init&gt;</b></code> wildcard. As in the Java language, the
+    constructor specification has an argument list, but no return type.
+    <p>
+
+<li>The class access modifiers and class member access modifiers are typically
+    used to restrict wildcard classes and class members. They specify that the
+    corresponding access flags have to be set for the member to match. A
+    preceding <code><b>!</b></code> specifies that the corresponding access
+    flag should be unset.
+    <p>
+    Combining multiple flags is allowed (e.g. <code>public static</code>). It
+    means that both access flags have to be set (e.g. <code>public</code>
+    <i>and</i> <code>static</code>), except when they are conflicting, in
+    which case at least one of them has to be set (e.g. at least
+    <code>public</code>
+    <i>or</i> <code>protected</code>).
+
+</ul>
+
 <a name="limitations">&nbsp;</a>
 <table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
 <h2>Limitations</h2>
@@ -472,11 +590,16 @@ Some typical useful configurations:
 <ol>
 <li><a href="#application">A typical application</a>
 <li><a href="#applet">A typical applet</a>
+<li><a href="#midlet">A typical midlet</a>
 <li><a href="#applications">All possible applications in the input jars</a>
 <li><a href="#applets">All possible applets in the input jars</a>
-<li><a href="#serializable">An application with serializable classes</a>
-<li><a href="#native">An application with native methods</a>
+<li><a href="#midlets">All possible midlets in the input jars</a>
+<li><a href="#servlets">All possible servlets in the input jars</a>
 <li><a href="#library">Processing a library</a>
+<li><a href="#native">Processing native methods</a>
+<li><a href="#serializable">Processing serializable classes</a>
+<li><a href="#beans">Processing bean classes</a>
+<li><a href="#stacktrace">Producing useful obfuscated stack traces</a>
 <li><a href="#deadcode">Finding dead code</a>
 <li><a href="#structure">Printing out the internal structure of class files</a>
 </ol>
@@ -490,7 +613,7 @@ Shrink and obfuscate the ProGuard application itself:
 -injars      proguard.jar
 -outjar      proguard_out.jar
 -overloadaggressively
--defaultpackage pro
+-defaultpackage ''
 
 -keep public class proguard.ProGuard {
     public static void main(java.lang.String[]);
@@ -511,8 +634,13 @@ and method have the proper access flags. It just looks more familiar this way.
 We're using the <code>-overloadaggressively</code> and
 <code>-defaultpackage</code> options to shave off some extra bytes, but we
 could leave them out as well. The <code>-defaultpackage</code> directive moves
-all classes to the given package. Only <code>proguard.ProGuard</code> keeps
-its original name.
+all classes to the given package, in this case the root package. Only
+<code>proguard.ProGuard</code> keeps its original name.
+<p>
+In general, you might need a few additional directives for processing <a
+href="#native">native methods</a>, <a href="#serializable">serializable
+classes</a>, or <a href="#beans">bean classes</a>. For 'simple' applications
+like ProGuard, that is not required.
 
 <a name="applet">&nbsp;</a>
 <h3>A typical applet</h3>
@@ -530,6 +658,40 @@ Shrink and obfuscate the applet <code>mypackage.MyApplet</code>:
 The typical applet methods will be preserved automatically, since
 <code>mypackage.MyApplet</code> is an extension of the <code>Applet</code>
 class in the library <code>rt.jar</code>.
+<p>
+If applicable, you should add directives for processing <a
+href="#native">native methods</a>, <a href="#serializable">serializable
+classes</a>, or <a href="#beans">bean classes</a>.
+
+<a name="midlet">&nbsp;</a>
+<h3>A typical midlet</h3>
+Shrink and obfuscate the J2ME midlet <code>mypackage.MyMIDlet</code>:
+<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
+<pre>
+-libraryjars /usr/local/java/wtk104/lib/midpapi.zip
+-injars      in.jar
+-outjar      out.jar
+
+-keep public class mypackage.MyMIDlet
+</pre>
+</td></tr></table>
+<p>
+Note how we're now targeting the J2ME run-time environment
+<code>midpapi.zip</code>, instead of the J2SE run-time environment
+<code>rt.jar</code>.
+<p>
+The typical midlet methods will be preserved automatically, since
+<code>mypackage.MyMIDlet</code> is an extension of the <code>MIDlet</code>
+class in the library <code>midpapi.zip</code>.
+<p>
+If applicable, you should add directives for processing <a
+href="#native">native methods</a>, <a href="#serializable">serializable
+classes</a>, or <a href="#beans">bean classes</a>.
+<p>
+Please note the in-depth article <a
+href="http://wireless.java.sun.com/midp/ttips/proguard/">"Obfuscating MIDlet
+Suites with ProGuard"</a> at <a
+href="http://wireless.java.sun.com/">wireless.java.sun.com</a>.
 
 <a name="applications">&nbsp;</a>
 <h3>All possible applications in the input jars</h3>
@@ -552,6 +714,10 @@ all classes, just all classes that have main methods, and those methods.
 <p>
 The <code>-printseeds</code> option prints out which classes exactly will
 be preserved, so we know for sure we're getting what we want.
+<p>
+If applicable, you should add directives for processing <a
+href="#native">native methods</a>, <a href="#serializable">serializable
+classes</a>, or <a href="#beans">bean classes</a>.
 
 <a name="applets">&nbsp;</a>
 <h3>All possible applets in the input jars</h3>
@@ -571,67 +737,64 @@ We're simply keeping all classes that extend the <code>Applet</code> class.
 <p>
 Again, the <code>-printseeds</code> option prints out which applets exactly
 will be preserved.
+<p>
+If applicable, you should add directives for processing <a
+href="#native">native methods</a>, <a href="#serializable">serializable
+classes</a>, or <a href="#beans">bean classes</a>.
 
-<a name="serializable">&nbsp;</a>
-<h3>An application with serializable classes</h3>
-Shrink and obfuscate the application
-<code>mypackage.MyApplication</code>, properly preserving all serializable
-classes:
+<a name="midlets">&nbsp;</a>
+<h3>All possible midlets in the input jars</h3>
+Shrink and obfuscate all public J2ME midlets in <code>in.jar</code>:
 <table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
 <pre>
--libraryjars &lt;java.home&gt;/lib/rt.jar
+-libraryjars /wtk104/lib/midpapi.zip
 -injars      in.jar
 -outjar      out.jar
+-printseeds
 
--keep public class mypackage.MyApplication {
-    public static void main(java.lang.String[]);
-}
-
--keepnames class * implements java.io.Serializable
-
--keepclassmembers class * implements java.io.Serializable {
-    static final long serialVersionUID;
-    private void writeObject(java.io.ObjectOutputStream);
-    private void readObject(java.io.ObjectInputStream);
-    Object writeReplace();
-    Object readResolve();
-}
+-keep public class * extends javax.microedition.midlet.MIDlet
 </pre>
 </td></tr></table>
 <p>
-The <code>-keepnames</code> option makes sure that any serializable
-classes that are preserved also keep their names. This way, the processed code
-remains backward compatible with the original code.
+We're simply keeping all classes that extend the <code>MIDlet</code> class.
 <p>
-The <code>-keepclassmembers</code> option makes sure that their serialization
-fields and methods are kept. By using this directive instead of the basic
-<code>-keep</code> directive, we're not forcing to preserve <i>all</i>
-serializable classes.
+And again, the <code>-printseeds</code> option prints out which midlets exactly
+will be preserved.
+<p>
+If applicable, you should add directives for processing <a
+href="#native">native methods</a>, <a href="#serializable">serializable
+classes</a>, or <a href="#beans">bean classes</a>.
 
-<a name="native">&nbsp;</a>
-<h3>An application with native methods</h3>
-Shrink and obfuscate the application
-<code>mypackage.MyApplication</code>, preserving all native method
-names in all preserved classes:
+<a name="servlets">&nbsp;</a>
+<h3>All possible servlets in the input jars</h3>
+Shrink and obfuscate all public servlets in <code>in.jar</code>:
 <table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
 <pre>
 -libraryjars &lt;java.home&gt;/lib/rt.jar
+-libraryjars /usr/local/java/servlet/servlet.jar
 -injars      in.jar
 -outjar      out.jar
+-printseeds
 
--keep public class mypackage.MyApplication {
-    public static void main(java.lang.String[]);
-}
-
--keepclassmembernames class * {
-    native &lt;methods&gt;;
-}
+-keep public class * implements javax.servlet.Servlet
 </pre>
 </td></tr></table>
 <p>
-Note the use of <code>-keepclassmembernames</code>. We don't want to preserve
-all classes or all native methods; we just want to keep all native method
-names from being obfuscated.
+Keeping all servlets is very similar to keeping all applets. The servlet API
+is not part of the standard run-time jar, so we're specifying it as a library.
+Don't forget to use the right path name.
+<p>
+We're then keeping all classes that implement the <code>Servlet</code>
+interface. We're using the <code>implements</code> keyword because it looks
+more familiar in this context, but it is equivalent to <code>extends</code>,
+as far as ProGuard is concerned.
+<p>
+And again, the <code>-printseeds</code> option prints out which servlets
+exactly will be preserved.
+<p>
+If applicable, you should add directives for processing <a
+href="#native">native methods</a>, <a href="#serializable">serializable
+classes</a>, or <a href="#beans">bean classes</a>.
 
 <a name="library">&nbsp;</a>
 <h3>Processing a library</h3>
@@ -640,9 +803,13 @@ protected classes and class members, native method names, and serialization
 code:
 <table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
 <pre>
--libraryjars &lt;java.home&gt;/lib/rt.jar
--injars      in.jar
--outjar      out.jar
+-libraryjars  &lt;java.home&gt;/lib/rt.jar
+-injars       in.jar
+-outjar       out.jar
+-printmapping out.map
+
+-renamesourcefileattribute SourceFile
+-keepattributes SourceFile,LineNumberTable
 
 -keep public class * {
     public protected *;
@@ -652,8 +819,6 @@ code:
     native &lt;methods&gt;;
     static Class class$(java.lang.String);
 }
-
--keepnames class * implements java.io.Serializable
 
 -keepclassmembers class * implements java.io.Serializable {
     static final long serialVersionUID;
@@ -677,6 +842,178 @@ detect it and deal with it; no problem at this point. However, ProGuard may be
 used again to shrink an application that uses this obfuscated library. Without
 having preserved the method's name, the automatic detection would fail this
 second time around.
+<p>
+We've added some directives for <a href="#stacktrace">useful stack traces</a>,
+for <a href="#native">native methods</a>, and for <a
+href="#serializable">serializable classes</a>, which are discussed in their
+respective examples.
+
+<a name="native">&nbsp;</a>
+<h3>Processing native methods</h3>
+If your application, applet, servlet, library, etc., contains native methods,
+you'll want to preserve their names, so they can still be linked to the native
+library. The following additional directives will ensure that:
+<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
+<pre>
+-keepclassmembernames class * {
+    native &lt;methods&gt;;
+}
+</pre>
+</td></tr></table>
+<p>
+Note the use of <code>-keepclassmembernames</code>. We don't want to preserve
+all classes or all native methods; we just want to keep all native method
+names from being obfuscated.
+
+<a name="serializable">&nbsp;</a>
+<h3>Processing serializable classes</h3>
+More complex applications, applets, servlets, libraries, etc., may contain
+classes that are serialized. Depending on the way in which they are used, they
+may require special attention:
+<ul>
+
+<li>Often, serialization is simply a means of transporting data, without
+    long-term storage. Classes that are shrunk and obfuscated should then
+    continue to function fine with the following additional directives:
+
+<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
+<pre>
+-keepclassmembers class * implements java.io.Serializable {
+    private void writeObject(java.io.ObjectOutputStream);
+    private void readObject(java.io.ObjectInputStream);
+    Object writeReplace();
+    Object readResolve();
+}
+</pre>
+</td></tr></table>
+<p>
+
+    The <code>-keepclassmembers</code> option makes sure that any
+    serialization methods are kept. By using this directive instead of the
+    basic <code>-keep</code> directive, we're not forcing preservation of
+    <i>all</i> serializable classes, just preservation of the listed members
+    of classes that are actually used.
+    <p>
+
+<li>Sometimes, the serialized data are stored, and read back later into newer
+    versions of the serializable classes. One then has to take care the classes
+    remain compatible with their unprocessed versions and with future
+    processed versions. In such cases, the relevant classes will most likely
+    have <code>serialVersionUID</code> fields. The following directives should
+    then be sufficient to ensure compatibility over time:
+
+<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
+<pre>
+-keepnames class * implements java.io.Serializable
+
+-keepclassmembers class * implements java.io.Serializable {
+    static final long serialVersionUID;
+    !static !transient &lt;fields&gt;;
+    private void writeObject(java.io.ObjectOutputStream);
+    private void readObject(java.io.ObjectInputStream);
+    Object writeReplace();
+    Object readResolve();
+}
+</pre>
+</td></tr></table>
+<p>
+
+    The <code>serialVersionUID</code> line makes sure that field is preserved.
+    The <code>&lt;fields&gt;</code> line preserves all non-static,
+    non-transient fields, with their original names. The introspection of the
+    serialization process and the de-serialization process will then find
+    consistent names.
+
+<li>Occasionally, the serialized data have to remain compatible, but the
+    classes involved lack <code>serialVersionUID</code> fields. I imagine the
+    original code will then be hard to maintain, since the serial version UID
+    is then computed from a list of features the serializable class. Changing
+    the class ever so slightly may change the computed serial version UID. The
+    list of features is specified in the chapter on <a
+    href="http://java.sun.com/j2se/1.4/docs/guide/serialization/spec/class.doc6.html">Stream
+    Unique Identifiers</a> of Sun's <a
+    href="http://java.sun.com/j2se/1.4/docs/guide/serialization/">Object
+    Serialization Guide</a>. The following directives should at least
+    partially ensure compatibility with the original classes
+
+<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
+<pre>
+-keepnames class * implements java.io.Serializable
+
+-keepclassmembers class * implements java.io.Serializable {
+    static final long serialVersionUID;
+    !static !transient &lt;fields&gt;;
+    !private &lt;fields&gt;;
+    !private &lt;methods&gt;;
+    private void writeObject(java.io.ObjectOutputStream);
+    private void readObject(java.io.ObjectInputStream);
+    Object writeReplace();
+    Object readResolve();
+}
+</pre>
+</td></tr></table>
+<p>
+
+    The new directives force preservation of the elements involved in the UID
+    computation. In addition, the user will have to manually specify all
+    interfaces of the serializable classes (using something like "<code>-keep
+    interface MyInterface</code>"), since these names are also used when
+    computing the UID. A fast but sub-optimal alternative would be simply
+    keeping all interfaces with "<code>-keep interface *</code>".
+
+</ul>
+<p>
+
+Note that the above directives may preserve more classes and class members
+than strictly necessary. For instance, a large number of classes may implement
+the <code>Serialization</code> interface, yet only a small number may actually
+ever be serialized. Knowing your application and tuning the configuration will
+often produce more compact results.
+
+<a name="beans">&nbsp;</a>
+<h3>Processing bean classes</h3>
+If your application, applet, servlet, library, etc., uses extensive
+introspection on bean classes to find bean editor classes, or getter and
+setter methods, then configuration may become laborious. There's not much else
+you can do than making sure the bean class names, or the getter and setter
+names don't change. For instance:
+<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
+<pre>
+-keep public class mypackage.MyBean {
+    public void setMyProperty(int);
+    public int getMyProperty();
+}
+
+-keep public class mypackage.MyBeanEditor
+</pre>
+</td></tr></table>
+
+<a name="stacktrace">&nbsp;</a>
+<h3>Producing useful obfuscated stack traces</h3>
+These configuration directives specify to rename the source file attributes,
+and to keep the line number table attributes of all obfuscated class files:
+<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
+<pre>
+-printmapping out.map
+
+-renamesourcefileattribute SourceFile
+-keepattributes SourceFile,LineNumberTable
+</pre>
+</td></tr></table>
+<p>
+We're keeping all source file attributes, but we're replacing them by the
+string "SourceFile". We could use any string, but this string is already
+present in all class files, so it doesn't take up any extra space.
+<p>
+We're also keeping the line number tables of all methods.
+<p>
+Whenever both of these attributes are present, the Java run-time environment
+will include line number information when printing out exception stack traces.
+<p>
+The information will only be useful if we can map the obfuscated names back to
+their original names, so we're saving the mapping to a file
+<code>out.map</code>. The information can then be used by the <a
+href="retrace.html">ReTrace</a> tool to restore the original stack trace.
 
 <a name="deadcode">&nbsp;</a>
 <h3>Finding dead code</h3>
@@ -697,7 +1034,7 @@ List unused fields and methods in the application
 <p>
 We're not specifying an output jar, just printing out some results.
 <p>
-We're saving a little bit of time by not passing thru the obfuscation phase.
+We're saving a little bit of time by not passing through the obfuscation phase.
 
 <a name="structure">&nbsp;</a>
 <h3>Printing out the internal structure of class files</h3>
@@ -761,7 +1098,7 @@ might be several reasons:
 <ul>
 <li>If you get a <code><b>ClassNotFoundException</b></code>, your code is
     probably calling <code>Class.forName</code>, trying to create the missing
-    class. ProGuard can only detect constant name arguments, like
+    class dynamically. ProGuard can only detect constant name arguments, like
     <code>Class.forName("mypackage.MyClass")</code>. For variable name
     arguments like <code>Class.forName(someClass)</code>, you have to keep all
     possible classes using the <code>-keep</code> option, e.g. "<code>-keep
@@ -771,16 +1108,16 @@ might be several reasons:
 
 <li>If you get a <code><b>NoSuchMethodError</b></code>, your code is probably
     calling something like <code>myClass.getMethod</code>, trying to find some
-    method. Since ProGuard isn't detecting this (yet), you have to keep the
-    missing method in using the <code>-keep</code> option, e.g. "<code>-keep
-    class mypackage.MyClass { void myMethod(); }</code>".
+    method dynamically. Since ProGuard isn't detecting this (yet), you have to
+    keep the missing method in using the <code>-keep</code> option, e.g.
+    "<code>-keep class mypackage.MyClass { void myMethod(); }</code>".
     <p>
 
 <li>If you get a <code><b>NullPointerException</b></code> or if you don't see
     any icons, your processed code may be missing some resource files. Please
-    remember that ProGuard ignores all non-<code>.class</code> files in the
-    input jars. You should add image files, sound files, text files, etc.
-    manually to the output jars or to some support jars.
+    remember that ProGuard currently ignores all non-<code>.class</code> files
+    in the input jars. You should add image files, sound files, text files,
+    etc. manually to the output jars or to some support jars.
     <p>
 
 <li>If you get an <code><b>AbstractMethodError</b></code>, perhaps there's a
@@ -799,10 +1136,9 @@ Should ProGuard crash while processing your application:
 <p>
 
 <hr>
-<adress>
+<address>
 Copyright &copy; 2002 <a href="http://www.graphics.cornell.edu/~eric/">Eric
 Lafortune</a>.
 </address>
 </body>
 </html>
-
