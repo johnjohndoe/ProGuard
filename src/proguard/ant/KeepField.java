@@ -1,4 +1,4 @@
-/* $Id: KeepField.java,v 1.5 2003/03/03 18:16:16 eric Exp $
+/* $Id: KeepField.java,v 1.7 2003/08/04 08:46:45 eric Exp $
  *
  * ProGuard - integration into Ant.
  *
@@ -66,11 +66,19 @@ public class KeepField extends KeepClassMember
         return ACCESS_PARSER;
     }
 
+    /**
+     * Get the default type.
+     */
+    protected String getDefaultType()
+    {
+       return null;
+    }
+
 
     /**
      * Executes this subtask for the given parent task.
      * @param parent Parent task object.
-     */
+      */
     public void execute(KeepClassSpecification parent)
     {
         evalNestedAccess();
@@ -78,7 +86,7 @@ public class KeepField extends KeepClassMember
         parent.keepField(accessFlags,
                          unsetAccessFlags,
                          name,
-                         ClassUtil.internalType(type),
+                         type == null ? null : ClassUtil.internalType(type),
                          null);
     }
 }

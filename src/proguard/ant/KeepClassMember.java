@@ -1,4 +1,4 @@
-/* $Id: KeepClassMember.java,v 1.5 2003/03/03 18:16:16 eric Exp $
+/* $Id: KeepClassMember.java,v 1.7 2003/08/04 08:46:45 eric Exp $
  *
  * ProGuard - integration into Ant.
  *
@@ -41,7 +41,7 @@ public abstract class KeepClassMember implements AccessContainer
     /** All access flags to be unset. */
     protected int unsetAccessFlags;
     /** Type. */
-    protected String type = ClassConstants.EXTERNAL_TYPE_VOID;
+    protected String type;
     /** Name of the class member. */
     protected String name;
     /** Nested access tasks. */
@@ -58,6 +58,8 @@ public abstract class KeepClassMember implements AccessContainer
         nestedAccessTasks = new java.util.ArrayList();
 
         nestedAccessFlags = null;
+
+        this.type = getDefaultType();
     }
 
 
@@ -67,6 +69,12 @@ public abstract class KeepClassMember implements AccessContainer
      */
     protected abstract AccessParser getAccessParser();
 
+
+    /**
+     * Get the default type. This method is only called once when creating
+     * new objects.
+     */
+    protected abstract String getDefaultType();
 
     /**
      * Sets the access flags in a string.
@@ -117,7 +125,14 @@ public abstract class KeepClassMember implements AccessContainer
      */
     public void setType(String type)
     {
-        this.type = type;
+        if (ANY_CLASS_MEMBER_KEYWORD.equals(type))
+        {
+           this.type = null;
+        }
+        else
+        {
+           this.type = type;
+        }
     }
 
 

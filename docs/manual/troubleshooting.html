@@ -95,12 +95,14 @@ might be several reasons:
 <ul>
 
 <li>If it looks like <b>a whole bunch of classes has disappeared</b> from your
-    output jar, you may have unpacked the output jar on a platform with a
+    output jar, you should make sure you're not writing your output class
+    files to a directory (or unpacking the output jar) on a platform with a
     case-insensitive file system, such as Windows. Unpacking tools often let
     class files with similar lower-case and upper-case names overwrite each
-    other. If you really have to unpack your jar and you can't switch to a
-    different operating system, you could consider using ProGuard's
-    <code>-dontusemixedcaseclassnames</code> option.
+    other. Especially J2ME developers on Windows should note that the
+    <code>preverify</code> tool always unpacks the jars it processes. If you
+    really can't switch to a different operating system, you could consider
+    using ProGuard's <code>-dontusemixedcaseclassnames</code> option.
     <p>
 
 <li>If you get a <code><b>NoClassDefFoundError</b></code>, your class path is
@@ -136,14 +138,24 @@ might be several reasons:
     circumstances.
     <p>
 
-<li>If you get a <b>verification error</b> in J2ME, you may have forgotten to
-    preverify your program jar <i>after</i> having processed it with ProGuard.
+<li>If you get an <code><b>InvalidClassException</b></code> or a
+    <b>verification error</b> in J2ME, you may have forgotten to preverify
+    your program jar <i>after</i> having processed it with ProGuard.
     <p>
 
 <li>If you get a <code><b>NoSuchMethodError</b></code> or an
-    <code><b>AbstractMethodError</b></code>, perhaps there's a bug in ProGuard
-    (gasp!). If so, please contact me, preferably with the simplest example on
-    which you can find ProGuard to fail.
+    <code><b>AbstractMethodError</b></code>, you should make sure you're not
+    writing your output class files to a directory (or unpacking the output
+    jar) on a platform with a case-insensitive file system, such as Windows.
+    Refer to the first bullet item in this list for details.
+    <p>
+    Furthermore, you should check whether you have specified your program jars
+    and library jars properly. Program classes can refer to library classes,
+    but not the other way around.
+    <p>
+    If all of this seems ok, perhaps there's a bug in ProGuard (gasp!). If so,
+    please contact me, preferably with the simplest example on which you can
+    find ProGuard to fail.
 
 </ul>
 <p>

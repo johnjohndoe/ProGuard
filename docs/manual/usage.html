@@ -423,8 +423,13 @@ are related:
 </table>
 <p>
 
-Each <code>-keep</code> option is of course followed by a specification of the
-classes and class members to which it should be applied.
+Each of these <code>-keep</code> options is of course followed by a
+<a href="#classspecification">specification</a> of the classes and class
+members to which it should be applied.
+<p>
+If you're not sure which option you need, you should probably simply use 
+<code>-keep</code>. It will make sure the specified classes and class members
+are preserved from shrinking and from obfuscation.
 <p>
 
 <a name="filename">&nbsp;</a>

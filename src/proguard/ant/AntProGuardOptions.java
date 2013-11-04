@@ -1,4 +1,4 @@
-/* $Id: AntProGuardOptions.java,v 1.4 2003/05/03 11:55:45 eric Exp $
+/* $Id: AntProGuardOptions.java,v 1.6 2003/08/04 08:46:45 eric Exp $
  *
  * ProGuard - integration into Ant.
  *
@@ -26,13 +26,13 @@ import proguard.ProGuardOptions;
 
 
 /**
- * A wrapper around the ProGuard options to add settings. This class provides
+ * A wrapper around the ProGuard options to add settings. This class provide
  * some convenient methods to add items to the list settings without caring
- * about an uninitialized list. In addition, it provides a method to merge the
+ * about an unitialized list. Addionaly it provides a method to merge the
  * settings of two option-objects.
  *
  * @author $author$
- * @version $Revision: 1.4 $
+ * @version $Revision: 1.6 $
  */
 public class AntProGuardOptions
         extends ProGuardOptions
@@ -113,12 +113,12 @@ public class AntProGuardOptions
     }
 
     /**
-     * Merge the configuration of the given configuration file into this one. This
-     * does not include settings for variables of type boolean. Lists are added,
+     * Merge the configuration of the given config file into this one. This
+     * does not include settings for variables of type bool. Lists are added,
      * other settings of the given options override settings in this options.<br>
-     * This feature is just needed by Ant. A priori, the Ant task does not
+     * This feature is just needed by ant. A priori, the ant task does not
      * know if the user specifies a configuration file. In order to override
-     * settings of a given configuration file another object must be used. These
+     * settings of a given config file another object must be used. These
      * settings must be overridden (merged) with the settings of the ProGuard
      * task.
      *
@@ -131,22 +131,24 @@ public class AntProGuardOptions
             return;
         }
 
-        if ((libraryJars == null) && (options.libraryJars != null))
+        if (options.libraryJars != null)
         {
-            libraryJars = options.libraryJars;
-        }
-        else
-        {
-            libraryJars.addAll(options.libraryJars);
+           if (libraryJars == null) {
+              libraryJars = options.libraryJars;
+           }
+           else {
+              libraryJars.addAll(options.libraryJars);
+           }
         }
 
-        if ((inJars == null) && (options.inJars != null))
+        if (options.inJars != null)
         {
-            inJars = options.inJars;
-        }
-        else
-        {
-            inJars.addAll(options.inJars);
+           if (inJars == null) {
+              inJars = options.inJars;
+           }
+           else {
+              inJars.addAll(options.inJars);
+           }
         }
 
         if (options.outJar != null)
@@ -154,22 +156,24 @@ public class AntProGuardOptions
             outJar = options.outJar;
         }
 
-        if ((keepCommands == null) && (options.keepCommands != null))
+        if (options.keepCommands != null)
         {
-            keepCommands = options.keepCommands;
-        }
-        else
-        {
-            keepCommands.addAll(options.keepCommands);
+           if (keepCommands == null) {
+              keepCommands = options.keepCommands;
+           }
+           else {
+              keepCommands.addAll(options.keepCommands);
+           }
         }
 
-        if ((keepAttributes == null) && (options.keepAttributes != null))
+        if (options.keepAttributes != null)
         {
-            keepAttributes = options.keepAttributes;
-        }
-        else
-        {
-            keepAttributes.addAll(options.keepAttributes);
+           if (keepAttributes == null) {
+              keepAttributes = options.keepAttributes;
+           }
+           else {
+              keepAttributes.addAll(options.keepAttributes);
+           }
         }
 
         if (options.newSourceFileAttribute != null)

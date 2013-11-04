@@ -16,12 +16,16 @@
 <li><a href="#obfuscation">What is obfuscation?</a>
 <li><a href="#jdk1.4">Does <b>ProGuard</b> work with JDK1.4?</a>
 <li><a href="#j2me">Does <b>ProGuard</b> work with J2ME?</a>
+<li><a href="#ant">Does <b>ProGuard</b> have support for Ant?</a>
+<li><a href="#gui">Does <b>ProGuard</b> come with a GUI?</a>
 <li><a href="#forname">Does <b>ProGuard</b> handle <code>Class.forName</code>
     calls?</a>
 <li><a href="#resource">Does <b>ProGuard</b> handle resource files?</a>
-<li><a href="#ant">Does <b>ProGuard</b> have support for Ant?</a>
-<li><a href="#gui">Does <b>ProGuard</b> come with a GUI?</a>
-<li><a href="#stacktrace">Can <b>ProGuard</b> reconstruct obfuscated stack traces?</a>
+<li><a href="#encrypt">Does <b>ProGuard</b> encrypt strings constants?</a>
+<li><a href="#incremental">Does <b>ProGuard</b> support incremental
+    obfuscation?</a>
+<li><a href="#stacktrace">Can <b>ProGuard</b> reconstruct obfuscated stack
+    traces?</a>
 </ol>
 
 <a name="shrinking">&nbsp;</a>
@@ -86,6 +90,29 @@ instance. In addition, <b>ProGuard</b> provides an obfuscator plug-in for the
 J2ME Wireless Toolkit.
 
 <p>
+<a name="ant">&nbsp;</a>
+<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
+<h3>Does <b>ProGuard</b> have support for Ant?</h3>
+</td></tr></table>
+<p>
+Yes. <b>ProGuard</b> provides an Ant task, so that it integrates seamlessly
+into your Ant build processes. You can still use configurations in
+<b>ProGuard</b>'s own readable format. Alternatively, if you prefer XML, you
+can specify the equivalent XML configuration.
+
+<p>
+<a name="gui">&nbsp;</a>
+<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
+<h3>Does <b>ProGuard</b> come with a GUI?</h3>
+</td></tr></table>
+<p>
+No. <b>ProGuard</b> is a command-line tool. It can easily be integrated into
+any automatic build process. Configuration is done using a few compact and
+powerful options; just have a look at the examples in the <a
+href="manual/index.html">ProGuard User Manual</a>. However, a graphical user
+interface is currently being tested for release 2.0.
+
+<p>
 <a name="forname">&nbsp;</a>
 <table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
 <h3>Does <b>ProGuard</b> handle <code>Class.forName</code> calls?</h3>
@@ -115,27 +142,25 @@ from the given resource jars to the output jar. Their names and contents remain
 unchanged.
 
 <p>
-<a name="ant">&nbsp;</a>
+<a name="encrypt">&nbsp;</a>
 <table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
-<h3>Does <b>ProGuard</b> have support for Ant?</h3>
+<h3>Does <b>ProGuard</b> encrypt strings constants?</h3>
 </td></tr></table>
 <p>
-Yes. <b>ProGuard</b> provides an Ant task, so that it integrates seamlessly
-into your Ant build processes. You can still use configurations in
-<b>ProGuard</b>'s own readable format. Alternatively, if you prefer XML, you
-can specify the equivalent XML configuration.
+No. Storing encrypted string constants in program code is fairly futile, since
+the encryption has to be perfectly reversible by definition. Moreover, the
+decryption costs additional memory and computation at run-time. If it is ever
+implemented, a tool to decrypt the strings will be provided.
 
 <p>
-<a name="gui">&nbsp;</a>
+<a name="incremental">&nbsp;</a>
 <table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
-<h3>Does <b>ProGuard</b> come with a GUI?</h3>
+<h3>Does <b>ProGuard</b> support incremental obfuscation?</h3>
 </td></tr></table>
 <p>
-No. <b>ProGuard</b> is a command-line tool. It can easily be integrated into
-any automatic build process. Configuration is done using a few compact and
-powerful options; just have a look at the examples in the <a
-href="manual/index.html">ProGuard User Manual</a>. A graphical user interface
-to help creating configuration files may be added in some future release.
+Not yet, but the upcoming release 2.0 does. This feature allows you to specify
+a previous obfuscation mapping file in a new obfuscation step, in order to
+produce incremental patches for obfuscated code.
 
 <p>
 <a name="stacktrace">&nbsp;</a>

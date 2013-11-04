@@ -1,4 +1,4 @@
-/* $Id: ReTrace.java,v 1.9 2003/05/03 10:54:18 eric Exp $
+/* $Id: ReTrace.java,v 1.10 2003/07/11 16:18:35 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -383,7 +383,8 @@ public class ReTrace
                             }
 
                             // Does the method have line numbers?
-                            if (firstLineNumber != 0 &&
+                            if (item.lineNumber != 0 &&
+                                firstLineNumber != 0 &&
                                 lastLineNumber  != 0)
                             {
                                 // Then it will be the one and only solution.

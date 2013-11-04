@@ -1,8 +1,8 @@
-/* $Id: KeepMethod.java,v 1.3 2003/02/11 18:06:44 eric Exp $
+/* $Id: KeepMethod.java,v 1.5 2003/08/04 08:46:45 eric Exp $
  *
- * ProGuard - integration into Ant.
+ * ProGuard - integration into ANT.
  *
- * Copyright (c) 2003 Dirk Schnelle (dirk.schnelle@web.de)
+ * Copyright (C) 2003 Dirk Schnelle (dirk.schnelle@web.de)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -18,23 +18,25 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
+
+
 package proguard.ant;
 
+import java.util.*;
 import proguard.classfile.*;
 import proguard.classfile.util.*;
 
-import java.util.*;
 
 /**
  * Keep a method.
  *
  * @author Dirk Schnelle
  */
-public class KeepMethod extends KeepClassMember
+public class KeepMethod
+        extends KeepClassMember
 {
     /** Access parser to be used. */
     private final static AccessParser ACCESS_PARSER;
-
 
     static
     {
@@ -49,18 +51,46 @@ public class KeepMethod extends KeepClassMember
         ACCESS_PARSER = new AccessParser(accessMapping);
     }
 
+    /** <code>true</code> if this method specifies a constructor. */
+    private boolean constructor;
+
+    /** Parameters of the method. */
+    private String param;
 
     /**
-     * Defaults constructor.
+     * Creates a new KeepMethod-object.
      */
     public KeepMethod()
     {
         super();
+
+        this.constructor = false;
     }
 
+    /**
+     * Modificator for the constructor property.
+     *
+     * @param constructor <code>true</code> if this method specifies a
+     *        constructor.
+     */
+    void setConstructor(boolean constructor)
+    {
+        this.constructor = constructor;
+    }
+
+    /**
+     * Sets the parameters of this method.
+     *
+     * @param param The parameters of this method.
+     */
+    public void setParam(String param)
+    {
+        this.param = param;
+    }
 
     /**
      * Gets the access parser for the access attributes of the member.
+     *
      * @return AccessParser.
      */
     protected AccessParser getAccessParser()
@@ -68,67 +98,76 @@ public class KeepMethod extends KeepClassMember
         return ACCESS_PARSER;
     }
 
+    /**
+     * Get the default type.
+     *
+     * @return Default type.
+     */
+    protected String getDefaultType()
+    {
+        return ClassConstants.EXTERNAL_TYPE_VOID;
+    }
 
     /**
      * Executes this subtask for the given parent task.
+     *
      * @param parent Parent task object.
      */
     public void execute(KeepClassSpecification parent)
     {
         evalNestedAccess();
 
-        parent.keepMethod(accessFlags,
-                          unsetAccessFlags,
-                          getInternalName(),
-                          getDescriptor(),
-                          null);
+        parent.keepMethod(accessFlags, unsetAccessFlags, getInternalName(),
+            getDescriptor(), null);
     }
-
 
     /**
      * Gets the name to be passed to the keep method.
+     *
      * @return Internal representation of the name of the method.
      */
     private String getInternalName()
     {
+        if (constructor)
+            return "<init>";
+
         if (name == null)
-        {
             return null;
-        }
 
         int index = name.indexOf("(");
+
         if (index == -1)
-        {
             return name;
-        }
 
         return name.substring(0, index);
     }
 
-
     /**
      * Gets the descriptor to be passed to the keep method.
+     *
      * @return Internal representation of the descriptor of the method.
      */
     private String getDescriptor()
     {
         if (name == null)
-        {
             return null;
-        }
-        StringTokenizer tokenizer = new StringTokenizer(name, "(), \t");
-        if (!tokenizer.hasMoreTokens())
-        {
-            return null;
-        }
 
-        String internalName = tokenizer.nextToken();
+        String paramSource = ((param == null)
+            ? name
+            : param);
+        StringTokenizer tokenizer = new StringTokenizer(paramSource, "(), \t");
+
+        if (!tokenizer.hasMoreTokens())
+            return null;
+
+        // Skip the name, if parsing from the name attribute.
+        if (paramSource != param)
+            tokenizer.nextToken();
 
         List args = new ArrayList();
+
         while (tokenizer.hasMoreTokens())
-        {
             args.add(tokenizer.nextToken());
-        }
 
         return ClassUtil.internalMethodDescriptor(type, args);
     }

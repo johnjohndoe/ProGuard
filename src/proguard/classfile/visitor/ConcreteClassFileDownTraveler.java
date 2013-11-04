@@ -1,4 +1,4 @@
-/* $Id: ConcreteClassFileDownTraveler.java,v 1.2 2003/02/09 15:22:29 eric Exp $
+/* $Id: ConcreteClassFileDownTraveler.java,v 1.3 2003/07/18 19:33:39 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -51,9 +51,10 @@ public class ConcreteClassFileDownTraveler
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
-        // Is this an abstract class (or interface)?
+        // Is this an abstract class or interface?
         if ((programClassFile.getAccessFlags() &
-             ClassConstants.INTERNAL_ACC_ABSTRACT) != 0)
+             (ClassConstants.INTERNAL_ACC_INTERFACE |
+              ClassConstants.INTERNAL_ACC_ABSTRACT)) != 0)
         {
             // Travel down the hierarchy.
             ClassFile[] subClasses = programClassFile.subClasses;
@@ -75,9 +76,10 @@ public class ConcreteClassFileDownTraveler
 
     public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
     {
-        // Is this an abstract class (or interface)?
+        // Is this an abstract class or interface?
         if ((libraryClassFile.getAccessFlags() &
-             ClassConstants.INTERNAL_ACC_ABSTRACT) != 0)
+             (ClassConstants.INTERNAL_ACC_INTERFACE |
+              ClassConstants.INTERNAL_ACC_ABSTRACT)) != 0)
         {
             // Travel down the hierarchy.
             ClassFile[] subClasses = libraryClassFile.subClasses;

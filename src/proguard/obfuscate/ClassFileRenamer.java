@@ -1,4 +1,4 @@
-/* $Id: ClassFileRenamer.java,v 1.20 2003/04/28 17:24:21 eric Exp $
+/* $Id: ClassFileRenamer.java,v 1.22 2003/06/19 16:48:17 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -50,7 +50,7 @@ public class ClassFileRenamer
 
 
     /**
-     * Creates a new ClassFileObfuscator.
+     * Creates a new ClassFileRenamer.
      * @param openUpPackages         specifies whether to make package visible
      *                               classes and class members public.
      * @param newSourceFileAttribute the new string to be put in the source file
@@ -82,7 +82,7 @@ public class ClassFileRenamer
         // Make package visible classes public, if specified.
         if (openUpPackages && isPackageVisible(programClassFile.u2accessFlags))
         {
-            programClassFile.u2accessFlags |= ClassConstants.INTERNAL_ACC_PUBLIC;
+            programClassFile.u2accessFlags = makePublic(programClassFile.u2accessFlags);
         }
 
         // Rename the source file attribute, if specified.
@@ -135,7 +135,7 @@ public class ClassFileRenamer
         // Make package visible class members public, if specified.
         if (openUpPackages && isPackageVisible(programMemberInfo.u2accessFlags))
         {
-            programMemberInfo.u2accessFlags |= ClassConstants.INTERNAL_ACC_PUBLIC;
+            programMemberInfo.u2accessFlags = makePublic(programMemberInfo.u2accessFlags);
         }
     }
 
@@ -448,13 +448,25 @@ public class ClassFileRenamer
 
     /**
      * Returns whether the given access flags specify a package visible class
-     * or class member.
+     * or class member (including protected access).
      */
     private boolean isPackageVisible(int accessFlags)
     {
         return (accessFlags &
-                (ClassConstants.INTERNAL_ACC_PUBLIC    |
-                 ClassConstants.INTERNAL_ACC_PROTECTED |
+                (ClassConstants.INTERNAL_ACC_PUBLIC |
                  ClassConstants.INTERNAL_ACC_PRIVATE)) == 0;
+    }
+
+
+    /**
+     * Returns the given access flags, modified such that the class or class
+     * member becomes public.
+     */
+    private int makePublic(int accessFlags)
+    {
+        return (accessFlags &
+                ~(ClassConstants.INTERNAL_ACC_PROTECTED |
+                  ClassConstants.INTERNAL_ACC_PRIVATE)) |
+               ClassConstants.INTERNAL_ACC_PUBLIC;
     }
 }

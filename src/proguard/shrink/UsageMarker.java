@@ -1,4 +1,4 @@
-/* $Id: UsageMarker.java,v 1.18 2003/02/09 15:22:29 eric Exp $
+/* $Id: UsageMarker.java,v 1.19 2003/07/29 16:42:27 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -392,6 +392,12 @@ public class UsageMarker
             {
                 // Mark the referenced field itself.
                 fieldrefCpInfo.referencedMemberInfoAccept(this);
+
+                // When compiled with "-target 1.2", the class or interface
+                // actually containing the referenced field may be higher up
+                // the hierarchy. Make sure it's marked, in case it isn't
+                // used elsewhere.
+                fieldrefCpInfo.referencedClassAccept(this);
             }
         }
     }
@@ -451,10 +457,11 @@ public class UsageMarker
                 // Mark the referenced method itself.
                 methodrefCpInfo.referencedMemberInfoAccept(this);
 
-                // When compiled with "-target 1.2", the class actually
-                // containing the referenced method may be higher up the
-                // hierarchy. Being a superclass, it will be marked
-                // automatically.
+                // When compiled with "-target 1.2", the class or interface
+                // actually containing the referenced method may be higher up
+                // the hierarchy. Make sure it's marked, in case it isn't
+                // used elsewhere.
+                methodrefCpInfo.referencedClassAccept(this);
 
                 String name = methodrefCpInfo.getName(classFile);
                 String type = methodrefCpInfo.getType(classFile);

@@ -256,7 +256,7 @@ installed ProGuard.
 
 <h3>Parameters specified as nested elements</h3>
 
-<h3>libaryjar</h3>
+<h3>libraryjar</h3>
 
 <p>
 Specifies the library jars (or directories) of the application to be processed.
@@ -294,7 +294,7 @@ called needn't be present.
   </tr>
 </table>
 
-<h4>reourcejar</h4>
+<h4>resourcejar</h4>
 
 <p>
 Specifies any resource jars (or directories) to be copied into the output
@@ -518,6 +518,8 @@ With the fields tag you can specify the fields to be kept.
     Name of the field. Wildcards are allowed. A description of the usage
     and limitations of wildcards can be found in
     <a href="usage.html#classspecification">ProGuard usage</a>.<br>
+    The <code>&lt;fields&gt;</code> keyword must not be used. Use
+    <code>*</code> or <code>${proguard.fields}</code> instead.<br>
     Defaults to <code>*</code>
     </td>
     <td valign="top" align="center">No</td>
@@ -573,7 +575,62 @@ With the method tag you can specify the methods to be kept.
     Name of the method. Wildcards are allowed. A description of the usage
     and limitations of wildcards can be found in
     <a href="usage.html#classspecification">ProGuard usage</a>.<br>
+    The <code>&lt;methods&gt;</code> keyword must not be used. Use
+    <code>*</code> or <code>${proguard.fields}</code> instead.<br>
     Defaults to <code>*</code>
+    </td>
+    <td valign="top" align="center">No</td>
+  </tr>
+  <tr>
+    <td valign="top">param</td>
+    <td valign="top">
+    Parameters of the method without brackets, separated by commas.
+    Parameters can also be specified in the name attribute enclosed in brackets.
+    </td>
+    <td valign="top" align="center">No</td>
+  </tr>
+</table>
+
+<h3>constructor</h3>
+<a name="constructor"></a>
+
+<p>
+With the constructor tag you can specify the constructors to be kept.
+</p>
+
+<h3>Parameters</h3>
+
+<table border="1" cellpadding="2" cellspacing="0">
+  <tr>
+    <td valign="top"><b>Attribute</b></td>
+    <td valign="top"><b>Description</b></td>
+    <td align="center" valign="top"><b>Required</b></td>
+  </tr>
+  <tr>
+    <td valign="top">access</td>
+    <td valign="top">
+      List of access flags to the constructor separated by spaces. Must be one of
+      <ul>
+      <li>public</li>
+      <li>protected</li>
+      <li>private</li>
+      <li>static</li>
+      <li>synchronized</li>
+      <li>native</li>
+      <li>abstract</li>
+      <li>strictfp</li>
+      </ul>
+      All access attributes may have a leading <code>!</code> to specify the
+      attributes that are not set.<br>
+      The access attributes may be set using the nested
+      <a href="#accessTag">access tag</a>.
+    </td>
+    <td valign="top" align="center">No</td>
+  </tr>
+  <tr>
+    <td valign="top">param</td>
+    <td valign="top">
+    Parameters of the constructor, separated by commas.
     </td>
     <td valign="top" align="center">No</td>
   </tr>
@@ -781,7 +838,16 @@ Secondly, the use of the <code>&lt;</code> and the <code>&gt;</code> characters
 to mark an environment variable are would upset the structure of the XML build
 file invalid. Environment variables are now enclosed by an opening
 <code>${</code> and a closing <code>}</code>. This change is in line with
-Ant traditions.
+Ant traditions. Thus you are able to use your ant properties within
+you proguard configuration code.
+<br>
+Besides there are some other keywords,
+<code>init</code>, <code>methods</code> and <code>fields</code>, enclosed
+in <code>&lt;</code> and <code>&gt;</code> characters. In order not
+to define a new syntax, the ProGuard task sets some properties
+when initializing as a replacement.
+All occurences of the above have to be replaced with <code>${proguard.init}</code>,
+<code>${proguard.methods}</code> and <code>${proguard.fields}</code>.
 </p>
 
 <p>

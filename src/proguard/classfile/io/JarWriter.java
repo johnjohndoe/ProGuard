@@ -1,4 +1,4 @@
-/* $Id: JarWriter.java,v 1.4 2003/04/28 17:24:21 eric Exp $
+/* $Id: JarWriter.java,v 1.7 2003/05/19 13:15:40 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -22,6 +22,7 @@ package proguard.classfile.io;
 
 import java.io.*;
 import java.util.jar.*;
+import java.util.*;
 
 
 /**
@@ -32,10 +33,10 @@ import java.util.jar.*;
  */
 public class JarWriter implements DataEntryWriter
 {
-    private File            jarFile;
-    private Manifest        manifest;
-    private String          comment;
     private JarOutputStream jarOutputStream;
+
+    // The jar entries that are already in the jar.
+    private Set jarEntryNames = new HashSet();
 
 
     /**
@@ -70,14 +71,32 @@ public class JarWriter implements DataEntryWriter
         if (jarOutputStream != null)
         {
             jarOutputStream.close();
-        }
 
-        jarOutputStream = null;
+            // Clear the references to the objects that we don't need anymore.
+            jarOutputStream = null;
+            jarEntryNames   = null;
+        }
     }
 
 
     public OutputStream openDataEntry(String name) throws IOException
     {
+        // The manifest file should be set in the constructor; it should not
+        // be added as another entry (perhaps read as a file from a directory
+        // or as a rogue entry in a zip file).
+        if (name.equals(JarFile.MANIFEST_NAME))
+        {
+            throw new IOException("Can't add manifest file as an ordinary zip entry");
+        }
+
+        // We have to check if the name is already used, because ZipOutputStream
+        // doesn't handle this case properly (it throws an exception which can
+        // be caught, but the ZipEntry is remembered anyway).
+        if (!jarEntryNames.add(name))
+        {
+            throw new IOException("Duplicate zip entry ["+name+"]");
+        }
+
         jarOutputStream.putNextEntry(new JarEntry(name));
 
         return jarOutputStream;

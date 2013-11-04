@@ -1,4 +1,4 @@
-/* $Id: JarContainer.java,v 1.6 2003/05/01 18:05:53 eric Exp $
+/* $Id: JarContainer.java,v 1.8 2003/08/04 08:46:45 eric Exp $
  *
  * ProGuard - integration into Ant.
  *
@@ -176,7 +176,7 @@ public abstract class JarContainer
     }
 
     /**
-     * Checks if a jar file has already been set.
+     * Checks if a jar file has been alread set.
      *
      * @exception BuildException A jar file has been already set.
      */

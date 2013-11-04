@@ -9,10 +9,10 @@
 
 <center><h2>Downloads</h2></center>
 
-<b>Proguard</b> is distributed under the GNU General Public License.
+<b>ProGuard</b> is distributed under the GNU General Public License.
 Please refer to the <a href="license.html">license page</a> for more details.
 <p>
-<b>Proguard</b> is written in Java. It requires a Java 2 runtime environment.
+<b>ProGuard</b> is written in Java. It requires a Java 2 runtime environment.
 <p>
 You can download the latest release (containing the program jar, the
 documentation you're reading now, examples, and source code) from this
@@ -24,12 +24,27 @@ href="http://sourceforge.net/projects/proguard/"
 target="other">SourceForge</a>)</center>
 <p>
 
-If you're still working with an older version of <b>Proguard</b>, check out
+If you're still working with an older version of <b>ProGuard</b>, check out
 the summary of changes below, to see if you're missing something essential.
 Better look at the up-to-date <a
 href="http://proguard.sourceforge.net/downloads.html">on-line version</a> if
 you're reading a local copy of this page.
 <p>
+
+<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
+<h3>Version 1.7</h3>
+</td></tr></table>
+<ul>
+<li>Fixed various Ant task bugs.
+<li>Fixed ClassCastException due to explicitly used abstract classes with
+    implicitly used interfaces targeted at JRE1.2 (the default in JDK1.4).
+<li>Fixed -defaultpackage bug for protected classes and class members.
+<li>Fixed ReTrace bug when retracing without line number tables.
+<li>Worked around zip package problems with duplicate out entries and rogue
+    manifest files.
+<li>Added work-around for handling malformed legacy interface class files.
+<li>Updated documentation and examples.
+</ul>
 
 <table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
 <h3>Version 1.6</h3>

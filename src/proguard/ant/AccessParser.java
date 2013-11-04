@@ -1,4 +1,4 @@
-/* $Id: AccessParser.java,v 1.8 2003/05/03 12:01:29 eric Exp $
+/* $Id: AccessParser.java,v 1.10 2003/08/04 08:46:45 eric Exp $
  *
  * ProGuard - integration into Ant.
  *
@@ -82,14 +82,14 @@ class AccessParser
 
     /**
      * Gets the configured access flags masked as a bit pattern.
-     * @param accessString The string to parse.
+     * @param str The string to parse.
      * @return Access flags.
      * @throws BuildException
      *         Discovered invalid access flag.
      */
-    int getAccessFlags(String accessString) throws BuildException
+    int getAccessFlags(String str) throws BuildException
     {
-        return parseAccessFlags(asCollection(accessString), true);
+        return parseAccessFlags(asCollection(str), true);
     }
 
 
@@ -108,14 +108,14 @@ class AccessParser
 
     /**
      * Gets the configured unset access flags masked as a bit pattern.
-     * @param accessString The string to parse.
+     * @param str The string to parse.
      * @return Access flags to be unset.
      * @throws BuildException
      *         Discovered invalid access flag.
      */
-    int getUnsetAccessFlags(String accessString) throws BuildException
+    int getUnsetAccessFlags(String str) throws BuildException
     {
-        return parseAccessFlags(asCollection(accessString), false);
+        return parseAccessFlags(asCollection(str), false);
     }
 
 
@@ -135,12 +135,12 @@ class AccessParser
     /**
      * Gets a collection of access flags. The flags are just separated but
      * not evaluated.
-     * @param accessString The flag to be parsed
+     * @param str The flag to be parsed
      * @return Collection of access flags
      */
-    private Collection asCollection(String accessString)
+    private Collection asCollection(String str)
     {
-        StringTokenizer tokenizer = new StringTokenizer(accessString);
+        StringTokenizer tokenizer = new StringTokenizer(str);
 
         Collection accessStrings = new ArrayList(tokenizer.countTokens());
 

@@ -1,8 +1,8 @@
-/* $Id: ProGuardTask.java,v 1.15 2003/05/03 12:05:30 eric Exp $
+/* $Id: ProGuardTask.java,v 1.17 2003/08/04 08:46:45 eric Exp $
  *
- * ProGuard -- integration into Ant.
+ * ProGuard - integration into ANT.
  *
- * Copyright (c) 2003 Dirk Schnelle (dirk.schnelle@web.de)
+ * Copyright (C) 2003 Dirk Schnelle (dirk.schnelle@web.de)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -18,14 +18,14 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
+
+
 package proguard.ant;
 
 import java.io.*;
 import java.util.*;
-
 import org.apache.tools.ant.*;
-import org.apache.tools.ant.util.FileUtils;
-import org.apache.tools.ant.util.StringUtils;
+import org.apache.tools.ant.util.*;
 import proguard.*;
 import proguard.classfile.util.*;
 
@@ -37,7 +37,7 @@ import proguard.classfile.util.*;
  * @author Dirk Schnelle
  */
 public class ProGuardTask
-     extends Task
+        extends Task
 {
     /** The options to configure. */
     private AntProGuardOptions options;
@@ -78,28 +78,26 @@ public class ProGuardTask
     /** Helper to resolve the full path name. */
     private final FileUtils fileUtils = FileUtils.newFileUtils();
 
-
     /**
      * Creates a new task for ProGuard.
      */
-    public ProGuardTask()
-    {
-    }
-
+    public ProGuardTask() {}
 
     /**
      * Evaluates nested text (PCDATA).
      *
-     * @param nestedText The PCDATA to parse.
+     * @param str The PCDATA to parse.
      *
      * @throws BuildException Error parsing the given string.
      */
-    public void addText(String nestedText)
+    public void addText(String str)
     {
-        String trimmed = nestedText.trim();
+        String trimmed = str.trim();
 
         if (trimmed.length() == 0)
             return;
+
+        log("parsing additional text: '" + trimmed + "'", Project.MSG_VERBOSE);
 
         String[] args = getTextAsArgs(trimmed);
 
@@ -118,9 +116,8 @@ public class ProGuardTask
         }
     }
 
-
     /**
-     * Converts the given string into an array.
+     * Converts the given string into an ars array.
      *
      * @param text The text tobe converted
      *
@@ -130,8 +127,8 @@ public class ProGuardTask
     {
         StringTokenizer tokenizer = new StringTokenizer(text);
 
-        String[] args = new String[tokenizer.countTokens()];
-        int index = 0;
+        String[]        args  = new String[tokenizer.countTokens()];
+        int             index = 0;
 
         while (tokenizer.hasMoreTokens())
             args[index++] = expandEnvSettings(tokenizer.nextToken());
@@ -139,35 +136,35 @@ public class ProGuardTask
         return args;
     }
 
-
     /**
      * Expands the environment variables in the given string.
      *
-     * @param variableString The string probably containing environment variables
+     * @param str The string probably containing environment variables
      *
      * @return String with resolved environment values.
      */
-    private String expandEnvSettings(String variableString)
+    private String expandEnvSettings(String str)
     {
-        int startEnv = variableString.indexOf("${");
+        int startEnv = str.indexOf("${");
 
         if (startEnv < 0)
-            return variableString;
+            return str;
 
-        int endEnv = variableString.indexOf("}", startEnv);
+        int endEnv = str.indexOf("}", startEnv);
 
         if (endEnv < 0)
-            return variableString;
+            return str;
 
-        String envKey = variableString.substring(startEnv + 2, endEnv);
+        String envKey   = str.substring(startEnv + 2, endEnv);
         String envValue = project.getProperty(envKey);
 
         if (envValue == null)
-            return variableString;
+            return str.substring(0, endEnv) +
+            expandEnvSettings(str.substring(endEnv + 1));
 
-        return StringUtils.replace(variableString, "${" + envKey + "}", envValue);
+        return expandEnvSettings(StringUtils.replace(str, "${" + envKey + "}",
+                envValue));
     }
-
 
     /**
      * Adds an injar nested task to this task.
@@ -180,7 +177,6 @@ public class ProGuardTask
         subtasks.add(injar);
     }
 
-
     /**
      * Adds the given jar to the injars.
      *
@@ -188,9 +184,11 @@ public class ProGuardTask
      */
     void addInjar(String injar)
     {
-        options.addInJar(getFullPathName(injar));
-    }
+        String injarFullPath = getFullPathName(injar);
+        log("adding injar: '" + injarFullPath + "'", Project.MSG_VERBOSE);
 
+        options.addInJar(injarFullPath);
+    }
 
     /**
      * Adds a libraryjar nested task to this task.
@@ -203,7 +201,6 @@ public class ProGuardTask
         subtasks.add(libraryjar);
     }
 
-
     /**
      * Adds the given jar to the libraryjars.
      *
@@ -211,9 +208,12 @@ public class ProGuardTask
      */
     void addLibraryjar(String libraryjar)
     {
-        options.addLibraryJar(getFullPathName(libraryjar));
-    }
+        String libraryjarFullPath = getFullPathName(libraryjar);
+        log("adding libraryjar: '" + libraryjarFullPath + "'",
+            Project.MSG_VERBOSE);
 
+        options.addLibraryJar(libraryjarFullPath);
+    }
 
     /**
      * Adds an injar nested task to this task.
@@ -226,7 +226,6 @@ public class ProGuardTask
         subtasks.add(resourcejar);
     }
 
-
     /**
      * Adds the given jar to the resourcejars.
      *
@@ -234,9 +233,12 @@ public class ProGuardTask
      */
     void addResourcejar(String resourcejar)
     {
-        options.addResourceJar(getFullPathName(resourcejar));
-    }
+        String resourcejarFullPath = getFullPathName(resourcejar);
+        log("adding resourcejar: '" + resourcejarFullPath + "'",
+            Project.MSG_VERBOSE);
 
+        options.addResourceJar(resourcejarFullPath);
+    }
 
     /**
      * Adds a keepattribute nested task to this task.
@@ -248,7 +250,6 @@ public class ProGuardTask
         subtasks.add(keepattribute);
     }
 
-
     /**
      * Adds the given attribute to the list of attributes to keep.
      *
@@ -257,8 +258,10 @@ public class ProGuardTask
     void addKeepattribute(String keepattribute)
     {
         options.addKeepAttribute(keepattribute);
-    }
 
+        log("adding keepattribute '" + keepattribute.toString() + "'",
+            Project.MSG_VERBOSE);
+    }
 
     /**
      * Adds a nested keep subtask.
@@ -267,10 +270,9 @@ public class ProGuardTask
      */
     public void addKeep(KeepClassSpecification keep)
     {
-        keep.init(true, false, false);
+        keep.init(this, true, false, false);
         subtasks.add(keep);
     }
-
 
     /**
      * Adds a nested keepclassmember subtask.
@@ -279,10 +281,9 @@ public class ProGuardTask
      */
     public void addKeepclassmembers(KeepClassSpecification keep)
     {
-        keep.init(false, false, false);
+        keep.init(this, false, false, false);
         subtasks.add(keep);
     }
-
 
     /**
      * Adds a nested keepclasseswithmembers subtask.
@@ -291,10 +292,9 @@ public class ProGuardTask
      */
     public void addKeepclasseswithmembers(KeepClassSpecification keep)
     {
-        keep.init(false, true, false);
+        keep.init(this, false, true, false);
         subtasks.add(keep);
     }
-
 
     /**
      * Adds a class specification to the specifications to keep.
@@ -303,9 +303,10 @@ public class ProGuardTask
      */
     void addKeepCommand(KeepCommand keepcommand)
     {
+        log("adding KeepCommand: '" + keepcommand.toString() + "'",
+            Project.MSG_VERBOSE);
         options.addKeepCommand(keepcommand);
     }
-
 
     /**
      * Adds a nested keepnames subtask.
@@ -314,10 +315,9 @@ public class ProGuardTask
      */
     public void addKeepnames(KeepClassSpecification keep)
     {
-        keep.init(true, false, true);
+        keep.init(this, true, false, true);
         subtasks.add(keep);
     }
-
 
     /**
      * Adds a nested keepclassmembernames subtask.
@@ -326,10 +326,9 @@ public class ProGuardTask
      */
     public void addKeepclassmembernames(KeepClassSpecification keep)
     {
-        keep.init(false, false, true);
+        keep.init(this, false, false, true);
         subtasks.add(keep);
     }
-
 
     /**
      * Adds a nested keepclasseswithmembernames subtask.
@@ -338,10 +337,9 @@ public class ProGuardTask
      */
     public void addKeepclasseswithmembernames(KeepClassSpecification keep)
     {
-        keep.init(false, true, true);
+        keep.init(this, false, true, true);
         subtasks.add(keep);
     }
-
 
     /**
      * Sets the configuration file for the ProGuard parser.
@@ -351,13 +349,15 @@ public class ProGuardTask
      * @throws BuildException
      */
     public void setConfiguration(String file)
-        throws BuildException
+            throws BuildException
     {
         optionsFromConfigFile = new AntProGuardOptions();
 
         try
         {
             CommandParser parser = new CommandParser(file);
+            log("parsing configuration file: '" + file + "'",
+                Project.MSG_VERBOSE);
             parser.parse(optionsFromConfigFile);
         }
         catch (Exception e)
@@ -366,7 +366,6 @@ public class ProGuardTask
         }
     }
 
-
     /**
      * Turns verbose mode on or off.
      *
@@ -374,10 +373,9 @@ public class ProGuardTask
      */
     public void setVerbose(boolean verbose)
     {
-        options.verbose = verbose;
-        verboseSet = true;
+        options.verbose     = verbose;
+        verboseSet          = true;
     }
-
 
     /**
      * Turns warnings on or off.
@@ -386,10 +384,9 @@ public class ProGuardTask
      */
     public void setWarn(boolean on)
     {
-        options.warn = on;
-        warnSet = true;
+        options.warn     = on;
+        warnSet          = true;
     }
-
 
     /**
      * Turns notes on or off.
@@ -398,10 +395,9 @@ public class ProGuardTask
      */
     public void setNote(boolean on)
     {
-        options.note = on;
-        noteSet = true;
+        options.note     = on;
+        noteSet          = true;
     }
-
 
     /**
      * Turns ignorewarnings on or off.
@@ -410,10 +406,9 @@ public class ProGuardTask
      */
     public void setIgnorewarnings(boolean warn)
     {
-        options.ignoreWarnings = warn;
-        ignoreWarningsSet = true;
+        options.ignoreWarnings     = warn;
+        ignoreWarningsSet          = true;
     }
-
 
     /**
      * Enables ProGuard's shrink option.
@@ -422,10 +417,9 @@ public class ProGuardTask
      */
     public void setShrink(boolean on)
     {
-        options.shrink = on;
-        shrinkSet = true;
+        options.shrink     = on;
+        shrinkSet          = true;
     }
-
 
     /**
      * Enables ProGuard's obfuscation option.
@@ -434,23 +428,21 @@ public class ProGuardTask
      */
     public void setObfuscate(boolean on)
     {
-        options.obfuscate = on;
-        obfuscateSet = true;
+        options.obfuscate     = on;
+        obfuscateSet          = true;
     }
-
 
     /**
      * Enables ProGuard's mixed class names option.
      *
      * @param on true if the class names should contain both uppercase and
-     *           lowercase characters.
+     *        lowercase characters.
      */
     public void setUsemixedclassnames(boolean on)
     {
-        options.useMixedCaseClassNames = on;
-        useMixedCaseClassNamesSet = true;
+        options.useMixedCaseClassNames     = on;
+        useMixedCaseClassNamesSet          = true;
     }
-
 
     /**
      * Enables ProGuard's aggressive overloading option.
@@ -459,10 +451,9 @@ public class ProGuardTask
      */
     public void setOverloadaggressively(boolean on)
     {
-        options.overloadAggressively = on;
-        overloadAggressivelySet = true;
+        options.overloadAggressively     = on;
+        overloadAggressivelySet          = true;
     }
-
 
     /**
      * Sets the default package for the obfuscation.
@@ -474,19 +465,17 @@ public class ProGuardTask
         options.defaultPackage = ClassUtil.internalClassName(defaultPackage);
     }
 
-
     /**
      * Sets the skipnonpubliclibraryclasses.
      *
      * @param on true if the non public class members should be skipped while
-     *           reading library jars.
+     *        reading library jars.
      */
     public void setSkipnonpubliclibraryclasses(boolean on)
     {
-        options.skipNonPublicLibraryClasses = on;
-        skipNonPublicLibraryClassesSet = true;
+        options.skipNonPublicLibraryClasses     = on;
+        skipNonPublicLibraryClassesSet          = true;
     }
-
 
     /**
      * Sets the output for the print mapping.
@@ -498,7 +487,6 @@ public class ProGuardTask
         options.printMapping = getFullPathName(out);
     }
 
-
     /**
      * Sets the filename where to store the seeds.
      *
@@ -508,7 +496,6 @@ public class ProGuardTask
     {
         options.printSeeds = getFullPathName(filename);
     }
-
 
     /**
      * Sets the filename where to store the usage
@@ -520,7 +507,6 @@ public class ProGuardTask
         options.printUsage = getFullPathName(filename);
     }
 
-
     /**
      * Sets the filename where to store a dump.
      *
@@ -530,7 +516,6 @@ public class ProGuardTask
     {
         options.dump = getFullPathName(filename);
     }
-
 
     /**
      * Sets the output jar file name.
@@ -542,7 +527,6 @@ public class ProGuardTask
         options.outJar = getFullPathName(outjar);
     }
 
-
     /**
      * Sets the rename source file attribute.
      *
@@ -553,31 +537,29 @@ public class ProGuardTask
         options.newSourceFileAttribute = newSourceFileAttribute;
     }
 
-
     /**
      * Initializes this task.
      *
      * @throws BuildException Never thrown.
      */
     public void init()
-        throws BuildException
+            throws BuildException
     {
-        System.out.println(ProGuard.VERSION);
+        options                            = new AntProGuardOptions();
+        optionsFromConfigFile              = null;
+        subtasks                           = new Vector();
+        verboseSet                         = false;
+        ignoreWarningsSet                  = false;
+        warnSet                            = false;
+        noteSet                            = false;
+        shrinkSet                          = false;
+        obfuscateSet                       = false;
+        useMixedCaseClassNamesSet          = false;
+        overloadAggressivelySet            = false;
+        skipNonPublicLibraryClassesSet     = false;
 
-        options = new AntProGuardOptions();
-        optionsFromConfigFile = null;
-        subtasks = new Vector();
-        verboseSet = false;
-        ignoreWarningsSet = false;
-        warnSet = false;
-        noteSet = false;
-        shrinkSet = false;
-        obfuscateSet = false;
-        useMixedCaseClassNamesSet = false;
-        overloadAggressivelySet = false;
-        skipNonPublicLibraryClassesSet = false;
+        setProguardProperties();
     }
-
 
     /**
      * Executes this task.
@@ -585,14 +567,18 @@ public class ProGuardTask
      * @throws BuildException Error executing ProGuard.
      */
     public void execute()
-        throws BuildException
+            throws BuildException
     {
         executeSubtasks();
 
         mergeWithConfigFile();
 
         if (!isExecutionNecessary())
+        {
+            this.log("obfuscated jar is up to date", Project.MSG_VERBOSE);
+
             return;
+        }
 
         ProGuard proguard = new ProGuard(options);
 
@@ -606,6 +592,16 @@ public class ProGuardTask
         }
     }
 
+    /**
+     * Set some properties to have a workaround for some proguard keywords
+     * encapsulated in &lt; and &gt; chars.
+     */
+    private void setProguardProperties()
+    {
+        project.setProperty("proguard.init", "<init>");
+        project.setProperty("proguard.methods", "<methods>");
+        project.setProperty("proguard.fields", "<fields>");
+    }
 
     /**
      * Executes all subtasks.
@@ -613,22 +609,21 @@ public class ProGuardTask
      * @exception BuildException Validation of subtask not successful.
      */
     private void executeSubtasks()
-        throws BuildException
+            throws BuildException
     {
         Iterator iterator = subtasks.iterator();
 
         while (iterator.hasNext())
         {
-            Subtask subtask = (Subtask)iterator.next();
+            Subtask subtask = (Subtask) iterator.next();
             subtask.validate();
             subtask.execute(this);
         }
     }
 
-
     /**
-     * Mix up the settings from the configuration file with Ant settings. Ant
-     * settings override the settings from the configuration file.
+     * Mix up the settings from the config file with Ant settings. Ant settings
+     * override the settings from the config file.
      */
     private void mergeWithConfigFile()
     {
@@ -670,16 +665,15 @@ public class ProGuardTask
         options = optionsFromConfigFile;
     }
 
-
     /**
      * Checks if it is necessary to execute ProGuard.
      *
      * @return true if ProGuard should be executed.
      *
-     * @exception BuildException Error examining the jar files.
+     * @exception BuildException Error examinig the jar files.
      */
     private boolean isExecutionNecessary()
-        throws BuildException
+            throws BuildException
     {
         if (options.outJar == null)
             return true;
@@ -692,7 +686,7 @@ public class ProGuardTask
         long outjarLastModified = outjar.lastModified();
 
         // I do not know how to handle this. Delegate the decision about
-        // it to ProGuard.
+        // it to proguard.
         if ((options.inJars == null) && (options.resourceJars == null))
             return true;
 
@@ -700,24 +694,24 @@ public class ProGuardTask
             return true;
 
         return (checkJarContainerForDate(options.resourceJars,
-                                         outjarLastModified));
+            outjarLastModified));
     }
-
 
     /**
      * Check the files in the given jar container if they contain changes since
-     * the last run of ProGuard.
+     * the last run of proguard.
      *
      * @param jarContainer The jar container to check for changes
-     * @param lastModified Date of the last ProGuard generated jar.
+     * @param lastModified Date of the last proguard generated jar.
      *
      * @return true, if changes have been made to at least one file.
      *
      * @throws BuildException An entry of the jar container does not exist.
      */
-    private boolean checkJarContainerForDate(Collection jarContainer,
-                                             long lastModified)
-        throws BuildException
+    private boolean checkJarContainerForDate(
+        Collection jarContainer,
+        long       lastModified)
+            throws BuildException
     {
         if (jarContainer == null)
             return false;
@@ -726,12 +720,12 @@ public class ProGuardTask
 
         while (iterator.hasNext())
         {
-            String jar = (String)iterator.next();
-            File jarFile = new File(jar);
+            String jar     = (String) iterator.next();
+            File   jarFile = new File(jar);
 
             if (!jarFile.exists())
                 throw new BuildException("file or directory'" + jar +
-                                         "' does not exist!");
+                    "' does not exist!");
 
             if (jarFile.isDirectory())
             {
@@ -745,21 +739,21 @@ public class ProGuardTask
         return false;
     }
 
-
     /**
-     * Checks the files in the given directory if they contain changes since the
-     * last run of ProGuard.
+     * Checks the files in the given directory if they contain changes since
+     * the last run of proguard.
      *
      * @param directory The directory to scan.
-     * @param lastModified Date of the last ProGuard generated jar.
+     * @param lastModified Date of the last proguard generated jar.
      *
      * @return true, if changes have been made to at least one file.
      */
-    private boolean checkSubDirForDate(File directory,
-                                       long lastModified)
+    private boolean checkSubDirForDate(
+        File directory,
+        long lastModified)
     {
         File[] children = directory.listFiles();
-        int size = children.length;
+        int    size = children.length;
 
         for (int i = 0; i < size; i++)
         {
@@ -780,7 +774,6 @@ public class ProGuardTask
         return false;
     }
 
-
     /**
      * Gets the full path name of the given relative file name.
      *
@@ -790,9 +783,9 @@ public class ProGuardTask
      */
     private String getFullPathName(String relativeFileName)
     {
-        Project project = getProject();
-        File projectDir = project.getBaseDir();
-        File relativeFile =
+        Project project      = getProject();
+        File    projectDir   = project.getBaseDir();
+        File    relativeFile =
             fileUtils.resolveFile(projectDir, relativeFileName);
 
         return relativeFile.getAbsolutePath();
