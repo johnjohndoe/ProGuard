@@ -1,9 +1,9 @@
-/* $Id: ClassPool.java,v 1.8 2002/11/03 13:30:13 eric Exp $
+/* $Id: ClassPool.java,v 1.13 2003/04/15 19:02:09 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
- * Copyright (c) 1999 Mark Welsh (markw@retrologic.com)
- * Copyright (C) 2002 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
+ * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by
@@ -21,39 +21,36 @@
  */
 package proguard.classfile;
 
-import proguard.classfile.util.ClassUtil;
+import proguard.classfile.util.*;
 import proguard.classfile.visitor.*;
 
 import java.util.*;
-import java.util.jar.Manifest;
 
 /**
  * This is a set of representations of class files. They can be enumerated or
  * retrieved by name. They can also be accessed by means of class file visitors.
- * <p>
- * In addition, a ClassPool can have a manifest.
  *
  * @author Eric Lafortune
  */
 public class ClassPool
 {
-    private Hashtable classFiles = new Hashtable();
-    private Manifest  manifest;
+    private Map classFiles = new HashMap();
+
 
     /**
      * Adds the given ClassFile to the class pool.
      */
     public void addClass(ClassFile classFile)
     {
-        Object previousClassFile = classFiles.put(classFile.getName(),
-                                                  classFile);
+        String name = classFile.getName();
+
+        Object previousClassFile = classFiles.put(name, classFile);
         if (previousClassFile != null)
         {
-            System.err.println("Warning: duplicated input class ["+classFile.getName()+"]");
+            System.err.println("Warning: duplicated input class [" + name + "]");
 
             // We'll put the original one back.
-            classFiles.put(((ClassFile)previousClassFile).getName(),
-                           previousClassFile);
+            classFiles.put(name, previousClassFile);
         }
     }
 
@@ -80,11 +77,11 @@ public class ClassPool
 
 
     /**
-     * Returns an Enumeration of all ClassFile objects in the class pool.
+     * Returns an Iterator of all ClassFile objects in the class pool.
      */
-    public Enumeration elements()
+    public Iterator elements()
     {
-        return classFiles.elements();
+        return classFiles.values().iterator();
     }
 
 
@@ -112,10 +109,10 @@ public class ClassPool
      */
     public void classFilesAccept(ClassFileVisitor classFileVisitor)
     {
-        Enumeration enumeration = classFiles.elements();
-        while (enumeration.hasMoreElements())
+        Iterator iterator = elements();
+        while (iterator.hasNext())
         {
-            ClassFile classFile = (ClassFile)enumeration.nextElement();
+            ClassFile classFile = (ClassFile)iterator.next();
             classFile.accept(classFileVisitor);
         }
     }
@@ -148,16 +145,5 @@ public class ClassPool
         {
             classFile.accept(classFileVisitor);
         }
-    }
-
-
-    public void setManifest(Manifest manifest)
-    {
-        this.manifest = manifest;
-    }
-
-    public Manifest getManifest()
-    {
-        return manifest;
     }
 }

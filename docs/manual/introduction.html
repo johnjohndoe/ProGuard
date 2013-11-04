@@ -20,13 +20,59 @@ resulting jars are smaller and harder to reverse-engineer.
 ProGuard can also be used to list unused fields and methods in an application,
 and to print out the internal structure of class files.
 <p>
-ProGuard typically reads the input jars, shrinks their class files, obfuscates
-the shrunk class files, and writes them to an output jar. In the shrinking
-phase, one or more seed methods or classes are required. These seeds are
-typically main classes or applets. The shrinker can then recursively
-determine which classes and class members are used, and discard the rest. In
+
+<table align="center" cellpadding="8" cellspacing="2" border="0">
+
+<tr>
+<td rowspan="3" width="100" bgcolor="#BBBBFF" align="center">Input jars</td>
+<td colspan="4"></td>
+</tr>
+
+<tr>
+<td><br></td>
+<td rowspan="2" width="100" bgcolor="#BBBBFF" align="center">Shrunk code</td>
+<td colspan="2"></td>
+</tr>
+
+<tr>
+<td>- shrink &rarr;</td>
+<td>- obfuscate &rarr;</td>
+<td rowspan="2" width="100" bgcolor="#BBBBFF" align="center">Output jar</td>
+</tr>
+
+<tr>
+<td bgcolor="#BBBBFF" align="center">Resource jars</td>
+<td colspan="3" align="center">----------------- (unchanged) -----------------&rarr;</td>
+</tr>
+
+<tr>
+<td bgcolor="#8888FF" align="center">Library jars</td>
+<td colspan="3" align="center">----------------- (unchanged) -----------------&rarr;</td>
+<td bgcolor="#8888FF" align="center">Library jars</td>
+</tr>
+
+</table>
+<p>
+
+ProGuard typically reads the <b>input jars</b> (or directories), shrinks their
+class files, obfuscates the shrunk class files, and writes them to an output
+jar (or directory). In order to determine which code has to be preserved,
+which code can be discarded, and which code can be obfuscated, you have to
+specify one or more seed classes or methods. These seeds are typically main
+classes, applets, midlets,... In the shrinking phase, ProGuard recursively
+determines which classes and class members are used, and discards the rest. In
 the obfuscation phase, all classes and class members get new names, except for
 the seeds, so they can still be called by their original names.
+<p>
+You can optionally specify <b>resource jars</b> (or directories). ProGuard
+copies all non-class resource files from these jars to the output jar. Their
+names and contents remain unchanged. If no resource jars are specified, the
+input jars are used as resource jars.
+<p>
+ProGuard requires the <b>library jars</b> (or directories) of the input jars
+to be specified, or at least the library jars containing classes that are
+<i>extended</i> by input classes. The library jars themselves always remain
+unchanged.
 <p>
 ProGuard automatically handles <code>Class.forName("SomeClass")</code> and
 <code>SomeClass.class</code> constructs. The referenced classes are preserved
@@ -39,14 +85,11 @@ be an indication that the class or interface <code>SomeClass</code> and/or its
 implementations may need to be preserved. The user can adapt his configuration
 accordingly.
 <p>
-ProGuard copies all non-class resource files from the input jars to the output
-jar. Their names and contents remain unchanged.
-<p>
 
 <hr>
 <address>
-Copyright &copy; 2002 <a href="http://www.graphics.cornell.edu/~eric/">Eric
-Lafortune</a>.
+Copyright &copy; 2002-2003
+<a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>
 </html>

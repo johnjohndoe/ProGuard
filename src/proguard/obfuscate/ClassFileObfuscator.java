@@ -1,8 +1,8 @@
-/* $Id: ClassFileObfuscator.java,v 1.11 2002/11/03 13:30:14 eric Exp $
+/* $Id: ClassFileObfuscator.java,v 1.16 2003/04/28 17:24:21 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
- * Copyright (C) 2002 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -21,10 +21,10 @@
 package proguard.obfuscate;
 
 import proguard.classfile.*;
-import proguard.classfile.util.ClassUtil;
-import proguard.classfile.visitor.ClassFileVisitor;
+import proguard.classfile.util.*;
+import proguard.classfile.visitor.*;
 
-import java.util.Hashtable;
+import java.util.*;
 
 
 /**
@@ -43,10 +43,9 @@ public class ClassFileObfuscator
     private boolean   useMixedCaseClassNames;
     private String    defaultPackageName;
 
-    // Hashtable: [package name - class name factory]
-    private final Hashtable        packageHashtable = new Hashtable();
-    private final NameFactory      defaultPackageClassNameFactory;
-    private final MemberObfuscator memberObfuscator;
+    // Map: [package name - class name factory]
+    private final Map         packageMap = new HashMap();
+    private final NameFactory defaultPackageClassNameFactory;
 
 
     /**
@@ -62,14 +61,12 @@ public class ClassFileObfuscator
      */
     public ClassFileObfuscator(ClassPool programClassPool,
                                String    defaultPackageName,
-                               boolean   useMixedCaseClassNames,
-                               boolean   allowAggressiveOverloading)
+                               boolean   useMixedCaseClassNames)
     {
         this.programClassPool               = programClassPool;
         this.defaultPackageName             = defaultPackageName;
         this.useMixedCaseClassNames         = useMixedCaseClassNames;
         this.defaultPackageClassNameFactory = new NameFactory(useMixedCaseClassNames);
-        this.memberObfuscator               = new MemberObfuscator(allowAggressiveOverloading);
     }
 
 
@@ -87,7 +84,7 @@ public class ClassFileObfuscator
             String newPackageName = packageName;
 
             // Find the right name factory for this package, or use the default.
-            NameFactory packageClassNameFactory = (NameFactory)packageHashtable.get(packageName);
+            NameFactory packageClassNameFactory = (NameFactory)packageMap.get(packageName);
             if (packageClassNameFactory == null)
             {
                 // Do we have a default package name?
@@ -96,7 +93,7 @@ public class ClassFileObfuscator
                     // We haven't seen this package before. Create a new name factory
                     // for it.
                     packageClassNameFactory = new NameFactory(useMixedCaseClassNames);
-                    packageHashtable.put(packageName, packageClassNameFactory);
+                    packageMap.put(packageName, packageClassNameFactory);
                 }
                 else
                 {
@@ -132,13 +129,6 @@ public class ClassFileObfuscator
             }
 
             setNewClassName(programClassFile, newClassName);
-        }
-
-        // Is this a bottom class in the class hierarchy?
-        if (programClassFile.subClasses == null)
-        {
-            // Then start obfuscating the class members in this name space.
-            memberObfuscator.obfuscate(programClassFile);
         }
     }
 

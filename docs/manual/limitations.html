@@ -16,17 +16,58 @@ When using ProGuard, you should be aware of a few minor issues, all of which
 are easily avoided or resolved:
 <p>
 <ul>
-<li>ProGuard doesn't automatically preserve native method names, and private
-    fields and methods that are part of the serialization API. You'll have to
-    specify them in your configuration. It's quite simple; the example section
-    shows how.
+<li>ProGuard doesn't automatically preserve <b>native method names</b>, and
+    private fields and methods that are part of the serialization API. You'll
+    have to specify them in your configuration. It's quite simple; the example
+    section shows how.
     <p>
 
-<li>ProGuard currently copies manifest files and resource files unchanged.
+<li>ProGuard currently copies <b>manifest files and resource files</b>
+    unchanged.
     <p>
 
-<li>ProGuard's obfuscation process currently doesn't follow the naming rule
-    specifying that internal classes must be named as
+<li>There is one caveat with regard to <code>.class</code> constructs, when
+    <b>processing libraries</b> that are to be used as such after obfuscation.
+    The javac compiler compiles <code>.class</code> to a method,
+    <code>class$(String)</code>. This method calls <code>Class.forName</code>
+    and returns a <code>Class</code> object, catching some exceptions along
+    the way. ProGuard detects occurrences of the method and deals with them
+    just fine. However, if you're processing an already obfuscated library, the
+    <code>class$</code> method may have received a different name, thus
+    escaping ProGuard's attention. The simple solution is to preserve the name
+    of this method when obfuscating libraries, as illustrated in this <a
+    href="examples.html#library">example</a>.
+    <p>
+
+<li>For efficiency, ProGuard always ignores any <b>private or package visible
+    library classes</b>. If any of them are extended by public library classes,
+    and then extended again by input classes, ProGuard will complain it can't
+    find them. In that case, you'll have to use the
+    <code>-dontskipnonpubliclibraryclasses</code> option.
+    <p>
+
+<li>If an input jar and a library jar contain classes in the <b>same
+    package</b>, the obfuscated output jar may contain class names that
+    overlap with class names in the library jar. This is most likely of the
+    library jar has been obfuscated before, as it will then probably contain
+    classes named 'a', 'b', etc. Packages should therefore never be split
+    across input jars and library jars.
+    <p>
+
+<li>ProGuard may not handle <b>obfuscation marker interfaces</b> as expected.
+    If you specify "<code>-keep class * implements MyKeepInterface</code>",
+    and <code>MyKeepInterface</code> is not used in your code, the specified
+    classes are kept, but they are obfuscated. Technically, the interface is
+    removed in the shrinking phase, making the directive void in the
+    obfuscation phase. This behavior may be fixed in the future. For now, you
+    can get around it by explicitly keeping the interface as well:
+    "<code>-keep class MyKeepInterface</code>". In any case, creating a proper
+    configuration file seems a cleaner solution than using such an obfuscation
+    marker interface.
+    <p>
+
+<li>ProGuard's obfuscation process currently doesn't follow the <b>naming
+    rule</b> specifying that internal classes must be named as
     <code>ExternalClass$InternalClass</code>, for instance (cfr. <a href=
     "http://java.sun.com/docs/books/jls/second_edition/html/j.title.doc.html"
     >The Java Language Specification, Second Edition</a>, <a href=
@@ -35,47 +76,17 @@ are easily avoided or resolved:
     the rule is mainly intended for transformations at the source code level.
     Internal-external class relationships are still represented correctly
     inside the binary class files. Decompilers or others tools that rely on
-    the naming rule may have problems processing obfuscated jars.
+    the naming rule may have problems processing obfuscated jars. I'm not
+    aware of any such cases.
     <p>
 
-<li>ProGuard automatically detects <code>Class.forName</code> and
-    <code>.class</code> constructs with constant classes. There is one caveat,
-    however, when processing libraries that are to be used as such after
-    obfuscation. The javac compiler compiles <code>.class</code> to a static
-    method, <code>class$(String)</code>. This method calls
-    <code>Class.forName</code> and returns a <code>Class</code> object,
-    catching some exceptions along the way. ProGuard detects occurrences of
-    the method. However, if you're using an obfuscated library, the
-    <code>class$</code> method may have received a different name, thus
-    escaping ProGuard's attention. The simple solution is to preserve the name
-    of this method when obfuscating libraries, as illustrated in this <a
-    href="examples.html#library">example</a>.
-    <p>
-
-<li>For efficiency, ProGuard always ignores any private or package visible
-    library classes. If any of them are extended by public library classes,
-    and then extended again by input classes, ProGuard will complain it can't
-    find them. In that case, you'll have to use the
-    <code>-dontskipnonpubliclibraryclasses</code> option.
-    <p>
-
-<li>ProGuard may not handle obfuscation marker interfaces as expected. If you
-    specify "<code>-keep class * implements MyKeepInterface</code>", and
-    <code>MyKeepInterface</code> is not used in your code, the specified
-    classes are kept, but they are obfuscated. Technically, the interface is
-    removed in the shrinking phase, making the directive void in the
-    obfuscation phase. This behavior may be fixed in the future. For now, you
-    can get around it by explicitly keeping the interface as well:
-    "<code>-keep class MyKeepInterface</code>". In any case, creating a proper
-    configuration file seems a cleaner solution than using such an obfuscation
-    marker interface.
 </ul>
 <p>
 
 <hr>
 <address>
-Copyright &copy; 2002 <a href="http://www.graphics.cornell.edu/~eric/">Eric
-Lafortune</a>.
+Copyright &copy; 2002-2003
+<a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>
 </html>

@@ -82,7 +82,8 @@ href="manual/examples.html">example section</a> of the <a
 href="manual/index.html">ProGuard User Manual</a> illustrates how to process
 <a href="manual/examples.html#midlet">a single midlet</a> or <a
 href="manual/examples.html#midlets">all midlets</a> in your input jar, for
-instance.
+instance. In addition, <b>ProGuard</b> provides an obfuscator plug-in for the
+J2ME Wireless Toolkit.
 
 <p>
 <a name="forname">&nbsp;</a>
@@ -110,7 +111,7 @@ accordingly.
 </td></tr></table>
 <p>
 Yes, in the sense that <b>ProGuard</b> copies all non-class resource files
-from the input jars to the output jar. Their names and contents remain
+from the given resource jars to the output jar. Their names and contents remain
 unchanged.
 
 <p>
@@ -119,11 +120,10 @@ unchanged.
 <h3>Does <b>ProGuard</b> have support for Ant?</h3>
 </td></tr></table>
 <p>
-Not specifically, but <b>ProGuard</b> can be used in an Ant build process as a
-straightforward Java program, using any combination of command line options
-and configuration files. Specific support is on the list of things to do.
-(I've always wondered about build tools that require all of their tools to be
-adapted. Personally, I still appreciate <code>make</code>).
+Yes. <b>ProGuard</b> provides an Ant task, so that it integrates seamlessly
+into your Ant build processes. You can still use configurations in
+<b>ProGuard</b>'s own readable format. Alternatively, if you prefer XML, you
+can specify the equivalent XML configuration.
 
 <p>
 <a name="gui">&nbsp;</a>
@@ -135,8 +135,7 @@ No. <b>ProGuard</b> is a command-line tool. It can easily be integrated into
 any automatic build process. Configuration is done using a few compact and
 powerful options; just have a look at the examples in the <a
 href="manual/index.html">ProGuard User Manual</a>. A graphical user interface
-to create configuration files is on the list of things to do, but it has a
-fairly low priority.
+to help creating configuration files may be added in some future release.
 
 <p>
 <a name="stacktrace">&nbsp;</a>
@@ -154,8 +153,8 @@ Manual</a> for more details.
 
 <hr>
 <address>
-Copyright &copy; 2002 <a href="http://www.graphics.cornell.edu/~eric/">Eric
-Lafortune</a>.
+Copyright &copy; 2002-2003
+<a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>
 </html>

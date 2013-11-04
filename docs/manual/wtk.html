@@ -1,0 +1,59 @@
+<!doctype html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<title>ProGuard J2ME Wireless Toolkit Integration</title>
+</head>
+<body
+ bgcolor="#ffffff"
+ text="#000000">
+
+<table width="100%" cellpadding="10" cellspacing="0"><tr><th bgcolor="#EEEEFF">
+<font size="+2">J2ME Wireless Toolkit Integration</font>
+</th></tr></table>
+<p>
+
+<b>ProGuard</b> can be seamlessly integrated in the Sun J2ME Wireless Toolkit
+(WTK).
+<p>
+
+The WTK already comes with a plug-in for ProGuard as of version 2.0.
+Alternatively, ProGuard offers its own implementation. The latter
+implementation is somewhat more efficient: it invokes the ProGuard engine
+directly, instead of writing out a configuration file and running ProGuard in
+a separate virtual machine.
+<p>
+
+In order to integrate this plug-in in the toolkit, you'll have to put the
+following lines in the file
+{j2mewtk.dir}<code>/wtklib/Linux/ktools.properties</code> or
+{j2mewtk.dir}<code>\wtklib\Windows\ktools.properties</code> (whichever is
+applicable).
+<p>
+
+<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
+<pre>
+obfuscator.runner.class.name: proguard.wtk.ProGuardObfuscator
+obfuscator.runner.classpath: /usr/local/java/proguard/lib/proguard.jar
+</pre>
+</td></tr></table>
+<p>
+
+Please make sure the class path is set correctly for your system.
+<p>
+
+Once ProGuard has been set up, you can apply it to your projects as part of
+the build process. The build process is started from the WTK menu bar:
+<p>
+<center><b>Project -> Package -> Create Obfuscated Package</b></center>
+<p>
+This option will compile, shrink, obfuscate, verify, and install your midlets
+for testing.
+<p>
+
+<hr>
+<address>
+Copyright &copy; 2002-2003
+<a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
+</address>
+</body>
+</html>

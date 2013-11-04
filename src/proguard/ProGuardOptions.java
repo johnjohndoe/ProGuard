@@ -1,8 +1,8 @@
-/* $Id: ProGuardOptions.java,v 1.9 2002/10/20 13:05:16 eric Exp $
+/* $Id: ProGuardOptions.java,v 1.13 2003/02/11 18:48:33 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
- * Copyright (C) 2002 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -20,21 +20,24 @@
  */
 package proguard;
 
-import java.util.Vector;
+import java.util.*;
 
 
 /**
  * All ProGuard options.
  *
+ * @see ProGuard
+ *
  * @author Eric Lafortune
  */
 public class ProGuardOptions
 {
-    public Vector  libraryJars;
-    public Vector  inJars;
+    public List    libraryJars;
+    public List    inJars;
+    public List    resourceJars;
     public String  outJar;
-    public Vector  keepCommands;
-    public Vector  keepAttributes;
+    public List    keepCommands;
+    public List    keepAttributes;
     public String  newSourceFileAttribute;
     public String  printSeeds;
     public String  printUsage;

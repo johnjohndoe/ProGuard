@@ -1,8 +1,8 @@
-/* $Id: ReTrace.java,v 1.3 2002/11/03 13:30:13 eric Exp $
+/* $Id: ReTrace.java,v 1.9 2003/05/03 10:54:18 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
- * Copyright (C) 2002 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -28,8 +28,7 @@ import java.util.*;
  * Tool for de-obfuscating stack traces of applications that were obfuscated
  * with ProGuard.
  *
- * @author  Eric Lafortune
- * @created August 20, 2002
+ * @author Eric Lafortune
  */
 public class ReTrace
 {
@@ -44,8 +43,9 @@ public class ReTrace
     // The stack trace.
     private String obfuscatedExceptionClassName;
     private String originalExceptionClassName;
-    private String exceptionMessage;
-    private Vector stackTraceItems = new Vector();
+    private String exceptionPrefix = "";
+    private String exceptionSuffix = "";
+    private List stackTraceItems = new ArrayList();
 
 
     public ReTrace(boolean verbose,
@@ -98,6 +98,10 @@ public class ReTrace
                 }
 
                 line = line.trim();
+                if (line.length() == 0)
+                {
+                    continue;
+                }
 
                 // See if we can parse "Exception in thread "___" ___:___",
                 // containing the optional thread name, the exception class
@@ -108,22 +112,24 @@ public class ReTrace
                 if (line.startsWith("Exception in thread \""))
                 {
                     int quote_index = line.indexOf('"', 21);
-                    if (quote_index < 1)
+                    if (quote_index < 0)
                     {
                         continue;
                     }
 
-                    line = line.substring(quote_index+1).trim();
+                    exceptionPrefix = line.substring(0, quote_index+1) + " ";
+                    line            = line.substring(quote_index+1).trim();
                 }
 
                 int colonIndex = line.indexOf(':');
-                if (colonIndex < 1)
+                if (colonIndex >= 0)
                 {
-                    continue;
+                    exceptionSuffix = line.substring(colonIndex);
+                    line            = line.substring(0, colonIndex).trim();
                 }
 
-                obfuscatedExceptionClassName = line.substring(0, colonIndex).trim();
-                exceptionMessage             = line.substring(colonIndex+1).trim();
+                obfuscatedExceptionClassName = line;
+
                 break;
             }
 
@@ -175,7 +181,7 @@ public class ReTrace
                     0 :
                     Integer.parseInt(line.substring(colonIndex+1, closeParenthesisIndex).trim());
 
-                stackTraceItems.addElement(
+                stackTraceItems.add(
                     new MyStackTraceItem(obfuscatedClassName,
                                          obfuscatedMethodName,
                                          sourceFile,
@@ -205,11 +211,11 @@ public class ReTrace
     private void resolveStackTrace() throws IOException
     {
         // First put the stack trace items in easily accessible structures.
-        Hashtable obfuscatedMethods = new Hashtable();
+        Map obfuscatedMethods = new HashMap();
 
         for (int index = 0; index < stackTraceItems.size(); index++)
         {
-            MyStackTraceItem item = (MyStackTraceItem)stackTraceItems.elementAt(index);
+            MyStackTraceItem item = (MyStackTraceItem)stackTraceItems.get(index);
 
             // See if this class already has other methods on the stack trace.
             HashSet classStackTraceItems =
@@ -369,11 +375,11 @@ public class ReTrace
                              (firstLineNumber <= item.lineNumber &&
                               lastLineNumber  >= item.lineNumber)))
                         {
-                            // Create a Vector for storing solutions for this
+                            // Create a List for storing solutions for this
                             // method name.
                             if (item.originalMethodNames == null)
                             {
-                                item.originalMethodNames = new Vector();
+                                item.originalMethodNames = new ArrayList();
                             }
 
                             // Does the method have line numbers?
@@ -413,15 +419,16 @@ public class ReTrace
      */
     private void printStackTrace()
     {
+        // Get the original exception class name, if we found it.
         String exceptionClassName = originalExceptionClassName != null ?
             originalExceptionClassName :
             obfuscatedExceptionClassName;
 
-        System.out.println(obfuscatedExceptionClassName + ":" + exceptionMessage);
+        System.out.println(exceptionPrefix + exceptionClassName + exceptionSuffix);
 
         for (int index = 0; index < stackTraceItems.size(); index++)
         {
-            MyStackTraceItem item = (MyStackTraceItem)stackTraceItems.elementAt(index);
+            MyStackTraceItem item = (MyStackTraceItem)stackTraceItems.get(index);
 
             // Get the original class name, if we found it.
             String className = item.originalClassName != null ?
@@ -430,7 +437,7 @@ public class ReTrace
 
             // Get the first original method name, if we found it.
             String methodName = item.originalMethodNames != null ?
-                (String)item.originalMethodNames.elementAt(0) :
+                (String)item.originalMethodNames.get(0) :
                 item.obfuscatedMethodName;
 
             // Compose the source file with the line number, if any.
@@ -446,7 +453,7 @@ public class ReTrace
             if (item.originalMethodNames != null)
             {
                 for (int otherMethodNameIndex = 1; otherMethodNameIndex < item.originalMethodNames.size(); otherMethodNameIndex++) {
-                    String otherMethodName = (String)item.originalMethodNames.elementAt(otherMethodNameIndex);
+                    String otherMethodName = (String)item.originalMethodNames.get(otherMethodNameIndex);
                     System.out.println(spaces(className.length()+12) + otherMethodName);
                 }
             }
@@ -475,7 +482,7 @@ public class ReTrace
         public int     lineNumber;
 
         public String  originalClassName;
-        public Vector  originalMethodNames;
+        public List    originalMethodNames;
         public boolean uniqueSolution;
 
 

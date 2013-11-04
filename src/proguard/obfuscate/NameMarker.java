@@ -1,8 +1,8 @@
-/* $Id: NameMarker.java,v 1.8 2002/11/03 13:30:14 eric Exp $
+/* $Id: NameMarker.java,v 1.10 2003/04/28 17:24:21 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
- * Copyright (C) 2002 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -30,6 +30,7 @@ import proguard.classfile.visitor.*;
  * will remain unchanged in the obfuscation step.
  *
  * @see ClassFileObfuscator
+ * @see MemberInfoObfuscator
  *
  * @author Eric Lafortune
  */
@@ -66,8 +67,8 @@ public class NameMarker
     private void visitMemberInfo(ProgramClassFile programClassFile, ProgramMemberInfo programMemberInfo)
     {
         // Make sure the class member name will be kept.
-        MemberObfuscator.setNewMemberName(programMemberInfo,
-                                                programMemberInfo.getName(programClassFile));
+        MemberInfoObfuscator.setNewMemberName(programMemberInfo,
+                                              programMemberInfo.getName(programClassFile));
     }
 
 

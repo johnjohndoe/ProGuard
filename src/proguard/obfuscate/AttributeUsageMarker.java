@@ -1,8 +1,8 @@
-/* $Id: AttributeUsageMarker.java,v 1.11 2002/08/30 16:27:43 eric Exp $
+/* $Id: AttributeUsageMarker.java,v 1.13 2003/02/11 18:06:45 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
- * Copyright (C) 2002 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -85,11 +85,11 @@ public class AttributeUsageMarker
     /**
      * Specifies to keep optional attributes with the given names.
      */
-    public void keepAttributes(Vector attributeNames)
+    public void keepAttributes(List attributeNames)
     {
         for (int index = 0; index < attributeNames.size(); index++)
         {
-            keepAttribute((String)attributeNames.elementAt(index));
+            keepAttribute((String)attributeNames.get(index));
         }
     }
 

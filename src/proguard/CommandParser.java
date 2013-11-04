@@ -1,8 +1,8 @@
-/* $Id: CommandParser.java,v 1.25 2002/11/03 13:30:13 eric Exp $
+/* $Id: CommandParser.java,v 1.35 2003/03/10 19:46:58 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
- * Copyright (C) 2002 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -20,11 +20,11 @@
  */
 package proguard;
 
-import proguard.classfile.ClassConstants;
-import proguard.classfile.util.ClassUtil;
+import proguard.classfile.*;
+import proguard.classfile.util.*;
 
-import java.io.IOException;
-import java.util.Vector;
+import java.io.*;
+import java.util.*;
 
 
 /**
@@ -40,6 +40,7 @@ public class CommandParser
     private static final String INCLUDE_DIRECTIVE                           = "-include";
     private static final String LIBRARYJARS_OPTION                          = "-libraryjars";
     private static final String INJARS_OPTION                               = "-injars";
+    private static final String RESOURCEJARS_OPTION                         = "-resourcejars";
     private static final String OUTJAR_OPTION                               = "-outjar";
     private static final String KEEP_OPTION                                 = "-keep";
     private static final String KEEP_CLASS_MEMBERS_OPTION                   = "-keepclassmembers";
@@ -68,12 +69,12 @@ public class CommandParser
     private static final String ATTRIBUTE_SEPARATOR_KEYWORD = ",";
 
     private static final String JAR_SEPARATOR_KEY       = "path.separator";
-    private static final String JAR_SEPARATOR_KEYWORD   =
-       System.getProperties().getProperty(JAR_SEPARATOR_KEY);
+    private static final String JAR_SEPARATOR_KEYWORD   = System.getProperty(JAR_SEPARATOR_KEY);
 
     private static final char   OPEN_SYSTEM_PROPERTY    = '<';
     private static final char   CLOSE_SYSTEM_PROPERTY   = '>';
 
+    private static final String NEGATOR_KEYWORD         = "!";
     private static final String CLASS_KEYWORD           = "class";
     private static final String ANY_CLASS_KEYWORD       = "*";
     private static final String IMPLEMENTS_KEYWORD      = "implements";
@@ -132,6 +133,7 @@ public class CommandParser
             // Then options with or without arguments.
             else if (LIBRARYJARS_OPTION                         .startsWith(nextWord)) options.libraryJars                 = parseInJarsArgument(options.libraryJars);
             else if (INJARS_OPTION                              .startsWith(nextWord)) options.inJars                      = parseInJarsArgument(options.inJars);
+            else if (RESOURCEJARS_OPTION                        .startsWith(nextWord)) options.resourceJars                = parseInJarsArgument(options.resourceJars);
             else if (OUTJAR_OPTION                              .startsWith(nextWord)) options.outJar                      = parseOutJarArgument();
             else if (KEEP_OPTION                                .startsWith(nextWord)) options.keepCommands                = parseKeepArguments(options.keepCommands, true,  false, false);
             else if (KEEP_CLASS_MEMBERS_OPTION                  .startsWith(nextWord)) options.keepCommands                = parseKeepArguments(options.keepCommands, false, false, false);
@@ -175,13 +177,13 @@ public class CommandParser
     }
 
 
-    private Vector parseInJarsArgument(Vector inJars)
+    private List parseInJarsArgument(List inJars)
     throws ParseException, IOException
     {
-        // Create a new Vector if necessary.
+        // Create a new List if necessary.
         if (inJars == null)
         {
-            inJars = new Vector();
+            inJars = new ArrayList();
         }
 
         while (true)
@@ -189,7 +191,7 @@ public class CommandParser
             // Read the next jar name.
             readFileName("input jar name");
 
-            inJars.addElement(nextWord);
+            inJars.add(nextWord);
 
             // Read the separator, if any.
             readNextWord();
@@ -221,13 +223,13 @@ public class CommandParser
     }
 
 
-    private Vector parseKeepAttributesArguments(Vector keepAttributes)
+    private List parseKeepAttributesArguments(List keepAttributes)
     throws ParseException, IOException
     {
-        // Create a new Vector if necessary.
+        // Create a new List if necessary.
         if (keepAttributes == null)
         {
-            keepAttributes = new Vector();
+            keepAttributes = new ArrayList();
         }
 
         // Read the first attribute name.
@@ -250,7 +252,7 @@ public class CommandParser
         while (true)
         {
             // Add the attribute name to the list.
-            keepAttributes.addElement(nextWord);
+            keepAttributes.add(nextWord);
 
             // Read the separator, if any.
             readNextWord();
@@ -301,20 +303,20 @@ public class CommandParser
     }
 
 
-    private Vector parseKeepArguments(Vector  keepCommands,
+    private List parseKeepArguments(List    keepCommands,
                                       boolean markClassFiles,
                                       boolean markClassFilesConditionally,
                                       boolean onlyKeepNames)
     throws ParseException, IOException
     {
-        // Create a new Vector if necessary.
+        // Create a new List if necessary.
         if (keepCommands == null)
         {
-            keepCommands = new Vector();
+            keepCommands = new ArrayList();
         }
 
         // Read and add the keep command.
-        keepCommands.addElement(parseKeepArguments(markClassFiles,
+        keepCommands.add(parseKeepArguments(markClassFiles,
                                                  markClassFilesConditionally,
                                                  onlyKeepNames));
 
@@ -343,7 +345,7 @@ public class CommandParser
             }
 
             // Strip the negating sign, if any.
-            String strippedWord = nextWord.startsWith("!") ?
+            String strippedWord = nextWord.startsWith(NEGATOR_KEYWORD) ?
                 nextWord.substring(1) :
                 nextWord;
 
@@ -366,7 +368,7 @@ public class CommandParser
             if ((requiredSetClassAccessFlags &
                  requiredUnsetClassAccessFlags) != 0)
             {
-                throw new ParseException("Conflicting class access flags for '" + strippedWord +
+                throw new ParseException("Conflicting class access modifiers for '" + strippedWord +
                                          "' before " + reader.locationDescription());
             }
 
@@ -380,6 +382,7 @@ public class CommandParser
         }
 
         readNextWord("class name or interface name");
+        checkJavaIdentifier("class name or interface name");
 
         // Parse the class name part.
         String externalClassName = nextWord;
@@ -398,7 +401,8 @@ public class CommandParser
             if (IMPLEMENTS_KEYWORD.equals(nextWord) ||
                 EXTENDS_KEYWORD.equals(nextWord))
             {
-                readNextWord("class name or interface");
+                readNextWord("class name or interface name");
+                checkJavaIdentifier("class name or interface name");
                 extendsClassName = ClassUtil.internalClassName(nextWord);
 
                 readNextWord();
@@ -411,6 +415,7 @@ public class CommandParser
             if (AS_KEYWORD.equals(nextWord))
             {
                 readNextWord("new class name");
+                checkJavaIdentifier("new class name");
                 asClassName = ClassUtil.internalClassName(nextWord);
 
                 readNextWord();
@@ -490,70 +495,124 @@ public class CommandParser
                         requiredUnsetMemberAccessFlags |= accessFlag;
                     }
 
+                    // Make sure the user doesn't try to set and unset the same
+                    // access flags simultaneously.
                     if ((requiredSetMemberAccessFlags &
                          requiredUnsetMemberAccessFlags) != 0)
                     {
-                        throw new ParseException("Conflicting class member access flags for '" + strippedWord +
-                                                 "' before " + reader.locationDescription());
+                        throw new ParseException("Conflicting class member access modifiers for " +
+                                                 reader.locationDescription());
                     }
                 }
 
-                // Parse the class member type and descriptor part.
-                if (ANY_CLASS_MEMBER_KEYWORD.equals(nextWord))
+                // Parse the class member type and name part.
+
+                // Did we get a special wildcard?
+                if (ANY_CLASS_MEMBER_KEYWORD.equals(nextWord) ||
+                    ANY_FIELD_KEYWORD       .equals(nextWord) ||
+                    ANY_METHOD_KEYWORD      .equals(nextWord))
                 {
-                    keepCommand.keepField(requiredSetMemberAccessFlags,
-                                          requiredUnsetMemberAccessFlags,
-                                          null,
-                                          null,
-                                          null);
-                    keepCommand.keepMethod(requiredSetMemberAccessFlags,
-                                           requiredUnsetMemberAccessFlags,
-                                           null,
-                                           null,
-                                           null);
-                }
-                else if (ANY_FIELD_KEYWORD.equals(nextWord))
-                {
-                    keepCommand.keepField(requiredSetMemberAccessFlags,
-                                          requiredUnsetMemberAccessFlags,
-                                          null,
-                                          null,
-                                          null);
-                }
-                else if (ANY_METHOD_KEYWORD.equals(nextWord))
-                {
-                    keepCommand.keepMethod(requiredSetMemberAccessFlags,
-                                           requiredUnsetMemberAccessFlags,
-                                           null,
-                                           null,
-                                           null);
+                    // Act acording to the type of wildcard..
+                    if (ANY_CLASS_MEMBER_KEYWORD.equals(nextWord))
+                    {
+                        checkFieldAccessFlags(requiredSetMemberAccessFlags,
+                                              requiredUnsetMemberAccessFlags);
+                        checkMethodAccessFlags(requiredSetMemberAccessFlags,
+                                               requiredUnsetMemberAccessFlags);
+
+                        keepCommand.keepField(requiredSetMemberAccessFlags,
+                                              requiredUnsetMemberAccessFlags,
+                                              null,
+                                              null,
+                                              null);
+                        keepCommand.keepMethod(requiredSetMemberAccessFlags,
+                                               requiredUnsetMemberAccessFlags,
+                                               null,
+                                               null,
+                                               null);
+                    }
+                    else if (ANY_FIELD_KEYWORD.equals(nextWord))
+                    {
+                        checkFieldAccessFlags(requiredSetMemberAccessFlags,
+                                              requiredUnsetMemberAccessFlags);
+
+                        keepCommand.keepField(requiredSetMemberAccessFlags,
+                                              requiredUnsetMemberAccessFlags,
+                                              null,
+                                              null,
+                                              null);
+                    }
+                    else if (ANY_METHOD_KEYWORD.equals(nextWord))
+                    {
+                        checkMethodAccessFlags(requiredSetMemberAccessFlags,
+                                               requiredUnsetMemberAccessFlags);
+
+                        keepCommand.keepMethod(requiredSetMemberAccessFlags,
+                                               requiredUnsetMemberAccessFlags,
+                                               null,
+                                               null,
+                                               null);
+                    }
+
+                    // We still have to read the closing separator.
+                    readNextWord("separator '" + SEPARATOR_KEYWORD + "'");
+
+                    if (!SEPARATOR_KEYWORD.equals(nextWord))
+                    {
+                        throw new ParseException("Expecting separator '" + SEPARATOR_KEYWORD +
+                                                 "' before " + reader.locationDescription());
+                    }
                 }
                 else
                 {
+                    // Make sure we have a proper type.
+                    checkJavaIdentifier("class member type");
                     String type = nextWord;
+
                     readNextWord("class member name");
                     String name = nextWord;
 
-                    // Is the type actually a constructor?
-                    if (OPEN_ARGUMENTS_KEYWORD.equals(nextWord) &&
-                        (type.equals(ClassConstants.INTERNAL_METHOD_NAME_INIT) ||
-                         type.equals(externalClassName) ||
-                         type.equals(ClassUtil.externalShortClassName(externalClassName))))
+                    // Did we get just one word before the opening parenthesis?
+                    if (OPEN_ARGUMENTS_KEYWORD.equals(name))
                     {
+                        // This must be a constructor then.
+                        // Make sure the type is a proper constructor name.
+                        if (!(type.equals(ClassConstants.INTERNAL_METHOD_NAME_INIT) ||
+                              type.equals(externalClassName) ||
+                              type.equals(ClassUtil.externalShortClassName(externalClassName))))
+                        {
+                            throw new ParseException("Expecting type and name " +
+                                                     "instead of just '" + type +
+                                                     "' before " + reader.locationDescription());
+                        }
+
+                        // Assign the fixed constructor type and name.
                         type = ClassConstants.EXTERNAL_TYPE_VOID;
                         name = ClassConstants.INTERNAL_METHOD_NAME_INIT;
                     }
                     else
                     {
+                        // It's not a constructor.
+                        // Make sure we have a proper name.
+                        checkJavaIdentifier("class member name");
+
+                        // Read the opening parenthesis or the separating
+                        // semi-colon.
                         readNextWord("opening '" + OPEN_ARGUMENTS_KEYWORD +
                                      "' or separator '" + SEPARATOR_KEYWORD + "'");
                     }
 
+                    // Are we looking at a field, a method, or something else?
                     if (SEPARATOR_KEYWORD.equals(nextWord))
                     {
-                        // We have a field descriptor.
+                        // It's a field.
+                        checkFieldAccessFlags(requiredSetMemberAccessFlags,
+                                              requiredUnsetMemberAccessFlags);
+
+                        // We already have a field descriptor.
                         String descriptor = ClassUtil.internalType(type);
 
+                        // Keep the field.
                         keepCommand.keepField(requiredSetMemberAccessFlags,
                                               requiredUnsetMemberAccessFlags,
                                               name,
@@ -562,27 +621,27 @@ public class CommandParser
                     }
                     else if (OPEN_ARGUMENTS_KEYWORD.equals(nextWord))
                     {
+                        // It's a method.
+                        checkMethodAccessFlags(requiredSetMemberAccessFlags,
+                                               requiredUnsetMemberAccessFlags);
+
+                        // Parse the method arguments.
                         String descriptor =
                             ClassUtil.internalMethodDescriptor(type,
                                                                parseArguments());
 
+                        // Keep the method.
                         keepCommand.keepMethod(requiredSetMemberAccessFlags,
                                                requiredUnsetMemberAccessFlags,
                                                name,
                                                descriptor,
                                                null);
                     }
-                }
-
-                // In all but one of the above cases, the separator still
-                // has to be read.
-                if (!SEPARATOR_KEYWORD.equals(nextWord))
-                {
-                    readNextWord("separator '" + SEPARATOR_KEYWORD + "'");
-
-                    if (!SEPARATOR_KEYWORD.equals(nextWord))
+                    else
                     {
-                        throw new ParseException("Expecting separator '" + SEPARATOR_KEYWORD +
+                        // It doesn't look like a field or a method.
+                        throw new ParseException("Expecting opening '" + OPEN_ARGUMENTS_KEYWORD +
+                                                 "' or separator '" + SEPARATOR_KEYWORD +
                                                  "' before " + reader.locationDescription());
                     }
                 }
@@ -593,10 +652,14 @@ public class CommandParser
     }
 
 
-    private Vector parseArguments()
+    /**
+     * Reads method arguments, starting after the opening parenthesis and ending
+     * after the closing parenthesis and the separator.
+     */
+    private List parseArguments()
     throws ParseException, IOException
     {
-        Vector arguments = new Vector();
+        List arguments = new ArrayList();
 
         while (true)
         {
@@ -608,7 +671,8 @@ public class CommandParser
                 break;
             }
 
-            arguments.addElement(nextWord);
+            checkJavaIdentifier("argument type");
+            arguments.add(nextWord);
 
             readNextWord("separating '" + ARGUMENT_SEPARATOR_KEYWORD + "'" +
                          " or closing '" + CLOSE_ARGUMENTS_KEYWORD + "'");;
@@ -624,6 +688,15 @@ public class CommandParser
                                          "' or closing '" + CLOSE_ARGUMENTS_KEYWORD +
                                          "' before " + reader.locationDescription());
             }
+        }
+
+        // Read the separator after the closing parenthesis.
+        readNextWord("separator '" + SEPARATOR_KEYWORD + "'");
+
+        if (!SEPARATOR_KEYWORD.equals(nextWord))
+        {
+            throw new ParseException("Expecting separator '" + SEPARATOR_KEYWORD +
+                                     "' before " + reader.locationDescription());
         }
 
         return arguments;
@@ -703,6 +776,73 @@ public class CommandParser
         return nextWord == null ||
                nextWord.startsWith(OPTION_PREFIX) ||
                nextWord.equals(AT_DIRECTIVE);
+    }
+
+
+    private void checkJavaIdentifier(String expectedDescription)
+    throws ParseException
+    {
+        if (!isJavaIdentifier(nextWord))
+        {
+            throw new ParseException("Expecting " + expectedDescription +
+                                     " before " + reader.locationDescription());
+        }
+    }
+
+
+    private boolean isJavaIdentifier(String aWord)
+    {
+        for (int index = 0; index < aWord.length(); index++)
+        {
+            char c = aWord.charAt(index);
+            if (!(Character.isJavaIdentifierPart(c) ||
+                  c == '.' ||
+                  c == '[' ||
+                  c == ']' ||
+                  c == '<' ||
+                  c == '>' ||
+                  c == '*' ||
+                  c == '?'))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+
+    /**
+     * Makes sure the given access flags are valid field access flags.
+     */
+    private void checkFieldAccessFlags(int requiredSetMemberAccessFlags,
+                                       int requiredUnsetMemberAccessFlags)
+    throws ParseException
+    {
+        if (((requiredSetMemberAccessFlags |
+              requiredUnsetMemberAccessFlags) &
+            ~ClassConstants.VALID_INTERNAL_ACC_FIELD) != 0)
+        {
+            throw new ParseException("Invalid method access modifier for field before " +
+                                     reader.locationDescription());
+        }
+    }
+
+
+    /**
+     * Makes sure the given access flags are valid method access flags.
+     */
+    private void checkMethodAccessFlags(int requiredSetMemberAccessFlags,
+                                        int requiredUnsetMemberAccessFlags)
+    throws ParseException
+    {
+        if (((requiredSetMemberAccessFlags |
+              requiredUnsetMemberAccessFlags) &
+            ~ClassConstants.VALID_INTERNAL_ACC_METHOD) != 0)
+        {
+            throw new ParseException("Invalid field access modifier for method before " +
+                                     reader.locationDescription());
+        }
     }
 
 

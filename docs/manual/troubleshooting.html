@@ -14,20 +14,37 @@
 
 <h3>Problems while processing</h3>
 
-ProGuard may print out some notes:
+ProGuard may print out some notes and non-fatal warnings:
 <ul>
 <li>If your code contains <b>class casts of dynamically created class
     instances</b>, like
     "<code>(MyClass)Class.forName(variable).newInstance()</code>", ProGuard
     will list them. Depending on your application, you may need to keep the
-    mentioned classes with something like "<code>-keep class MyClass</code>",
-    or their implementations with something like "<code>-keep class *
+    mentioned classes with an option like "<code>-keep class MyClass</code>",
+    or their implementations with an option like "<code>-keep class *
     implements MyClass</code>". You can switch off these notes by specifying
     the <code>-dontnote</code> option.
+    <p>
+
+<li>If you get a warning about <b>duplicate input classes</b>, your input jars
+    or library jars contain multiple definitions of the same class. ProGuard
+    continues processing as usual, only considering the first definition. The
+    warning may be an indication of some problem though, so it's advisable to
+    remove the duplicates. There is no option to switch off these warnings.
+    <p>
+
+<li>If you get a warning about <b>duplicate resource files or zip entries</b>,
+    your input jars or resource jars contain multiple resource files with the
+    same name. ProGuard continues copying the resource files as usual,
+    skipping any files with previously used names. Once more, the warning may
+    be an indication of some problem though, so it's advisable to remove the
+    duplicates. There is no option to switch off these warnings.
+
 </ul>
 <p>
 
-ProGuard may terminate with warnings in a couple of cases:
+ProGuard may terminate when it encounters parsing errors or I/O errors, or
+some more serious warnings:
 <ul>
 <li>If you get an error message about <b>missing <code>-keep</code>
     options</b>, you either forgot them or you mistyped the class names.
@@ -76,6 +93,16 @@ Should ProGuard crash while processing your application:
 If ProGuard runs fine, but your processed application doesn't work, there
 might be several reasons:
 <ul>
+
+<li>If it looks like <b>a whole bunch of classes has disappeared</b> from your
+    output jar, you may have unpacked the output jar on a platform with a
+    case-insensitive file system, such as Windows. Unpacking tools often let
+    class files with similar lower-case and upper-case names overwrite each
+    other. If you really have to unpack your jar and you can't switch to a
+    different operating system, you could consider using ProGuard's
+    <code>-dontusemixedcaseclassnames</code> option.
+    <p>
+
 <li>If you get a <code><b>NoClassDefFoundError</b></code>, your class path is
     probably incorrect. It should at least contain all library jars and, of
     course, your processed program jar.
@@ -116,13 +143,15 @@ might be several reasons:
 <li>If you get a <code><b>NoSuchMethodError</b></code> or an
     <code><b>AbstractMethodError</b></code>, perhaps there's a bug in ProGuard
     (gasp!). If so, please contact me, preferably with the simplest example on
-    which you can find ProGuard to fail. </ul>
+    which you can find ProGuard to fail.
+
+</ul>
 <p>
 
 <hr>
 <address>
-Copyright &copy; 2002 <a href="http://www.graphics.cornell.edu/~eric/">Eric
-Lafortune</a>.
+Copyright &copy; 2002-2003
+<a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>
 </html>

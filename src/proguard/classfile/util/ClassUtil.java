@@ -1,8 +1,8 @@
-/* $Id: ClassUtil.java,v 1.12 2003/01/09 19:37:16 eric Exp $
+/* $Id: ClassUtil.java,v 1.15 2003/02/11 18:06:44 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
- * Copyright (C) 2002 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -20,10 +20,10 @@
  */
 package proguard.classfile.util;
 
-import proguard.classfile.ClassConstants;
+import proguard.classfile.*;
 
-import java.io.IOException;
-import java.util.Vector;
+import java.io.*;
+import java.util.*;
 
 
 /**
@@ -168,7 +168,7 @@ public class ClassUtil
 
     /**
      * Returns the internal element type of a given internal array type.
-     * @param internalType the internal array type,
+     * @param internalArrayType the internal array type,
      *                     e.g. "<code>[[Ljava/lang/Object;</code>" or
      *                          "<code>[I</code>".
      * @return the internal type of the array elements,
@@ -184,7 +184,7 @@ public class ClassUtil
 
     /**
      * Returns the internal class name of a given internal class type.
-     * @param internalType the internal class type,
+     * @param internalClassType the internal class type,
      *                     e.g. "<code>Ljava/lang/Object;</code>".
      * @return the internal class name,
      *                     e.g. "<code>java/lang/Object</code>".
@@ -199,7 +199,7 @@ public class ClassUtil
      * Returns internal class name of any given internal type.
      * The returned class name for primitive array types is
      * "<code>java/lang/Object</code>".
-     * @param internalType the internal class type,
+     * @param internalClassType the internal class type,
      *                     e.g. "<code>Ljava/lang/Object;</code>" or
      *                          "<code>[[I</code>".
      * @return the internal class name,
@@ -392,24 +392,24 @@ public class ClassUtil
 
 
     /**
-     * Converts the given external method return type and Vector of arguments to
+     * Converts the given external method return type and List of arguments to
      * an internal method descriptor.
      * @param externalReturnType the external method return type,
      *                                       e.g. "boolean".
-     * @param externalMemberNameAndArguments the external method arguments,
-     *                                       e.g. "<code>myMethod(int,int)</code>".
+     * @param externalArguments the external method arguments,
+     *                                       e.g. "<code>{ "int", "int" }</code>".
      * @return the internal method descriptor,
      *                                       e.g. "(II)Z".
      */
     public static String internalMethodDescriptor(String externalReturnType,
-                                                  Vector externalArguments)
+                                                  List   externalArguments)
     {
         StringBuffer internalMethodDescriptor = new StringBuffer();
         internalMethodDescriptor.append(ClassConstants.INTERNAL_METHOD_ARGUMENTS_OPEN);
 
         for (int index = 0; index < externalArguments.size(); index++)
         {
-            internalMethodDescriptor.append(internalType((String)externalArguments.elementAt(index)));
+            internalMethodDescriptor.append(internalType((String)externalArguments.get(index)));
         }
 
         internalMethodDescriptor.append(ClassConstants.INTERNAL_METHOD_ARGUMENTS_CLOSE);
@@ -629,7 +629,6 @@ public class ClassUtil
      * an external method return type and name.
      * @param internalClassName        the internal name of the class of the method,
      *                                 e.g. "<code>mypackage/MyClass</code>".
-     * @param accessFlags              the access flags of the method.
      * @param internalMethodName       the internal method name,
      *                                 e.g. "<code>myMethod</code>" or
      *                                      "<code>&lt;init&gt;</code>".

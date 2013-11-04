@@ -1,8 +1,8 @@
-/* $Id: AllFieldVisitor.java,v 1.6 2002/08/02 16:40:28 eric Exp $
+/* $Id: AllFieldVisitor.java,v 1.8 2003/04/28 17:24:21 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
- * Copyright (C) 2002 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -24,7 +24,8 @@ import proguard.classfile.*;
 
 
 /**
- * This ClassFileVisitor visits all ProgramMemberInfo objects referring to fields.
+ * This ClassFileVisitor lets a given MemberInfoVisitor visit all FieldMemberInfo
+ * objects of the class files it visits.
  *
  * @author Eric Lafortune
  */

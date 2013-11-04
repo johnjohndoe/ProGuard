@@ -18,24 +18,24 @@ More compact jar files also means smaller storage requirements, faster
 transfer of applets across networks, faster loading, and smaller memory
 footprints.
 <p>
-Advantages of <b>ProGuard</b> compared to other Java obfuscators are compact
-template-based configuration, memory efficiency, and speed:
-<ul>
-<li><b>ProGuard</b> is configured using intuitive command line options or
-    configuration files. For instance, the following configuration option
-    preserves all applets in a jar:
+<b>ProGuard</b>'s main advantage compared to other Java obfuscators is
+probably its compact template-based configuration. A few intuitive command
+line options or a simple configuration file are usually sufficient. For
+instance, the following configuration option preserves all applets in a jar:
 <pre>
-  -keep public class * extends java.applet.Applet
+    -keep public class * extends java.applet.Applet
 </pre>
-    The user manual explains all available options and shows more examples of
-    this powerful configuration style.
+The user manual explains all available options and shows more examples of this
+powerful configuration style.
 <p>
-<li><b>ProGuard</b> only takes a few minutes to process programs and libraries
-    of several megabytes. The results section presents actual figures for a
-    number of applications.
-</ul>
+<b>ProGuard</b> is fast. It only takes a few seconds to process programs and libraries
+of several megabytes. The results section presents actual figures for a
+number of applications.
 <p>
-The following sections provide in-depth views of <b>ProGuard</b>:
+<b>ProGuard</b> also comes with plugins for Ant and for the J2ME Wireless
+Toolkit.
+<p>
+The following sections provide more detailed information:
 <ul>
 <li><a href="main.html">Main</a>: this overview page.
 <li><a href="results.html">Results</a>: some results obtained with
@@ -61,8 +61,8 @@ The following sections provide in-depth views of <b>ProGuard</b>:
 
 <hr>
 <address>
-Copyright &copy; 2002 <a href="http://www.graphics.cornell.edu/~eric/">Eric
-Lafortune</a>.
+Copyright &copy; 2002-2003
+<a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>
 </html>

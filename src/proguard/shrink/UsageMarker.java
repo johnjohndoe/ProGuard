@@ -1,8 +1,8 @@
-/* $Id: UsageMarker.java,v 1.17 2003/01/06 19:37:48 eric Exp $
+/* $Id: UsageMarker.java,v 1.18 2003/02/09 15:22:29 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
- * Copyright (C) 2002 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free

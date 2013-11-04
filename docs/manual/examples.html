@@ -105,6 +105,8 @@ These options shrink and obfuscate the J2ME midlet
 -libraryjars /usr/local/java/wtk104/lib/midpapi.zip
 -injars      in.jar
 -outjar      out.jar
+-overloadaggressively
+-defaultpackage ''
 
 -keep public class mypackage.MyMIDlet
 </pre>
@@ -189,6 +191,8 @@ These options shrink and obfuscate all public J2ME midlets in
 -libraryjars /wtk104/lib/midpapi.zip
 -injars      in.jar
 -outjar      out.jar
+-overloadaggressively
+-defaultpackage ''
 -printseeds
 
 -keep public class * extends javax.microedition.midlet.MIDlet
@@ -258,8 +262,8 @@ code:
 }
 
 -keepclassmembernames class * {
-    static Class class$(java.lang.String);
-    static Class class$(java.lang.String, boolean);
+    java.lang.Class class$(java.lang.String);
+    java.lang.Class class$(java.lang.String, boolean);
 }
 
 -keepclasseswithmembernames class * {
@@ -270,8 +274,8 @@ code:
     static final long serialVersionUID;
     private void writeObject(java.io.ObjectOutputStream);
     private void readObject(java.io.ObjectInputStream);
-    Object writeReplace();
-    Object readResolve();
+    java.lang.Object writeReplace();
+    java.lang.Object readResolve();
 }
 </pre>
 </td></tr></table>
@@ -281,14 +285,13 @@ library. Only if there are any other non-public classes or methods that are
 invoked dynamically, they should be specified using additional
 <code>-keep</code> directives.
 <p>
-Note the use of <code>-keepclassmembernames</code> for the static
-<code>class$</code> methods. These methods are inserted by the
-<code>javac</code> compiler and the <code>jikes</code> compiler respectively,
-to implement the <code>.class</code> construct. ProGuard will automatically
-detect them and deal with them; no problem at this point. However, ProGuard
-may be used again to shrink an application that uses this obfuscated library.
-Without having preserved the method names, the automatic detection would fail
-the second time around.
+Note the use of <code>-keepclassmembernames</code> for the <code>class$</code>
+methods. These methods are inserted by the <code>javac</code> compiler and the
+<code>jikes</code> compiler respectively, to implement the <code>.class</code>
+construct. ProGuard will automatically detect them and deal with them; no
+problem at this point. However, ProGuard may be used again to shrink an
+application that uses this obfuscated library. Without having preserved the
+method names, the automatic detection would fail the second time around.
 <p>
 We've added some directives for keeping the "Deprecated" attribute, for <a
 href="#stacktrace">useful stack traces</a>, for <a href="#native">native
@@ -334,8 +337,8 @@ may require special attention:
 -keepclassmembers class * implements java.io.Serializable {
     private void writeObject(java.io.ObjectOutputStream);
     private void readObject(java.io.ObjectInputStream);
-    Object writeReplace();
-    Object readResolve();
+    java.lang.Object writeReplace();
+    java.lang.Object readResolve();
 }
 </pre>
 </td></tr></table>
@@ -364,8 +367,8 @@ may require special attention:
     !static !transient &lt;fields&gt;;
     private void writeObject(java.io.ObjectOutputStream);
     private void readObject(java.io.ObjectInputStream);
-    Object writeReplace();
-    Object readResolve();
+    java.lang.Object writeReplace();
+    java.lang.Object readResolve();
 }
 </pre>
 </td></tr></table>
@@ -400,8 +403,8 @@ may require special attention:
     !private &lt;methods&gt;;
     private void writeObject(java.io.ObjectOutputStream);
     private void readObject(java.io.ObjectInputStream);
-    Object writeReplace();
-    Object readResolve();
+    java.lang.Object writeReplace();
+    java.lang.Object readResolve();
 }
 </pre>
 </td></tr></table>
@@ -513,8 +516,8 @@ so we use the <code>-dontnote</code> option.
 
 <hr>
 <address>
-Copyright &copy; 2002 <a href="http://www.graphics.cornell.edu/~eric/">Eric
-Lafortune</a>.
+Copyright &copy; 2002-2003
+<a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>
 </html>

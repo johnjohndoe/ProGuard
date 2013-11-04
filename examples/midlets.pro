@@ -11,9 +11,21 @@
 -outjar      out.jar
 
 
+# Allow methods with the same signature, except for the return type,
+# to get the same obfuscation name.
+
+-overloadaggressively
+
+
+# Put all obfuscated classes into the nameless root package.
+
+-defaultpackage ''
+
+
+
 # Preserve all public midlets.
 
--keep public class * extends javax.microedition.MIDlet
+-keep public class * extends javax.microedition.midlet.MIDlet
 
 
 # Print out a list of what we're preserving.

@@ -47,17 +47,23 @@
 <tr>
 <td valign="top"><code><b>-libraryjars</b></code>
     <i>jarname</i>[<b>:</b>...]</td>
-<td>Specifies the library jars.</td>
+<td>Specifies the library jars (or directories).</td>
 </tr>
 
 <tr>
 <td valign="top"><code><b>-injars</b></code> <i>jarname</i>[<b>:</b>...]</td>
-<td>Specifies the program jars.</td>
+<td>Specifies the program jars (or directories).</td>
+</tr>
+
+<tr>
+<td valign="top"><code><b>-resourcejars</b></code>
+    <i>jarname</i>[<b>:</b>...]</td>
+<td>Specifies any resource jars (or directories).</td>
 </tr>
 
 <tr>
 <td valign="top"><code><b>-outjar</b></code> <i>jarname</i></td>
-<td>Specifies the name of the output jar.</td>
+<td>Specifies the name of the output jar (or directory).</td>
 </tr>
 
 <tr>
@@ -261,20 +267,23 @@ Notes:
 <p>
 Notes:
 <ul>
-<li><i>classname</i> must always be specfied in full, i.e. including its
-    package name.
-<li><i>classname</i> can contain wildcards: '<code><b>?</b></code>' for a
+<li>Class names must always be specfied in full, i.e. including their
+    package names.
+<li>Class names in <i>classname</i>, <i>returntype</i>, and
+    <i>argumenttype</i> can contain wildcards: '<code><b>?</b></code>' for a
     single character, '<code><b>*</b></code>' for any number of characters
     (but not the package separator), and '<code><b>**</b></code>' for any
     number of (any) characters.
+<li><i>fieldname</i> and <i>methodname</i> can contain wildcards as well:
+    '<code><b>?</b></code>' for a single character and '<code><b>*</b></code>'
+    for any number of characters.
 </ul>
 <p>
 
 <hr>
 <address>
-Copyright &copy; 2002 <a href="http://www.graphics.cornell.edu/~eric/">Eric
-Lafortune</a>.
+Copyright &copy; 2002-2003
+<a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>
 </html>
-

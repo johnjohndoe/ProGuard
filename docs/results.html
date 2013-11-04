@@ -9,11 +9,11 @@
 
 <center><h2>Results</h2></center>
 
-<b>ProGuard</b> can shrink jars significantly. The gains of removing dead
-code obviously depend on the original code. If you're using libraries, you'll
-really benefit from the shrinking phase. The further gains of removing debug
-code and obfuscating (typically replacing long names by short names), are on
-the order of 20%.
+<b>ProGuard</b> shrinks and obfuscates jars quickly and effectively. The gains
+of removing dead code obviously depend on the original code. If you're using
+libraries, you'll really benefit from the shrinking phase. The further gains
+of removing debug code and obfuscating (typically replacing long names by
+short names), are on the order of 20%.
 <p>
 The table below presents some typical results:
 <p>
@@ -31,80 +31,94 @@ The table below presents some typical results:
 </tr>
 
 <tr>
-<td bgcolor="#EEEEFF"><b>ProGuard</b> itself</td>
-<td bgcolor="#EEEEFF" align="center">144 K</td>
-<td bgcolor="#EEEEFF" align="center">132 K</td>
-<td bgcolor="#EEEEFF" align="center">90 K</td>
-<td bgcolor="#EEEEFF" align="center">37 %</td>
-<td bgcolor="#EEEEFF" align="center">28 s</td>
-<td bgcolor="#EEEEFF" align="center">17 M</td>
+<td bgcolor="#EEEEFF"><a target="other" href="http://www.gnu.org/software/classpath/">ClassPath</a>, the GNU runtime library</td>
+<td bgcolor="#EEEEFF" align="center">2.2 M</td>
+<td bgcolor="#EEEEFF" align="center">2.2 M</td>
+<td bgcolor="#EEEEFF" align="center">1.9 M</td>
+<td bgcolor="#EEEEFF" align="center">13 %</td>
+<td bgcolor="#EEEEFF" align="center">22 s</td>
+<td bgcolor="#EEEEFF" align="center">30 M</td>
+</tr>
+
+<tr>
+<td bgcolor="#EEEEFF"><a target="other" href="http://java.sun.com/j2me/">Worm</a>, a sample midlet from Sun's J2ME</td>
+<td bgcolor="#EEEEFF" align="center">9.9 K</td>
+<td bgcolor="#EEEEFF" align="center">9.5 K</td>
+<td bgcolor="#EEEEFF" align="center">8.3 K</td>
+<td bgcolor="#EEEEFF" align="center">16 %</td>
+<td bgcolor="#EEEEFF" align="center">1 s</td>
+<td bgcolor="#EEEEFF" align="center">9 M</td>
 </tr>
 
 <tr>
 <td bgcolor="#EEEEFF"><a target="other" href="http://www.clarkware.com/software/JDepend.html">JDepend</a>, a Java quality metrics tool</td>
-<td bgcolor="#EEEEFF" align="center">66 K</td>
-<td bgcolor="#EEEEFF" align="center">42 K</td>
+<td bgcolor="#EEEEFF" align="center">60 K</td>
+<td bgcolor="#EEEEFF" align="center">40 K</td>
 <td bgcolor="#EEEEFF" align="center">32 K</td>
-<td bgcolor="#EEEEFF" align="center">51 %</td>
-<td bgcolor="#EEEEFF" align="center">23 s</td>
-<td bgcolor="#EEEEFF" align="center">14 M</td>
+<td bgcolor="#EEEEFF" align="center">46 %</td>
+<td bgcolor="#EEEEFF" align="center">5 s</td>
+<td bgcolor="#EEEEFF" align="center">16 M</td>
+</tr>
+
+<tr>
+<td bgcolor="#EEEEFF"><b>ProGuard</b> itself</td>
+<td bgcolor="#EEEEFF" align="center">182 K</td>
+<td bgcolor="#EEEEFF" align="center">151 K</td>
+<td bgcolor="#EEEEFF" align="center">92 K</td>
+<td bgcolor="#EEEEFF" align="center">49 %</td>
+<td bgcolor="#EEEEFF" align="center">6 s</td>
+<td bgcolor="#EEEEFF" align="center">18 M</td>
+</tr>
+
+<tr>
+<td bgcolor="#EEEEFF"><a target="other" href="http://jakarta.apache.org/tomcat/index.html">Tomcat</a>, the Apache servlet container</td>
+<td bgcolor="#EEEEFF" align="center">1.2 M</td>
+<td bgcolor="#EEEEFF" align="center">542 K</td>
+<td bgcolor="#EEEEFF" align="center">377 K</td>
+<td bgcolor="#EEEEFF" align="center">68 %</td>
+<td bgcolor="#EEEEFF" align="center">10 s</td>
+<td bgcolor="#EEEEFF" align="center">28 M</td>
 </tr>
 
 <tr>
 <td bgcolor="#EEEEFF"><a target="other" href="http://www.kclee.com/clemens/java/javancss/">JavaNCSS</a>, a Java source metrics tool</td>
-<td bgcolor="#EEEEFF" align="center">534 K</td>
-<td bgcolor="#EEEEFF" align="center">209 K</td>
-<td bgcolor="#EEEEFF" align="center">148 K</td>
-<td bgcolor="#EEEEFF" align="center">72 %</td>
-<td bgcolor="#EEEEFF" align="center">35 s</td>
-<td bgcolor="#EEEEFF" align="center">21 M</td>
+<td bgcolor="#EEEEFF" align="center">640 K</td>
+<td bgcolor="#EEEEFF" align="center">248 K</td>
+<td bgcolor="#EEEEFF" align="center">168 K</td>
+<td bgcolor="#EEEEFF" align="center">74 %</td>
+<td bgcolor="#EEEEFF" align="center">9 s</td>
+<td bgcolor="#EEEEFF" align="center">23 M</td>
 </tr>
 
 <tr>
-<td bgcolor="#EEEEFF"><a target="other" href="http://www.luciad.com/">LuciadMap</a>, a Java GIS library</td>
-<td bgcolor="#EEEEFF" align="center">3.2 M</td>
-<td bgcolor="#EEEEFF" align="center">2.9 M</td>
+<td bgcolor="#EEEEFF"><a target="other" href="http://ant.apache.org/">Ant</a>, the Apache build tool</td>
 <td bgcolor="#EEEEFF" align="center">2.4 M</td>
-<td bgcolor="#EEEEFF" align="center">25 %</td>
-<td bgcolor="#EEEEFF" align="center">2 min</td>
-<td bgcolor="#EEEEFF" align="center">48 M</td>
-</tr>
-
-<tr>
-<td bgcolor="#EEEEFF">A sample applet using LuciadMap</td>
-<td bgcolor="#EEEEFF" align="center">3.2 M</td>
-<td bgcolor="#EEEEFF" align="center">705 K</td>
-<td bgcolor="#EEEEFF" align="center">621 K</td>
-<td bgcolor="#EEEEFF" align="center">81 %</td>
-<td bgcolor="#EEEEFF" align="center">1.2 min</td>
-<td bgcolor="#EEEEFF" align="center">44 M</td>
-</tr>
-
-<tr>
-<td bgcolor="#EEEEFF"><a target="other" href="http://www.luciad.com/">LuciadiCAD</a>, a Java CAD Viewer</td>
-<td bgcolor="#EEEEFF" align="center">3.6 M</td>
-<td bgcolor="#EEEEFF" align="center">959 K</td>
-<td bgcolor="#EEEEFF" align="center">792 K</td>
-<td bgcolor="#EEEEFF" align="center">78 %</td>
-<td bgcolor="#EEEEFF" align="center">1.5 min</td>
-<td bgcolor="#EEEEFF" align="center">51 M</td>
+<td bgcolor="#EEEEFF" align="center">280 K</td>
+<td bgcolor="#EEEEFF" align="center">212 K</td>
+<td bgcolor="#EEEEFF" align="center">91 %</td>
+<td bgcolor="#EEEEFF" align="center">11 s</td>
+<td bgcolor="#EEEEFF" align="center">38 M</td>
 </tr>
 
 </table>
 <p>
-Results were measured with ProGuard 1.2 on a 500 MHz Pentium III, using Sun
-JDK 1.3.1 in Debian Linux. The program sizes include companion libraries.
+Results were measured with ProGuard 1.6 on a 2.4 GHz Pentium Xeon with 1 GB of
+memory, using Sun JDK 1.3.1 in Debian Linux.
+<p>
+The program sizes include companion libraries. Programs that only use small
+parts of their libraries benefit the most from the shrinking step.
 <p>
 Timings are mainly governed by reading and parsing library jars and program
-jars. Shrinking and obfuscation is practically instantaneous in comparison.
+jars. Shrinking and obfuscation is typically very fast in comparison.
 <p>
-Memory usage (the total process size) is governed by the basic java virtual
-machine and the total size of the library jars and program jars.
+Memory usage (the amount of physical memory used by ProGuard while processing)
+is governed by the basic java virtual machine and the total size of the
+library jars and program jars.
 
 <hr>
 <address>
-Copyright &copy; 2002 <a href="http://www.graphics.cornell.edu/~eric/">Eric
-Lafortune</a>.
+Copyright &copy; 2002-2003
+<a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 
 </body>

@@ -33,8 +33,8 @@
 # Preserve all .class method names.
 
 -keepclassmembernames class * {
-    static Class class$(java.lang.String);
-    static Class class$(java.lang.String, boolean);
+    java.lang.Class class$(java.lang.String);
+    java.lang.Class class$(java.lang.String, boolean);
 }
 
 
@@ -55,8 +55,8 @@
     static final long serialVersionUID;
     private void writeObject(java.io.ObjectOutputStream);
     private void readObject(java.io.ObjectInputStream);
-    Object writeReplace();
-    Object readResolve();
+    java.lang.Object writeReplace();
+    java.lang.Object readResolve();
 }
 
 

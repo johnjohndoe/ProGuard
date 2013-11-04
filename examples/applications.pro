@@ -45,8 +45,8 @@
     static final long serialVersionUID;
     private void writeObject(java.io.ObjectOutputStream);
     private void readObject(java.io.ObjectInputStream);
-    Object writeReplace();
-    Object readResolve();
+    java.lang.Object writeReplace();
+    java.lang.Object readResolve();
 }
 
 

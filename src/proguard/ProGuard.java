@@ -1,8 +1,8 @@
-/* $Id: ProGuard.java,v 1.33 2003/01/09 19:52:45 eric Exp $
+/* $Id: ProGuard.java,v 1.43 2003/05/01 18:05:53 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
- * Copyright (C) 2002 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -20,28 +20,31 @@
  */
 package proguard;
 
-import proguard.classfile.ClassPool;
+import proguard.classfile.*;
+import proguard.classfile.io.*;
 import proguard.classfile.util.*;
 import proguard.classfile.visitor.*;
 import proguard.obfuscate.*;
 import proguard.shrink.*;
 
 import java.io.*;
+import java.util.jar.*;
+import java.util.*;
 
 
 /**
  * Tool for obfuscating and shrinking Java class files.
  *
- * @author  Eric Lafortune
- * @created May 27, 2001
+ * @author Eric Lafortune
  */
 public class ProGuard
 {
-    public static final String VERSION = "ProGuard, version 1.5";
+    public static final String VERSION = "ProGuard, version 1.6";
 
     private ProGuardOptions options;
     private ClassPool       programClassPool = new ClassPool();
     private ClassPool       libraryClassPool = new ClassPool();
+    private Manifest        manifest;
 
 
     /**
@@ -54,7 +57,7 @@ public class ProGuard
 
 
     /**
-     * Reads the input jars.
+     * Reads the input jars (or directories).
      */
     private void readJars() throws IOException
     {
@@ -72,10 +75,12 @@ public class ProGuard
         // Read all program jars.
         if (options.inJars != null)
         {
+            DataEntryReader reader = createDataEntryClassPoolFiller(false);
+
             for (int index = 0; index < options.inJars.size(); index++)
             {
-                String jarFileName = (String)options.inJars.elementAt(index);
-                readJar(jarFileName, false);
+                String jarFileName = (String)options.inJars.get(index);
+                readJar(jarFileName, false, false, reader);
             }
         }
 
@@ -88,44 +93,82 @@ public class ProGuard
         // Read all library jars.
         if (options.libraryJars != null)
         {
+            DataEntryReader reader = createDataEntryClassPoolFiller(true);
+
             for (int index = 0; index < options.libraryJars.size(); index++)
             {
-                String jarFileName = (String)options.libraryJars.elementAt(index);
-                readJar(jarFileName, true);
+                String jarFileName = (String)options.libraryJars.get(index);
+                readJar(jarFileName, true, false, reader);
             }
         }
     }
 
 
     /**
-     * Reads the given input jar.
+     * Creates a DataEntryReader that will decode class files and put them in
+     * the proper class pool.
      */
-    private void readJar(String jarFileName, boolean isLibrary) throws IOException
+    private DataEntryReader createDataEntryClassPoolFiller(boolean isLibrary)
     {
-        System.out.println("Reading " + (isLibrary?"library":"program") +
-                           " jar [" + jarFileName + "]");
-
+        // Get the proper class pool.
         ClassPool classPool = isLibrary ?
             libraryClassPool :
             programClassPool;
 
-        JarReader jarReader = new JarReader(jarFileName);
-
-        try
-        {
-            // Let a class pool filler visit all read class files.
-            // It will collect them in the class pool.
-            jarReader.readZipEntries(
-                new ZipEntryClassFileReader(
-                new ClassPoolFiller(classPool),
+        // Prepare a data entry reader to filter all class files,
+        // which are then decoded to class files by a class file reader,
+        // which are then put in the class pool by a class pool filler.
+        return
+            new DataEntryClassFileFilter(
+                new ClassFileReader(
+                    new ClassPoolFiller(classPool),
                     isLibrary,
                     options.skipNonPublicLibraryClasses));
+    }
 
-            classPool.setManifest(jarReader.getManifest());
+
+    /**
+     * Reads the given input jar (or directory).
+     */
+    private void readJar(String          jarFileName,
+                         boolean         isLibrary,
+                         boolean         isResource,
+                         DataEntryReader reader) throws IOException
+    {
+        try
+        {
+            File jarFile = new File(jarFileName);
+            boolean isDirectory = jarFile.isDirectory();
+
+            System.out.println((isResource ? "Adding resources from " : "Reading " +
+                                (isLibrary ? "library " : "program ")) +
+                               (isDirectory ? "directory" : "jar") +
+                               " [" + jarFileName + "]");
+
+            // We'll have to act differently depending on whether the file is
+            // actually a directory or a jar.
+            if (isDirectory)
+            {
+                // Read the directory files recursively.
+                DirectoryReader directoryReader = new DirectoryReader(jarFile);
+                directoryReader.readFiles(reader);
+            }
+            else
+            {
+                // Read the ZIP entries.
+                JarReader jarReader = new JarReader(jarFile);
+                jarReader.readZipEntries(reader);
+
+                // Get the program's manifest if we haven't found one yet.
+                if (!isLibrary && !isResource && manifest == null)
+                {
+                    manifest = jarReader.getManifest();
+                }
+            }
         }
         catch (IOException ex)
         {
-            System.err.println("Can't read [" + jarFileName + "] (" + ex.getMessage() + ")");
+            throw new IOException("Can't read [" + jarFileName + "] (" + ex.getMessage() + ")");
         }
     }
 
@@ -135,7 +178,6 @@ public class ProGuard
      */
     private void initialize() throws IOException
     {
-
         // First the class file hierarchy.
         ClassFileHierarchyInitializer hierarchyInitializer =
             new ClassFileHierarchyInitializer(programClassPool,
@@ -230,11 +272,11 @@ public class ProGuard
 
         // Print out items that are used as seeds.
         for (int index = 0; index < options.keepCommands.size(); index++) {
-            KeepCommand command = (KeepCommand)options.keepCommands.elementAt(index);
+            KeepCommand command = (KeepCommand)options.keepCommands.get(index);
             command.executeCheckingPhase(programClassPool, libraryClassPool, ps);
         }
 
-        if (options.printSeeds.length() > 0)
+        if (ps != System.out)
         {
             ps.close();
         }
@@ -259,7 +301,7 @@ public class ProGuard
 
         // Mark elements that have to be kept.
         for (int index = 0; index < options.keepCommands.size(); index++) {
-            KeepCommand command = (KeepCommand)options.keepCommands.elementAt(index);
+            KeepCommand command = (KeepCommand)options.keepCommands.get(index);
             command.executeShrinkingPhase(programClassPool, libraryClassPool);
         }
 
@@ -276,14 +318,14 @@ public class ProGuard
                 System.out.println("Printing usage...");
             }
 
-            PrintStream ps = options.printUsage.length() > 0 ?
+          PrintStream ps = options.printUsage.length() > 0 ?
                 new PrintStream(new BufferedOutputStream(new FileOutputStream(options.printUsage))) :
                 System.out;
 
             // Print out items that will be removed.
             programClassPool.classFilesAcceptAlphabetically(new UsagePrinter(true, ps));
 
-            if (options.printUsage.length() > 0)
+            if (ps != System.out)
             {
                 ps.close();
             }
@@ -299,11 +341,11 @@ public class ProGuard
         ClassPool newProgramClassPool = new ClassPool();
         programClassPool.classFilesAccept(
             new UsedClassFileFilter(
-            new MultiClassFileVisitor(new ClassFileVisitor[] {
+            new MultiClassFileVisitor(
+            new ClassFileVisitor[] {
                 new ClassFileShrinker(),
                 new ClassPoolFiller(newProgramClassPool)
             })));
-        newProgramClassPool.setManifest(programClassPool.getManifest());
         programClassPool = newProgramClassPool;
 
         if (options.verbose)
@@ -337,19 +379,28 @@ public class ProGuard
 
         // Clean up any old visitor info.
         programClassPool.classFilesAccept(new ClassFileCleaner());
+        libraryClassPool.classFilesAccept(new ClassFileCleaner());
+
+        // Link all class members that should get the same names.
+        programClassPool.classFilesAccept(new BottomClassFileFilter(
+                                          new MemberInfoLinker()));
 
         // Mark element names that have to be kept.
         for (int index = 0; index < options.keepCommands.size(); index++) {
-            KeepCommand command = (KeepCommand)options.keepCommands.elementAt(index);
+            KeepCommand command = (KeepCommand)options.keepCommands.get(index);
             command.executeObfuscationPhase(programClassPool, libraryClassPool);
         }
 
 
-        // Come up with new names for all class files and their class members.
+        // Come up with new names for all class files.
         programClassPool.classFilesAccept(new ClassFileObfuscator(programClassPool,
                                                                   options.defaultPackage,
-                                                                  options.useMixedCaseClassNames,
-                                                                  options.overloadAggressively));
+                                                                  options.useMixedCaseClassNames));
+
+        // Come up with new names for all class members.
+        programClassPool.classFilesAccept(new BottomClassFileFilter(
+                                          new MemberInfoObfuscator(options.overloadAggressively)));
+
         if (options.printMapping != null)
         {
             if (options.verbose)
@@ -364,7 +415,7 @@ public class ProGuard
             // Print out items that will be removed.
             programClassPool.classFilesAcceptAlphabetically(new MappingPrinter(ps));
 
-            if (options.printMapping.length() > 0)
+            if (ps != System.out)
             {
                 ps.close();
             }
@@ -376,7 +427,8 @@ public class ProGuard
         }
 
         // Actually apply these new names.
-        programClassPool.classFilesAccept(new ClassFileRenamer(options.newSourceFileAttribute));
+        programClassPool.classFilesAccept(new ClassFileRenamer(options.defaultPackage != null,
+                                                               options.newSourceFileAttribute));
 
         // Mark attributes that have to be kept and remove the other ones.
         AttributeUsageMarker attributeUsageMarker = new AttributeUsageMarker();
@@ -421,38 +473,61 @@ public class ProGuard
             throw new IOException("The output jar [" + options.outJar + "] must be different from all input jars.");
         }
 
-        System.out.println("Writing output jar [" + options.outJar + "]...");
+        File jarFile = new File(options.outJar);
+        boolean isDirectory = jarFile.isDirectory();
 
-        // Create a writer for the output jar.
-        JarWriter jarWriter = new JarWriter(options.outJar,
-                                            programClassPool.getManifest(),
-                                            ProGuard.VERSION);
+        System.out.println("Writing output " +
+                           (isDirectory ? "directory" : "jar") +
+                           " [" + options.outJar + "]...");
 
-        // Create a reader for all input jars (for copying any resource files).
-        MultiJarReader jarReader = new MultiJarReader(options.inJars);
+        DataEntryWriter dataEntryWriter = null;
 
         try
         {
-            jarWriter.open();
+            // Create a different writer depending on whether the file is a
+            // directory or a jar.
+            dataEntryWriter = isDirectory ?
+                (DataEntryWriter)new DirectoryWriter(jarFile) :
+                (DataEntryWriter)new JarWriter(jarFile, manifest, ProGuard.VERSION);
 
             // Write all Java class files.
             programClassPool.classFilesAccept(
-                new ZipEntryClassFileWriter(jarWriter));
+                new ClassFileWriter(dataEntryWriter));
 
-            // Copy all resource files.
-            jarReader.readZipEntries(
-                new ZipEntryResourceFileReader(
-                new ZipEntryCopier(jarWriter)));
+            List resourceJars = options.resourceJars;
+            if (resourceJars == null)
+            {
+                resourceJars = options.inJars;
+            }
+
+            // Read all program jars again, for copying the resource files.
+            if (resourceJars != null)
+            {
+                // Prepare a data entry reader to filter all resource files,
+                // which are then copied to the jar writer.
+                DataEntryReader reader =
+                    new DataEntryResourceFileFilter(
+                        new DataEntryCopier(dataEntryWriter));
+
+                for (int index = 0; index < resourceJars.size(); index++)
+                {
+                    String jarFileName = (String)resourceJars.get(index);
+                    readJar(jarFileName, false, true, reader);
+                }
+            }
         }
-        catch (IOException ex)
+        catch (Exception ex)
         {
-            System.err.println("Can't write [" + options.outJar + "]");
+            throw new IOException("Can't write [" + options.outJar + "] (" + ex.getMessage() + ")");
         }
         finally
         {
             try
             {
-                jarWriter.close();
+                if (dataEntryWriter != null)
+                {
+                    dataEntryWriter.close();
+                }
             }
             catch (IOException ex)
             {

@@ -96,7 +96,7 @@ We can then use the following command to recover the stack trace:
 The output will look as follows:
 <table width="100%" cellpadding="10"><tr><td bgcolor="#C0C0C0">
 <pre>
-java.lang.Error:Random exception
+Exception in thread "main" java.lang.Error: Random exception
         at proguard.shrink.UsageMarker.visitInstruction(ProGuard:576)
         at proguard.classfile.instruction.GenericInstruction.accept(ProGuard:431)
         at proguard.classfile.CodeAttrInfo.instructionsAccept(ProGuard:145)
@@ -154,7 +154,7 @@ In the previous example, we could also use the verbose flag:
 The output will then look as follows:
 <table width="100%" cellpadding="10"><tr><td bgcolor="#C0C0C0">
 <pre>
-java.lang.Error:Random exception
+Exception in thread "main" java.lang.Error: Random exception
         at proguard.shrink.UsageMarker.void visitInstruction(proguard.classfile.ClassFile,proguard.classfile.instruction.Instruction)(ProGuard:576)
         at proguard.classfile.instruction.GenericInstruction.void accept(proguard.classfile.ClassFile,proguard.classfile.instruction.InstructionVisitor)(ProGuard:431)
         at proguard.classfile.CodeAttrInfo.void instructionsAccept(proguard.classfile.ClassFile,proguard.classfile.instruction.InstructionVisitor)(ProGuard:145)
@@ -272,7 +272,7 @@ The output will now give a list of alternative original method names for each
 ambiguous obfuscated method name:
 <table width="100%" cellpadding="10"><tr><td bgcolor="#C0C0C0">
 <pre>
-java.lang.Error:Random exception
+Exception in thread "main" java.lang.Error: Random exception
         at proguard.shrink.UsageMarker.visitProgramClassFile(Unknown Source)
                                        visitLibraryClassFile
                                        visitProgramFieldInfo
@@ -345,8 +345,8 @@ java.lang.Error:Random exception
 
 <hr>
 <address>
-Copyright &copy; 2002 <a href="http://www.graphics.cornell.edu/~eric/">Eric
-Lafortune</a>.
+Copyright &copy; 2002-2003
+<a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>
 </html>

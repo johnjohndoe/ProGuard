@@ -1,8 +1,8 @@
-/* $Id: NameFactory.java,v 1.6 2002/11/03 13:30:14 eric Exp $
+/* $Id: NameFactory.java,v 1.9 2003/02/11 18:06:45 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
- * Copyright (C) 2002 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -20,7 +20,7 @@
  */
 package proguard.obfuscate;
 
-import java.util.Vector;
+import java.util.*;
 
 
 /**
@@ -33,8 +33,8 @@ class NameFactory
 {
     private static final int CHARACTER_COUNT = 26;
 
-    private static final Vector cachedMixedCaseNames = new Vector();
-    private static final Vector cachedLowerCaseNames = new Vector();
+    private static final List cachedMixedCaseNames = new ArrayList();
+    private static final List cachedLowerCaseNames = new ArrayList();
 
     private boolean generateMixedCaseNames;
     private int     index = 0;
@@ -75,14 +75,14 @@ class NameFactory
     private String name(int index)
     {
         // Which cache do we need?
-        Vector cachedNames = generateMixedCaseNames ?
+        List cachedNames = generateMixedCaseNames ?
             cachedMixedCaseNames :
             cachedLowerCaseNames;
 
         // Do we have the name in the cache?
         if (index < cachedNames.size())
         {
-            return (String)cachedNames.elementAt(index);
+            return (String)cachedNames.get(index);
         }
 
         // Create a new name and cache it.

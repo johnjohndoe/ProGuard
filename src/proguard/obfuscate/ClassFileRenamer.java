@@ -1,8 +1,8 @@
-/* $Id: ClassFileRenamer.java,v 1.17 2002/11/03 13:30:14 eric Exp $
+/* $Id: ClassFileRenamer.java,v 1.20 2003/04/28 17:24:21 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
- * Copyright (C) 2002 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -28,8 +28,8 @@ import proguard.classfile.visitor.*;
 /**
  * This <code>ClassFileVisitor</code> renames the class names and class member
  * names of the classes it visits, using names previously determined by the
- * obfuscator. It can also replace the source file attribute by a given
- * constant string.
+ * obfuscator. It can also make package visible classes and class members public,
+ * and it can replace the source file attribute by a given constant string.
  *
  * @see ClassFileObfuscator
  *
@@ -41,7 +41,8 @@ public class ClassFileRenamer
              CpInfoVisitor,
              AttrInfoVisitor
 {
-    private String newSourceFileAttribute;
+    private boolean openUpPackages;
+    private String  newSourceFileAttribute;
 
 
     private DescriptorClassEnumeration descriptorClassEnumeration =
@@ -50,12 +51,16 @@ public class ClassFileRenamer
 
     /**
      * Creates a new ClassFileObfuscator.
+     * @param openUpPackages         specifies whether to make package visible
+     *                               classes and class members public.
      * @param newSourceFileAttribute the new string to be put in the source file
      *                               attribute (if present) of the visited classes,
      *                               or <code>null</code> to leave it unchanged.
      */
-    public ClassFileRenamer(String newSourceFileAttribute)
+    public ClassFileRenamer(boolean openUpPackages,
+                            String  newSourceFileAttribute)
     {
+        this.openUpPackages         = openUpPackages;
         this.newSourceFileAttribute = newSourceFileAttribute;
     }
 
@@ -73,6 +78,12 @@ public class ClassFileRenamer
 
         // Rename class references and class member references in the constant pool.
         programClassFile.constantPoolEntriesAccept(this);
+
+        // Make package visible classes public, if specified.
+        if (openUpPackages && isPackageVisible(programClassFile.u2accessFlags))
+        {
+            programClassFile.u2accessFlags |= ClassConstants.INTERNAL_ACC_PUBLIC;
+        }
 
         // Rename the source file attribute, if specified.
         if (newSourceFileAttribute != null)
@@ -99,9 +110,13 @@ public class ClassFileRenamer
 
     private void visitMemberInfo(ProgramClassFile programClassFile, ProgramMemberInfo programMemberInfo)
     {
+        String name       = programMemberInfo.getName(programClassFile);
+        String descriptor = programMemberInfo.getDescriptor(programClassFile);
+
         // The new name is stored with the class member.
-        String newName = MemberObfuscator.newMemberName(programMemberInfo);
-        if (newName != null)
+        String newName = MemberInfoObfuscator.newMemberName(programMemberInfo);
+        if (newName != null &&
+            !newName.equals(name))
         {
             programMemberInfo.u2nameIndex =
                 createUtf8CpInfo(programClassFile, newName);
@@ -110,10 +125,17 @@ public class ClassFileRenamer
         // The new descriptor can be computed.
         String newDescriptor = newDescriptor(programMemberInfo.getDescriptor(programClassFile),
                                              programMemberInfo.referencedClassFiles);
-        if (newDescriptor != null)
+        if (newDescriptor != null &&
+            !newDescriptor.equals(descriptor))
         {
             programMemberInfo.u2descriptorIndex =
                 createUtf8CpInfo(programClassFile, newDescriptor);
+        }
+
+        // Make package visible class members public, if specified.
+        if (openUpPackages && isPackageVisible(programMemberInfo.u2accessFlags))
+        {
+            programMemberInfo.u2accessFlags |= ClassConstants.INTERNAL_ACC_PUBLIC;
         }
     }
 
@@ -219,7 +241,7 @@ public class ClassFileRenamer
         if (referencedMemberInfo != null)
         {
             String newMemberName =
-                MemberObfuscator.newMemberName(referencedMemberInfo);
+                MemberInfoObfuscator.newMemberName(referencedMemberInfo);
 
             if (newMemberName != null)
             {
@@ -421,5 +443,18 @@ public class ClassFileRenamer
         }
 
         return newClassName;
+    }
+
+
+    /**
+     * Returns whether the given access flags specify a package visible class
+     * or class member.
+     */
+    private boolean isPackageVisible(int accessFlags)
+    {
+        return (accessFlags &
+                (ClassConstants.INTERNAL_ACC_PUBLIC    |
+                 ClassConstants.INTERNAL_ACC_PROTECTED |
+                 ClassConstants.INTERNAL_ACC_PRIVATE)) == 0;
     }
 }

@@ -1,8 +1,8 @@
-/* $Id: MappingPrinter.java,v 1.8 2002/11/03 13:30:14 eric Exp $
+/* $Id: MappingPrinter.java,v 1.11 2003/04/28 17:24:21 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
- * Copyright (C) 2002 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -21,10 +21,10 @@
 package proguard.obfuscate;
 
 import proguard.classfile.*;
-import proguard.classfile.util.ClassUtil;
+import proguard.classfile.util.*;
 import proguard.classfile.visitor.*;
 
-import java.io.PrintStream;
+import java.io.*;
 
 
 /**
@@ -42,7 +42,7 @@ public class MappingPrinter
     private PrintStream ps;
 
     // A field to remember the class name, if a header is needed for class members.
-    private String      className;
+    private String className;
 
 
     /**
@@ -97,7 +97,7 @@ public class MappingPrinter
 
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {
-        String newMemberName = MemberObfuscator.newMemberName(programFieldInfo);
+        String newMemberName = MemberInfoObfuscator.newMemberName(programFieldInfo);
 
         if (newMemberName != null)
         {
@@ -117,7 +117,7 @@ public class MappingPrinter
 
     public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
     {
-      String newMemberName = MemberObfuscator.newMemberName(programMethodInfo);
+      String newMemberName = MemberInfoObfuscator.newMemberName(programMethodInfo);
 
       if (newMemberName != null)
         {
