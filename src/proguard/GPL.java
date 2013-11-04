@@ -1,4 +1,4 @@
-/* $Id: GPL.java,v 1.5.2.6 2007/01/18 21:31:51 eric Exp $
+/* $Id: GPL.java,v 1.5.2.7 2007/09/03 21:06:20 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java bytecode.
  *

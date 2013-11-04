@@ -1,4 +1,4 @@
-/* $Id: EvaluationSimplifier.java,v 1.4.2.19 2007/08/25 12:59:59 eric Exp $
+/* $Id: EvaluationSimplifier.java,v 1.4.2.20 2007/09/03 21:05:29 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -451,8 +451,9 @@ implements   MemberInfoVisitor,
         do
         {
             if (//partialEvaluator.isTraced(offset) &&
-                isNecessary[offset] &&
-                !isSimplified[offset])
+                isNecessary[offset]   &&
+                !isSimplified[offset] &&
+                !codeAttrInfoEditor.isModified(offset))
             {
                 Instruction instruction = InstructionFactory.create(codeAttrInfo.code,
                                                                     offset);
