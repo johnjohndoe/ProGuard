@@ -1,6 +1,6 @@
-/* $Id: InnerUsageMarker.java,v 1.18.2.2 2007/01/18 21:31:53 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -22,31 +22,32 @@ package proguard.shrink;
 
 import proguard.classfile.*;
 import proguard.classfile.attribute.*;
-import proguard.classfile.attribute.annotation.*;
-import proguard.classfile.visitor.*;
-
+import proguard.classfile.attribute.visitor.*;
+import proguard.classfile.constant.*;
+import proguard.classfile.constant.visitor.ConstantVisitor;
+import proguard.classfile.util.SimplifiedVisitor;
+import proguard.classfile.visitor.ClassVisitor;
 
 /**
- * This ClassFileVisitor recursively marks all inner classes
- * that are being used in the classes it visits.
+ * This AttributeVisitor recursively marks all necessary inner class information
+ * in the attributes that it visits.
  *
  * @see UsageMarker
  *
  * @author Eric Lafortune
  */
 public class InnerUsageMarker
-  implements ClassFileVisitor,
-             CpInfoVisitor,
-             AttrInfoVisitor,
-             InnerClassesInfoVisitor
+extends      SimplifiedVisitor
+implements   AttributeVisitor,
+             InnerClassesInfoVisitor,
+             ConstantVisitor,
+             ClassVisitor
 {
-    private UsageMarker usageMarker;
+    private final UsageMarker usageMarker;
 
-    // A field acting as a parameter for the class file visitor.
-    private boolean markingAttributes = true;
-
-    // A field acting as a return parameter for several methods.
-    private boolean used;
+    // Fields acting as a return parameters for several methods.
+    private boolean attributeUsed;
+    private boolean classUsed;
 
 
     /**
@@ -60,153 +61,54 @@ public class InnerUsageMarker
     }
 
 
-    // Implementations for ClassFileVisitor.
+    // Implementations for AttributeVisitor.
 
-    public void visitProgramClassFile(ProgramClassFile programClassFile)
+    public void visitAnyAttribute(Clazz clazz, Attribute attribute) {}
+
+
+    public void visitInnerClassesAttribute(Clazz clazz, InnerClassesAttribute innerClassesAttribute)
     {
-        boolean classUsed = usageMarker.isUsed(programClassFile);
-
-        if (markingAttributes && classUsed)
-        {
-            markingAttributes = false;
-
-            // Check the inner class attribute.
-            programClassFile.attributesAccept(this);
-
-            markingAttributes = true;
-        }
-
-        // The return value.
-        used = classUsed;
-    }
-
-
-    public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
-    {
-        // The return value.
-        used = true;
-    }
-
-
-    // Implementations for CpInfoVisitor.
-
-    public void visitIntegerCpInfo(ClassFile classFile, IntegerCpInfo integerCpInfo) {}
-    public void visitLongCpInfo(ClassFile classFile, LongCpInfo longCpInfo) {}
-    public void visitFloatCpInfo(ClassFile classFile, FloatCpInfo floatCpInfo) {}
-    public void visitDoubleCpInfo(ClassFile classFile, DoubleCpInfo doubleCpInfo) {}
-    public void visitStringCpInfo(ClassFile classFile, StringCpInfo stringCpInfo) {}
-    public void visitFieldrefCpInfo(ClassFile classFile, FieldrefCpInfo fieldrefCpInfo) {}
-    public void visitInterfaceMethodrefCpInfo(ClassFile classFile, InterfaceMethodrefCpInfo interfaceMethodrefCpInfo) {}
-    public void visitMethodrefCpInfo(ClassFile classFile, MethodrefCpInfo methodrefCpInfo) {}
-    public void visitNameAndTypeCpInfo(ClassFile classFile, NameAndTypeCpInfo nameAndTypeCpInfo) {}
-
-
-    public void visitClassCpInfo(ClassFile classFile, ClassCpInfo classCpInfo)
-    {
-        boolean classUsed = usageMarker.isUsed(classCpInfo);
-
-        if (!classUsed)
-        {
-            // The ClassCpInfo isn't marked as being used yet. But maybe it should
-            // be included as an interface, so check the actual class.
-            classCpInfo.referencedClassAccept(this);
-            classUsed = used;
-
-            if (classUsed)
-            {
-                // The class is being used. Mark the ClassCpInfo as being used
-                // as well.
-                usageMarker.markAsUsed(classCpInfo);
-
-                markCpEntry(classFile, classCpInfo.u2nameIndex);
-            }
-        }
-
-        // The return value.
-        used = classUsed;
-    }
-
-
-    public void visitUtf8CpInfo(ClassFile classFile, Utf8CpInfo utf8CpInfo)
-    {
-        if (!usageMarker.isUsed(utf8CpInfo))
-        {
-            usageMarker.markAsUsed(utf8CpInfo);
-        }
-    }
-
-
-    // Implementations for AttrInfoVisitor.
-
-    public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo) {}
-    public void visitEnclosingMethodAttrInfo(ClassFile classFile, EnclosingMethodAttrInfo enclosingMethodAttrInfo) {}
-    public void visitConstantValueAttrInfo(ClassFile classFile, FieldInfo fieldInfo, ConstantValueAttrInfo constantValueAttrInfo) {}
-    public void visitExceptionsAttrInfo(ClassFile classFile, MethodInfo methodInfo, ExceptionsAttrInfo exceptionsAttrInfo) {}
-    public void visitCodeAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo) {}
-    public void visitLineNumberTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LineNumberTableAttrInfo lineNumberTableAttrInfo) {}
-    public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo) {}
-    public void visitLocalVariableTypeTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeTableAttrInfo localVariableTypeTableAttrInfo) {}
-    public void visitSourceFileAttrInfo(ClassFile classFile, SourceFileAttrInfo sourceFileAttrInfo) {}
-    public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo) {}
-    public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo) {}
-    public void visitSyntheticAttrInfo(ClassFile classFile, SyntheticAttrInfo syntheticAttrInfo) {}
-    public void visitSignatureAttrInfo(ClassFile classFile, SignatureAttrInfo signatureAttrInfo) {}
-    public void visitRuntimeVisibleAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleAnnotationsAttrInfo runtimeVisibleAnnotationsAttrInfo) {}
-    public void visitRuntimeInvisibleAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleAnnotationsAttrInfo runtimeInvisibleAnnotationsAttrInfo) {}
-    public void visitRuntimeVisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleParameterAnnotationsAttrInfo runtimeVisibleParameterAnnotationsAttrInfo) {}
-    public void visitRuntimeInvisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleParameterAnnotationsAttrInfo runtimeInvisibleParameterAnnotationsAttrInfo) {}
-    public void visitAnnotationDefaultAttrInfo(ClassFile classFile, AnnotationDefaultAttrInfo annotationDefaultAttrInfo) {}
-
-
-    public void visitInnerClassesAttrInfo(ClassFile classFile, InnerClassesAttrInfo innerClassesAttrInfo)
-    {
-        boolean attributeUsed = false;
-
-        // Mark the interfaces that are being used.
-        for (int i = 0; i < innerClassesAttrInfo.u2numberOfClasses; i++)
-        {
-            // Check if the inner class entry is used.
-            visitInnerClassesInfo(classFile, innerClassesAttrInfo.classes[i]);
-            attributeUsed |= used;
-        }
+        // Mark the necessary inner classes information.
+        attributeUsed = false;
+        innerClassesAttribute.innerClassEntriesAccept(clazz, this);
 
         if (attributeUsed)
         {
             // We got a positive used flag, so some inner class is being used.
             // Mark this attribute as being used as well.
-            usageMarker.markAsUsed(innerClassesAttrInfo);
+            usageMarker.markAsUsed(innerClassesAttribute);
 
-            markCpEntry(classFile, innerClassesAttrInfo.u2attrNameIndex);
+            markConstant(clazz, innerClassesAttribute.u2attributeNameIndex);
         }
     }
 
 
     // Implementations for InnerClassesInfoVisitor.
 
-    public void visitInnerClassesInfo(ClassFile classFile, InnerClassesInfo innerClassesInfo)
+    public void visitInnerClassesInfo(Clazz clazz, InnerClassesInfo innerClassesInfo)
     {
         boolean innerClassesInfoUsed = usageMarker.isUsed(innerClassesInfo);
 
         if (!innerClassesInfoUsed)
         {
-            int u2innerClassInfoIndex = innerClassesInfo.u2innerClassInfoIndex;
-            int u2outerClassInfoIndex = innerClassesInfo.u2outerClassInfoIndex;
-            int u2innerNameIndex      = innerClassesInfo.u2innerNameIndex;
+            int u2innerClassIndex = innerClassesInfo.u2innerClassIndex;
+            int u2outerClassIndex = innerClassesInfo.u2outerClassIndex;
+            int u2innerNameIndex  = innerClassesInfo.u2innerNameIndex;
 
             innerClassesInfoUsed = true;
 
-            if (u2innerClassInfoIndex != 0)
+            if (u2innerClassIndex != 0)
             {
                 // Check if the inner class is marked as being used.
-                markCpEntry(classFile, u2innerClassInfoIndex);
-                innerClassesInfoUsed &= used;
+                markConstant(clazz, u2innerClassIndex);
+                innerClassesInfoUsed = classUsed;
             }
 
-            if (u2outerClassInfoIndex != 0)
+            if (u2outerClassIndex != 0)
             {
                 // Check if the outer class is marked as being used.
-                markCpEntry(classFile, u2outerClassInfoIndex);
-                innerClassesInfoUsed &= used;
+                markConstant(clazz, u2outerClassIndex);
+                innerClassesInfoUsed &= classUsed;
             }
 
             // If both the inner class and the outer class are marked as being
@@ -217,13 +119,58 @@ public class InnerUsageMarker
 
                 if (u2innerNameIndex != 0)
                 {
-                    markCpEntry(classFile, u2innerNameIndex);
+                    markConstant(clazz, u2innerNameIndex);
                 }
             }
         }
 
         // The return value.
-        used = innerClassesInfoUsed;
+        attributeUsed |= innerClassesInfoUsed;
+    }
+
+
+    // Implementations for ConstantVisitor.
+
+    public void visitClassConstant(Clazz clazz, ClassConstant classConstant)
+    {
+        classUsed = usageMarker.isUsed(classConstant);
+
+        // Is the class constant marked as being used?
+        if (!classUsed)
+        {
+            // Check the referenced class.
+            classUsed = true;
+            classConstant.referencedClassAccept(this);
+
+            // Is the referenced class marked as being used?
+            if (classUsed)
+            {
+                // Mark the class constant and its Utf8 constant.
+                usageMarker.markAsUsed(classConstant);
+
+                markConstant(clazz, classConstant.u2nameIndex);
+            }
+        }
+    }
+
+
+    public void visitUtf8Constant(Clazz clazz, Utf8Constant utf8Constant)
+    {
+        usageMarker.markAsUsed(utf8Constant);
+    }
+
+
+    // Implementations for ClassVisitor.
+
+    public void visitProgramClass(ProgramClass programClass)
+    {
+        classUsed = usageMarker.isUsed(programClass);
+    }
+
+
+    public void visitLibraryClass(LibraryClass libraryClass)
+    {
+        classUsed = true;
     }
 
 
@@ -233,8 +180,8 @@ public class InnerUsageMarker
      * Marks the given constant pool entry of the given class. This includes
      * visiting any other referenced constant pool entries.
      */
-    private void markCpEntry(ClassFile classFile, int index)
+    private void markConstant(Clazz clazz, int index)
     {
-         classFile.constantPoolEntryAccept(index, this);
+         clazz.constantPoolEntryAccept(index, this);
     }
 }

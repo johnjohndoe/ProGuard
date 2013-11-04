@@ -1,6 +1,6 @@
-/* $Id: MappingReader.java,v 1.10.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -31,7 +31,7 @@ import java.io.*;
  */
 public class MappingReader
 {
-    private File mappingFile;
+    private final File mappingFile;
 
 
     public MappingReader(File mappingFile)
@@ -46,14 +46,11 @@ public class MappingReader
      */
     public void pump(MappingProcessor mappingProcessor) throws IOException
     {
-        LineNumberReader reader = null;
-
+        LineNumberReader reader = new LineNumberReader(
+                                  new BufferedReader(
+                                  new FileReader(mappingFile)));
         try
         {
-            reader = new LineNumberReader(
-                     new BufferedReader(
-                     new FileReader(mappingFile)));
-
             String className = null;
 
             // Read the subsequent class mappings and class member mappings.
@@ -66,13 +63,13 @@ public class MappingReader
                     break;
                 }
 
-                // The distinction between a class file mapping and a class
+                // The distinction between a class mapping and a class
                 // member mapping is the initial whitespace.
                 if (!line.startsWith("    "))
                 {
-                    // Process the class file mapping and remember the class's
+                    // Process the class mapping and remember the class's
                     // old name.
-                    className = processClassFileMapping(line, mappingProcessor);
+                    className = processClassMapping(line, mappingProcessor);
                 }
                 else if (className != null)
                 {
@@ -88,27 +85,25 @@ public class MappingReader
         }
         finally
         {
-            if (reader != null)
+            try
             {
-                try
-                {
-                    reader.close();
-                }
-                catch (IOException ex)
-                {
-                }
+                reader.close();
+            }
+            catch (IOException ex)
+            {
+                // This shouldn't happen.
             }
         }
     }
 
 
     /**
-     * Parses the given line with a class file mapping and processes the
+     * Parses the given line with a class mapping and processes the
      * results with the given mapping processor. Returns the old class name,
      * or null if any subsequent class member lines can be ignored.
      */
-    private String processClassFileMapping(String           line,
-                                           MappingProcessor mappingProcessor)
+    private String processClassMapping(String           line,
+                                       MappingProcessor mappingProcessor)
     {
         // See if we can parse "___ -> ___:", containing the original
         // class name and the new class name.
@@ -132,7 +127,7 @@ public class MappingReader
         String newClassName = line.substring(arrowIndex + 2, colonIndex).trim();
 
         // Process this class name mapping.
-        boolean interested = mappingProcessor.processClassFileMapping(className, newClassName);
+        boolean interested = mappingProcessor.processClassMapping(className, newClassName);
 
         return interested ? className : null;
     }

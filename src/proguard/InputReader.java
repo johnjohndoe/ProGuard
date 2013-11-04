@@ -1,6 +1,6 @@
-/* $Id: InputReader.java,v 1.1.2.4 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java bytecode.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -34,7 +34,7 @@ import java.io.IOException;
  */
 public class InputReader
 {
-    private Configuration configuration;
+    private final Configuration configuration;
 
 
     /**
@@ -54,12 +54,6 @@ public class InputReader
     public void execute(ClassPool programClassPool,
                         ClassPool libraryClassPool) throws IOException
     {
-        // Check if we have at least some program jars.
-        if (configuration.programJars == null)
-        {
-            throw new IOException("The input is empty. You have to specify one or more '-injars' options.");
-        }
-
         WarningPrinter warningPrinter = configuration.warn ?
             new WarningPrinter(System.err) :
             null;
@@ -68,9 +62,15 @@ public class InputReader
             new WarningPrinter(System.out) :
             null;
 
-        DuplicateClassFilePrinter duplicateClassFilePrinter = configuration.note ?
-            new DuplicateClassFilePrinter(notePrinter) :
+        DuplicateClassPrinter duplicateClassPrinter = configuration.note ?
+            new DuplicateClassPrinter(notePrinter) :
             null;
+
+        // Check if we have at least some input classes.
+        if (configuration.programJars == null)
+        {
+            throw new IOException("The input is empty. You have to specify one or more '-injars' options");
+        }
 
         // Read the program class files.
         // Prepare a data entry reader to filter all classes,
@@ -78,12 +78,12 @@ public class InputReader
         // which are then put in the class pool by a class pool filler.
         readInput("Reading program ",
                   configuration.programJars,
-                  new ClassFileFilter(
-                  new ClassFileReader(false,
-                                      configuration.skipNonPublicLibraryClasses,
-                                      configuration.skipNonPublicLibraryClassMembers,
-                                      warningPrinter,
-                  new ClassFilePresenceFilter(programClassPool, duplicateClassFilePrinter,
+                  new ClassFilter(
+                  new ClassReader(false,
+                                  configuration.skipNonPublicLibraryClasses,
+                                  configuration.skipNonPublicLibraryClassMembers,
+                                  warningPrinter,
+                  new ClassPresenceFilter(programClassPool, duplicateClassPrinter,
                   new ClassPoolFiller(programClassPool)))));
 
         // Check if we have at least some input classes.
@@ -100,18 +100,18 @@ public class InputReader
             // which are then put in the class pool by a class pool filler.
             readInput("Reading library ",
                       configuration.libraryJars,
-                      new ClassFileFilter(
-                      new ClassFileReader(true,
-                                          configuration.skipNonPublicLibraryClasses,
-                                          configuration.skipNonPublicLibraryClassMembers,
-                                          warningPrinter,
-                      new ClassFilePresenceFilter(programClassPool, duplicateClassFilePrinter,
-                      new ClassFilePresenceFilter(libraryClassPool, duplicateClassFilePrinter,
+                      new ClassFilter(
+                      new ClassReader(true,
+                                      configuration.skipNonPublicLibraryClasses,
+                                      configuration.skipNonPublicLibraryClassMembers,
+                                      warningPrinter,
+                      new ClassPresenceFilter(programClassPool, duplicateClassPrinter,
+                      new ClassPresenceFilter(libraryClassPool, duplicateClassPrinter,
                       new ClassPoolFiller(libraryClassPool))))));
         }
 
         // Print out a summary of the notes, if necessary.
-        if (configuration.note)
+        if (notePrinter != null)
         {
             int noteCount = notePrinter.getWarningCount();
             if (noteCount > 0)
@@ -122,7 +122,7 @@ public class InputReader
         }
 
         // Print out a summary of the warnings, if necessary.
-        if (configuration.warn)
+        if (warningPrinter != null)
         {
             int warningCount = warningPrinter.getWarningCount();
             if (warningCount > 0)

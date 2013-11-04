@@ -71,7 +71,7 @@
          compatible, please refer to the manual. -->
 
     <keepclassmembers implements="java.io.Serializable">
-      <field  access    ="static final"
+      <field  access    ="final"
               type      ="long"
               name      ="serialVersionUID" />
       <field  access    ="static final"

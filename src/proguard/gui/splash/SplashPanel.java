@@ -1,6 +1,6 @@
-/* $Id: SplashPanel.java,v 1.11.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,10 +20,10 @@
  */
 package proguard.gui.splash;
 
+import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-
-import javax.swing.*;
+import java.lang.reflect.InvocationTargetException;
 
 /**
  * This JPanel renders an animated Sprite.
@@ -35,12 +35,13 @@ public class SplashPanel extends JPanel
     private final MyAnimator  animator  = new MyAnimator();
     private final MyRepainter repainter = new MyRepainter();
 
-    private Sprite sprite;
-    private double sleepFactor;
+    private final Sprite sprite;
+    private final double sleepFactor;
 
     private long   startTime = Long.MAX_VALUE;
-    private long   stopTime;
-    private Thread animationThread;
+    private final long   stopTime;
+
+    private volatile Thread animationThread;
 
 
     /**
@@ -115,8 +116,13 @@ public class SplashPanel extends JPanel
         {
             SwingUtilities.invokeAndWait(repainter);
         }
-        catch (Exception ex)
+        catch (InterruptedException ex)
         {
+            // Nothing.
+        }
+        catch (InvocationTargetException ex)
+        {
+            // Nothing.
         }
     }
 
@@ -152,14 +158,25 @@ public class SplashPanel extends JPanel
 
                     // Do a repaint and time it.
                     SwingUtilities.invokeAndWait(repainter);
-                    time = System.currentTimeMillis() - time;
 
                     // Sleep for a proportional while.
-                    Thread.sleep((long)(sleepFactor * time));
+                    long repaintTime = System.currentTimeMillis() - time;
+                    long sleepTime   = (long)(sleepFactor * repaintTime);
+                    if (sleepTime < 10L)
+                    {
+                        sleepTime = 10L;
+                    }
+
+                    Thread.sleep(sleepTime);
                 }
             }
-            catch (Exception ex)
+            catch (InterruptedException ex)
             {
+                // Nothing.
+            }
+            catch (InvocationTargetException ex)
+            {
+                // Nothing.
             }
         }
     }
@@ -195,15 +212,14 @@ public class SplashPanel extends JPanel
             new ConstantColor(Color.white),
             new ConstantColor(Color.lightGray),
             new CircleSprite(true,
-                             new ConstantColor(Color.green),
                              new LinearInt(200, 600, new SineTiming(2345L, 0L)),
                              new LinearInt(200, 400, new SineTiming(3210L, 0L)),
                              new ConstantInt(150)),
+            new ColorSprite(new ConstantColor(Color.gray),
+            new FontSprite(new ConstantFont(new Font("sansserif", Font.BOLD, 90)),
             new TextSprite(new ConstantString("ProGuard"),
-                           new ConstantFont(new Font("sansserif", Font.BOLD, 90)),
-                           new ConstantColor(Color.gray),
                            new ConstantInt(200),
-                           new ConstantInt(300)));
+                           new ConstantInt(300)))));
 
         SplashPanel panel = new SplashPanel(sprite, 0.5);
         panel.setBackground(Color.white);

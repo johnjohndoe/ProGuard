@@ -1,6 +1,6 @@
-/* $Id: DataEntryNameFilter.java,v 1.2 2004/08/15 12:39:30 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -31,7 +31,7 @@ import proguard.util.StringMatcher;
 public class DataEntryNameFilter
 implements   DataEntryFilter
 {
-    private StringMatcher stringMatcher;
+    private final StringMatcher stringMatcher;
 
 
     /**

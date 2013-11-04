@@ -1,6 +1,6 @@
-/* $Id: ReTrace.java,v 1.10.2.2 2007/01/18 21:31:53 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,9 +20,9 @@
  */
 package proguard.retrace;
 
-import java.io.*;
-
 import proguard.obfuscate.MappingReader;
+
+import java.io.*;
 
 
 /**
@@ -37,9 +37,9 @@ public class ReTrace
 
 
     // The class settings.
-    private boolean verbose;
-    private File    mappingFile;
-    private File    stackTraceFile;
+    private final boolean verbose;
+    private final File    mappingFile;
+    private final File    stackTraceFile;
 
 
     /**
@@ -122,7 +122,7 @@ public class ReTrace
 
         File mappingFile    = new File(args[argumentIndex++]);
         File stackTraceFile = argumentIndex < args.length ?
-            new File(args[argumentIndex++]) :
+            new File(args[argumentIndex]) :
             null;
 
         ReTrace reTrace = new ReTrace(verbose, mappingFile, stackTraceFile);

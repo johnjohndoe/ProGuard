@@ -14,21 +14,6 @@ When using ProGuard, you should be aware of a few issues, all of which are
 easily avoided or resolved:
 <p>
 <ul>
-<li>ProGuard handles the essential elements of Java: classes, interfaces, class
-    members, inheritance,... ProGuard itself is not aware of any additional
-    <b>naming conventions or APIs</b>: main methods, native methods, beans,
-    serialization,... You'll have to specify these in your configuration. The
-    configuration syntax is intended to be compact, readable, expressive, and
-    generally applicable. It's usually quite simple. The examples section of
-    this manual provides many typical examples. The graphical user interface
-    has checkboxes for common boilerplate configurations.
-    <p>
-
-<li>ProGuard currently copies <b>manifest files and resource files</b>
-    unchanged. Directory entries, on the other hand, are not copied to the
-    output jars. If your code has any special dependencies on these elements,
-    you should modify or add them manually.
-    <p>
 
 <li>For efficiency, ProGuard always ignores any <b>private or package visible
     library classes</b> while reading library jars. If any of them are
@@ -53,9 +38,11 @@ easily avoided or resolved:
 
 <li>ProGuard's optimization algorithms also remove all <b>empty busy-waiting
     loops</b>, unless they test on fields that are marked as
-    <code>volatile</code>. You should always mark tested fields as
-    <code>volatile</code>, or otherwise, you'll have to switch off
-    optimization using the <code>-dontoptimize</code> option.
+    <code>volatile</code>. The specifications of the Java Virtual Machine
+    require that you always mark fields that are accessed across different
+    threads without further synchronization as <code>volatile</code>.
+    Otherwise, you'll have to switch off optimization using the
+    <code>-dontoptimize</code> option.
     <p>
 
 <li>If an input jar and a library jar contain classes in the <b>same
@@ -66,38 +53,12 @@ easily avoided or resolved:
     across input jars and library jars.
     <p>
 
-<li>ProGuard may not handle <b>obfuscation marker interfaces</b> as expected.
-    If you specify "<code>-keep class * implements MyKeepInterface</code>",
-    and <code>MyKeepInterface</code> is not used in your code, the specified
-    classes are kept, but they are obfuscated. Technically, the interface is
-    removed in the shrinking phase, making the directive void in the
-    obfuscation phase. This behavior may be fixed in the future. For now, you
-    can get around it by explicitly keeping the interface as well:
-    "<code>-keep class MyKeepInterface</code>". In any case, creating a proper
-    configuration file seems a cleaner solution than using such an obfuscation
-    marker interface.
-    <p>
-
 <li>When obfuscating, ProGuard will write out class files named
     "<code>a.class</code>", "<code>b.class</code>", etc. If there is a large
     numbers of classes in the same package, it may also write out
     <b>"<code>aux.class</code>"</b>. Windows doesn't allow creating files with
     this reserved name (among a few other names), so it's generally better to
     write the output to a jar, in order to avoid such problems.
-    <p>
-
-<li>ProGuard's obfuscation process currently doesn't follow the <b>naming
-    rule</b> specifying that nested classes must be named as
-    <code>EnclosingClass$InnerClass</code>, for instance (cfr. <a href=
-    "http://java.sun.com/docs/books/jls/second_edition/html/j.title.doc.html"
-    >The Java Language Specification, Second Edition</a>, <a href=
-    "http://java.sun.com/docs/books/jls/second_edition/html/binaryComp.doc.html#59892"
-    >Section 13.1</a>). This should not present a problem in practice, since
-    the rule is mainly intended for transformations at the source code level.
-    Internal-external class relationships are still represented correctly
-    inside the binary class files. Decompilers or others tools that rely on
-    the naming rule may have problems processing obfuscated jars. I'm not
-    aware of any such cases.
     <p>
 
 </ul>

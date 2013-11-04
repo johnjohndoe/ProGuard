@@ -1,6 +1,6 @@
-/* $Id: ConstantFont.java,v 1.5 2004/08/15 12:39:30 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,7 +20,7 @@
  */
 package proguard.gui.splash;
 
-import java.awt.Font;
+import java.awt.*;
 
 /**
  * This VariableFont is constant over time.
@@ -29,7 +29,7 @@ import java.awt.Font;
  */
 public class ConstantFont implements VariableFont
 {
-    private Font value;
+    private final Font value;
 
     public ConstantFont(Font value)
     {

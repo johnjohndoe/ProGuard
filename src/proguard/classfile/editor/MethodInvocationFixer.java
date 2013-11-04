@@ -1,6 +1,6 @@
-/* $Id: MethodInvocationFixer.java,v 1.4.2.4 2007/04/05 21:40:54 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -21,133 +21,141 @@
 package proguard.classfile.editor;
 
 import proguard.classfile.*;
-import proguard.classfile.util.ClassUtil;
-import proguard.classfile.attribute.CodeAttrInfo;
+import proguard.classfile.attribute.*;
+import proguard.classfile.attribute.visitor.AttributeVisitor;
+import proguard.classfile.constant.*;
+import proguard.classfile.constant.visitor.ConstantVisitor;
 import proguard.classfile.instruction.*;
+import proguard.classfile.instruction.visitor.InstructionVisitor;
+import proguard.classfile.util.*;
 import proguard.classfile.visitor.*;
 
 /**
- * This InstructionVisitor fixes all inappropriate special/virtual/static/interface
- * invocations.
+ * This AttributeVisitor fixes all inappropriate special/virtual/static/interface
+ * invocations of the code attributes that it visits.
  *
  * @author Eric Lafortune
  */
 public class MethodInvocationFixer
-implements   InstructionVisitor,
-             CpInfoVisitor,
-             MemberInfoVisitor
+extends      SimplifiedVisitor
+implements   AttributeVisitor,
+             InstructionVisitor,
+             ConstantVisitor,
+             ClassVisitor,
+             MemberVisitor
 {
     private static final boolean DEBUG = false;
 
-    private CodeAttrInfoEditor codeAttrInfoEditor;
+
+    private final CodeAttributeEditor codeAttributeEditor = new CodeAttributeEditor();
 
     // Return values for the visitor methods.
-    private boolean isMethodInvocation;
-    private int     accessFlags;
-    private boolean isInitializer;
-    private boolean isInterfaceMethod;
-    private int     parameterSize;
+    private Clazz  referencedClass;
+    private Clazz  referencedMethodClass;
+    private Member referencedMethod;
 
 
-    /**
-     * Creates a new MethodInvocationFixer.
-     * @param codeAttrInfoEditor a code editor that can be used for
-     *                           accumulating changes to the code.
-     */
-    public MethodInvocationFixer(CodeAttrInfoEditor codeAttrInfoEditor)
+    // Implementations for AttributeVisitor.
+
+    public void visitAnyAttribute(Clazz clazz, Attribute attribute) {}
+
+
+    public void visitCodeAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute)
     {
-        this.codeAttrInfoEditor = codeAttrInfoEditor;
+        // Reset the code attribute editor.
+        codeAttributeEditor.reset(codeAttribute.u4codeLength);
+
+        // Remap the variables of the instructions.
+        codeAttribute.instructionsAccept(clazz, method, this);
+
+        // Apply the code atribute editor.
+        codeAttributeEditor.visitCodeAttribute(clazz, method, codeAttribute);
     }
 
 
     // Implementations for InstructionVisitor.
 
-    public void visitSimpleInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, SimpleInstruction simpleInstruction) {}
-    public void visitVariableInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, VariableInstruction variableInstruction) {}
-    public void visitBranchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, BranchInstruction branchInstruction) {}
-    public void visitTableSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, TableSwitchInstruction tableSwitchInstruction) {}
-    public void visitLookUpSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, LookUpSwitchInstruction lookUpSwitchInstruction) {}
+    public void visitAnyInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, Instruction instruction) {}
 
 
-    public void visitCpInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, CpInstruction cpInstruction)
+    public void visitConstantInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, ConstantInstruction constantInstruction)
     {
-        int cpIndex  = cpInstruction.cpIndex;
-        int constant = cpInstruction.constant;
+        int constantIndex = constantInstruction.constantIndex;
 
-        // Get the constant pool entry's information.
-        isMethodInvocation = false;
-        isInterfaceMethod  = false;
-        accessFlags        = 0;
-        parameterSize      = constant;
+        // Get information on the called class and method, if present.
+        referencedMethod = null;
 
-        classFile.constantPoolEntryAccept(cpIndex, this);
+        clazz.constantPoolEntryAccept(constantIndex, this);
 
-        // Is it a method invocation?
-        if (isMethodInvocation)
+        // Did we find the called class and method?
+        if (referencedMethod != null)
         {
             // Do we need to update the opcode?
-            byte opcode = cpInstruction.opcode;
+            byte opcode = constantInstruction.opcode;
 
             // Is the method static?
-            if ((accessFlags & ClassConstants.INTERNAL_ACC_STATIC) != 0)
+            if ((referencedMethod.getAccessFlags() & ClassConstants.INTERNAL_ACC_STATIC) != 0)
             {
                 // But is it not a static invocation?
                 if (opcode != InstructionConstants.OP_INVOKESTATIC)
                 {
                     // Replace the invocation by an invokestatic instruction.
                     Instruction replacementInstruction =
-                        new CpInstruction(InstructionConstants.OP_INVOKESTATIC,
-                                          cpIndex).shrink();
+                        new ConstantInstruction(InstructionConstants.OP_INVOKESTATIC,
+                                                constantIndex).shrink();
 
-                    codeAttrInfoEditor.replaceInstruction(offset, replacementInstruction);
+                    codeAttributeEditor.replaceInstruction(offset, replacementInstruction);
 
                     if (DEBUG)
                     {
-                        debug(classFile, methodInfo, offset, cpInstruction, replacementInstruction);
+                        debug(clazz, method, offset, constantInstruction, replacementInstruction);
                     }
                 }
             }
 
             // Is the method private, or an instance initializer?
-            else if ((accessFlags & ClassConstants.INTERNAL_ACC_PRIVATE) != 0 ||
-                     isInitializer)
+            else if ((referencedMethod.getAccessFlags() & ClassConstants.INTERNAL_ACC_PRIVATE) != 0 ||
+                     referencedMethod.getName(referencedMethodClass).equals(ClassConstants.INTERNAL_METHOD_NAME_INIT))
             {
                 // But is it not a special invocation?
                 if (opcode != InstructionConstants.OP_INVOKESPECIAL)
                 {
                     // Replace the invocation by an invokespecial instruction.
                     Instruction replacementInstruction =
-                        new CpInstruction(InstructionConstants.OP_INVOKESPECIAL,
-                                          cpIndex).shrink();
+                        new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL,
+                                                constantIndex).shrink();
 
-                    codeAttrInfoEditor.replaceInstruction(offset, replacementInstruction);
+                    codeAttributeEditor.replaceInstruction(offset, replacementInstruction);
 
                     if (DEBUG)
                     {
-                        debug(classFile, methodInfo, offset, cpInstruction, replacementInstruction);
+                        debug(clazz, method, offset, constantInstruction, replacementInstruction);
                     }
                 }
             }
 
             // Is the method an interface method?
-            else if (isInterfaceMethod)
+            else if ((referencedClass.getAccessFlags() & ClassConstants.INTERNAL_ACC_INTERFACE) != 0)
             {
+                int invokeinterfaceConstant =
+                    (ClassUtil.internalMethodParameterSize(referencedMethod.getDescriptor(referencedMethodClass)) + 1) << 8;
+
                 // But is it not an interface invocation, or is the parameter
                 // size incorrect?
                 if (opcode != InstructionConstants.OP_INVOKEINTERFACE ||
-                    parameterSize != constant)
+                    constantInstruction.constant != invokeinterfaceConstant)
                 {
                     // Fix the parameter size of the interface invocation.
                     Instruction replacementInstruction =
-                        new CpInstruction(InstructionConstants.OP_INVOKEINTERFACE,
-                                          cpIndex,
-                                          parameterSize).shrink();
+                        new ConstantInstruction(InstructionConstants.OP_INVOKEINTERFACE,
+                                                constantIndex,
+                                                invokeinterfaceConstant).shrink();
 
-                    codeAttrInfoEditor.replaceInstruction(offset, replacementInstruction);
+                    codeAttributeEditor.replaceInstruction(offset, replacementInstruction);
 
                     if (DEBUG)
                     {
-                        debug(classFile, methodInfo, offset, cpInstruction, replacementInstruction);
+                        debug(clazz, method, offset, constantInstruction, replacementInstruction);
                     }
                 }
             }
@@ -157,20 +165,21 @@ implements   InstructionVisitor,
             else
             {
                 // But is it not a virtual invocation (or a special invocation,
-                // which is allowed for super calls)?
+                // but not a super call)?
                 if (opcode != InstructionConstants.OP_INVOKEVIRTUAL &&
-                    opcode != InstructionConstants.OP_INVOKESPECIAL)
+                    (opcode != InstructionConstants.OP_INVOKESPECIAL ||
+                     !clazz.extends_(referencedClass)))
                 {
                     // Replace the invocation by an invokevirtual instruction.
                     Instruction replacementInstruction =
-                        new CpInstruction(InstructionConstants.OP_INVOKEVIRTUAL,
-                                          cpIndex).shrink();
+                        new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL,
+                                                constantIndex).shrink();
 
-                    codeAttrInfoEditor.replaceInstruction(offset, replacementInstruction);
+                    codeAttributeEditor.replaceInstruction(offset, replacementInstruction);
 
                     if (DEBUG)
                     {
-                        debug(classFile, methodInfo, offset, cpInstruction, replacementInstruction);
+                        debug(clazz, method, offset, constantInstruction, replacementInstruction);
                     }
                 }
             }
@@ -178,110 +187,67 @@ implements   InstructionVisitor,
     }
 
 
-    // Implementations for CpInfoVisitor.
+    // Implementations for ConstantVisitor.
 
-    public void visitIntegerCpInfo(ClassFile classFile, IntegerCpInfo integerCpInfo) {}
-    public void visitLongCpInfo(ClassFile classFile, LongCpInfo longCpInfo) {}
-    public void visitFloatCpInfo(ClassFile classFile, FloatCpInfo floatCpInfo) {}
-    public void visitDoubleCpInfo(ClassFile classFile, DoubleCpInfo doubleCpInfo) {}
-    public void visitStringCpInfo(ClassFile classFile, StringCpInfo stringCpInfo) {}
-    public void visitFieldrefCpInfo(ClassFile classFile, FieldrefCpInfo fieldrefCpInfo) {}
-    public void visitNameAndTypeCpInfo(ClassFile classFile, NameAndTypeCpInfo nameAndTypeCpInfo) {}
-    public void visitUtf8CpInfo(ClassFile classFile, Utf8CpInfo utf8CpInfo) {}
+    public void visitAnyConstant(Clazz clazz, Constant constant) {}
 
 
-    public void visitInterfaceMethodrefCpInfo(ClassFile classFile, InterfaceMethodrefCpInfo interfaceMethodrefCpInfo)
+    public void visitAnyMethodrefConstant(Clazz clazz, RefConstant refConstant)
     {
-        // Check if this is an interface method.
-        classFile.constantPoolEntryAccept(interfaceMethodrefCpInfo.u2classIndex, this);
+        // Check if this is an interface method. Note that we're interested in
+        // the class of the method reference, not in the class in which the
+        // method was actually found.
+        //refConstant.referencedClassAccept(this);
+        clazz.constantPoolEntryAccept(refConstant.u2classIndex, this);
 
-        // Get the referenced method's access flags.
-        interfaceMethodrefCpInfo.referencedMemberInfoAccept(this);
+        // Get the referenced access flags and names.
+        refConstant.referencedMemberAccept(this);
     }
 
 
-    public void visitMethodrefCpInfo(ClassFile classFile, MethodrefCpInfo methodrefCpInfo)
+    public void visitClassConstant(Clazz clazz, ClassConstant classConstant)
     {
-        // Check if this is an interface method.
-        classFile.constantPoolEntryAccept(methodrefCpInfo.u2classIndex, this);
-
-        // Get the referenced method's access flags.
-        methodrefCpInfo.referencedMemberInfoAccept(this);
+        // Check if this is an interface class.
+       classConstant.referencedClassAccept(this);
     }
 
 
-    public void visitClassCpInfo(ClassFile classFile, ClassCpInfo classCpInfo)
+    // Implementations for ClassVisitor.
+
+    public void visitAnyClass(Clazz clazz)
     {
-        // Check if this class entry is an array type.
-        if (ClassUtil.isInternalArrayType(classCpInfo.getName(classFile)))
-        {
-            isInterfaceMethod = false;
-        }
-        else
-        {
-            // Check if this class entry refers to an interface class.
-            ClassFile referencedClassFile = classCpInfo.referencedClassFile;
-            if (referencedClassFile != null)
-            {
-                isInterfaceMethod = (referencedClassFile.getAccessFlags() & ClassConstants.INTERNAL_ACC_INTERFACE) != 0;
-            }
-        }
+        // Remember the referenced class.
+        referencedClass = clazz;
     }
 
 
-    // Implementations for MemberInfoVisitor.
+    // Implementations for MemberVisitor.
 
-    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo) {}
-
-    public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
+    public void visitAnyMember(Clazz clazz, Member member)
     {
-        visitMethodInfo(programClassFile, programMethodInfo);
-    }
-
-
-    public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo) {}
-
-    public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo)
-    {
-        visitMethodInfo(libraryClassFile, libraryMethodInfo);
-    }
-
-
-    private void visitMethodInfo(ClassFile classFile, MethodInfo methodInfo)
-    {
-        // We've found a method definition.
-        isMethodInvocation = true;
-
-        // Get the method's access flags.
-        accessFlags = methodInfo.getAccessFlags();
-
-        // Check if this is an instance initializer.
-        isInitializer = methodInfo.getName(classFile).equals(ClassConstants.INTERNAL_METHOD_NAME_INIT);
-
-        // Remember the parameter size of interface methods.
-        if (isInterfaceMethod)
-        {
-            parameterSize = (ClassUtil.internalMethodParameterSize(methodInfo.getDescriptor(classFile)) + 1) << 8;
-        }
+        // Remember the referenced method.
+        referencedMethodClass = clazz;
+        referencedMethod      = member;
     }
 
 
     // Small utility methods.
 
-    private void debug(ClassFile     classFile,
-                       MethodInfo    methodInfo,
-                       int           offset,
-                       CpInstruction cpInstruction,
-                       Instruction   replacementInstruction)
+    private void debug(Clazz               clazz,
+                       Method              method,
+                       int                 offset,
+                       ConstantInstruction constantInstruction,
+                       Instruction         replacementInstruction)
     {
         System.out.println("MethodInvocationFixer:");
-        System.out.println("  Class file       = "+classFile.getName());
-        System.out.println("  Method           = "+methodInfo.getName(classFile)+methodInfo.getDescriptor(classFile));
-        System.out.println("  Instruction      = "+cpInstruction.toString(offset));
-        System.out.println("  Interface method = "+isInterfaceMethod);
-        if (isInterfaceMethod)
+        System.out.println("  Class       = "+clazz.getName());
+        System.out.println("  Method      = "+method.getName(clazz)+method.getDescriptor(clazz));
+        System.out.println("  Instruction = "+constantInstruction.toString(offset));
+        System.out.println("  -> Class    = "+referencedClass);
+        System.out.println("     Method   = "+referencedMethod);
+        if ((referencedClass.getAccessFlags() & ClassConstants.INTERNAL_ACC_INTERFACE) != 0)
         {
-            System.out.println("  Parameter size   = "+parameterSize);
+            System.out.println("     Parameter size   = "+(ClassUtil.internalMethodParameterSize(referencedMethod.getDescriptor(referencedMethodClass)+1)));
         }
         System.out.println("  Replacement instruction = "+replacementInstruction.toString(offset));
     }

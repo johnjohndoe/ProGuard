@@ -19,22 +19,28 @@ Some typical useful configurations:
 <li><a href="#applets">All possible applets in the input jars</a>
 <li><a href="#midlets">All possible midlets in the input jars</a>
 <li><a href="#servlets">All possible servlets in the input jars</a>
-<li><a href="#library">Processing a library</a>
+<li><a href="#library">A typical library</a>
 <li><a href="#native">Processing native methods</a>
+<li><a href="#callback">Processing callback methods</a>
+<li><a href="#enumerations">Processing enumeration classes</a>
 <li><a href="#serializable">Processing serializable classes</a>
 <li><a href="#beans">Processing bean classes</a>
-<li><a href="#enumerations">Processing enumeration classes</a>
 <li><a href="#annotations">Processing annotations</a>
 <li><a href="#database">Processing database drivers</a>
 <li><a href="#componentui">Processing ComponentUI classes</a>
 <li><a href="#rmi">Processing RMI code</a>
+<li><a href="#resourcefiles">Processing resource files</a>
 <li><a href="#stacktrace">Producing useful obfuscated stack traces</a>
+<li><a href="#repackaging">Obfuscating package names</a>
 <li><a href="#restructuring">Restructuring the output archives</a>
 <li><a href="#filtering">Filtering the input and the output</a>
 <li><a href="#multiple">Processing multiple applications at once</a>
 <li><a href="#incremental">Incremental obfuscation</a>
+<li><a href="#microedition">Preverifying class files for Java Micro Edition</a>
+<li><a href="#upgrade">Upgrading class files to Java 6</a>
 <li><a href="#deadcode">Finding dead code</a>
 <li><a href="#structure">Printing out the internal structure of class files</a>
+<li><a href="#annotated">Using annotations to configure ProGuard</a>
 </ol>
 
 You can find some sample configuration files in the <code>examples</code>
@@ -48,16 +54,12 @@ typically create a configuration file <code>proguard.pro</code> and then type:
 java -jar proguard.jar @proguard.pro
 </pre>
 <p>
-
 The configuration file would contain the following options:
 <pre>
 -injars       proguard.jar
 -outjars      proguard_out.jar
 -libraryjars  &lt;java.home&gt;/lib/rt.jar
 -printmapping proguard.map
--overloadaggressively
--defaultpackage ''
--allowaccessmodification
 
 -keep public class proguard.ProGuard {
     public static void main(java.lang.String[]);
@@ -67,31 +69,35 @@ The configuration file would contain the following options:
 Note the use of the <code>&lt;java.home&gt;</code> system property; it is
 replaced automatically.
 <p>
-Also note that the type names are fully specified:
+Also note that all type names are fully specified:
 <code>proguard.ProGuard</code> and <code>java.lang.String[]</code>.
 <p>
 The access modifiers <code>public</code> and <code>static</code> are not
 really required in this case, since we know a priori that the specified class
 and method have the proper access flags. It just looks more familiar this way.
 <p>
-We're using the <a
-href="usage.html#overloadaggressively"><code>-overloadaggressively</code></a>,
-<a href="usage.html#defaultpackage"><code>-defaultpackage</code></a>, and <a
-href="usage.html#allowaccessmodification"><code>-allowaccessmodification</code></a>
-options to shave off some extra bytes, but we could leave them out as well.
-The <a href="usage.html#defaultpackage"><code>-defaultpackage</code></a>
-directive moves all classes to the given package, in this case the root
-package. Only <code>proguard.ProGuard</code> keeps its original name.
-<p>
 We're writing out an obfuscation mapping file with <a
 href="usage.html#printmapping"><code>-printmapping</code></a>, for
 de-obfuscating any stack traces later on, or for incremental obfuscation of
 extensions.
 <p>
-In general, you might need a few additional directives for processing <a
-href="#native">native methods</a>, <a href="#enumerations">enumerations</a>,
-<a href="#serializable">serializable classes</a>, or <a href="#beans">bean
-classes</a>. For processing 'simple' applications like ProGuard, that is not
+We can further improve the results with a few additional options:
+<pre>
+-optimizationpasses 3
+-overloadaggressively
+-repackageclasses ''
+-allowaccessmodification
+</pre>
+These options are not required; they just shave off some extra bytes from the
+output jar, by performing up to 3 optimization passes, and by aggressively
+obfuscating class members and <a href="#repackaging">package names</a>.
+<p>
+In general, you might need a few additional options for processing <a
+href="#native">native methods</a>, <a href="#callback">callback methods</a>,
+<a href="#enumerations">enumerations</a>, <a href="#serializable">serializable
+classes</a>, <a href="#beans">bean classes</a>, <a
+href="#annotations">annotations</a>, and <a href="#resourcefiles">resource
+files</a>. For processing 'simple' applications like ProGuard, that is not
 required.
 
 <a name="applet">&nbsp;</a>
@@ -110,14 +116,16 @@ The typical applet methods will be preserved automatically, since
 <code>mypackage.MyApplet</code> is an extension of the <code>Applet</code>
 class in the library <code>rt.jar</code>.
 <p>
-If applicable, you should add directives for processing <a
-href="#native">native methods</a>, <a href="#enumerations">enumerations</a>,
-<a href="#serializable">serializable classes</a>, or <a href="#beans">bean
-classes</a>.
+If applicable, you should add options for processing <a href="#native">native
+methods</a>, <a href="#callback">callback methods</a>, <a
+href="#enumerations">enumerations</a>, <a href="#serializable">serializable
+classes</a>, <a href="#beans">bean classes</a>, <a
+href="#annotations">annotations</a>, and <a href="#resourcefiles">resource
+files</a>.
 
 <a name="midlet">&nbsp;</a>
 <h3>A typical midlet</h3>
-These options shrink, optimize, and obfuscate the J2ME midlet
+These options shrink, optimize, obfuscate, and preverify the midlet
 <code>mypackage.MyMIDlet</code>:
 <pre>
 -injars      in.jar
@@ -125,31 +133,35 @@ These options shrink, optimize, and obfuscate the J2ME midlet
 -libraryjars /usr/local/java/wtk2.1/lib/midpapi20.jar
 -libraryjars /usr/local/java/wtk2.1/lib/cldcapi11.jar
 -overloadaggressively
--defaultpackage ''
+-repackageclasses ''
 -allowaccessmodification
+-microedition
 
 -keep public class mypackage.MyMIDlet
 </pre>
 <p>
-Note how we're now targeting the J2ME run-time environment of
-<code>midpapi20.jar</code> and <code>cldcapi11.jar</code>, instead of the J2SE
-run-time environment <code>rt.jar</code>. You can target other J2ME
-environments by picking the appropriate jars.
+Note how we're now targeting the Java Micro Edition run-time environment of
+<code>midpapi20.jar</code> and <code>cldcapi11.jar</code>, instead of the Java
+Standard Edition run-time environment <code>rt.jar</code>. You can target
+other JME environments by picking the appropriate jars.
 <p>
 The typical midlet methods will be preserved automatically, since
 <code>mypackage.MyMIDlet</code> is an extension of the <code>MIDlet</code>
 class in the library <code>midpapi20.jar</code>.
 <p>
-If applicable, you should add directives for processing <a
-href="#native">native methods</a>, <a href="#enumerations">enumerations</a>,
-<a href="#serializable">serializable classes</a>, or <a href="#beans">bean
-classes</a>.
+The <a href="usage.html#microedition"><code>-microedition</code></a> option
+makes sure the class files are preverified for Java Micro Edition, producing
+compact <code>StackMap</code> attributes. It is no longer necessary to run an
+external preverifier.
 <p>
-You must preverify your midlets <i>after</i> having processed them, using
-J2ME's <code>preverify</code> tool. Because this tool unpacks your processed
-jars, you should use ProGuard's <a
+Be careful if you do use the external <code>preverify</code> tool on a platform
+with a case-insensitive filing system, such as Windows. Because this tool
+unpacks your processed jars, you should then use ProGuard's <a
 href="usage.html#dontusemixedcaseclassnames"><code>-dontusemixedcaseclassnames</code></a>
-option on platforms with case-insensitive filing systems, such as Windows.
+option.
+<p>
+If applicable, you should add options for processing <a href="#native">native
+methods</a> and <a href="#resourcefiles">resource files</a>.
 <p>
 Please note the in-depth article <a
 href="http://developers.sun.com/techtopics/mobility/midp/ttips/proguard/">"Obfuscating
@@ -180,10 +192,12 @@ The <a href="usage.html#printseeds"><code>-printseeds</code></a> option prints
 out which classes exactly will be preserved, so we know for sure we're getting
 what we want.
 <p>
-If applicable, you should add directives for processing <a
-href="#native">native methods</a>, <a href="#enumerations">enumerations</a>,
-<a href="#serializable">serializable classes</a>, or <a href="#beans">bean
-classes</a>.
+If applicable, you should add options for processing <a href="#native">native
+methods</a>, <a href="#callback">callback methods</a>, <a
+href="#enumerations">enumerations</a>, <a href="#serializable">serializable
+classes</a>, <a href="#beans">bean classes</a>, <a
+href="#annotations">annotations</a>, and <a href="#resourcefiles">resource
+files</a>.
 
 <a name="applets">&nbsp;</a>
 <h3>All possible applets in the input jars</h3>
@@ -203,14 +217,16 @@ We're simply keeping all classes that extend the <code>Applet</code> class.
 Again, the <a href="usage.html#printseeds"><code>-printseeds</code></a> option
 prints out which applets exactly will be preserved.
 <p>
-If applicable, you should add directives for processing <a
-href="#native">native methods</a>, <a href="#enumerations">enumerations</a>,
-<a href="#serializable">serializable classes</a>, or <a href="#beans">bean
-classes</a>.
+If applicable, you should add options for processing <a href="#native">native
+methods</a>, <a href="#callback">callback methods</a>, <a
+href="#enumerations">enumerations</a>, <a href="#serializable">serializable
+classes</a>, <a href="#beans">bean classes</a>, <a
+href="#annotations">annotations</a>, and <a href="#resourcefiles">resource
+files</a>.
 
 <a name="midlets">&nbsp;</a>
 <h3>All possible midlets in the input jars</h3>
-These options shrink, optimize, and obfuscate all public J2ME midlets in
+These options shrink, optimize, obfuscate, and preverify all public midlets in
 <code>in.jar</code>:
 <pre>
 -injars      in.jar
@@ -218,8 +234,9 @@ These options shrink, optimize, and obfuscate all public J2ME midlets in
 -libraryjars /usr/local/java/wtk2.1/lib/midpapi20.jar
 -libraryjars /usr/local/java/wtk2.1/lib/cldcapi11.jar
 -overloadaggressively
--defaultpackage ''
+-repackageclasses ''
 -allowaccessmodification
+-microedition
 -printseeds
 
 -keep public class * extends javax.microedition.midlet.MIDlet
@@ -227,19 +244,22 @@ These options shrink, optimize, and obfuscate all public J2ME midlets in
 <p>
 We're simply keeping all classes that extend the <code>MIDlet</code> class.
 <p>
-And again, the <a href="usage.html#printseeds"><code>-printseeds</code></a>
-option prints out which midlets exactly will be preserved.
+The <a href="usage.html#microedition"><code>-microedition</code></a> option
+makes sure the class files are preverified for Java Micro Edition, producing
+compact <code>StackMap</code> attributes. It is no longer necessary to run an
+external preverifier.
 <p>
-If applicable, you should add directives for processing <a
-href="#native">native methods</a>, <a href="#enumerations">enumerations</a>,
-<a href="#serializable">serializable classes</a>, or <a href="#beans">bean
-classes</a>.
-<p>
-You must preverify your midlets <i>after</i> having processed them, using
-J2ME's <code>preverify</code> tool. Because this tool unpacks your processed
-jars, you should use ProGuard's <a
+Be careful if you do use the external <code>preverify</code> tool on a platform
+with a case-insensitive filing system, such as Windows. Because this tool
+unpacks your processed jars, you should then use ProGuard's <a
 href="usage.html#dontusemixedcaseclassnames"><code>-dontusemixedcaseclassnames</code></a>
-option on platforms with case-insensitive filing systems, such as Windows.
+option.
+<p>
+The <a href="usage.html#printseeds"><code>-printseeds</code></a> option prints
+out which midlets exactly will be preserved.
+<p>
+If applicable, you should add options for processing <a href="#native">native
+methods</a> and <a href="#resourcefiles">resource files</a>.
 
 <a name="servlets">&nbsp;</a>
 <h3>All possible servlets in the input jars</h3>
@@ -264,16 +284,18 @@ interface. We're using the <code>implements</code> keyword because it looks
 more familiar in this context, but it is equivalent to <code>extends</code>,
 as far as ProGuard is concerned.
 <p>
-And again, the <a href="usage.html#printseeds"><code>-printseeds</code></a>
-option prints out which servlets exactly will be preserved.
+The <a href="usage.html#printseeds"><code>-printseeds</code></a> option prints
+out which servlets exactly will be preserved.
 <p>
-If applicable, you should add directives for processing <a
-href="#native">native methods</a>, <a href="#enumerations">enumerations</a>,
-<a href="#serializable">serializable classes</a>, or <a href="#beans">bean
-classes</a>.
+If applicable, you should add options for processing <a href="#native">native
+methods</a>, <a href="#callback">callback methods</a>, <a
+href="#enumerations">enumerations</a>, <a href="#serializable">serializable
+classes</a>, <a href="#beans">bean classes</a>, <a
+href="#annotations">annotations</a>, and <a href="#resourcefiles">resource
+files</a>.
 
 <a name="library">&nbsp;</a>
-<h3>Processing a library</h3>
+<h3>A typical library</h3>
 These options shrink, optimize, and obfuscate an entire library, keeping all
 public and protected classes and class members, native method names, and
 serialization code:
@@ -284,8 +306,8 @@ serialization code:
 -printmapping out.map
 
 -renamesourcefileattribute SourceFile
--keepattributes InnerClasses,SourceFile,LineNumberTable,Deprecated,
-                Signature,*Annotation*,EnclosingMethod
+-keepattributes Exceptions,InnerClasses,Signature,Deprecated,
+                SourceFile,LineNumberTable,*Annotation*,EnclosingMethod
 
 -keep public class * {
     public protected *;
@@ -317,11 +339,11 @@ serialization code:
 This configuration should preserve everything we'll ever want to access in the
 library. Only if there are any other non-public classes or methods that are
 invoked dynamically, they should be specified using additional <a
-href="usage.html#keep"><code>-keep</code></a> directives.
+href="usage.html#keep"><code>-keep</code></a> options.
 <p>
 The <a
 href="usage.html#keepclassmembernames"><code>-keepclassmembernames</code></a>
-directive for the <code>class$</code> methods is not strictly necessary. These
+option for the <code>class$</code> methods is not strictly necessary. These
 methods are inserted by the <code>javac</code> compiler and the
 <code>jikes</code> compiler respectively, to implement the <code>.class</code>
 construct. ProGuard will automatically detect them and deal with them, even
@@ -330,20 +352,25 @@ other obfuscators may rely on the original method names. It may therefore be
 helpful to preserve them, in case these other obfuscators are ever used for
 further obfuscation of the library.
 <p>
-We've added some directives for keeping the "Deprecated" attribute, for
-producing <a href="#stacktrace">useful stack traces</a>, and for processing <a
-href="#native">native methods</a>, <a href="#enumerations">enumerations</a>,
-<a href="#serializable">serializable classes</a>, and <a
-href="#annotations">annotations</a>, which are all discussed in their
-respective examples.
+The "Exceptions" attribute is has to be preserved, so the compiler knows which
+exceptions methods may throw.
 <p>
 The "InnerClasses" attribute (or more precisely, its source name part) has to
-be preserved as well, for any inner classes that can be referenced from
-outside the library. The <code>javac</code> compiler would be unable to find
-the inner classes otherwise.
+be preserved too, for any inner classes that can be referenced from outside the
+library. The <code>javac</code> compiler would be unable to find the inner
+classes otherwise.
 <p>
 The "Signature" attribute is required to be able to access generic types when
-compiling in JDK 5.0.
+compiling in JDK 5.0 and higher.
+<p>
+Finally, we're keeping the "Deprecated" attribute and the attributes for
+producing <a href="#stacktrace">useful stack traces</a>.
+<p>
+We've also added some options for for processing <a href="#native">native
+methods</a>, <a href="#enumerations">enumerations</a>, <a
+href="#serializable">serializable classes</a>, and <a
+href="#annotations">annotations</a>, which are all discussed in their
+respective examples.
 
 <a name="native">&nbsp;</a>
 <h3>Processing native methods</h3>
@@ -364,13 +391,30 @@ keep the relevant names from being obfuscated.
 <p>
 ProGuard doesn't have your native code, so it can't automatically preserve the
 classes or class members that are invoked by the native code. These are entry
-points, which you'll have to specify explicitly.
+points, which you'll have to specify explicitly. <a href="callback">Callback
+methods</a> are discussed below as a typical example.
+
+<a name="callback">&nbsp;</a>
+<h3>Processing callback methods</h3>
+If your application, applet, servlet, library, etc., contains callback
+methods, which are called from external code (native code, scripts,...),
+you'll want to preserve them, and probably their classes too. They are just
+entry points to your code, much like, say, the main method of an application.
+If they aren't preserved by other <code>-keep</code> options, something like
+the following option will keep the callback class and method:
+<pre>
+-keep class mypackage.MyCallbackClass {
+    void myCallbackMethod(java.lang.String);
+}
+</pre>
+<p>
+This will preserve the given class and method from being removed or renamed.
 
 <a name="enumerations">&nbsp;</a>
 <h3>Processing enumeration classes</h3>
 If your application, applet, servlet, library, etc., contains enumeration
 classes, you'll have to preserve some special methods. Enumerations were
-introduced in JDK 5.0. The java compiler translates enumerations into classes
+introduced in Java 5. The java compiler translates enumerations into classes
 with a special structure. Notably, the classes contain implementations of some
 static methods that the run-time environment accesses by introspection (Isn't
 that just grand? Introspection is the self-modifying code of a new
@@ -392,7 +436,7 @@ may require special attention:
 
 <li>Often, serialization is simply a means of transporting data, without
     long-term storage. Classes that are shrunk and obfuscated should then
-    continue to function fine with the following additional directives:
+    continue to function fine with the following additional options:
 
 <pre>
 -keepclassmembers class * implements java.io.Serializable {
@@ -407,7 +451,7 @@ may require special attention:
     The <a
     href="usage.html#keepclassmembers"><code>-keepclassmembers</code></a>
     option makes sure that any serialization methods are kept. By using this
-    directive instead of the basic <code>-keep</code> directive, we're not
+    option instead of the basic <code>-keep</code> option, we're not
     forcing preservation of <i>all</i> serializable classes, just preservation
     of the listed members of classes that are actually used.
     <p>
@@ -416,7 +460,7 @@ may require special attention:
     versions of the serializable classes. One then has to take care the classes
     remain compatible with their unprocessed versions and with future
     processed versions. In such cases, the relevant classes will most likely
-    have <code>serialVersionUID</code> fields. The following directives should
+    have <code>serialVersionUID</code> fields. The following options should
     then be sufficient to ensure compatibility over time:
 
 <pre>
@@ -470,7 +514,7 @@ may require special attention:
 </pre>
 <p>
 
-    The new directives force preservation of the elements involved in the UID
+    The new options force preservation of the elements involved in the UID
     computation. In addition, the user will have to manually specify all
     interfaces of the serializable classes (using something like "<code>-keep
     interface MyInterface</code>"), since these names are also used when
@@ -480,7 +524,7 @@ may require special attention:
 </ul>
 <p>
 
-Note that the above directives may preserve more classes and class members
+Note that the above options may preserve more classes and class members
 than strictly necessary. For instance, a large number of classes may implement
 the <code>Serialization</code> interface, yet only a small number may actually
 ever be serialized. Knowing your application and tuning the configuration
@@ -488,9 +532,9 @@ often produces more compact results.
 
 <a name="beans">&nbsp;</a>
 <h3>Processing bean classes</h3>
-If your application, applet, servlet, library, etc., uses extensive
+If your application, applet, servlet, library, etc., makes extensive use of
 introspection on bean classes to find bean editor classes, or getter and
-setter methods, then configuration may become laborious. There's not much else
+setter methods, then configuration may become painful. There's not much else
 you can do than making sure the bean class names, or the getter and setter
 names don't change. For instance:
 <pre>
@@ -503,39 +547,34 @@ names don't change. For instance:
 </pre>
 <p>
 If there are too many elements to list explicitly, wildcards in class names
-and method signatures might be helpful. This example encompasses a wide range
-of setters and getters:
+and method signatures might be helpful. This example should encompasses all
+possible setters and getters in classes in the package <code>mybeans</code>:
 <pre>
 -keep class mybeans.** {
-    void set*(%);
-    void set*(**);
-    void set*(%[]);
-    void set*(**[]);
-    void set*(int, %);
-    void set*(int, **);
+    void set*(***);
+    void set*(int, ***);
 
-    %    get*();
-    **   get*();
-    %[]  get*();
-    **[] get*();
-    %    get*(int);
-    **   get*(int);
+    boolean is*(); 
+    boolean is*(int);
+
+    *** get*();
+    *** get*(int);
 }
 </pre>
 <p>
-The '<code>%</code>' wildcard matches any primitive type, while the
-'<code>**</code>' wildcard matches any class name. Array types  have to be
-specified explicitly. This results in a short list of alternative method
-signatures.
+The '<code>***</code>' wildcard matches any type (primitive or non-primitive,
+array or non-array). The methods with the '<code>int</code>' arguments matches
+properties that are lists.
 
 <a name="annotations">&nbsp;</a>
 <h3>Processing annotations</h3>
-As of JDK 5.0, class files can contain annotations. Annotations are
-represented by attributes that have no direct effect on the execution of the
-code. However, their values can be retrieved through introspection, allowing
-developers to adapt the execution behavior accordingly. By default, ProGuard
-treats annotation attributes as optional, and removes them in the obfuscation
-step. If they are required, you'll have to specify this explicitly:
+If your application, applet, servlet, library, etc., uses annotations, you may
+want to preserve them in the processed output. Annotations are represented by
+attributes that have no direct effect on the execution of the code. However,
+their values can be retrieved through introspection, allowing developers to
+adapt the execution behavior accordingly. By default, ProGuard treats
+annotation attributes as optional, and removes them in the obfuscation step.
+If they are required, you'll have to specify this explicitly:
 <pre>
 -keepattributes *Annotation*
 </pre>
@@ -565,7 +604,7 @@ implementations that you are processing as entry points:
 -keep class * implements java.sql.Driver
 </pre>
 <p>
-This directive also gets rid of the note that ProGuard prints out about
+This option also gets rid of the note that ProGuard prints out about
 <code>(java.sql.Driver)Class.forName</code> constructs, if you are
 instantiating a driver in your code (without necessarily implementing any
 drivers yourself).
@@ -583,7 +622,7 @@ point, for instance like this:
 }
 </pre>
 <p>
-This directive also keeps the classes themselves.
+This option also keeps the classes themselves.
 
 <a name="rmi">&nbsp;</a>
 <h3>Processing RMI code</h3>
@@ -591,8 +630,6 @@ Reportedly, the easiest way to handle RMI code is to process the code with
 ProGuard first and then invoke the <code>rmic</code> tool. If that is not
 possible, you may want to try something like this:
 <pre>
--keepattributes Exceptions
-
 -keep interface * extends java.rmi.Remote {
     &lt;methods&gt;;
 }
@@ -602,13 +639,31 @@ possible, you may want to try something like this:
 }
 </pre>
 <p>
-The first directive keeps all your Remote interfaces and their methods. The
+The first option keeps all your Remote interfaces and their methods. The
 second one keeps all the implementations, along with their particular RMI
 constructors, if any.
+
+<a name="resourcefiles">&nbsp;</a>
+<h3>Processing resource files</h3>
+If your application, applet, servlet, library, etc., contains resource files,
+it may be necessary to adapt their names and/or their contents when the
+application is obfuscated. The following two options can achieve this
+automatically:
+<pre>
+-adaptresourcefilenames    **.properties,**.gif,**.jpg
+-adaptresourcefilecontents **.properties,META-INF/MANIFEST.MF
+</pre>
 <p>
-The <code>Exceptions</code> attribute has to be kept too, because the RMI
-handling code performs introspection to check whether the method signatures
-are compatible.
+The <a href="usage.html#adaptresourcefilenames">-adaptresourcefilenames</a>
+option in this case renames properties files and image files in the processed
+output, based on the obfuscated names of their corresponding class files (if
+any). The <a
+href="usage.html#adaptresourcefilecontents">-adaptresourcefilecontents</a>
+option looks for class names in properties files and in the manifest file, and
+replaces these names by the obfuscated names (if any). You'll probably want to
+adapt the filters to suit your application. Note that package names of
+resource files that don't have corresponding class files are not updated in
+the current implementation.
 
 <a name="stacktrace">&nbsp;</a>
 <h3>Producing useful obfuscated stack traces</h3>
@@ -635,6 +690,113 @@ The information will only be useful if we can map the obfuscated names back to
 their original names, so we're saving the mapping to a file
 <code>out.map</code>. The information can then be used by the <a
 href="retrace/index.html">ReTrace</a> tool to restore the original stack trace.
+
+<a name="repackaging">&nbsp;</a>
+<h3>Obfuscating package names</h3>
+Package names can be obfuscated in various ways, with increasing levels of
+obfuscation and compactness. For example, consider the following classes:
+<pre>
+mycompany.myapplication.MyMain
+mycompany.myapplication.Foo
+mycompany.myapplication.Bar
+mycompany.myapplication.extra.FirstExtra
+mycompany.myapplication.extra.SecondExtra
+mycompany.util.FirstUtil
+mycompany.util.SecondUtil
+</pre>
+<p>
+Let's assume the class name <code>mycompany.myapplication.MyMain</code> is the
+main application class that is kept by the configuration. All other class names
+can be obfuscated.
+<p>
+By default, packages that contain classes that can't be renamed aren't renamed
+either, and the package hierarchy is preserved. This results in obfuscated
+class names like these:
+<pre>
+mycompany.myapplication.MyMain
+mycompany.myapplication.a
+mycompany.myapplication.b
+mycompany.myapplication.a.a
+mycompany.myapplication.a.b
+mycompany.a.a
+mycompany.a.b
+</pre>
+<p>
+The <a
+href="usage.html#flattenpackagehierarchy"><code>-flattenpackagehierarchy</code></a>
+option obfuscates the package names further, by flattening the package
+hierarchy of obfuscated packages:
+<pre>
+-flattenpackagehierarchy 'myobfuscated'
+</pre>
+<p>
+The obfuscated class names then look as follows:
+<pre>
+mycompany.myapplication.MyMain
+mycompany.myapplication.a
+mycompany.myapplication.b
+myobfuscated.a.a
+myobfuscated.a.b
+myobfuscated.b.a
+myobfuscated.b.b
+</pre>
+<p>
+Alternatively, the <a
+href="usage.html#repackageclasses"><code>-repackageclasses</code></a> option
+obfuscates the entire packaging, by combining obfuscated classes into a single
+package:
+<pre>
+-repackageclasses 'myobfuscated'
+</pre>
+The obfuscated class names then look as follows:
+<pre>
+mycompany.myapplication.MyMain
+mycompany.myapplication.a
+mycompany.myapplication.b
+myobfuscated.a
+myobfuscated.b
+myobfuscated.c
+myobfuscated.d
+</pre>
+<p>
+Additionally specifying the <a
+href="usage.html#allowaccessmodification"><code>-allowaccessmodification</code></a>
+option allows access permissions of classes and class members to
+be broadened, opening up the opportunity to repackage all obfuscated classes:
+<pre>
+-repackageclasses 'myobfuscated'
+-allowaccessmodification
+</pre>
+The obfuscated class names then look as follows:
+<pre>
+mycompany.myapplication.MyMain
+myobfuscated.a
+myobfuscated.b
+myobfuscated.c
+myobfuscated.d
+myobfuscated.e
+myobfuscated.f
+</pre>
+<p>
+The specified target package can always be the root package. For instance:
+<pre>
+-repackageclasses ''
+-allowaccessmodification
+</pre>
+The obfuscated class names are then the shortest possible names:
+<pre>
+mycompany.myapplication.MyMain
+a
+b
+c
+d
+e
+f
+</pre>
+<p>
+Note that not all levels of obfuscation of package names may be acceptable for
+all code. Notably, you may have to take into account that your application may
+contain <a href="#resourcefiles">resource files<a> that have to be adapted.
 
 <a name="restructuring">&nbsp;</a>
 <h3>Restructuring the output archives</h3>
@@ -834,6 +996,55 @@ jar as a library jar:
 }
 </pre>
 
+<a name="microedition">&nbsp;</a>
+<h3>Preverifying class files for Java Micro Edition</h3>
+Even if you're not interested in shrinking, optimizing, and obfuscating your
+midlets, as shown in the <a href="#midlets">midlets example</a>, you can still
+use ProGuard to preverify the class files for Java Micro Edition. ProGuard
+produces slightly more compact results compared to the traditional external
+preverifier.
+<pre>
+-injars      in.jar
+-outjars     out.jar
+-libraryjars /usr/local/java/wtk2.1/lib/midpapi20.jar
+-libraryjars /usr/local/java/wtk2.1/lib/cldcapi11.jar
+
+-dontshrink
+-dontoptimize
+-dontobfuscate
+
+-microedition
+</pre>
+<p>
+We're not processing the input, just making sure the class files are
+preverified by targeting them at Java Micro Edition with the <a
+href="usage.html#microedition"><code>-microedition</code></a> option. Note
+that we don't need any <code>-keep</code> options to specify entry points; all
+class files are simply preverified.
+
+<a name="upgrade">&nbsp;</a>
+<h3>Upgrading class files to Java 6</h3>
+The following options upgrade class files to Java 6, by updating their
+internal version numbers and preverifying them. The class files can then be
+loaded more efficiently by the Java 6 Virtual Machine.
+<pre>
+-injars      in.jar
+-outjars     out.jar
+-libraryjars &lt;java.home&gt;/lib/rt.jar
+
+-dontshrink
+-dontoptimize
+-dontobfuscate
+
+-target 1.6
+</pre>
+<p>
+We're not processing the input, just retargeting the class files with the <a
+href="usage.html#target"><code>-target</code></a> option. They will
+automatically be preverified for Java 6 as a result. Note that we don't need
+any <code>-keep</code> options to specify entry points; all class files are
+simply updated and preverified.
+
 <a name="deadcode">&nbsp;</a>
 <h3>Finding dead code</h3>
 These options list unused classes, fields, and methods in the application
@@ -841,8 +1052,10 @@ These options list unused classes, fields, and methods in the application
 <pre>
 -injars      in.jar
 -libraryjars &lt;java.home&gt;/lib/rt.jar
+
 -dontoptimize
 -dontobfuscate
+-dontpreverify
 -printusage
 
 -keep public class mypackage.MyApplication {
@@ -851,8 +1064,7 @@ These options list unused classes, fields, and methods in the application
 </pre>
 <p>
 We're not specifying an output jar, just printing out some results. We're
-saving some processing time by skipping the optimization and obfuscation
-steps.
+saving some processing time by skipping the other processing steps.
 <p>
 The java compiler inlines primitive constants and String constants
 (<code>static final</code> fields). ProGuard would therefore list such fields
@@ -873,14 +1085,59 @@ These options print out the internal structure of all class files in the input
 jar:
 <pre>
 -injars in.jar
+
 -dontshrink
 -dontoptimize
 -dontobfuscate
+-dontpreverify
+
 -dump
 </pre>
 <p>
 Note how we don't need to specify the Java run-time jar, because we're not
 processing the input jar at all.
+
+<a name="annotated">&nbsp;</a>
+<h3>Using annotations to configure ProGuard</h3>
+
+The traditional ProGuard configuration allows to keep a clean separation
+between the code and the configuration for shrinking, optimization, and
+obfuscation. However, it is also possible to define specific annotations,
+and then annotate the code to configure the processing.
+<p>
+You can find a set of such predefined annotations in the directory
+<code>examples/annotations/lib</code> in the ProGuard distribution.
+The annotation classes are defined in <code>annotations.jar</code>. The
+corresponding ProGuard configuration (or meta-configuration, if you prefer)
+is specified in <code>annotations.pro</code>. With these files, you can start
+annotating your code. For instance, a java source file
+<code>Application.java</code> can be annotated as follows:
+<pre>
+@KeepApplication
+public class Application {
+  ....
+}
+</pre>
+<p>
+The ProGuard configuration file for the application can then be simplified by
+leveraging off these annotations:
+<pre>
+-injars      in.jar
+-outjars     out.jar
+-libraryjars &lt;java.home&gt;/lib/rt.jar
+
+-include lib/annotations.pro
+</pre>
+<p>
+The annotations are effectively replacing the application-dependent
+<code>-keep</code> options. You may still wish to add traditional
+<code>-keep</code> options for processing <a href="#native">native
+methods</a>, <a href="#enumerations">enumerations</a>, <a
+href="#serializable">serializable classes</a>, and <a
+href="#annotations">annotations</a>.
+<p>
+The directory <code>examples/annotations</code> contains more examples that
+illustrate some of the possibilities.
 <p>
 
 <hr>

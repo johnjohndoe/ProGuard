@@ -1,6 +1,6 @@
-/* $Id: TracedBranchUnit.java,v 1.5.2.2 2007/01/18 21:31:53 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,125 +20,40 @@
  */
 package proguard.optimize.evaluation;
 
-import proguard.classfile.*;
-import proguard.classfile.attribute.*;
-import proguard.optimize.evaluation.value.*;
+import proguard.classfile.Clazz;
+import proguard.classfile.attribute.CodeAttribute;
+import proguard.evaluation.BasicBranchUnit;
+import proguard.evaluation.value.Value;
 
 /**
  * This BranchUnit remembers the branch unit commands that are invoked on it.
  *
  * @author Eric Lafortune
  */
-class TracedBranchUnit implements BranchUnit
+class   TracedBranchUnit
+extends BasicBranchUnit
 {
-    private boolean                wasCalled;
-    private InstructionOffsetValue traceBranchTargets;
-    private Value                  traceReturnValue;
-
-
-    /**
-     * Resets the flag that tells whether any of the branch unit commands was
-     * called.
-     */
-    public void resetCalled()
-    {
-        wasCalled = false;
-    }
-
-    /**
-     * Returns whether any of the branch unit commands was called.
-     */
-    public boolean wasCalled()
-    {
-        return wasCalled;
-    }
-
-
-    /**
-     * Sets the initial branch targets, which will be updated as the branch
-     * methods of the branch unit are called.
-     */
-    public void setTraceBranchTargets(InstructionOffsetValue branchTargets)
-    {
-        this.traceBranchTargets = branchTargets;
-    }
-
-    public InstructionOffsetValue getTraceBranchTargets()
-    {
-        return traceBranchTargets;
-    }
-
-
-    /**
-     * Sets the initial return Value, which will be generalized as the
-     * return method of the branch unit is called. The initial value may be
-     * null.
-     */
-    public void setTraceReturnValue(Value traceReturnValue)
-    {
-        this.traceReturnValue = traceReturnValue;
-    }
-
-    public Value getTraceReturnValue()
-    {
-        return traceReturnValue;
-    }
-
-
     // Implementations for BranchUnit.
 
-    public void branch(ClassFile    classFile,
-                       CodeAttrInfo codeAttrInfo,
-                       int          offset,
-                       int          branchTarget)
+    public void branchConditionally(Clazz         clazz,
+                                    CodeAttribute codeAttribute,
+                                    int           offset,
+                                    int           branchTarget,
+                                    int           conditional)
     {
-        branchConditionally(classFile,
-                            codeAttrInfo,
-                            offset,
-                            branchTarget,
-                            Value.ALWAYS);
-    }
-
-
-    public void branchConditionally(ClassFile    classFile,
-                                    CodeAttrInfo codeAttrInfo,
-                                    int          offset,
-                                    int          branchTarget,
-                                    int          conditional)
-    {
-        // Mark possible branches at the offset and at the branch target.
-        if (conditional != Value.NEVER)
+        if      (conditional == Value.ALWAYS)
         {
-            InstructionOffsetValue branchTargetValue = InstructionOffsetValueFactory.create(branchTarget);
-
-            // Accumulate the branch targets for the evaluator.
-            traceBranchTargets = conditional == Value.ALWAYS ?
-                branchTargetValue :
-                traceBranchTargets.generalize(branchTargetValue).instructionOffsetValue();
+            // Always branch.
+            super.branch(clazz, codeAttribute, offset, branchTarget);
         }
-
-        wasCalled = true;
-    }
-
-
-    public void returnFromMethod(Value returnValue)
-    {
-        traceReturnValue = traceReturnValue == null ?
-            returnValue :
-            traceReturnValue.generalize(returnValue);
-
-        // Stop processing this block.
-        traceBranchTargets = InstructionOffsetValueFactory.create();
-
-        wasCalled = true;
-    }
-
-
-    public void throwException()
-    {
-        // Stop processing this block.
-        traceBranchTargets = InstructionOffsetValueFactory.create();
-
-        wasCalled = true;
+        else if (conditional != Value.NEVER)
+        {
+            // Maybe branch.
+            super.branchConditionally(clazz, codeAttribute, offset, branchTarget, conditional);
+        }
+        else
+        {
+            super.setCalled();
+        }
     }
 }

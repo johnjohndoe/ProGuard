@@ -1,6 +1,6 @@
-/* $Id: ZipDataEntry.java,v 1.4.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,10 +20,10 @@
  */
 package proguard.io;
 
+import proguard.classfile.ClassConstants;
+
 import java.io.*;
 import java.util.zip.*;
-
-import proguard.classfile.ClassConstants;
 
 /**
  * This <code>DataEntry</code> represents a ZIP entry.
@@ -32,8 +32,8 @@ import proguard.classfile.ClassConstants;
  */
 public class ZipDataEntry implements DataEntry
 {
-    private DataEntry      parent;
-    private ZipEntry       zipEntry;
+    private final DataEntry      parent;
+    private final ZipEntry       zipEntry;
     private ZipInputStream zipInputStream;
 
 

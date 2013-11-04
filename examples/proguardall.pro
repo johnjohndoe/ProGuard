@@ -17,7 +17,7 @@
 # You may have to adapt the paths below.
 
 -libraryjars <java.home>/lib/rt.jar
--libraryjars /usr/local/java/ant1.6.2/lib/ant.jar
+-libraryjars /usr/local/java/ant1.6.5/lib/ant.jar
 -libraryjars /usr/local/java/wtk2.1/wtklib/kenv.zip
 
 # Allow methods with the same signature, except for the return type,
@@ -27,11 +27,7 @@
 
 # Put all obfuscated classes into the nameless root package.
 
--defaultpackage ''
-
-# Allow classes and class members to be made public.
-
--allowaccessmodification
+-repackageclasses ''
 
 # The main entry points.
 
@@ -50,18 +46,10 @@
 # If we have ant.jar, we can properly process the Ant task.
 
 -keep public class proguard.ant.* {
-    public void set*(%);
-    public void set*(**);
-    public void add*(**);
+    public void set*(***);
+    public void add*(***);
 }
 
 # If we have kenv.zip, we can process the J2ME WTK plugin.
 
 -keep public class proguard.wtk.ProGuardObfuscator
-
-# In addition, the following classes load resource files, based on their class
-# names or package names, so we don't want them to be obfuscated or moved to 
-# the default package.
-
--keep class proguard.gui.GUIResources
--keep class proguard.gui.ClassPathPanel$MyListCellRenderer

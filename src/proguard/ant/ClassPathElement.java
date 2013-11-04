@@ -1,6 +1,6 @@
-/* $Id: ClassPathElement.java,v 1.9.2.3 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -22,12 +22,9 @@ package proguard.ant;
 
 import org.apache.tools.ant.*;
 import org.apache.tools.ant.types.*;
-
 import proguard.*;
 
-import java.io.*;
-import java.lang.ref.Reference;
-import java.util.Stack;
+import java.io.File;
 
 /**
  * This FileSet represents a class path entry (or a set of class path entries)
@@ -168,25 +165,25 @@ public class ClassPathElement extends Path
     }
 
 
-    public void setJarFilter(String jarFilter)
+    public void setJarfilter(String jarFilter)
     {
         this.jarFilter = jarFilter;
     }
 
 
-    public void setWarFilter(String warFilter)
+    public void setWarfilter(String warFilter)
     {
         this.warFilter = warFilter;
     }
 
 
-    public void setEarFilter(String earFilter)
+    public void setEarfilter(String earFilter)
     {
         this.earFilter = earFilter;
     }
 
 
-    public void setZipFilter(String zipFilter)
+    public void setZipfilter(String zipFilter)
     {
         this.zipFilter = zipFilter;
     }

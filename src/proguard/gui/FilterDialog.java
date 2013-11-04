@@ -1,6 +1,6 @@
-/* $Id: FilterDialog.java,v 1.4.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,11 +20,10 @@
  */
 package proguard.gui;
 
-import java.awt.*;
-import java.awt.event.*;
-
 import javax.swing.*;
 import javax.swing.border.*;
+import java.awt.*;
+import java.awt.event.*;
 
 /**
  * This <code>JDialog</code> allows the user to enter a String.
@@ -51,11 +50,11 @@ public class FilterDialog extends JDialog
     private static final String DEFAULT_ZIP_FILTER = "**.zip";
 
 
-    private JTextField filterTextField    = new JTextField(40);
-    private JTextField jarFilterTextField = new JTextField(40);
-    private JTextField warFilterTextField = new JTextField(40);
-    private JTextField earFilterTextField = new JTextField(40);
-    private JTextField zipFilterTextField = new JTextField(40);
+    private final JTextField filterTextField    = new JTextField(40);
+    private final JTextField jarFilterTextField = new JTextField(40);
+    private final JTextField warFilterTextField = new JTextField(40);
+    private final JTextField earFilterTextField = new JTextField(40);
+    private final JTextField zipFilterTextField = new JTextField(40);
     private int        returnValue;
 
 
@@ -117,36 +116,36 @@ public class FilterDialog extends JDialog
         explanationTextArea.setWrapStyleWord(true);
 
         // Create the filter labels.
-        JLabel filterLabel    = new JLabel(GUIResources.getMessage("nameFilter"));
-        JLabel jarFilterLabel = new JLabel(GUIResources.getMessage("jarNameFilter"));
-        JLabel warFilterLabel = new JLabel(GUIResources.getMessage("warNameFilter"));
-        JLabel earFilterLabel = new JLabel(GUIResources.getMessage("earNameFilter"));
-        JLabel zipFilterLabel = new JLabel(GUIResources.getMessage("zipNameFilter"));
+        JLabel filterLabel    = new JLabel(msg("nameFilter"));
+        JLabel jarFilterLabel = new JLabel(msg("jarNameFilter"));
+        JLabel warFilterLabel = new JLabel(msg("warNameFilter"));
+        JLabel earFilterLabel = new JLabel(msg("earNameFilter"));
+        JLabel zipFilterLabel = new JLabel(msg("zipNameFilter"));
 
         // Create the filter panel.
         JPanel filterPanel = new JPanel(layout);
         filterPanel.setBorder(BorderFactory.createTitledBorder(etchedBorder,
-                                                               GUIResources.getMessage("filters")));
+                                                               msg("filters")));
 
         filterPanel.add(explanationTextArea, textConstraints);
 
-        filterPanel.add(filterLabel,         labelConstraints);
-        filterPanel.add(filterTextField,     textFieldConstraints);
+        filterPanel.add(tip(filterLabel,        "nameFilterTip"),     labelConstraints);
+        filterPanel.add(tip(filterTextField,    "fileNameFilterTip"), textFieldConstraints);
 
-        filterPanel.add(jarFilterLabel,      labelConstraints);
-        filterPanel.add(jarFilterTextField,  textFieldConstraints);
+        filterPanel.add(tip(jarFilterLabel,     "jarNameFilterTip"),  labelConstraints);
+        filterPanel.add(tip(jarFilterTextField, "fileNameFilterTip"), textFieldConstraints);
 
-        filterPanel.add(warFilterLabel,      labelConstraints);
-        filterPanel.add(warFilterTextField,  textFieldConstraints);
+        filterPanel.add(tip(warFilterLabel,     "warNameFilterTip"),  labelConstraints);
+        filterPanel.add(tip(warFilterTextField, "fileNameFilterTip"), textFieldConstraints);
 
-        filterPanel.add(earFilterLabel,      labelConstraints);
-        filterPanel.add(earFilterTextField,  textFieldConstraints);
+        filterPanel.add(tip(earFilterLabel,     "earNameFilterTip"),  labelConstraints);
+        filterPanel.add(tip(earFilterTextField, "fileNameFilterTip"), textFieldConstraints);
 
-        filterPanel.add(zipFilterLabel,      labelConstraints);
-        filterPanel.add(zipFilterTextField,  textFieldConstraints);
+        filterPanel.add(tip(zipFilterLabel,     "zipNameFilterTip"),  labelConstraints);
+        filterPanel.add(tip(zipFilterTextField, "fileNameFilterTip"), textFieldConstraints);
 
 
-        JButton okButton = new JButton(GUIResources.getMessage("ok"));
+        JButton okButton = new JButton(msg("ok"));
         okButton.addActionListener(new ActionListener()
         {
             public void actionPerformed(ActionEvent e)
@@ -156,7 +155,7 @@ public class FilterDialog extends JDialog
             }
         });
 
-        JButton cancelButton = new JButton(GUIResources.getMessage("cancel"));
+        JButton cancelButton = new JButton(msg("cancel"));
         cancelButton.addActionListener(new ActionListener()
         {
             public void actionPerformed(ActionEvent e)
@@ -292,5 +291,27 @@ public class FilterDialog extends JDialog
         show();
 
         return returnValue;
+    }
+
+
+    /**
+     * Attaches the tool tip from the GUI resources that corresponds to the
+     * given key, to the given component.
+     */
+    private static JComponent tip(JComponent component, String messageKey)
+    {
+        component.setToolTipText(msg(messageKey));
+
+        return component;
+    }
+
+
+    /**
+     * Returns the message from the GUI resources that corresponds to the given
+     * key.
+     */
+    private static String msg(String messageKey)
+    {
+         return GUIResources.getMessage(messageKey);
     }
 }

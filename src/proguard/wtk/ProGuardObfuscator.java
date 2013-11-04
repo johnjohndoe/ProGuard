@@ -1,6 +1,6 @@
-/* $Id: ProGuardObfuscator.java,v 1.15.2.2 2007/01/18 21:31:53 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,12 +20,10 @@
  */
 package proguard.wtk;
 
-import com.sun.kvem.environment.*;
+import com.sun.kvem.environment.Obfuscator;
 import proguard.*;
-import proguard.classfile.*;
 
 import java.io.*;
-import java.util.*;
 
 
 /**
@@ -87,7 +85,7 @@ public class ProGuardObfuscator implements Obfuscator
             configuration.programJars.add(new ClassPathEntry(new File(jarFileName), false));
             configuration.programJars.add(new ClassPathEntry(obfuscatedJarFile, true));
 
-            // The preverify tool seems to unpack the resulting class files,
+            // The preverify tool seems to unpack the resulting classes,
             // so we must not use mixed-case class names on Windows.
             configuration.useMixedCaseClassNames =
                 !System.getProperty("os.name").regionMatches(true, 0, "windows", 0, 7);

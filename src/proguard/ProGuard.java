@@ -1,6 +1,6 @@
-/* $Id: ProGuard.java,v 1.101.2.19 2007/12/09 12:35:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -8,7 +8,6 @@
  * under the terms of the GNU General Public License as published by the Free
  * Software Foundation; either version 2 of the License, or (at your option)
  * any later version.
- *
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -22,26 +21,27 @@
 package proguard;
 
 import proguard.classfile.ClassPool;
-import proguard.classfile.editor.ConstantPoolSorter;
+import proguard.classfile.editor.ClassElementSorter;
 import proguard.classfile.visitor.*;
 import proguard.obfuscate.Obfuscator;
 import proguard.optimize.Optimizer;
+import proguard.preverify.*;
 import proguard.shrink.Shrinker;
 
 import java.io.*;
 
 /**
- * Tool for shrinking, optimizing, and obfuscating Java class files.
+ * Tool for shrinking, optimizing, obfuscating, and preverifying Java classes.
  *
  * @author Eric Lafortune
  */
 public class ProGuard
 {
-    public static final String VERSION = "ProGuard, version 3.11";
+    public static final String VERSION = "ProGuard, version 4.0";
 
-    private Configuration configuration;
-    private ClassPool     programClassPool = new ClassPool();
-    private ClassPool     libraryClassPool = new ClassPool();
+    private final Configuration configuration;
+    private       ClassPool     programClassPool = new ClassPool();
+    private final ClassPool     libraryClassPool = new ClassPool();
 
 
     /**
@@ -63,19 +63,31 @@ public class ProGuard
 
         GPL.check();
 
-        readInput();
-
-        // The defaultPackage option implies the allowAccessModification option.
-        if (configuration.defaultPackage != null)
+        if (configuration.printConfiguration != null)
         {
-            configuration.allowAccessModification = true;
+            printConfiguration();
         }
 
-        if (configuration.shrink   ||
-            configuration.optimize ||
-            configuration.obfuscate)
+        if (configuration.programJars != null     &&
+            configuration.programJars.hasOutput() &&
+            new UpToDateChecker(configuration).check())
+        {
+            return;
+        }
+
+        readInput();
+
+        if (configuration.shrink    ||
+            configuration.optimize  ||
+            configuration.obfuscate ||
+            configuration.preverify)
         {
             initialize();
+        }
+
+        if (configuration.targetClassVersion != 0)
+        {
+            target();
         }
 
         if (configuration.printSeeds != null)
@@ -88,18 +100,32 @@ public class ProGuard
             shrink();
         }
 
+        if (configuration.preverify)
+        {
+            inlineSubroutines();
+        }
+
         if (configuration.optimize)
         {
-            optimize();
-
-            // Shrink again, if we may.
-            if (configuration.shrink)
+            for (int optimizationPass = 0;
+                 optimizationPass < configuration.optimizationPasses;
+                 optimizationPass++)
             {
-                // Don't print any usage this time around.
-                configuration.printUsage       = null;
-                configuration.whyAreYouKeeping = null;
+                if (!optimize())
+                {
+                    // Stop optimizing if the code doesn't improve any further.
+                    break;
+                }
 
-                shrink();
+                // Shrink again, if we may.
+                if (configuration.shrink)
+                {
+                    // Don't print any usage this time around.
+                    configuration.printUsage       = null;
+                    configuration.whyAreYouKeeping = null;
+
+                    shrink();
+                }
             }
         }
 
@@ -108,11 +134,17 @@ public class ProGuard
             obfuscate();
         }
 
-        if (configuration.shrink   ||
-            configuration.optimize ||
-            configuration.obfuscate)
+        if (configuration.preverify)
         {
-            sortConstantPools();
+            preverify();
+        }
+
+        if (configuration.shrink    ||
+            configuration.optimize  ||
+            configuration.obfuscate ||
+            configuration.preverify)
+        {
+            sortClassElements();
         }
 
         if (configuration.programJars.hasOutput())
@@ -123,6 +155,28 @@ public class ProGuard
         if (configuration.dump != null)
         {
             dump();
+        }
+    }
+
+
+    /**
+     * Prints out the configuration that ProGuard is using.
+     */
+    private void printConfiguration() throws IOException
+    {
+        if (configuration.verbose)
+        {
+            System.out.println("Printing configuration to [" + fileName(configuration.printConfiguration) + "]...");
+        }
+
+        PrintStream ps = createPrintStream(configuration.printConfiguration);
+        try
+        {
+            new ConfigurationWriter(ps).write(configuration);
+        }
+        finally
+        {
+            closePrintStream(ps);
         }
     }
 
@@ -158,6 +212,20 @@ public class ProGuard
 
 
     /**
+     * Sets that target versions of the program classes.
+     */
+    private void target() throws IOException
+    {
+        if (configuration.verbose)
+        {
+            System.out.println("Setting target versions...");
+        }
+
+        new Targeter(configuration).execute(programClassPool);
+    }
+
+
+    /**
      * Prints out classes and class members that are used as seeds in the
      * shrinking and obfuscation steps.
      */
@@ -174,25 +242,28 @@ public class ProGuard
             throw new IOException("You have to specify '-keep' options for the shrinking step.");
         }
 
-        PrintStream ps = isFile(configuration.printSeeds) ?
-            new PrintStream(new BufferedOutputStream(new FileOutputStream(configuration.printSeeds))) :
-            System.out;
-
-        // Create a visitor for printing out the seeds. Note that we're only
-        // printing out the program elements that are preserved against shrinking.
-        SimpleClassFilePrinter printer = new SimpleClassFilePrinter(false, ps);
-        ClassPoolVisitor classPoolvisitor =
-            ClassSpecificationVisitorFactory.createClassPoolVisitor(configuration.keep,
-                                                                    new ProgramClassFileFilter(printer),
-                                                                    new ProgramMemberInfoFilter(printer));
-
-        // Print out the seeds.
-        programClassPool.accept(classPoolvisitor);
-        libraryClassPool.accept(classPoolvisitor);
-
-        if (ps != System.out)
+        PrintStream ps = createPrintStream(configuration.printSeeds);
+        try
         {
-            ps.close();
+            // Create a visitor for printing out the seeds. We're  printing out
+            // the program elements that are preserved against shrinking,
+            // optimization, or obfuscation.
+            SimpleClassPrinter printer = new SimpleClassPrinter(false, ps);
+            ClassPoolVisitor classPoolvisitor =
+                ClassSpecificationVisitorFactory.createClassPoolVisitor(configuration.keep,
+                                                                        new ProgramClassFilter(printer),
+                                                                        new ProgramMemberFilter(printer),
+                                                                        true,
+                                                                        true,
+                                                                        true);
+
+            // Print out the seeds.
+            programClassPool.accept(classPoolvisitor);
+            libraryClassPool.accept(classPoolvisitor);
+        }
+        finally
+        {
+            closePrintStream(ps);
         }
     }
 
@@ -215,61 +286,43 @@ public class ProGuard
             // We'll print out the usage, if requested.
             if (configuration.printUsage != null)
             {
-                System.out.println("Printing usage" +
-                                   (isFile(configuration.printUsage) ?
-                                       " to [" + configuration.printUsage.getAbsolutePath() + "]" :
-                                       "..."));
+                System.out.println("Printing usage to [" + fileName(configuration.printUsage) + "]...");
             }
         }
 
-        // Check if we have at least some keep commands.
-        if (configuration.keep == null)
-        {
-            throw new IOException("You have to specify '-keep' options for the shrinking step.");
-        }
-
-        int originalProgramClassPoolSize = programClassPool.size();
-
         // Perform the actual shrinking.
-        programClassPool = new Shrinker(configuration).execute(programClassPool, libraryClassPool);
+        programClassPool =
+            new Shrinker(configuration).execute(programClassPool, libraryClassPool);
+    }
 
-        // Check if we have at least some output class files.
-        int newProgramClassPoolSize = programClassPool.size();
-        if (newProgramClassPoolSize == 0)
-        {
-            throw new IOException("The output jar is empty. Did you specify the proper '-keep' options?");
-        }
 
+    /**
+     * Performs the subroutine inlining step.
+     */
+    private void inlineSubroutines()
+    {
         if (configuration.verbose)
         {
-            System.out.println("Removing unused program classes and class elements...");
-            System.out.println("  Original number of program classes: " + originalProgramClassPoolSize);
-            System.out.println("  Final number of program classes:    " + newProgramClassPoolSize);
+            System.out.println("Inlining subroutines...");
         }
+
+        // Perform the actual inlining.
+        new SubroutineInliner(configuration).execute(programClassPool);
     }
 
 
     /**
      * Performs the optimization step.
      */
-    private void optimize() throws IOException
+    private boolean optimize() throws IOException
     {
         if (configuration.verbose)
         {
             System.out.println("Optimizing...");
         }
 
-        // Check if we have at least some keep commands.
-        if (configuration.keep         == null &&
-            configuration.keepNames    == null &&
-            configuration.applyMapping == null &&
-            configuration.printMapping == null)
-        {
-            throw new IOException("You have to specify '-keep' options for the optimization step.");
-        }
-
         // Perform the actual optimization.
-        new Optimizer(configuration).execute(programClassPool, libraryClassPool);
+        return new Optimizer(configuration).execute(programClassPool, libraryClassPool);
     }
 
 
@@ -285,16 +338,13 @@ public class ProGuard
             // We'll apply a mapping, if requested.
             if (configuration.applyMapping != null)
             {
-                System.out.println("Applying mapping [" + configuration.applyMapping.getAbsolutePath() + "]");
+                System.out.println("Applying mapping [" + fileName(configuration.applyMapping) + "]");
             }
 
             // We'll print out the mapping, if requested.
             if (configuration.printMapping != null)
             {
-                System.out.println("Printing mapping" +
-                                   (isFile(configuration.printMapping) ?
-                                       " to [" + configuration.printMapping.getAbsolutePath() + "]" :
-                                       "..."));
+                System.out.println("Printing mapping to [" + fileName(configuration.printMapping) + "]...");
             }
         }
 
@@ -304,12 +354,26 @@ public class ProGuard
 
 
     /**
-     * Sorts the constant pools of all program class files.
+     * Performs the preverification step.
      */
-    private void sortConstantPools()
+    private void preverify()
     {
-        // TODO: Avoid duplicate constant pool entries.
-        programClassPool.classFilesAccept(new ConstantPoolSorter(1024));
+        if (configuration.verbose)
+        {
+            System.out.println("Preverifying...");
+        }
+
+        // Perform the actual preverification.
+        new Preverifier(configuration).execute(programClassPool);
+    }
+
+
+    /**
+     * Sorts the elements of all program classes.
+     */
+    private void sortClassElements()
+    {
+        programClassPool.classesAccept(new ClassElementSorter());
     }
 
 
@@ -329,28 +393,66 @@ public class ProGuard
 
 
     /**
-     * Prints out the contents of the program class files.
+     * Prints out the contents of the program classes.
      */
     private void dump() throws IOException
     {
         if (configuration.verbose)
         {
-            System.out.println("Printing classes" +
-                               (isFile(configuration.dump) ?
-                                   " to [" + configuration.dump.getAbsolutePath() + "]" :
-                                   "..."));
+            System.out.println("Printing classes to [" + fileName(configuration.dump) + "]...");
         }
 
-        PrintStream ps = isFile(configuration.dump) ?
-            new PrintStream(new BufferedOutputStream(new FileOutputStream(configuration.dump))) :
-            System.out;
-
-        programClassPool.classFilesAccept(new ClassFilePrinter(ps));
-
-        if (isFile(configuration.dump))
+        PrintStream ps = createPrintStream(configuration.dump);
+        try
         {
-            ps.close();
+            programClassPool.classesAccept(new ClassPrinter(ps));
         }
+        finally
+        {
+            closePrintStream(ps);
+        }
+    }
+
+
+    /**
+     * Returns a print stream for the given file, or the standard output if
+     * the file name is empty.
+     */
+    private PrintStream createPrintStream(File file)
+    throws FileNotFoundException
+    {
+        return isFile(file) ?
+            new PrintStream(new BufferedOutputStream(new FileOutputStream(file))) :
+            System.out;
+    }
+
+
+    /**
+     * Closes the given print stream, or closes it if is the standard output.
+     * @param printStream
+     */
+    private void closePrintStream(PrintStream printStream)
+    {
+        if (printStream == System.out)
+        {
+            printStream.flush();
+        }
+        else
+        {
+            printStream.close();
+        }
+    }
+
+
+    /**
+     * Returns the absolute file name for the given file, or the standard output
+     * if the file name is empty.
+     */
+    private String fileName(File file)
+    {
+        return isFile(file) ?
+            file.getAbsolutePath() :
+            "standard output";
     }
 
 
@@ -387,14 +489,14 @@ public class ProGuard
             try
             {
                 parser.parse(configuration);
-
-                // Execute ProGuard with these options.
-                new ProGuard(configuration).execute();
             }
             finally
             {
                 parser.close();
             }
+
+            // Execute ProGuard with these options.
+            new ProGuard(configuration).execute();
         }
         catch (Exception ex)
         {

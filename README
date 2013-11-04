@@ -40,7 +40,7 @@ If you want to compile the ProGuard Ant task as well:
     javac -sourcepath src -d classes -classpath lib/ant.jar \
         src/proguard/ant/ProGuardTask.java
 
-If you want to compile the JME WTK obfuscator plug-in:
+If you want to compile the J2ME WTK obfuscator plug-in:
 
     javac -sourcepath src -d classes -classpath wtklib/kenv.zip \
         src/proguard/wtk/ProGuardObfuscator.java

@@ -1,6 +1,6 @@
-/* $Id: AccessUtil.java,v 1.6.2.2 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,7 +20,7 @@
  */
 package proguard.classfile.util;
 
-import proguard.classfile.*;
+import proguard.classfile.ClassConstants;
 
 
 /**
@@ -78,10 +78,10 @@ public class AccessUtil
     {
         switch (accessLevel)
         {
-            case PRIVATE:         return ClassConstants.INTERNAL_ACC_PRIVATE;
-            default:              return 0;
-            case PROTECTED:       return ClassConstants.INTERNAL_ACC_PROTECTED;
-            case PUBLIC:          return ClassConstants.INTERNAL_ACC_PUBLIC;
+            case PRIVATE:   return ClassConstants.INTERNAL_ACC_PRIVATE;
+            default:        return 0;
+            case PROTECTED: return ClassConstants.INTERNAL_ACC_PROTECTED;
+            case PUBLIC:    return ClassConstants.INTERNAL_ACC_PUBLIC;
         }
     }
 
@@ -93,6 +93,7 @@ public class AccessUtil
      */
     public static int replaceAccessFlags(int accessFlags, int newAccessFlags)
     {
+        // A private class member should not be explicitly final.
         if (newAccessFlags == ClassConstants.INTERNAL_ACC_PRIVATE)
         {
             accessFlags &= ~ClassConstants.INTERNAL_ACC_FINAL;

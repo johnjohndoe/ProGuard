@@ -1,6 +1,6 @@
-/* $Id: TableSwitchInstruction.java,v 1.7.2.2 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -21,7 +21,8 @@
 package proguard.classfile.instruction;
 
 import proguard.classfile.*;
-import proguard.classfile.attribute.*;
+import proguard.classfile.attribute.CodeAttribute;
+import proguard.classfile.instruction.visitor.InstructionVisitor;
 
 /**
  * This Instruction represents a simple instruction without variable arguments
@@ -29,13 +30,10 @@ import proguard.classfile.attribute.*;
  *
  * @author Eric Lafortune
  */
-public class TableSwitchInstruction extends Instruction
+public class TableSwitchInstruction extends SwitchInstruction
 {
-    public int   defaultOffset;
-    public int   lowCase;
-    public int   highCase;
-    public int   jumpOffsetCount;
-    public int[] jumpOffsets;
+    public int lowCase;
+    public int highCase;
 
 
     /**
@@ -45,18 +43,34 @@ public class TableSwitchInstruction extends Instruction
 
 
     /**
+     * Creates a new TableSwitchInstruction with the given arguments.
+     */
+    public TableSwitchInstruction(byte  opcode,
+                                  int   defaultOffset,
+                                  int   lowCase,
+                                  int   highCase,
+                                  int[] jumpOffsets)
+    {
+        this.opcode        = opcode;
+        this.defaultOffset = defaultOffset;
+        this.lowCase       = lowCase;
+        this.highCase      = highCase;
+        this.jumpOffsets   = jumpOffsets;
+    }
+
+
+    /**
      * Copies the given instruction into this instruction.
      * @param tableSwitchInstruction the instruction to be copied.
      * @return this instruction.
      */
     public TableSwitchInstruction copy(TableSwitchInstruction tableSwitchInstruction)
     {
-        this.opcode          = tableSwitchInstruction.opcode;
-        this.defaultOffset   = tableSwitchInstruction.defaultOffset;
-        this.lowCase         = tableSwitchInstruction.lowCase;
-        this.highCase        = tableSwitchInstruction.highCase;
-        this.jumpOffsetCount = tableSwitchInstruction.jumpOffsetCount;
-        this.jumpOffsets     = tableSwitchInstruction.jumpOffsets;
+        this.opcode        = tableSwitchInstruction.opcode;
+        this.defaultOffset = tableSwitchInstruction.defaultOffset;
+        this.lowCase       = tableSwitchInstruction.lowCase;
+        this.highCase      = tableSwitchInstruction.highCase;
+        this.jumpOffsets   = tableSwitchInstruction.jumpOffsets;
 
         return this;
     }
@@ -80,16 +94,10 @@ public class TableSwitchInstruction extends Instruction
         lowCase       = readInt(code, offset); offset += 4;
         highCase      = readInt(code, offset); offset += 4;
 
-        // Make sure there is a sufficiently large jump offset table.
-        jumpOffsetCount = highCase - lowCase + 1;
-        if (jumpOffsets == null ||
-            jumpOffsets.length < jumpOffsetCount)
-        {
-            jumpOffsets = new int[jumpOffsetCount];
-        }
-
         // Read the jump offsets.
-        for (int index = 0; index < jumpOffsetCount; index++)
+        jumpOffsets = new int[highCase - lowCase + 1];
+
+        for (int index = 0; index < jumpOffsets.length; index++)
         {
             jumpOffsets[index] = readInt(code, offset); offset += 4;
         }
@@ -124,22 +132,8 @@ public class TableSwitchInstruction extends Instruction
     }
 
 
-    public void accept(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, InstructionVisitor instructionVisitor)
+    public void accept(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, InstructionVisitor instructionVisitor)
     {
-        instructionVisitor.visitTableSwitchInstruction(classFile, methodInfo, codeAttrInfo, offset, this);
-    }
-
-
-    public String toString(int offset)
-    {
-        return "["+offset+"] "+getName()+" (low="+lowCase+", high="+highCase+")";
-    }
-
-
-    // Implementations for Object.
-
-    public String toString()
-    {
-        return getName()+" (low="+lowCase+", high="+highCase+")";
+        instructionVisitor.visitTableSwitchInstruction(clazz, method, codeAttribute, offset, this);
     }
 }

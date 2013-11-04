@@ -1,6 +1,6 @@
-/* $Id: DescriptorClassEnumeration.java,v 1.12.2.2 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,7 +20,7 @@
  */
 package proguard.classfile.util;
 
-import proguard.classfile.*;
+import proguard.classfile.ClassConstants;
 
 /**
  * A <code>DescriptorClassEnumeration</code> provides an enumeration of all
@@ -153,8 +153,8 @@ public class DescriptorClassEnumeration
             System.out.println("  Fluff: ["+enumeration.nextFluff()+"]");
             while (enumeration.hasMoreClassNames())
             {
-                System.out.println("  Name:  ["+enumeration.nextClassName()+"]");
-                System.out.println("  Fluff: ["+enumeration.nextFluff()+"]");
+                System.out.println(" Name:  ["+enumeration.nextClassName()+"]");
+                System.out.println(" Fluff: ["+enumeration.nextFluff()+"]");
             }
         }
         catch (Exception ex)

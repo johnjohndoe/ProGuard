@@ -1,6 +1,6 @@
-/* $Id: MessageDialogRunnable.java,v 1.6.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,9 +20,8 @@
  */
 package proguard.gui;
 
-import java.awt.*;
-
 import javax.swing.*;
+import java.awt.*;
 
 
 /**
@@ -30,17 +29,17 @@ import javax.swing.*;
  *
  * @author Eric Lafortune
  */
-class MessageDialogRunnable implements Runnable
+final class MessageDialogRunnable implements Runnable
 {
-    private Component parentComponent;
-    private Object    message;
-    private String    title;
-    private int       messageType;
+    private final Component parentComponent;
+    private final Object    message;
+    private final String    title;
+    private final int       messageType;
 
 
     /**
      * Creates a new MessageDialogRunnable object.
-     * @see JOptionPane.showMessageDialog
+     * @see JOptionPane#showMessageDialog(Component, Object, String, int)
      */
     public static void showMessageDialog(Component parentComponent,
                                          Object    message,
@@ -56,7 +55,7 @@ class MessageDialogRunnable implements Runnable
 
     /**
      * Creates a new MessageDialogRunnable object.
-     * @see JOptionPane.showMessageDialog
+     * @see JOptionPane#showMessageDialog(Component, Object, String, int)
      */
     public MessageDialogRunnable(Component parentComponent,
                                  Object    message,

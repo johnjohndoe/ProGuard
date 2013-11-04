@@ -1,6 +1,6 @@
-/* $Id: ParseException.java,v 1.7.2.2 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -40,8 +40,8 @@ public class ParseException extends Exception {
     /**
      * Constructs a <code>ParseException</code> with the specified detail
      * message. The error message string <code>s</code> can later be
-     * retrieved by the <code>{@link java.lang.Throwable#getMessage}</code>
-     * method of class <code>java.lang.Throwable</code>.
+     * retrieved by the <code>{@link Throwable#getMessage}</code>
+     * method of class <code>Throwable</code>.
      *
      * @param s the detail message.
      */

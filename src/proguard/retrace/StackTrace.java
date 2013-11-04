@@ -1,6 +1,6 @@
-/* $Id: StackTrace.java,v 1.8.2.2 2007/01/18 21:31:53 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,10 +20,10 @@
  */
 package proguard.retrace;
 
+import proguard.obfuscate.MappingProcessor;
+
 import java.io.*;
 import java.util.*;
-
-import proguard.obfuscate.MappingProcessor;
 
 
 /**
@@ -32,13 +32,13 @@ import proguard.obfuscate.MappingProcessor;
  *
  * @author Eric Lafortune
  */
-class StackTrace implements MappingProcessor
+final class StackTrace implements MappingProcessor
 {
     // The stack trace settings.
-    private boolean verbose;
+    private final boolean verbose;
 
     // The stack trace items.
-    private List stackTraceItems = new ArrayList();
+    private final List stackTraceItems = new ArrayList();
 
 
     /**
@@ -105,6 +105,7 @@ class StackTrace implements MappingProcessor
                 }
                 catch (IOException ex)
                 {
+                    // This shouldn't happen.
                 }
             }
         }
@@ -128,8 +129,8 @@ class StackTrace implements MappingProcessor
 
     // Implementations for MappingProcessor.
 
-    public boolean processClassFileMapping(String className,
-                                           String newClassName)
+    public boolean processClassMapping(String className,
+                                       String newClassName)
     {
         // Delegate to each of the stack trace items.
         boolean present = false;
@@ -137,8 +138,8 @@ class StackTrace implements MappingProcessor
         {
             StackTraceItem item = (StackTraceItem)stackTraceItems.get(index);
 
-            present |= item.processClassFileMapping(className,
-                                                    newClassName);
+            present |= item.processClassMapping(className,
+                                                newClassName);
         }
 
         return present;

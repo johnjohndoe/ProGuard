@@ -1,6 +1,6 @@
-/* $Id: AttributeShrinker.java,v 1.17.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -22,110 +22,71 @@ package proguard.obfuscate;
 
 import proguard.classfile.*;
 import proguard.classfile.attribute.*;
-import proguard.classfile.attribute.annotation.*;
+import proguard.classfile.attribute.visitor.AttributeVisitor;
+import proguard.classfile.util.SimplifiedVisitor;
 import proguard.classfile.visitor.*;
 
 /**
- * This ClassFileVisitor removes attributes that are not marked
- * as being used or required.
+ * This ClassVisitor removes attributes that are not marked as being used or
+ * required.
  *
  * @see AttributeUsageMarker
  *
  * @author Eric Lafortune
  */
 public class AttributeShrinker
-  implements ClassFileVisitor,
-             MemberInfoVisitor,
-             AttrInfoVisitor
+extends      SimplifiedVisitor
+implements   ClassVisitor,
+             MemberVisitor,
+             AttributeVisitor
 {
-    // Implementations for ClassFileVisitor.
+    // Implementations for ClassVisitor.
 
-    public void visitProgramClassFile(ProgramClassFile programClassFile)
+    public void visitProgramClass(ProgramClass programClass)
     {
         // Compact the array for class attributes.
-        programClassFile.u2attributesCount =
-            shrinkArray(programClassFile.attributes,
-                        programClassFile.u2attributesCount);
+        programClass.u2attributesCount =
+            shrinkArray(programClass.attributes,
+                        programClass.u2attributesCount);
 
         // Compact the attributes in fields, methods, and class attributes,
-        programClassFile.fieldsAccept(this);
-        programClassFile.methodsAccept(this);
-        programClassFile.attributesAccept(this);
+        programClass.fieldsAccept(this);
+        programClass.methodsAccept(this);
+        programClass.attributesAccept(this);
     }
 
 
-    public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
+    public void visitLibraryClass(LibraryClass libraryClass)
     {
-        // Library class files are left unchanged.
+        // Library classes are left unchanged.
     }
 
 
-    // Implementations for MemberInfoVisitor.
+    // Implementations for MemberVisitor.
 
-    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
-    {
-        visitMemberInfo(programClassFile, programFieldInfo);
-    }
-
-
-    public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
-    {
-        visitMemberInfo(programClassFile, programMethodInfo);
-    }
-
-
-    private void visitMemberInfo(ProgramClassFile programClassFile, ProgramMemberInfo programMemberInfo)
+    public void visitProgramMember(ProgramClass programClass, ProgramMember programMember)
     {
         // Compact the attributes array.
-        programMemberInfo.u2attributesCount =
-            shrinkArray(programMemberInfo.attributes,
-                        programMemberInfo.u2attributesCount);
+        programMember.u2attributesCount =
+            shrinkArray(programMember.attributes,
+                        programMember.u2attributesCount);
 
         // Compact any attributes of the remaining attributes.
-        programMemberInfo.attributesAccept(programClassFile, this);
+        programMember.attributesAccept(programClass, this);
     }
 
 
-    public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo)
-    {
-        // Library class files are left unchanged.
-    }
+    // Implementations for AttributeVisitor.
+
+    public void visitAnyAttribute(Clazz clazz, Attribute attribute) {}
 
 
-    public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo)
-    {
-        // Library class files are left unchanged.
-    }
-
-
-    // Implementations for AttrInfoVisitor.
-
-    public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo) {}
-    public void visitInnerClassesAttrInfo(ClassFile classFile, InnerClassesAttrInfo innerClassesAttrInfo) {}
-    public void visitEnclosingMethodAttrInfo(ClassFile classFile, EnclosingMethodAttrInfo enclosingMethodAttrInfo) {}
-    public void visitConstantValueAttrInfo(ClassFile classFile, FieldInfo fieldInfo, ConstantValueAttrInfo constantValueAttrInfo) {}
-    public void visitExceptionsAttrInfo(ClassFile classFile, MethodInfo methodInfo, ExceptionsAttrInfo exceptionsAttrInfo) {}
-    public void visitLineNumberTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LineNumberTableAttrInfo lineNumberTableAttrInfo) {}
-    public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo) {}
-    public void visitLocalVariableTypeTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeTableAttrInfo localVariableTypeTableAttrInfo) {}
-    public void visitSourceFileAttrInfo(ClassFile classFile, SourceFileAttrInfo sourceFileAttrInfo) {}
-    public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo) {}
-    public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo) {}
-    public void visitSyntheticAttrInfo(ClassFile classFile, SyntheticAttrInfo syntheticAttrInfo) {}
-    public void visitSignatureAttrInfo(ClassFile classFile, SignatureAttrInfo signatureAttrInfo) {}
-    public void visitRuntimeVisibleAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleAnnotationsAttrInfo runtimeVisibleAnnotationsAttrInfo) {}
-    public void visitRuntimeInvisibleAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleAnnotationsAttrInfo runtimeInvisibleAnnotationsAttrInfo) {}
-    public void visitRuntimeVisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleParameterAnnotationsAttrInfo runtimeVisibleParameterAnnotationsAttrInfo) {}
-    public void visitRuntimeInvisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleParameterAnnotationsAttrInfo runtimeInvisibleParameterAnnotationsAttrInfo) {}
-    public void visitAnnotationDefaultAttrInfo(ClassFile classFile, AnnotationDefaultAttrInfo annotationDefaultAttrInfo) {}
-
-
-    public void visitCodeAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo)
+    public void visitCodeAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute)
     {
         // Compact the attributes array.
-        codeAttrInfo.u2attributesCount =
-            shrinkArray(codeAttrInfo.attributes,
-                        codeAttrInfo.u2attributesCount);
+        codeAttribute.u2attributesCount =
+            shrinkArray(codeAttribute.attributes,
+                        codeAttribute.u2attributesCount);
     }
 
 

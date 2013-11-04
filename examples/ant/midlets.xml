@@ -7,8 +7,9 @@
   <taskdef resource="proguard/ant/task.properties"
            classpath="lib/proguard.jar" />
 
-  <proguard overloadaggressively="on"
-            defaultpackage=""
+  <proguard microedition="on"
+            overloadaggressively="on"
+            repackageclasses=""
             allowaccessmodification="on"
             printseeds="on">
 

@@ -1,6 +1,6 @@
-/* $Id: ClassPathEntry.java,v 1.10.2.2 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -27,7 +27,7 @@ import java.io.*;
  * This class represents an entry from a class path: a jar, a war, a zip, an
  * ear, or a directory, with a name and a flag to indicates whether the entry is
  * an input entry or an output entry. Optional filters can be specified for the
- * names of the contained resource/class files, jars, wars, ears, and zips.
+ * names of the contained resource/classes, jars, wars, ears, and zips.
  *
  * @author Eric Lafortune
  */

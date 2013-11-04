@@ -1,6 +1,6 @@
-/* $Id: MappingPrinter.java,v 1.19.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -24,22 +24,23 @@ import proguard.classfile.*;
 import proguard.classfile.util.*;
 import proguard.classfile.visitor.*;
 
-import java.io.*;
+import java.io.PrintStream;
 
 
 /**
- * This ClassFileVisitor prints out the renamed class files and class members with
+ * This ClassVisitor prints out the renamed classes and class members with
  * their old names and new names.
  *
- * @see ClassFileRenamer
+ * @see ClassRenamer
  *
  * @author Eric Lafortune
  */
 public class MappingPrinter
-  implements ClassFileVisitor,
-             MemberInfoVisitor
+extends      SimplifiedVisitor
+implements   ClassVisitor,
+             MemberVisitor
 {
-    private PrintStream ps;
+    private final PrintStream ps;
 
 
     /**
@@ -61,12 +62,12 @@ public class MappingPrinter
     }
 
 
-    // Implementations for ClassFileVisitor.
+    // Implementations for ClassVisitor.
 
-    public void visitProgramClassFile(ProgramClassFile programClassFile)
+    public void visitProgramClass(ProgramClass programClass)
     {
-        String name    = programClassFile.getName();
-        String newName = ClassFileObfuscator.newClassName(programClassFile);
+        String name    = programClass.getName();
+        String newName = ClassObfuscator.newClassName(programClass);
 
         ps.println(ClassUtil.externalClassName(name) +
                    " -> " +
@@ -74,64 +75,60 @@ public class MappingPrinter
                    ":");
 
         // Print out the class members.
-        programClassFile.fieldsAccept(this);
-        programClassFile.methodsAccept(this);
+        programClass.fieldsAccept(this);
+        programClass.methodsAccept(this);
     }
 
 
-    public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
+    public void visitLibraryClass(LibraryClass libraryClass)
     {
     }
 
 
-    // Implementations for MemberInfoVisitor.
+    // Implementations for MemberVisitor.
 
-    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
+    public void visitProgramField(ProgramClass programClass, ProgramField programField)
     {
-        String newName = MemberInfoObfuscator.newMemberName(programFieldInfo);
+        String newName = MemberObfuscator.newMemberName(programField);
         if (newName != null)
         {
             ps.println("    " +
-                       //lineNumberRange(programClassFile, programFieldInfo) +
+                       //lineNumberRange(programClass, programField) +
                        ClassUtil.externalFullFieldDescription(
                            0,
-                           programFieldInfo.getName(programClassFile),
-                           programFieldInfo.getDescriptor(programClassFile)) +
+                           programField.getName(programClass),
+                           programField.getDescriptor(programClass)) +
                        " -> " +
                        newName);
         }
     }
 
 
-    public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
+    public void visitProgramMethod(ProgramClass programClass, ProgramMethod programMethod)
     {
         // Special cases: <clinit> and <init> are always kept unchanged.
         // We can ignore them here.
-        String name = programMethodInfo.getName(programClassFile);
+        String name = programMethod.getName(programClass);
         if (name.equals(ClassConstants.INTERNAL_METHOD_NAME_CLINIT) ||
             name.equals(ClassConstants.INTERNAL_METHOD_NAME_INIT))
         {
             return;
         }
 
-        String newName = MemberInfoObfuscator.newMemberName(programMethodInfo);
+        String newName = MemberObfuscator.newMemberName(programMethod);
         if (newName != null)
         {
             ps.println("    " +
-                       lineNumberRange(programClassFile, programMethodInfo) +
+                       lineNumberRange(programClass, programMethod) +
                        ClassUtil.externalFullMethodDescription(
-                           programClassFile.getName(),
+                           programClass.getName(),
                            0,
-                           programMethodInfo.getName(programClassFile),
-                           programMethodInfo.getDescriptor(programClassFile)) +
+                           programMethod.getName(programClass),
+                           programMethod.getDescriptor(programClass)) +
                        " -> " +
                        newName);
         }
     }
-
-
-    public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo) {}
-    public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo) {}
 
 
     // Small utility methods.
@@ -140,9 +137,9 @@ public class MappingPrinter
      * Returns the line number range of the given class member, followed by a
      * colon, or just an empty String if no range is available.
      */
-    private static String lineNumberRange(ProgramClassFile programClassFile, ProgramMemberInfo programMemberInfo)
+    private static String lineNumberRange(ProgramClass programClass, ProgramMember programMember)
     {
-        String range = programMemberInfo.getLineNumberRange(programClassFile);
+        String range = programMember.getLineNumberRange(programClass);
         return range != null ?
             (range + ":") :
             "";

@@ -1,6 +1,6 @@
-/* $Id: RectangleSprite.java,v 1.7.2.3 2007/01/31 20:57:28 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,7 +20,7 @@
  */
 package proguard.gui.splash;
 
-import java.awt.Graphics;
+import java.awt.*;
 
 /**
  * This Sprite represents an animated rounded rectangle. It can optionally be filled.
@@ -29,52 +29,58 @@ import java.awt.Graphics;
  */
 public class RectangleSprite implements Sprite
 {
-    private boolean     filled;
-    private VariableInt x;
-    private VariableInt y;
-    private VariableInt width;
-    private VariableInt height;
-    private VariableInt arcWidth;
-    private VariableInt arcHeight;
+    private final boolean       filled;
+    private final VariableColor color;
+    private final VariableInt   x;
+    private final VariableInt   y;
+    private final VariableInt   width;
+    private final VariableInt   height;
+    private final VariableInt   arcWidth;
+    private final VariableInt   arcHeight;
 
 
     /**
      * Creates a new rectangular RectangleSprite.
      * @param filled specifies whether the rectangle should be filled.
-     * @param x      the variable x-coordinate of the upper-left corner of the rectangle.
-     * @param y      the variable y-coordinate of the upper-left corner of the rectangle.
+     * @param color  the variable color of the rectangle.
+     * @param x      the variable x-ordinate of the upper-left corner of the rectangle.
+     * @param y      the variable y-ordinate of the upper-left corner of the rectangle.
      * @param width  the variable width of the rectangle.
      * @param height the variable height of the rectangle.
      */
-    public RectangleSprite(boolean     filled,
-                           VariableInt x,
-                           VariableInt y,
-                           VariableInt width,
-                           VariableInt height)
+    public RectangleSprite(boolean       filled,
+                           VariableColor color,
+                           VariableInt   x,
+                           VariableInt   y,
+                           VariableInt   width,
+                           VariableInt   height)
     {
-        this(filled, x, y, width, height, new ConstantInt(0), new ConstantInt(0));
+        this(filled, color, x, y, width, height, new ConstantInt(0), new ConstantInt(0));
     }
 
 
     /**
      * Creates a new RectangleSprite with rounded corners.
-     * @param filled    specifies whether the rectangle should be filled.
-     * @param x         the variable x-coordinate of the upper-left corner of the rectangle.
-     * @param y         the variable y-coordinate of the upper-left corner of the rectangle.
+     * @param filled specifies whether the rectangle should be filled.
+     * @param color     the variable color of the rectangle.
+     * @param x         the variable x-ordinate of the upper-left corner of the rectangle.
+     * @param y         the variable y-ordinate of the upper-left corner of the rectangle.
      * @param width     the variable width of the rectangle.
      * @param height    the variable height of the rectangle.
      * @param arcWidth  the variable width of the corner arcs.
      * @param arcHeight the variable height of the corner arcs.
      */
-    public RectangleSprite(boolean     filled,
-                           VariableInt x,
-                           VariableInt y,
-                           VariableInt width,
-                           VariableInt height,
-                           VariableInt arcWidth,
-                           VariableInt arcHeight)
+    public RectangleSprite(boolean       filled,
+                           VariableColor color,
+                           VariableInt   x,
+                           VariableInt   y,
+                           VariableInt   width,
+                           VariableInt   height,
+                           VariableInt   arcWidth,
+                           VariableInt   arcHeight)
     {
         this.filled    = filled;
+        this.color     = color;
         this.x         = x;
         this.y         = y;
         this.width     = width;
@@ -87,6 +93,8 @@ public class RectangleSprite implements Sprite
 
     public void paint(Graphics graphics, long time)
     {
+        graphics.setColor(color.getColor(time));
+
         int xt = x.getInt(time);
         int yt = y.getInt(time);
         int w  = width.getInt(time);

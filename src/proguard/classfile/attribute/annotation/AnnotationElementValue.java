@@ -1,14 +1,13 @@
-/* $Id: AnnotationElementValue.java,v 1.4.2.2 2007/01/18 21:31:51 eric Exp $
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
- *
- * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This library is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or (at your
- * option) any later version.
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 2 of the License, or (at your option)
+ * any later version.
  *
  * This library is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -22,23 +21,22 @@
 package proguard.classfile.attribute.annotation;
 
 import proguard.classfile.*;
-
-import java.io.*;
+import proguard.classfile.attribute.annotation.visitor.*;
 
 /**
- * Representation of an annotation element value.
+ * This ElementValue represents an annotation element value.
  *
  * @author Eric Lafortune
  */
 public class AnnotationElementValue extends ElementValue
 {
-    protected static final int CONSTANT_FIELD_SIZE = ElementValue.CONSTANT_FIELD_SIZE;
-
-
     public Annotation annotationValue;
 
 
-    protected AnnotationElementValue()
+    /**
+     * Creates an uninitialized AnnotationElementValue.
+     */
+    public AnnotationElementValue()
     {
     }
 
@@ -46,31 +44,21 @@ public class AnnotationElementValue extends ElementValue
     /**
      * Applies the given visitor to the annotation.
      */
-    public void annotationAccept(ClassFile classFile, AnnotationVisitor annotationVisitor)
+    public void annotationAccept(Clazz clazz, AnnotationVisitor annotationVisitor)
     {
-        annotationVisitor.visitAnnotation(classFile, annotationValue);
+        annotationVisitor.visitAnnotation(clazz, annotationValue);
     }
 
 
     // Implementations for ElementValue.
 
-    protected int getLength()
+    public int getTag()
     {
-        return CONSTANT_FIELD_SIZE + annotationValue.getLength();
+        return ClassConstants.ELEMENT_VALUE_ANNOTATION;
     }
 
-    protected void readInfo(DataInput din) throws IOException
+    public void accept(Clazz clazz, Annotation annotation, ElementValueVisitor elementValueVisitor)
     {
-        annotationValue = Annotation.create(din);
-    }
-
-    protected void writeInfo(DataOutput dout) throws IOException
-    {
-        annotationValue.write(dout);
-    }
-
-    public void accept(ClassFile classFile, Annotation annotation, ElementValueVisitor elementValueVisitor)
-    {
-        elementValueVisitor.visitAnnotationElementValue(classFile, annotation, this);
+        elementValueVisitor.visitAnnotationElementValue(clazz, annotation, this);
     }
 }

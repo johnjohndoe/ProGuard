@@ -1,6 +1,6 @@
-/* $Id: NameAndTypeShrinker.java,v 1.24.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -21,55 +21,43 @@
 package proguard.obfuscate;
 
 import proguard.classfile.*;
-import proguard.classfile.attribute.*;
+import proguard.classfile.constant.Constant;
 import proguard.classfile.editor.ConstantPoolRemapper;
-import proguard.classfile.instruction.*;
-import proguard.classfile.visitor.*;
+import proguard.classfile.visitor.ClassVisitor;
 
 
 /**
- * This ClassFileVisitor removes NameAndType constant pool entries
+ * This ClassVisitor removes NameAndType constant pool entries
  * that are not marked as being used.
  *
  * @see NameAndTypeUsageMarker
  *
  * @author Eric Lafortune
  */
-public class NameAndTypeShrinker implements ClassFileVisitor
+public class NameAndTypeShrinker implements ClassVisitor
 {
-    private int[]                cpIndexMap;
-    private ConstantPoolRemapper constantPoolRemapper;
+    private int[]                constantIndexMap;
+    private final ConstantPoolRemapper constantPoolRemapper = new ConstantPoolRemapper();
 
 
-    /**
-     * Creates a new NameAndTypeShrinker.
-     * @param codeLength an estimate of the maximum length of all the code that
-     *                   will be edited.
-     */
-    public NameAndTypeShrinker(int codeLength)
-    {
-        constantPoolRemapper = new ConstantPoolRemapper(codeLength);
-    }
+    // Implementations for ClassVisitor.
 
-
-    // Implementations for ClassFileVisitor.
-
-    public void visitProgramClassFile(ProgramClassFile programClassFile)
+    public void visitProgramClass(ProgramClass programClass)
     {
         // Shift the used constant pool entries together, filling out the
         // index map.
-        programClassFile.u2constantPoolCount =
-            shrinkConstantPool(programClassFile.constantPool,
-                               programClassFile.u2constantPoolCount);
+        programClass.u2constantPoolCount =
+            shrinkConstantPool(programClass.constantPool,
+                               programClass.u2constantPoolCount);
 
 
         // Remap all constant pool references.
-        constantPoolRemapper.setCpIndexMap(cpIndexMap);
-        constantPoolRemapper.visitProgramClassFile(programClassFile);
+        constantPoolRemapper.setConstantIndexMap(constantIndexMap);
+        constantPoolRemapper.visitProgramClass(programClass);
     }
 
 
-    public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
+    public void visitLibraryClass(LibraryClass libraryClass)
     {
     }
 
@@ -81,13 +69,13 @@ public class NameAndTypeShrinker implements ClassFileVisitor
      * from the given constant pool.
      * @return the new number of entries.
      */
-    private int shrinkConstantPool(CpInfo[] constantPool, int length)
+    private int shrinkConstantPool(Constant[] constantPool, int length)
     {
         // Create a new index map, if necessary.
-        if (cpIndexMap == null ||
-            cpIndexMap.length < length)
+        if (constantIndexMap == null ||
+            constantIndexMap.length < length)
         {
-            cpIndexMap = new int[length];
+            constantIndexMap = new int[length];
         }
 
         int     counter = 1;
@@ -96,20 +84,20 @@ public class NameAndTypeShrinker implements ClassFileVisitor
         // Shift the used constant pool entries together.
         for (int index = 1; index < length; index++)
         {
-            cpIndexMap[index] = counter;
+            constantIndexMap[index] = counter;
 
-            CpInfo cpInfo = constantPool[index];
+            Constant constant = constantPool[index];
 
             // Don't update the flag if this is the second half of a long entry.
-            if (cpInfo != null)
+            if (constant != null)
             {
-                isUsed = cpInfo.getTag() != ClassConstants.CONSTANT_NameAndType ||
-                         NameAndTypeUsageMarker.isUsed(cpInfo);
+                isUsed = constant.getTag() != ClassConstants.CONSTANT_NameAndType ||
+                         NameAndTypeUsageMarker.isUsed(constant);
             }
 
             if (isUsed)
             {
-                constantPool[counter++] = cpInfo;
+                constantPool[counter++] = constant;
             }
         }
 

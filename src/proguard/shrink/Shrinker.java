@@ -1,6 +1,6 @@
-/* $Id: Shrinker.java,v 1.1.2.5 2007/01/25 21:01:01 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -23,6 +23,7 @@ package proguard.shrink;
 
 import proguard.*;
 import proguard.classfile.ClassPool;
+import proguard.classfile.attribute.visitor.*;
 import proguard.classfile.visitor.*;
 
 import java.io.*;
@@ -34,7 +35,7 @@ import java.io.*;
  */
 public class Shrinker
 {
-    private Configuration configuration;
+    private final Configuration configuration;
 
 
     /**
@@ -52,9 +53,15 @@ public class Shrinker
     public ClassPool execute(ClassPool programClassPool,
                              ClassPool libraryClassPool) throws IOException
     {
+        // Check if we have at least some keep commands.
+        if (configuration.keep == null)
+        {
+            throw new IOException("You have to specify '-keep' options for the shrinking step.");
+        }
+
         // Clean up any old visitor info.
-        programClassPool.classFilesAccept(new ClassFileCleaner());
-        libraryClassPool.classFilesAccept(new ClassFileCleaner());
+        programClassPool.classesAccept(new ClassCleaner());
+        libraryClassPool.classesAccept(new ClassCleaner());
 
         // Create a visitor for marking the seeds.
         UsageMarker usageMarker = configuration.whyAreYouKeeping == null ?
@@ -64,17 +71,28 @@ public class Shrinker
         ClassPoolVisitor classPoolvisitor =
             ClassSpecificationVisitorFactory.createClassPoolVisitor(configuration.keep,
                                                                     usageMarker,
-                                                                    usageMarker);
+                                                                    usageMarker,
+                                                                    true,
+                                                                    false,
+                                                                    false);
         // Mark the seeds.
         programClassPool.accept(classPoolvisitor);
         libraryClassPool.accept(classPoolvisitor);
 
         // Mark interfaces that have to be kept.
-        programClassPool.classFilesAccept(new InterfaceUsageMarker(usageMarker));
+        programClassPool.classesAccept(new InterfaceUsageMarker(usageMarker));
 
-        // Mark the inner class information that has to be kept.
-        programClassPool.classFilesAccept(new InnerUsageMarker(usageMarker));
+        // Mark the inner class and annotation information that has to be kept.
+        programClassPool.classesAccept(
+            new UsedClassFilter(usageMarker,
+            new AllAttributeVisitor(true,
+            new MultiAttributeVisitor(new AttributeVisitor[]
+            {
+                new InnerUsageMarker(usageMarker),
+                new AnnotationUsageMarker(usageMarker),
+            }))));
 
+        // Should we explain ourselves?
         if (configuration.whyAreYouKeeping != null)
         {
             System.out.println();
@@ -101,7 +119,7 @@ public class Shrinker
                 System.out;
 
             // Print out items that will be removed.
-            programClassPool.classFilesAcceptAlphabetically(
+            programClassPool.classesAcceptAlphabetically(
                 new UsagePrinter(usageMarker, true, ps));
 
             if (ps != System.out)
@@ -111,14 +129,32 @@ public class Shrinker
         }
 
         // Discard unused program classes.
+        int originalProgramClassPoolSize = programClassPool.size();
+
         ClassPool newProgramClassPool = new ClassPool();
-        programClassPool.classFilesAccept(
-            new UsedClassFileFilter(usageMarker,
-            new MultiClassFileVisitor(
-            new ClassFileVisitor[] {
-                new ClassFileShrinker(usageMarker, 1024),
+        programClassPool.classesAccept(
+            new UsedClassFilter(usageMarker,
+            new MultiClassVisitor(
+            new ClassVisitor[] {
+                new ClassShrinker(usageMarker),
                 new ClassPoolFiller(newProgramClassPool)
             })));
+
+        programClassPool.clear();
+
+        // Check if we have at least some output classes.
+        int newProgramClassPoolSize = newProgramClassPool.size();
+        if (newProgramClassPoolSize == 0)
+        {
+            throw new IOException("The output jar is empty. Did you specify the proper '-keep' options?");
+        }
+
+        if (configuration.verbose)
+        {
+            System.out.println("Removing unused program classes and class elements...");
+            System.out.println("  Original number of program classes: " + originalProgramClassPoolSize);
+            System.out.println("  Final number of program classes:    " + newProgramClassPoolSize);
+        }
 
         return newProgramClassPool;
     }

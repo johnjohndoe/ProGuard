@@ -1,6 +1,6 @@
-/* $Id: SingleImplementationInliner.java,v 1.10.2.2 2007/01/18 21:31:53 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -23,311 +23,283 @@ package proguard.optimize.peephole;
 import proguard.classfile.*;
 import proguard.classfile.attribute.*;
 import proguard.classfile.attribute.annotation.*;
-import proguard.classfile.editor.ClassFileReferenceFixer;
+import proguard.classfile.attribute.annotation.visitor.*;
+import proguard.classfile.attribute.visitor.*;
+import proguard.classfile.constant.*;
+import proguard.classfile.constant.visitor.ConstantVisitor;
+import proguard.classfile.editor.ClassReferenceFixer;
+import proguard.classfile.util.SimplifiedVisitor;
 import proguard.classfile.visitor.*;
+import proguard.optimize.info.SingleImplementationMarker;
 
 /**
- * This ClassFileVisitor replaces all references to interfaces that have single
+ * This ClassVisitor replaces all references to interfaces that have single
  * implementations by references to those implementations. The names will then
  * have to be fixed, based on the new references.
  *
+ * @see SingleImplementationMarker
  * @see SingleImplementationFixer
- * @see ClassFileReferenceFixer
+ * @see ClassReferenceFixer
  * @author Eric Lafortune
  */
 public class SingleImplementationInliner
-implements   ClassFileVisitor,
-             CpInfoVisitor,
-             MemberInfoVisitor,
-             AttrInfoVisitor,
+extends      SimplifiedVisitor
+implements   ClassVisitor,
+             ConstantVisitor,
+             MemberVisitor,
+             AttributeVisitor,
              LocalVariableInfoVisitor,
              LocalVariableTypeInfoVisitor,
              AnnotationVisitor,
              ElementValueVisitor
 {
-    // Implementations for ClassFileVisitor.
+    // Implementations for ClassVisitor.
 
-    public void visitProgramClassFile(ProgramClassFile programClassFile)
+    public void visitProgramClass(ProgramClass programClass)
     {
         // Update the constant pool.
-        programClassFile.constantPoolEntriesAccept(this);
+        programClass.constantPoolEntriesAccept(this);
 
         // Update the class members.
-        programClassFile.fieldsAccept(this);
-        programClassFile.methodsAccept(this);
+        programClass.fieldsAccept(this);
+        programClass.methodsAccept(this);
 
         // Update the attributes.
-        programClassFile.attributesAccept(this);
+        programClass.attributesAccept(this);
     }
 
 
-    public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
+    // Implementations for ConstantVisitor.
+
+    public void visitAnyConstant(Clazz clazz, Constant constant) {}
+
+
+    public void visitStringConstant(Clazz clazz, StringConstant stringConstant)
     {
-    }
-
-
-    // Implementations for CpInfoVisitor.
-
-    public void visitIntegerCpInfo(ClassFile classFile, IntegerCpInfo integerCpInfo) {}
-    public void visitLongCpInfo(ClassFile classFile, LongCpInfo longCpInfo) {}
-    public void visitFloatCpInfo(ClassFile classFile, FloatCpInfo floatCpInfo) {}
-    public void visitDoubleCpInfo(ClassFile classFile, DoubleCpInfo doubleCpInfo) {}
-    public void visitUtf8CpInfo(ClassFile classFile, Utf8CpInfo utf8CpInfo) {}
-    public void visitFieldrefCpInfo(ClassFile classFile, FieldrefCpInfo fieldrefCpInfo) {}
-    public void visitMethodrefCpInfo(ClassFile classFile, MethodrefCpInfo methodrefCpInfo) {}
-    public void visitNameAndTypeCpInfo(ClassFile classFile, NameAndTypeCpInfo nameAndTypeCpInfo) {}
-
-
-    public void visitStringCpInfo(ClassFile classFile, StringCpInfo stringCpInfo)
-    {
-        // Update the referenced class file if it is an interface with a single
-        // implementation.
-        ClassFile singleImplementationClassFile =
-            SingleImplementationMarker.singleImplementation(stringCpInfo.referencedClassFile);
-
-        if (singleImplementationClassFile != null)
+        if (stringConstant.referencedMember == null)
         {
-            stringCpInfo.referencedClassFile = singleImplementationClassFile;
+            // Update the referenced class if it is an interface with a single
+            // implementation.
+            Clazz singleImplementationClass =
+                SingleImplementationMarker.singleImplementation(stringConstant.referencedClass);
+
+            if (singleImplementationClass != null)
+            {
+                stringConstant.referencedClass = singleImplementationClass;
+            }
         }
     }
 
 
-    public void visitInterfaceMethodrefCpInfo(ClassFile classFile, InterfaceMethodrefCpInfo interfaceMethodrefCpInfo)
+    public void visitInterfaceMethodrefConstant(Clazz clazz, InterfaceMethodrefConstant interfaceMethodrefConstant)
     {
         // Update the referenced interface if it has a single implementation.
-        ClassFile singleImplementationClassFile =
-            SingleImplementationMarker.singleImplementation(interfaceMethodrefCpInfo.referencedClassFile);
+        Clazz singleImplementationClass =
+            SingleImplementationMarker.singleImplementation(interfaceMethodrefConstant.referencedClass);
 
-        if (singleImplementationClassFile != null)
+        if (singleImplementationClass != null)
         {
             // We know the single implementation contains the method.
-            String name = interfaceMethodrefCpInfo.getName(classFile);
-            String type = interfaceMethodrefCpInfo.getType(classFile);
+            String name = interfaceMethodrefConstant.getName(clazz);
+            String type = interfaceMethodrefConstant.getType(clazz);
 
-            interfaceMethodrefCpInfo.referencedClassFile  = singleImplementationClassFile;
-            interfaceMethodrefCpInfo.referencedMemberInfo = singleImplementationClassFile.findMethod(name, type);
+            interfaceMethodrefConstant.referencedClass  = singleImplementationClass;
+            interfaceMethodrefConstant.referencedMember = singleImplementationClass.findMethod(name, type);
         }
     }
 
 
-    public void visitClassCpInfo(ClassFile classFile, ClassCpInfo classCpInfo)
+    public void visitClassConstant(Clazz clazz, ClassConstant classConstant)
     {
-        // Update the referenced class file if it is an interface with a single
+        // Update the referenced class if it is an interface with a single
         // implementation.
-        ClassFile singleImplementationClassFile =
-            SingleImplementationMarker.singleImplementation(classCpInfo.referencedClassFile);
+        Clazz singleImplementationClass =
+            SingleImplementationMarker.singleImplementation(classConstant.referencedClass);
 
-        if (singleImplementationClassFile != null)
+        if (singleImplementationClass != null)
         {
-            classCpInfo.referencedClassFile = singleImplementationClassFile;
+            classConstant.referencedClass = singleImplementationClass;
         }
     }
 
 
-    // Implementations for MemberInfoVisitor.
+    // Implementations for MemberVisitor.
 
-    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
+    public void visitProgramField(ProgramClass programClass, ProgramField programField)
     {
-        // Update the referenced class file if the type is an interface with a
+        // Update the referenced class if the type is an interface with a
         // single implementation.
-        ClassFile singleImplementationClassFile =
-            SingleImplementationMarker.singleImplementation(programFieldInfo.referencedClassFile);
+        Clazz singleImplementationClass =
+            SingleImplementationMarker.singleImplementation(programField.referencedClass);
 
-        if (singleImplementationClassFile != null)
+        if (singleImplementationClass != null)
         {
-            programFieldInfo.referencedClassFile = singleImplementationClassFile;
+            programField.referencedClass = singleImplementationClass;
         }
 
         // Update the attributes.
-        programFieldInfo.attributesAccept(programClassFile, this);
+        programField.attributesAccept(programClass, this);
     }
 
 
-    public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
+    public void visitProgramMethod(ProgramClass programClass, ProgramMethod programMethod)
     {
-        // Update the referenced class files if the descriptor contains
+        // Update the referenced classes if the descriptor contains
         // interfaces with single implementations.
-        updateReferencedClassFiles(programMethodInfo.referencedClassFiles);
+        updateReferencedClasses(programMethod.referencedClasses);
 
         // Update the attributes.
-        programMethodInfo.attributesAccept(programClassFile, this);
+        programMethod.attributesAccept(programClass, this);
     }
 
 
-    public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo) {}
-    public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo) {}
+    // Implementations for AttributeVisitor.
+
+    public void visitAnyAttribute(Clazz clazz, Attribute attribute) {}
 
 
-    // Implementations for AttrInfoVisitor.
-
-    public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo) {}
-    public void visitInnerClassesAttrInfo(ClassFile classFile, InnerClassesAttrInfo innerClassesAttrInfo) {}
-    public void visitEnclosingMethodAttrInfo(ClassFile classFile, EnclosingMethodAttrInfo enclosingMethodAttrInfo) {}
-    public void visitSourceFileAttrInfo(ClassFile classFile, SourceFileAttrInfo sourceFileAttrInfo) {}
-    public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo) {}
-    public void visitConstantValueAttrInfo(ClassFile classFile, FieldInfo fieldInfo, ConstantValueAttrInfo constantValueAttrInfo) {}
-    public void visitExceptionsAttrInfo(ClassFile classFile, MethodInfo methodInfo, ExceptionsAttrInfo exceptionsAttrInfo) {}
-    public void visitLineNumberTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LineNumberTableAttrInfo lineNumberTableAttrInfo) {}
-    public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo) {}
-    public void visitSyntheticAttrInfo(ClassFile classFile, SyntheticAttrInfo syntheticAttrInfo) {}
-
-
-    public void visitCodeAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo)
+    public void visitCodeAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute)
     {
-        // Update the referenced class files of the local variables.
-        codeAttrInfo.attributesAccept(classFile, methodInfo, this);
+        // Update the referenced classes of the local variables.
+        codeAttribute.attributesAccept(clazz, method, this);
     }
 
 
-    public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo)
+    public void visitLocalVariableTableAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableTableAttribute localVariableTableAttribute)
     {
-        // Update the referenced class files of the local variables.
-        localVariableTableAttrInfo.localVariablesAccept(classFile, methodInfo, codeAttrInfo, this);
+        // Update the referenced classes of the local variables.
+        localVariableTableAttribute.localVariablesAccept(clazz, method, codeAttribute, this);
     }
 
 
-    public void visitLocalVariableTypeTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeTableAttrInfo localVariableTypeTableAttrInfo)
+    public void visitLocalVariableTypeTableAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableTypeTableAttribute localVariableTypeTableAttribute)
     {
-        // Update the referenced class files of the local variable types.
-        localVariableTypeTableAttrInfo.localVariablesAccept(classFile, methodInfo, codeAttrInfo, this);
+        // Update the referenced classes of the local variable types.
+        localVariableTypeTableAttribute.localVariablesAccept(clazz, method, codeAttribute, this);
     }
 
 
-    public void visitSignatureAttrInfo(ClassFile classFile, SignatureAttrInfo signatureAttrInfo)
+    public void visitSignatureAttribute(Clazz clazz, SignatureAttribute signatureAttribute)
     {
-        // Update the referenced class files.
-        updateReferencedClassFiles(signatureAttrInfo.referencedClassFiles);
+        // Update the referenced classes.
+        updateReferencedClasses(signatureAttribute.referencedClasses);
     }
 
 
-    public void visitRuntimeVisibleAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleAnnotationsAttrInfo runtimeVisibleAnnotationsAttrInfo)
+    public void visitAnyAnnotationsAttribute(Clazz clazz, AnnotationsAttribute annotationsAttribute)
     {
         // Update the annotations.
-        runtimeVisibleAnnotationsAttrInfo.annotationsAccept(classFile, this);
+        annotationsAttribute.annotationsAccept(clazz, this);
     }
 
 
-    public void visitRuntimeInvisibleAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleAnnotationsAttrInfo runtimeInvisibleAnnotationsAttrInfo)
+    public void visitAnyParameterAnnotationsAttribute(Clazz clazz, Method method, ParameterAnnotationsAttribute parameterAnnotationsAttribute)
     {
         // Update the annotations.
-        runtimeInvisibleAnnotationsAttrInfo.annotationsAccept(classFile, this);
+        parameterAnnotationsAttribute.annotationsAccept(clazz, method, this);
     }
 
 
-    public void visitRuntimeVisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleParameterAnnotationsAttrInfo runtimeVisibleParameterAnnotationsAttrInfo)
-    {
-        // Update the annotations.
-        runtimeVisibleParameterAnnotationsAttrInfo.annotationsAccept(classFile, this);
-    }
-
-
-    public void visitRuntimeInvisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleParameterAnnotationsAttrInfo runtimeInvisibleParameterAnnotationsAttrInfo)
-    {
-        // Update the annotations.
-        runtimeInvisibleParameterAnnotationsAttrInfo.annotationsAccept(classFile, this);
-    }
-
-
-    public void visitAnnotationDefaultAttrInfo(ClassFile classFile, AnnotationDefaultAttrInfo annotationDefaultAttrInfo)
+    public void visitAnnotationDefaultAttribute(Clazz clazz, Method method, AnnotationDefaultAttribute annotationDefaultAttribute)
     {
         // Update the annotation.
-        annotationDefaultAttrInfo.defaultValueAccept(classFile, this);
+        annotationDefaultAttribute.defaultValueAccept(clazz, this);
     }
 
 
     // Implementations for LocalVariableInfoVisitor.
 
-    public void visitLocalVariableInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableInfo localVariableInfo)
+    public void visitLocalVariableInfo(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableInfo localVariableInfo)
     {
-        // Update the referenced class file if it is an interface with a single
+        // Update the referenced class if it is an interface with a single
         // implementation.
-        ClassFile singleImplementationClassFile =
-            SingleImplementationMarker.singleImplementation(localVariableInfo.referencedClassFile);
+        Clazz singleImplementationClass =
+            SingleImplementationMarker.singleImplementation(localVariableInfo.referencedClass);
 
-        if (singleImplementationClassFile != null)
+        if (singleImplementationClass != null)
         {
-            localVariableInfo.referencedClassFile = singleImplementationClassFile;
+            localVariableInfo.referencedClass = singleImplementationClass;
         }
     }
 
 
     // Implementations for LocalVariableTypeInfoVisitor.
 
-    public void visitLocalVariableTypeInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeInfo localVariableTypeInfo)
+    public void visitLocalVariableTypeInfo(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableTypeInfo localVariableTypeInfo)
     {
-        // Update the referenced class files.
-        updateReferencedClassFiles(localVariableTypeInfo.referencedClassFiles);
+        // Update the referenced classes.
+        updateReferencedClasses(localVariableTypeInfo.referencedClasses);
     }
 
 
     // Implementations for AnnotationVisitor.
 
-    public void visitAnnotation(ClassFile classFile, Annotation annotation)
+    public void visitAnnotation(Clazz clazz, Annotation annotation)
     {
-        // Update the referenced class files.
-        updateReferencedClassFiles(annotation.referencedClassFiles);
+        // Update the referenced classes.
+        updateReferencedClasses(annotation.referencedClasses);
 
         // Update the element values.
-        annotation.elementValuesAccept(classFile, this);
+        annotation.elementValuesAccept(clazz, this);
     }
 
 
     // Implementations for ElementValueVisitor.
 
-    public void visitConstantElementValue(ClassFile classFile, Annotation annotation, ConstantElementValue constantElementValue)
+    public void visitConstantElementValue(Clazz clazz, Annotation annotation, ConstantElementValue constantElementValue)
     {
     }
 
 
-    public void visitEnumConstantElementValue(ClassFile classFile, Annotation annotation, EnumConstantElementValue enumConstantElementValue)
+    public void visitEnumConstantElementValue(Clazz clazz, Annotation annotation, EnumConstantElementValue enumConstantElementValue)
     {
-        // Update the referenced class files.
-        updateReferencedClassFiles(enumConstantElementValue.referencedClassFiles);
+        // Update the referenced classes.
+        updateReferencedClasses(enumConstantElementValue.referencedClasses);
     }
 
 
-    public void visitClassElementValue(ClassFile classFile, Annotation annotation, ClassElementValue classElementValue)
+    public void visitClassElementValue(Clazz clazz, Annotation annotation, ClassElementValue classElementValue)
     {
-        // Update the referenced class files.
-        updateReferencedClassFiles(classElementValue.referencedClassFiles);
+        // Update the referenced classes.
+        updateReferencedClasses(classElementValue.referencedClasses);
     }
 
 
-    public void visitAnnotationElementValue(ClassFile classFile, Annotation annotation, AnnotationElementValue annotationElementValue)
+    public void visitAnnotationElementValue(Clazz clazz, Annotation annotation, AnnotationElementValue annotationElementValue)
     {
         // Update the annotation.
-        annotationElementValue.annotationAccept(classFile, this);
+        annotationElementValue.annotationAccept(clazz, this);
     }
 
 
-    public void visitArrayElementValue(ClassFile classFile, Annotation annotation, ArrayElementValue arrayElementValue)
+    public void visitArrayElementValue(Clazz clazz, Annotation annotation, ArrayElementValue arrayElementValue)
     {
         // Update the element values.
-        arrayElementValue.elementValuesAccept(classFile, annotation, this);
+        arrayElementValue.elementValuesAccept(clazz, annotation, this);
     }
 
 
     // Small utility methods.
 
     /**
-     * Updates the given array of referenced class files, replacing references
+     * Updates the given array of referenced classes, replacing references
      * to a interfaces with single implementations by these implementations.
      */
-    private void updateReferencedClassFiles(ClassFile[] referencedClassFiles)
+    private void updateReferencedClasses(Clazz[] referencedClasses)
     {
         // Update all referenced classes.
-        if (referencedClassFiles != null)
+        if (referencedClasses != null)
         {
-            for (int index = 0; index < referencedClassFiles.length; index++)
+            for (int index = 0; index < referencedClasses.length; index++)
             {
                 // See if we have is an interface with a single implementation.
-                ClassFile singleImplementationClassFile =
-                    SingleImplementationMarker.singleImplementation(referencedClassFiles[index]);
+                Clazz singleImplementationClass =
+                    SingleImplementationMarker.singleImplementation(referencedClasses[index]);
 
-                // Update or copy the referenced class file.
-                if (singleImplementationClassFile != null)
+                // Update or copy the referenced class.
+                if (singleImplementationClass != null)
                 {
-                    referencedClassFiles[index] = singleImplementationClassFile;
+                    referencedClasses[index] = singleImplementationClass;
                 }
             }
         }

@@ -1,6 +1,6 @@
-/* $Id: ReTraceRunnable.java,v 1.8.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,12 +20,11 @@
  */
 package proguard.gui;
 
-import java.awt.Cursor;
-import java.io.*;
+import proguard.retrace.ReTrace;
 
 import javax.swing.*;
-
-import proguard.retrace.ReTrace;
+import java.awt.*;
+import java.io.*;
 
 
 /**
@@ -35,12 +34,12 @@ import proguard.retrace.ReTrace;
  * @see ReTrace
  * @author Eric Lafortune
  */
-class ReTraceRunnable implements Runnable
+final class ReTraceRunnable implements Runnable
 {
-    private JTextArea consoleTextArea;
-    private boolean   verbose;
-    private File      mappingFile;
-    private String    stackTrace;
+    private final JTextArea consoleTextArea;
+    private final boolean   verbose;
+    private final File      mappingFile;
+    private final String    stackTrace;
 
 
     /**
@@ -55,10 +54,10 @@ class ReTraceRunnable implements Runnable
                            File      mappingFile,
                            String    stackTrace)
     {
-        this.consoleTextArea  = consoleTextArea;
-        this.verbose          = verbose;
-        this.mappingFile      = mappingFile;
-        this.stackTrace       = stackTrace;
+        this.consoleTextArea = consoleTextArea;
+        this.verbose         = verbose;
+        this.mappingFile     = mappingFile;
+        this.stackTrace      = stackTrace;
     }
 
 

@@ -1,6 +1,6 @@
-/* $Id: LinearColor.java,v 1.7.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,7 +20,7 @@
  */
 package proguard.gui.splash;
 
-import java.awt.Color;
+import java.awt.*;
 
 /**
  * This VariableColor varies linearly with respect to its Timing.
@@ -29,9 +29,9 @@ import java.awt.Color;
  */
 public class LinearColor implements VariableColor
 {
-    private Color  fromValue;
-    private Color  toValue;
-    private Timing timing;
+    private final Color  fromValue;
+    private final Color  toValue;
+    private final Timing timing;
 
     private double cachedTiming = -1.0;
     private Color  cachedColor;

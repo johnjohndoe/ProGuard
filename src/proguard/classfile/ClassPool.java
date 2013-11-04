@@ -1,8 +1,7 @@
-/* $Id: ClassPool.java,v 1.18.2.7 2007/01/18 21:31:51 eric Exp $
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
- *
- * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This library is free software; you can redistribute it and/or modify it
@@ -21,20 +20,20 @@
  */
 package proguard.classfile;
 
-import proguard.classfile.util.*;
+import proguard.classfile.util.ClassUtil;
 import proguard.classfile.visitor.*;
 
 import java.util.*;
 
 /**
- * This is a set of representations of class files. They can be enumerated or
- * retrieved by name. They can also be accessed by means of class file visitors.
+ * This is a set of representations of classes. They      can be enumerated or
+ * retrieved by name. They can also be accessed by means of class visitors.
  *
  * @author Eric Lafortune
  */
 public class ClassPool
 {
-    private Map classFiles = new HashMap();
+    private final Map classes = new HashMap();
 
 
     /**
@@ -42,25 +41,25 @@ public class ClassPool
      */
     public void clear()
     {
-        classFiles.clear();
+        classes.clear();
     }
 
 
     /**
-     * Adds the given ClassFile to the class pool.
+     * Adds the given Clazz to the class pool.
      */
-    public void addClass(ClassFile classFile)
+    public void addClass(Clazz clazz)
     {
-        classFiles.put(classFile.getName(), classFile);
+        classes.put(clazz.getName(), clazz);
     }
 
 
     /**
-     * Removes the given ClassFile from the class pool.
+     * Removes the given Clazz from the class pool.
      */
-    public void removeClass(ClassFile classFile)
+    public void removeClass(Clazz clazz)
     {
-        classFiles.remove(classFile.getName());
+        classes.remove(clazz.getName());
     }
 
 
@@ -69,27 +68,27 @@ public class ClassPool
      * <code>null</code> if the class with the given name is not in the class
      * pool. Returns the base class if the class name is an array type.
      */
-    public ClassFile getClass(String className)
+    public Clazz getClass(String className)
     {
-        return (ClassFile)classFiles.get(ClassUtil.internalClassNameFromClassType(className));
+        return (Clazz)classes.get(ClassUtil.internalClassNameFromClassType(className));
     }
 
 
     /**
-     * Returns an Iterator of all class file names in the class pool.
+     * Returns an Iterator of all class names in the class pool.
      */
     public Iterator classNames()
     {
-        return classFiles.keySet().iterator();
+        return classes.keySet().iterator();
     }
 
 
     /**
-     * Returns the number of class files in the class pool.
+     * Returns the number of classes in the class pool.
      */
     public int size()
     {
-        return classFiles.size();
+        return classes.size();
     }
 
 
@@ -103,46 +102,46 @@ public class ClassPool
 
 
     /**
-     * Applies the given ClassFileVisitor to all classes in the class pool,
+     * Applies the given ClassVisitor to all classes in the class pool,
      * in random order.
      */
-    public void classFilesAccept(ClassFileVisitor classFileVisitor)
+    public void classesAccept(ClassVisitor classVisitor)
     {
-        Iterator iterator = classFiles.values().iterator();
+        Iterator iterator = classes.values().iterator();
         while (iterator.hasNext())
         {
-            ClassFile classFile = (ClassFile)iterator.next();
-            classFile.accept(classFileVisitor);
+            Clazz clazz = (Clazz)iterator.next();
+            clazz.accept(classVisitor);
         }
     }
 
 
     /**
-     * Applies the given ClassFileVisitor to all classes in the class pool,
+     * Applies the given ClassVisitor to all classes in the class pool,
      * in sorted order.
      */
-    public void classFilesAcceptAlphabetically(ClassFileVisitor classFileVisitor)
+    public void classesAcceptAlphabetically(ClassVisitor classVisitor)
     {
-        TreeMap sortedClassFiles = new TreeMap(classFiles);
-        Iterator iterator = sortedClassFiles.values().iterator();
+        TreeMap sortedClasses = new TreeMap(classes);
+        Iterator iterator = sortedClasses.values().iterator();
         while (iterator.hasNext())
         {
-            ClassFile classFile = (ClassFile)iterator.next();
-            classFile.accept(classFileVisitor);
+            Clazz clazz = (Clazz)iterator.next();
+            clazz.accept(classVisitor);
         }
     }
 
 
     /**
-     * Applies the given ClassFileVisitor to the class with the given name,
+     * Applies the given ClassVisitor to the class with the given name,
      * if it is present in the class pool.
      */
-    public void classFileAccept(ClassFileVisitor classFileVisitor, String className)
+    public void classAccept(String className, ClassVisitor classVisitor)
     {
-        ClassFile classFile = getClass(className);
-        if (classFile != null)
+        Clazz clazz = getClass(className);
+        if (clazz != null)
         {
-            classFile.accept(classFileVisitor);
+            clazz.accept(classVisitor);
         }
     }
 }

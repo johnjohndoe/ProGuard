@@ -1,6 +1,6 @@
-/* $Id: VariableEditor.java,v 1.5.2.3 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -22,41 +22,25 @@ package proguard.classfile.editor;
 
 import proguard.classfile.*;
 import proguard.classfile.attribute.*;
-import proguard.classfile.attribute.annotation.*;
-import proguard.classfile.instruction.*;
-import proguard.classfile.visitor.*;
+import proguard.classfile.attribute.visitor.AttributeVisitor;
+import proguard.classfile.util.SimplifiedVisitor;
 
 /**
- * This AttrInfoVisitor accumulates specified changes to local variables, and
+ * This AttributeVisitor accumulates specified changes to local variables, and
  * then applies these accumulated changes to the code attributes that it visits.
  *
- * @author Eric Lafortune
+ * @author Eric  Lafortune
  */
 public class VariableEditor
-  implements AttrInfoVisitor
+extends      SimplifiedVisitor
+implements   AttributeVisitor
 {
-    private VariableRemapper variableRemapper;
+    private boolean   modified;
 
-    private boolean          modified;
+    private boolean[] deleted     = new boolean[ClassConstants.TYPICAL_VARIABLES_SIZE];
+    private int[]     variableMap = new int[ClassConstants.TYPICAL_VARIABLES_SIZE];
 
-    private boolean[]        deleted;
-
-    private int[]            variableMap;
-
-
-    /**
-     * Creates a new VariableEditor.
-     * @param codeLength an estimate of the maximum length of all the code
-     *                   that will be edited.
-     * @param maxLocals  an estimate of the maximum length of all the local
-     *                   variable frames that will be edited.
-     */
-    public VariableEditor(int codeLength, int maxLocals)
-    {
-        variableRemapper = new VariableRemapper(codeLength);
-        deleted          = new boolean[maxLocals];
-        variableMap      = new int[maxLocals];
-    }
+    private final VariableRemapper variableRemapper = new VariableRemapper();
 
 
     /**
@@ -83,8 +67,6 @@ public class VariableEditor
     }
 
 
-
-
     /**
      * Remembers to delete the given variable.
      * @param variableIndex the index of the variable to be deleted.
@@ -106,38 +88,12 @@ public class VariableEditor
     }
 
 
-    /**
-     * Returns whether any oarameter has been modified.
-     */
-    public boolean isModified()
-    {
-        return modified;
-    }
+    // Implementations for AttributeVisitor.
+
+    public void visitAnyAttribute(Clazz clazz, Attribute attribute) {}
 
 
-    // Implementations for AttrInfoVisitor.
-
-    public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo) {}
-    public void visitInnerClassesAttrInfo(ClassFile classFile, InnerClassesAttrInfo innerClassesAttrInfo) {}
-    public void visitEnclosingMethodAttrInfo(ClassFile classFile, EnclosingMethodAttrInfo enclosingMethodAttrInfo) {}
-    public void visitConstantValueAttrInfo(ClassFile classFile, FieldInfo fieldInfo, ConstantValueAttrInfo constantValueAttrInfo) {}
-    public void visitExceptionsAttrInfo(ClassFile classFile, MethodInfo methodInfo, ExceptionsAttrInfo exceptionsAttrInfo) {}
-    public void visitLineNumberTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LineNumberTableAttrInfo lineNumberTableAttrInfo) {}
-    public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo) {}
-    public void visitLocalVariableTypeTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeTableAttrInfo localVariableTypeTableAttrInfo) {}
-    public void visitSourceFileAttrInfo(ClassFile classFile, SourceFileAttrInfo sourceFileAttrInfo) {}
-    public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo) {}
-    public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo) {}
-    public void visitSyntheticAttrInfo(ClassFile classFile, SyntheticAttrInfo syntheticAttrInfo) {}
-    public void visitSignatureAttrInfo(ClassFile classFile, SignatureAttrInfo signatureAttrInfo) {}
-    public void visitRuntimeVisibleAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleAnnotationsAttrInfo runtimeVisibleAnnotationsAttrInfo) {}
-    public void visitRuntimeInvisibleAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleAnnotationsAttrInfo runtimeInvisibleAnnotationsAttrInfo) {}
-    public void visitRuntimeVisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleParameterAnnotationsAttrInfo runtimeVisibleParameterAnnotationsAttrInfo) {}
-    public void visitRuntimeInvisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleParameterAnnotationsAttrInfo runtimeInvisibleParameterAnnotationsAttrInfo) {}
-    public void visitAnnotationDefaultAttrInfo(ClassFile classFile, AnnotationDefaultAttrInfo annotationDefaultAttrInfo) {}
-
-
-    public void visitCodeAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo)
+    public void visitCodeAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute)
     {
         // Avoid doing any work if nothing is changing anyway.
         if (!modified)
@@ -145,7 +101,7 @@ public class VariableEditor
             return;
         }
 
-        int oldMaxLocals = codeAttrInfo.u2maxLocals;
+        int oldMaxLocals = codeAttribute.u2maxLocals;
 
         // Make sure there is a sufficiently large variable map.
         if (variableMap.length < oldMaxLocals)
@@ -172,9 +128,9 @@ public class VariableEditor
         variableRemapper.setVariableMap(variableMap);
 
         // Remap the variables.
-        variableRemapper.visitCodeAttrInfo(classFile, methodInfo, codeAttrInfo);
+        variableRemapper.visitCodeAttribute(clazz, method, codeAttribute);
 
         // Update the length of local variable frame.
-        codeAttrInfo.u2maxLocals = newVariableIndex;
+        codeAttribute.u2maxLocals = newVariableIndex;
     }
 }

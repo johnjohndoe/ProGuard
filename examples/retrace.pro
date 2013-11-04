@@ -30,7 +30,7 @@
 
 # Put all obfuscated classes into the nameless root package.
 
--defaultpackage ''
+-repackageclasses ''
 
 # Allow classes and class members to be made public.
 

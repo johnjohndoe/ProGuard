@@ -1,4 +1,5 @@
-# Keep - Applications. Keep all application classes that have a main method.
+# Keep - Applications. Keep all application classes, along with their 'main'
+# methods.
 -keepclasseswithmembers public class * {
     public static void main(java.lang.String[]);
 }
@@ -15,21 +16,21 @@
 # Keep - Xlets. Keep all extensions of java.tv.xlet.Xlet.
 -keep public class * extends java.tv.xlet.Xlet
 
-# Keep - Library. Keep all externally accessible classes, fields, and methods.
+# Keep - Library. Keep all public and protected classes, fields, and methods.
 -keep public class * {
     public protected <fields>;
     public protected <methods>;
 }
 
-# Also keep - Enumerations. Keep special static methods that are required in
+# Also keep - Enumerations. Keep the special static methods that are required in
 # enumeration classes.
 -keepclassmembers class * extends java.lang.Enum {
     public static **[] values();
     public static ** valueOf(java.lang.String);
 }
 
-# Also keep - Serialization code. Keep all fields and methods that are
-# used for serialization.
+# Also keep - Serialization code. Keep all fields and methods that are used for
+# serialization.
 -keepclassmembers class * extends java.io.Serializable {
     static final long serialVersionUID;
     static final java.io.ObjectStreamField[] serialPersistentFields;
@@ -39,47 +40,42 @@
     java.lang.Object readResolve();
 }
 
-# Also keep - BeanInfo classes. Keep all classes that implement the
-# BeanInfo interface.
+# Also keep - BeanInfo classes. Keep all implementations of java.beans.BeanInfo.
 -keep class * implements java.beans.BeanInfo
 
-# Also keep - Bean classes. Keep all bean classes along with their getters
+# Also keep - Bean classes. Keep all specified classes, along with their getters
 # and setters.
 -keep class * {
-    void set*(%);
-    void set*(**);
-    void set*(%[]);
-    void set*(**[]);
-    void set*(int, %);
-    void set*(int, **);
+    void set*(***);
+    void set*(int,***);
 
-    %    get*();
-    **   get*();
-    %[]  get*();
-    **[] get*();
-    %    get*(int);
-    **   get*(int);
+    boolean is*(); 
+    boolean is*(int);
+
+    *** get*();
+    *** get*(int);
 }
 
-# Also keep - Database drivers. Keep any implementations of java.sql.Driver.
+# Also keep - Database drivers. Keep all implementations of java.sql.Driver.
 -keep class * implements java.sql.Driver
 
-# Also keep - Swing UI L&F. Keep all classes that extend the ComponentUI class,
-# along with the special static method that is required.
+# Also keep - Swing UI L&F. Keep all extensions of javax.swing.plaf.ComponentUI,
+# along with the special 'createUI' method.
 -keep class * extends javax.swing.plaf.ComponentUI {
     public static javax.swing.plaf.ComponentUI createUI(javax.swing.JComponent);
 }
 
-# Also keep - RMI interfaces. Keep all Remote interfaces and their methods.
+# Also keep - RMI interfaces. Keep all interfaces that extend the
+# java.rmi.Remote interface, and their methods.
 -keep interface * extends java.rmi.Remote {
     <methods>;
 }
 
-# Also keep - RMI implementations. Keep all Remote implementations. This
-# includes any explicit or implicit Activatable implementations with their
+# Also keep - RMI implementations. Keep all implementations of java.rmi.Remote,
+# including any explicit or implicit implementations of Activatable, with their
 # two-argument constructors.
 -keep class * implements java.rmi.Remote {
-    <init>(java.rmi.activation.ActivationID, java.rmi.MarshalledObject);
+    <init>(java.rmi.activation.ActivationID,java.rmi.MarshalledObject);
 }
 
 # Keep names - Native method names. Keep all native class/method names.
@@ -87,11 +83,11 @@
     native <methods>;
 }
 
-# Keep names - _class method names. Keep all .class method names. Useful for
-# libraries that will be obfuscated again.
+# Keep names - _class method names. Keep all .class method names. This may be
+# useful for libraries that will be obfuscated again with different obfuscators.
 -keepclassmembernames class * {
     java.lang.Class class$(java.lang.String);
-    java.lang.Class class$(java.lang.String, boolean);
+    java.lang.Class class$(java.lang.String,boolean);
 }
 
 # Remove - System method calls. Remove all invocations of System
@@ -124,12 +120,12 @@
     public static double log10(double);
     public static double sqrt(double);
     public static double cbrt(double);
-    public static double IEEEremainder(double, double);
+    public static double IEEEremainder(double,double);
     public static double ceil(double);
     public static double floor(double);
     public static double rint(double);
-    public static double atan2(double, double);
-    public static double pow(double, double);
+    public static double atan2(double,double);
+    public static double pow(double,double);
     public static int round(float);
     public static long round(double);
     public static double random();
@@ -137,14 +133,14 @@
     public static long abs(long);
     public static float abs(float);
     public static double abs(double);
-    public static int max(int, int);
-    public static long max(long, long);
-    public static float max(float, float);
-    public static double max(double, double);
-    public static int min(int, int);
-    public static long min(long, long);
-    public static float min(float, float);
-    public static double min(double, double);
+    public static int max(int,int);
+    public static long max(long,long);
+    public static float max(float,float);
+    public static double max(double,double);
+    public static int min(int,int);
+    public static long min(long,long);
+    public static float min(float,float);
+    public static double min(double,double);
     public static double ulp(double);
     public static float ulp(float);
     public static double signum(double);
@@ -152,7 +148,7 @@
     public static double sinh(double);
     public static double cosh(double);
     public static double tanh(double);
-    public static double hypot(double, double);
+    public static double hypot(double,double);
     public static double expm1(double);
     public static double log1p(double);
 }
@@ -349,8 +345,8 @@
     public java.lang.String trim();
 }
 
-# Remove - StringBuffer method calls. Remove all invocations of
-# StringBuffer methods without side effects whose return values are not used.
+# Remove - StringBuffer method calls. Remove all invocations of StringBuffer
+# methods without side effects whose return values are not used.
 -assumenosideeffects public class java.lang.StringBuffer {
     public java.lang.StringBuffer();
     public java.lang.StringBuffer(int);
@@ -369,8 +365,8 @@
     public java.lang.String substring(int,int);
 }
 
-# Remove - StringBuilder method calls. Remove all invocations of
-# StringBuilder methods without side effects whose return values are not used.
+# Remove - StringBuilder method calls. Remove all invocations of StringBuilder
+# methods without side effects whose return values are not used.
 -assumenosideeffects public class java.lang.StringBuilder {
     public java.lang.StringBuilder();
     public java.lang.StringBuilder(int);

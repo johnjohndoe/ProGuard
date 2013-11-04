@@ -1,6 +1,6 @@
-/* $Id: NameAndTypeUsageMarker.java,v 1.14.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -22,108 +22,83 @@ package proguard.obfuscate;
 
 import proguard.classfile.*;
 import proguard.classfile.attribute.*;
-import proguard.classfile.attribute.annotation.*;
-import proguard.classfile.visitor.*;
+import proguard.classfile.attribute.visitor.AttributeVisitor;
+import proguard.classfile.constant.*;
+import proguard.classfile.constant.visitor.ConstantVisitor;
+import proguard.classfile.util.SimplifiedVisitor;
+import proguard.classfile.visitor.ClassVisitor;
 
 /**
- * This ClassFileVisitor marks all NameAndType constant pool entries that are
- * being used in the classes it visits.
+ * This ClassVisitor marks all NameAndType constant pool entries that are
+ * being used in the program classes it visits.
  *
  * @see NameAndTypeShrinker
  *
  * @author Eric Lafortune
  */
 public class NameAndTypeUsageMarker
-  implements ClassFileVisitor,
-             CpInfoVisitor,
-             AttrInfoVisitor
+extends      SimplifiedVisitor
+implements   ClassVisitor,
+             ConstantVisitor,
+             AttributeVisitor
 {
     // A visitor info flag to indicate the NameAndType constant pool entry is being used.
     private static final Object USED = new Object();
 
 
-    // Implementations for ClassFileVisitor.
+    // Implementations for ClassVisitor.
 
-    public void visitProgramClassFile(ProgramClassFile programClassFile)
+    public void visitProgramClass(ProgramClass programClass)
     {
         // Mark the NameAndType entries referenced by all other constant pool
         // entries.
-        programClassFile.constantPoolEntriesAccept(this);
+        programClass.constantPoolEntriesAccept(this);
 
         // Mark the NameAndType entries referenced by all EnclosingMethod
         // attributes.
-        programClassFile.attributesAccept(this);
+        programClass.attributesAccept(this);
     }
 
 
-    public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
+    // Implementations for ConstantVisitor.
+
+    public void visitAnyConstant(Clazz clazz, Constant constant) {}
+
+
+    public void visitFieldrefConstant(Clazz clazz, FieldrefConstant fieldrefConstant)
     {
+        visitRefConstant(clazz, fieldrefConstant);
     }
 
 
-    // Implementations for CpInfoVisitor.
-
-    public void visitIntegerCpInfo(ClassFile classFile, IntegerCpInfo integerCpInfo) {}
-    public void visitLongCpInfo(ClassFile classFile, LongCpInfo longCpInfo) {}
-    public void visitFloatCpInfo(ClassFile classFile, FloatCpInfo floatCpInfo) {}
-    public void visitDoubleCpInfo(ClassFile classFile, DoubleCpInfo doubleCpInfo) {}
-    public void visitUtf8CpInfo(ClassFile classFile, Utf8CpInfo utf8CpInfo) {}
-    public void visitStringCpInfo(ClassFile classFile, StringCpInfo stringCpInfo) {}
-    public void visitClassCpInfo(ClassFile classFile, ClassCpInfo classCpInfo) {}
-    public void visitNameAndTypeCpInfo(ClassFile classFile, NameAndTypeCpInfo nameAndTypeCpInfo) {}
-
-
-    public void visitFieldrefCpInfo(ClassFile classFile, FieldrefCpInfo fieldrefCpInfo)
+    public void visitInterfaceMethodrefConstant(Clazz clazz, InterfaceMethodrefConstant interfaceMethodrefConstant)
     {
-        visitRefCpInfo(classFile, fieldrefCpInfo);
+        visitRefConstant(clazz, interfaceMethodrefConstant);
     }
 
 
-    public void visitInterfaceMethodrefCpInfo(ClassFile classFile, InterfaceMethodrefCpInfo interfaceMethodrefCpInfo)
+    public void visitMethodrefConstant(Clazz clazz, MethodrefConstant methodrefConstant)
     {
-        visitRefCpInfo(classFile, interfaceMethodrefCpInfo);
+        visitRefConstant(clazz, methodrefConstant);
     }
 
 
-    public void visitMethodrefCpInfo(ClassFile classFile, MethodrefCpInfo methodrefCpInfo)
+    private void visitRefConstant(Clazz clazz, RefConstant refConstant)
     {
-        visitRefCpInfo(classFile, methodrefCpInfo);
+        markNameAndTypeConstant(clazz, refConstant.u2nameAndTypeIndex);
     }
 
 
-    private void visitRefCpInfo(ClassFile classFile, RefCpInfo refCpInfo)
+    // Implementations for AttributeVisitor.
+
+    public void visitAnyAttribute(Clazz clazz, Attribute attribute) {}
+
+
+    public void visitEnclosingMethodAttribute(Clazz clazz, EnclosingMethodAttribute enclosingMethodAttribute)
     {
-        markNameAndTypeCpEntry(classFile, refCpInfo.u2nameAndTypeIndex);
-    }
-
-
-    // Implementations for AttrInfoVisitor.
-
-    public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo) {}
-    public void visitInnerClassesAttrInfo(ClassFile classFile, InnerClassesAttrInfo innerClassesAttrInfo) {}
-    public void visitConstantValueAttrInfo(ClassFile classFile, FieldInfo fieldInfo, ConstantValueAttrInfo constantValueAttrInfo) {}
-    public void visitExceptionsAttrInfo(ClassFile classFile, MethodInfo methodInfo, ExceptionsAttrInfo exceptionsAttrInfo) {}
-    public void visitCodeAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo) {}
-    public void visitLineNumberTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LineNumberTableAttrInfo lineNumberTableAttrInfo) {}
-    public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo) {}
-    public void visitLocalVariableTypeTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeTableAttrInfo localVariableTypeTableAttrInfo) {}
-    public void visitSourceFileAttrInfo(ClassFile classFile, SourceFileAttrInfo sourceFileAttrInfo) {}
-    public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo) {}
-    public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo) {}
-    public void visitSyntheticAttrInfo(ClassFile classFile, SyntheticAttrInfo syntheticAttrInfo) {}
-    public void visitSignatureAttrInfo(ClassFile classFile, SignatureAttrInfo signatureAttrInfo) {}
-    public void visitRuntimeVisibleAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleAnnotationsAttrInfo runtimeVisibleAnnotationsAttrInfo) {}
-    public void visitRuntimeInvisibleAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleAnnotationsAttrInfo runtimeInvisibleAnnotationsAttrInfo) {}
-    public void visitRuntimeVisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleParameterAnnotationsAttrInfo runtimeVisibleParameterAnnotationsAttrInfo) {}
-    public void visitRuntimeInvisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleParameterAnnotationsAttrInfo runtimeInvisibleParameterAnnotationsAttrInfo) {}
-    public void visitAnnotationDefaultAttrInfo(ClassFile classFile, AnnotationDefaultAttrInfo annotationDefaultAttrInfo) {}
-
-
-    public void visitEnclosingMethodAttrInfo(ClassFile classFile, EnclosingMethodAttrInfo enclosingMethodAttrInfo)
-    {
-        if (enclosingMethodAttrInfo.u2nameAndTypeIndex != 0)
+        if (enclosingMethodAttribute.u2nameAndTypeIndex != 0)
         {
-            markNameAndTypeCpEntry(classFile, enclosingMethodAttrInfo.u2nameAndTypeIndex);
+            markNameAndTypeConstant(clazz, enclosingMethodAttribute.u2nameAndTypeIndex);
         }
     }
 
@@ -133,15 +108,15 @@ public class NameAndTypeUsageMarker
     /**
      * Marks the given UTF-8 constant pool entry of the given class.
      */
-    private void markNameAndTypeCpEntry(ClassFile classFile, int index)
+    private void markNameAndTypeConstant(Clazz clazz, int index)
     {
-         markAsUsed((NameAndTypeCpInfo)((ProgramClassFile)classFile).getCpEntry(index));
+         markAsUsed((NameAndTypeConstant)((ProgramClass)clazz).getConstant(index));
     }
 
 
     /**
      * Marks the given VisitorAccepter as being used.
-     * In this context, the VisitorAccepter will be a NameAndTypeCpInfo object.
+     * In this context, the VisitorAccepter will be a NameAndTypeConstant object.
      */
     private static void markAsUsed(VisitorAccepter visitorAccepter)
     {
@@ -151,7 +126,7 @@ public class NameAndTypeUsageMarker
 
     /**
      * Returns whether the given VisitorAccepter has been marked as being used.
-     * In this context, the VisitorAccepter will be a NameAndTypeCpInfo object.
+     * In this context, the VisitorAccepter will be a NameAndTypeConstant object.
      */
     static boolean isUsed(VisitorAccepter visitorAccepter)
     {

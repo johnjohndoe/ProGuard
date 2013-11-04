@@ -1,6 +1,6 @@
-/* $Id: ConstantColor.java,v 1.5 2004/08/15 12:39:30 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,7 +20,7 @@
  */
 package proguard.gui.splash;
 
-import java.awt.Color;
+import java.awt.*;
 
 /**
  * This VariableColor is constant over time.
@@ -29,7 +29,7 @@ import java.awt.Color;
  */
 public class ConstantColor implements VariableColor
 {
-    private Color value;
+    private final Color value;
 
 
     /**

@@ -1,4 +1,3 @@
-
 <!doctype html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <html>
 <head>
@@ -11,12 +10,13 @@
 
 <h2>Acknowledgements</h2>
 
-<b>ProGuard</b> grew out of <b>RetroGuard</b>, which its author Mark Welsh has
-kindly made available under the GNU Lesser General Public License.
-<b>RetroGuard</b> is a very nice piece of code, but it only performed
+The first versions of <b>ProGuard</b> grew out of <b>RetroGuard</b>, which its
+author Mark Welsh kindly made available under the GNU Lesser General Public
+License. <b>RetroGuard</b> is a very nice piece of code, but it only performed
 obfuscation. I started from the class file parsing code and wrote my own
-shrinker, optimizer, and obfuscator. At this point, both programs have little
-code in common.
+shrinker, optimizer, obfuscator, and preverifier. As of version 4.0, all of the
+original code has been rewritten, so the most obvious remaining similarity are
+the program names.
 <p>
 
 Dirk Schnelle has contributed and maintained the first versions of the Ant
@@ -41,7 +41,7 @@ employer <a href="http://www.luciad.com/" target="other">Luciad</a> is kindly
 allowing me to use.
 <p>
 
-<a href="http://sourceforge.net/projects/proguard/"
+<a href="http://sourceforge.net/forum/projects/proguard/"
 target="other">SourceForge</a> is generously providing the resources for
 hosting this project and many other projects.
 <p>

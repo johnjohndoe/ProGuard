@@ -1,6 +1,6 @@
-/* $Id: MemberCounter.java,v 1.1.2.4 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -21,14 +21,13 @@
 package proguard.classfile.visitor;
 
 import proguard.classfile.*;
-import proguard.classfile.visitor.*;
 
 /**
- * This MemberInfoVisitor counts the number of class members that has been visited.
+ * This MemberVisitor counts the number of class members that has been visited.
  *
  * @author Eric Lafortune
  */
-public class MemberCounter implements MemberInfoVisitor
+public class MemberCounter implements MemberVisitor
 {
     private int count;
 
@@ -42,31 +41,31 @@ public class MemberCounter implements MemberInfoVisitor
     }
 
 
-    // Implementations for MemberInfoVisitor.
+    // Implementations for MemberVisitor.
 
-    public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile,
-                                      LibraryFieldInfo libraryFieldInfo)
+    public void visitLibraryField(LibraryClass libraryClass,
+                                  LibraryField libraryField)
     {
         count++;
     }
 
 
-    public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile,
-                                       LibraryMethodInfo libraryMethodInfo)
+    public void visitLibraryMethod(LibraryClass libraryClass,
+                                   LibraryMethod libraryMethod)
     {
         count++;
     }
 
 
-    public void visitProgramFieldInfo(ProgramClassFile programClassFile,
-                                      ProgramFieldInfo programFieldInfo)
+    public void visitProgramField(ProgramClass programClass,
+                                  ProgramField programField)
     {
         count++;
     }
 
 
-    public void visitProgramMethodInfo(ProgramClassFile programClassFile,
-                                       ProgramMethodInfo programMethodInfo)
+    public void visitProgramMethod(ProgramClass programClass,
+                                   ProgramMethod programMethod)
     {
         count++;
     }

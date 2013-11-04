@@ -1,6 +1,6 @@
-/* $Id: InterfaceUsageMarker.java,v 1.14.2.2 2007/01/18 21:31:53 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -21,11 +21,14 @@
 package proguard.shrink;
 
 import proguard.classfile.*;
-import proguard.classfile.visitor.*;
+import proguard.classfile.constant.*;
+import proguard.classfile.constant.visitor.ConstantVisitor;
+import proguard.classfile.util.SimplifiedVisitor;
+import proguard.classfile.visitor.ClassVisitor;
 
 
 /**
- * This ClassFileVisitor recursively marks all interface
+ * This ClassVisitor recursively marks all interface
  * classes that are being used in the visited class.
  *
  * @see UsageMarker
@@ -33,10 +36,11 @@ import proguard.classfile.visitor.*;
  * @author Eric Lafortune
  */
 public class InterfaceUsageMarker
-  implements ClassFileVisitor,
-             CpInfoVisitor
+extends      SimplifiedVisitor
+implements   ClassVisitor,
+             ConstantVisitor
 {
-    private UsageMarker usageMarker;
+    private final UsageMarker usageMarker;
 
     // A field acting as a return parameter for several methods.
     private boolean used;
@@ -53,21 +57,21 @@ public class InterfaceUsageMarker
     }
 
 
-    // Implementations for ClassFileVisitor.
+    // Implementations for ClassVisitor.
 
-    public void visitProgramClassFile(ProgramClassFile programClassFile)
+    public void visitProgramClass(ProgramClass programClass)
     {
-        boolean classUsed         = usageMarker.isUsed(programClassFile);
-        boolean classPossiblyUsed = usageMarker.isPossiblyUsed(programClassFile);
+        boolean classUsed         = usageMarker.isUsed(programClass);
+        boolean classPossiblyUsed = usageMarker.isPossiblyUsed(programClass);
 
         if (classUsed || classPossiblyUsed)
         {
             // Mark the references to interfaces that are being used.
-            for (int i = 0; i < programClassFile.u2interfacesCount; i++)
+            for (int index = 0; index < programClass.u2interfacesCount; index++)
             {
                 // Check if the interface is used. Mark the constant pool entry
                 // if so.
-                markCpEntry(programClassFile, programClassFile.u2interfaces[i]);
+                markConstant(programClass, programClass.u2interfaces[index]);
                 classUsed |= used;
             }
 
@@ -79,21 +83,21 @@ public class InterfaceUsageMarker
                 {
                     // At least one if this interface's interfaces is being used.
                     // Mark this interface as well.
-                    usageMarker.markAsUsed(programClassFile);
+                    usageMarker.markAsUsed(programClass);
 
                     // Mark this interface's name.
-                    markCpEntry(programClassFile, programClassFile.u2thisClass);
+                    markConstant(programClass, programClass.u2thisClass);
 
                     // Mark the superclass (java/lang/Object).
-                    if (programClassFile.u2superClass != 0)
+                    if (programClass.u2superClass != 0)
                     {
-                        markCpEntry(programClassFile, programClassFile.u2superClass);
+                        markConstant(programClass, programClass.u2superClass);
                     }
                 }
                 else
                 {
                     // Unmark this interface, so we don't bother looking at it again.
-                    usageMarker.markAsUnused(programClassFile);
+                    usageMarker.markAsUnused(programClass);
                 }
             }
         }
@@ -103,44 +107,33 @@ public class InterfaceUsageMarker
     }
 
 
-    public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
+    public void visitLibraryClass(LibraryClass libraryClass)
     {
         // The return value.
         used = true;
     }
 
 
-    // Implementations for CpInfoVisitor.
+    // Implementations for ConstantVisitor.
 
-    public void visitIntegerCpInfo(ClassFile classFile, IntegerCpInfo integerCpInfo) {}
-    public void visitLongCpInfo(ClassFile classFile, LongCpInfo longCpInfo) {}
-    public void visitFloatCpInfo(ClassFile classFile, FloatCpInfo floatCpInfo) {}
-    public void visitDoubleCpInfo(ClassFile classFile, DoubleCpInfo doubleCpInfo) {}
-    public void visitStringCpInfo(ClassFile classFile, StringCpInfo stringCpInfo) {}
-    public void visitFieldrefCpInfo(ClassFile classFile, FieldrefCpInfo fieldrefCpInfo) {}
-    public void visitInterfaceMethodrefCpInfo(ClassFile classFile, InterfaceMethodrefCpInfo interfaceMethodrefCpInfo) {}
-    public void visitMethodrefCpInfo(ClassFile classFile, MethodrefCpInfo methodrefCpInfo) {}
-    public void visitNameAndTypeCpInfo(ClassFile classFile, NameAndTypeCpInfo nameAndTypeCpInfo) {}
-
-
-    public void visitClassCpInfo(ClassFile classFile, ClassCpInfo classCpInfo)
+    public void visitClassConstant(Clazz clazz, ClassConstant classConstant)
     {
-        boolean classUsed = usageMarker.isUsed(classCpInfo);
+        boolean classUsed = usageMarker.isUsed(classConstant);
 
         if (!classUsed)
         {
-            // The ClassCpInfo isn't marked as being used yet. But maybe it should
+            // The ClassConstant isn't marked as being used yet. But maybe it should
             // be included as an interface, so check the actual class.
-            classCpInfo.referencedClassAccept(this);
-            classUsed = used;
+            classConstant.referencedClassAccept(this);
+            classUsed =   used;
 
             if (classUsed)
             {
-                // The class is being used. Mark the ClassCpInfo as being used
+                // The class is being used. Mark the ClassConstant as being used
                 // as well.
-                usageMarker.markAsUsed(classCpInfo);
+                usageMarker.markAsUsed(classConstant);
 
-                markCpEntry(classFile, classCpInfo.u2nameIndex);
+                markConstant(clazz, classConstant.u2nameIndex);
             }
         }
 
@@ -149,11 +142,11 @@ public class InterfaceUsageMarker
     }
 
 
-    public void visitUtf8CpInfo(ClassFile classFile, Utf8CpInfo utf8CpInfo)
+    public void visitUtf8Constant(Clazz clazz, Utf8Constant utf8Constant)
     {
-        if (!usageMarker.isUsed(utf8CpInfo))
+        if (!usageMarker.isUsed(utf8Constant))
         {
-            usageMarker.markAsUsed(utf8CpInfo);
+            usageMarker.markAsUsed(utf8Constant);
         }
     }
 
@@ -164,8 +157,8 @@ public class InterfaceUsageMarker
      * Marks the given constant pool entry of the given class. This includes
      * visiting any referenced objects.
      */
-    private void markCpEntry(ClassFile classFile, int index)
+    private void markConstant(Clazz clazz, int index)
     {
-         classFile.constantPoolEntryAccept(index, this);
+         clazz.constantPoolEntryAccept(index, this);
     }
 }

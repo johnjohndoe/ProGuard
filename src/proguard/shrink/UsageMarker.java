@@ -1,6 +1,6 @@
-/* $Id: UsageMarker.java,v 1.46.2.4 2007/01/18 21:31:53 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -23,43 +23,53 @@ package proguard.shrink;
 import proguard.classfile.*;
 import proguard.classfile.attribute.*;
 import proguard.classfile.attribute.annotation.*;
+import proguard.classfile.attribute.preverification.*;
+import proguard.classfile.attribute.preverification.visitor.*;
+import proguard.classfile.attribute.visitor.*;
+import proguard.classfile.constant.*;
+import proguard.classfile.constant.visitor.ConstantVisitor;
 import proguard.classfile.instruction.*;
+import proguard.classfile.instruction.visitor.InstructionVisitor;
+import proguard.classfile.util.SimplifiedVisitor;
 import proguard.classfile.visitor.*;
 
 
 /**
- * This ClassFileVisitor and MemberInfoVisitor recursively marks all
- * classes and class elements that are being used.
+ * This ClassVisitor and MemberVisitor recursively marks all classes and class
+ * elements that are being used.
  *
- * @see ClassFileShrinker
+ * @see ClassShrinker
  *
  * @author Eric Lafortune
  */
-public class UsageMarker
-  implements ClassFileVisitor,
-             MemberInfoVisitor,
-             CpInfoVisitor,
-             AttrInfoVisitor,
-             InnerClassesInfoVisitor,
-             ExceptionInfoVisitor,
-             LocalVariableInfoVisitor,
-             LocalVariableTypeInfoVisitor,
-             AnnotationVisitor,
-             ElementValueVisitor,
-             InstructionVisitor
+class      UsageMarker
+extends    SimplifiedVisitor
+implements ClassVisitor,
+           MemberVisitor,
+           ConstantVisitor,
+           AttributeVisitor,
+           InnerClassesInfoVisitor,
+           ExceptionInfoVisitor,
+           StackMapFrameVisitor,
+           VerificationTypeVisitor,
+           LocalVariableInfoVisitor,
+           LocalVariableTypeInfoVisitor,
+//         AnnotationVisitor,
+//         ElementValueVisitor,
+           InstructionVisitor
 {
-    // A visitor info flag to indicate the ProgramMemberInfo object is being used,
-    // if its ClassFile can be determined as being used as well.
+    // A visitor info flag to indicate the ProgramMember object is being used,
+    // if its Clazz can be determined as being used as well.
     private static final Object POSSIBLY_USED = new Object();
     // A visitor info flag to indicate the visitor accepter is being used.
     private static final Object USED          = new Object();
 
 
-    private MyInterfaceUsageMarker          interfaceUsageMarker          = new MyInterfaceUsageMarker();
-    private MyPossiblyUsedMethodUsageMarker possiblyUsedMethodUsageMarker = new MyPossiblyUsedMethodUsageMarker();
-//    private ClassFileVisitor       dynamicClassMarker   =
-//        new MultiClassFileVisitor(
-//        new ClassFileVisitor[]
+    private final MyInterfaceUsageMarker          interfaceUsageMarker          = new MyInterfaceUsageMarker();
+    private final MyPossiblyUsedMethodUsageMarker possiblyUsedMethodUsageMarker = new MyPossiblyUsedMethodUsageMarker();
+//    private ClassVisitor       dynamicClassMarker   =
+//        new MultiClassVisitor(
+//        new ClassVisitor[]
 //        {
 //            this,
 //            new NamedMethodVisitor(ClassConstants.INTERNAL_METHOD_NAME_INIT,
@@ -68,129 +78,129 @@ public class UsageMarker
 //        });
 
 
-    // Implementations for ClassFileVisitor.
+    // Implementations for ClassVisitor.
 
-    public void visitProgramClassFile(ProgramClassFile programClassFile)
+    public void visitProgramClass(ProgramClass programClass)
     {
-        if (shouldBeMarkedAsUsed(programClassFile))
+        if (shouldBeMarkedAsUsed(programClass))
         {
             // Mark this class.
-            markAsUsed(programClassFile);
+            markAsUsed(programClass);
 
-            markProgramClassBody(programClassFile);
+            markProgramClassBody(programClass);
         }
     }
 
 
-    protected void markProgramClassBody(ProgramClassFile programClassFile)
+    protected void markProgramClassBody(ProgramClass programClass)
     {
         // Mark this class's name.
-        markCpEntry(programClassFile, programClassFile.u2thisClass);
+        markConstant(programClass, programClass.u2thisClass);
 
         // Mark the superclass.
-        if (programClassFile.u2superClass != 0)
+        if (programClass.u2superClass != 0)
         {
-            markCpEntry(programClassFile, programClassFile.u2superClass);
+            markConstant(programClass, programClass.u2superClass);
         }
 
         // Give the interfaces preliminary marks.
-        programClassFile.hierarchyAccept(false, false, true, false,
-                                         interfaceUsageMarker);
+        programClass.hierarchyAccept(false, false, true, false,
+                                     interfaceUsageMarker);
 
         // Explicitly mark the <clinit> method.
-        programClassFile.methodAccept(ClassConstants.INTERNAL_METHOD_NAME_CLINIT,
-                                      ClassConstants.INTERNAL_METHOD_TYPE_CLINIT,
-                                      this);
+        programClass.methodAccept(ClassConstants.INTERNAL_METHOD_NAME_CLINIT,
+                                  ClassConstants.INTERNAL_METHOD_TYPE_CLINIT,
+                                  this);
 
         // Explicitly mark the parameterless <init> method.
-        programClassFile.methodAccept(ClassConstants.INTERNAL_METHOD_NAME_INIT,
-                                      ClassConstants.INTERNAL_METHOD_TYPE_INIT,
-                                      this);
+        programClass.methodAccept(ClassConstants.INTERNAL_METHOD_NAME_INIT,
+                                  ClassConstants.INTERNAL_METHOD_TYPE_INIT,
+                                  this);
 
         // Process all methods that have already been marked as possibly used.
-        programClassFile.methodsAccept(possiblyUsedMethodUsageMarker);
+        programClass.methodsAccept(possiblyUsedMethodUsageMarker);
 
         // Mark the attributes.
-        programClassFile.attributesAccept(this);
+        programClass.attributesAccept(this);
     }
 
 
-    public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
+    public void visitLibraryClass(LibraryClass libraryClass)
     {
-        if (shouldBeMarkedAsUsed(libraryClassFile))
+        if (shouldBeMarkedAsUsed(libraryClass))
         {
-            markAsUsed(libraryClassFile);
+            markAsUsed(libraryClass);
 
             // We're not going to analyze all library code. We're assuming that
             // if this class is being used, all of its methods will be used as
             // well. We'll mark them as such (here and in all subclasses).
 
             // Mark the superclass.
-            ClassFile superClass = libraryClassFile.superClass;
+            Clazz superClass = libraryClass.superClass;
             if (superClass != null)
             {
                 superClass.accept(this);
             }
 
             // Mark the interfaces.
-            ClassFile[] interfaceClasses = libraryClassFile.interfaceClasses;
+            Clazz[] interfaceClasses = libraryClass.interfaceClasses;
             if (interfaceClasses != null)
             {
-                for (int i = 0; i < interfaceClasses.length; i++)
+                for (int index = 0; index < interfaceClasses.length; index++)
                 {
-                    if (interfaceClasses[i] != null)
+                    if (interfaceClasses[index] != null)
                     {
-                        interfaceClasses[i].accept(this);
+                        interfaceClasses[index].accept(this);
                     }
                 }
             }
 
             // Mark all methods.
-            libraryClassFile.methodsAccept(this);
+            libraryClass.methodsAccept(this);
         }
     }
 
 
     /**
-     * This ClassFileVisitor marks ProgramClassFile objects as possibly used,
-     * and it visits LibraryClassFile objects with its outer UsageMarker.
+     * This ClassVisitor marks ProgramClass objects as possibly used,
+     * and it visits LibraryClass objects with its outer UsageMarker.
      */
-    private class MyInterfaceUsageMarker implements ClassFileVisitor
+    private class MyInterfaceUsageMarker
+    implements    ClassVisitor
     {
-        public void visitProgramClassFile(ProgramClassFile programClassFile)
+        public void visitProgramClass(ProgramClass programClass)
         {
-            if (shouldBeMarkedAsPossiblyUsed(programClassFile))
+            if (shouldBeMarkedAsPossiblyUsed(programClass))
             {
                 // We can't process the interface yet, because it might not
                 // be required. Give it a preliminary mark.
-                markAsPossiblyUsed(programClassFile);
+                markAsPossiblyUsed(programClass);
             }
         }
 
-        public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
+        public void visitLibraryClass(LibraryClass libraryClass)
         {
             // Make sure all library interface methods are marked.
-            UsageMarker.this.visitLibraryClassFile(libraryClassFile);
+            UsageMarker.this.visitLibraryClass(libraryClass);
         }
     }
 
 
-    private class MyPossiblyUsedMethodUsageMarker implements MemberInfoVisitor
+    private class MyPossiblyUsedMethodUsageMarker
+    extends       SimplifiedVisitor
+    implements    MemberVisitor
     {
-        // Implementations for MemberInfoVisitor.
+        // Implementations for MemberVisitor.
 
-        public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo) {}
-
-
-        public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
+        public void visitProgramMethod(ProgramClass programClass, ProgramMethod programMethod)
         {
             // Has the method already been referenced?
-            if (isPossiblyUsed(programMethodInfo))
+            if (isPossiblyUsed(programMethod))
             {
-                markAsUsed(programMethodInfo);
+                markAsUsed(programMethod);
 
                 // Mark the method body.
-                markProgramMethodBody(programClassFile, programMethodInfo);
+                markProgramMethodBody(programClass, programMethod);
 
                 // Note that, if the method has been marked as possibly used,
                 // the method hierarchy has already been marked (cfr. below).
@@ -198,87 +208,86 @@ public class UsageMarker
         }
 
 
-        public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo) {}
-        public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo) {}
     }
 
 
-    // Implementations for MemberInfoVisitor.
+    // Implementations for MemberVisitor.
 
-    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
+    public void visitProgramField(ProgramClass programClass, ProgramField programField)
     {
-        if (shouldBeMarkedAsUsed(programFieldInfo))
+        if (shouldBeMarkedAsUsed(programField))
         {
-            markAsUsed(programFieldInfo);
+            markAsUsed(programField);
 
             // Mark the name and descriptor.
-            markCpEntry(programClassFile, programFieldInfo.u2nameIndex);
-            markCpEntry(programClassFile, programFieldInfo.u2descriptorIndex);
+            markConstant(programClass, programField.u2nameIndex);
+            markConstant(programClass, programField.u2descriptorIndex);
 
             // Mark the attributes.
-            programFieldInfo.attributesAccept(programClassFile, this);
+            programField.attributesAccept(programClass, this);
 
             // Mark the classes referenced in the descriptor string.
-            programFieldInfo.referencedClassesAccept(this);
+            programField.referencedClassesAccept(this);
         }
     }
 
 
-    public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
+    public void visitProgramMethod(ProgramClass programClass, ProgramMethod programMethod)
     {
-        if (shouldBeMarkedAsUsed(programMethodInfo))
+        if (shouldBeMarkedAsUsed(programMethod))
         {
             // Is the method's class used?
-            if (isUsed(programClassFile))
+            if (isUsed(programClass))
             {
-                markAsUsed(programMethodInfo);
+                markAsUsed(programMethod);
 
                 // Mark the method body.
-                markProgramMethodBody(programClassFile, programMethodInfo);
+                markProgramMethodBody(programClass, programMethod);
 
                 // Mark the method hierarchy.
-                markMethodHierarchy(programClassFile, programMethodInfo);
+                markMethodHierarchy(programClass, programMethod);
             }
 
             // Hasn't the method been marked as possibly being used yet?
-            else if (shouldBeMarkedAsPossiblyUsed(programMethodInfo))
+            else if (shouldBeMarkedAsPossiblyUsed(programMethod))
             {
                 // We can't process the method yet, because the class isn't
                 // marked as being used (yet). Give it a preliminary mark.
-                markAsPossiblyUsed(programMethodInfo);
+                markAsPossiblyUsed(programMethod);
 
                 // Mark the method hierarchy.
-                markMethodHierarchy(programClassFile, programMethodInfo);
+                markMethodHierarchy(programClass, programMethod);
             }
         }
     }
 
 
-    public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo) {}
+    public void visitLibraryField(LibraryClass programClass, LibraryField programField) {}
 
-    public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo)
+
+    public void visitLibraryMethod(LibraryClass libraryClass, LibraryMethod libraryMethod)
     {
-        if (shouldBeMarkedAsUsed(libraryMethodInfo))
+        if (shouldBeMarkedAsUsed(libraryMethod))
         {
-            markAsUsed(libraryMethodInfo);
+            markAsUsed(libraryMethod);
 
             // Mark the method hierarchy.
-            markMethodHierarchy(libraryClassFile, libraryMethodInfo);
+            markMethodHierarchy(libraryClass, libraryMethod);
         }
     }
 
 
-    protected void markProgramMethodBody(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
+    protected void markProgramMethodBody(ProgramClass programClass, ProgramMethod programMethod)
     {
         // Mark the name and descriptor.
-        markCpEntry(programClassFile, programMethodInfo.u2nameIndex);
-        markCpEntry(programClassFile, programMethodInfo.u2descriptorIndex);
+        markConstant(programClass, programMethod.u2nameIndex);
+        markConstant(programClass, programMethod.u2descriptorIndex);
 
         // Mark the attributes.
-        programMethodInfo.attributesAccept(programClassFile, this);
+        programMethod.attributesAccept(programClass, this);
 
         // Mark the classes referenced in the descriptor string.
-        programMethodInfo.referencedClassesAccept(this);
+        programMethod.referencedClassesAccept(this);
     }
 
 
@@ -286,507 +295,529 @@ public class UsageMarker
      * Marks the hierarchy of implementing or overriding methods corresponding
      * to the given method, if any.
      */
-    protected void markMethodHierarchy(ClassFile classFile, MethodInfo methodInfo)
+    protected void markMethodHierarchy(Clazz clazz, Method method)
     {
-        classFile.methodImplementationsAccept(methodInfo, false, this);
+        clazz.methodImplementationsAccept(method, false, this);
     }
 
 
-    // Implementations for CpInfoVisitor.
+    // Implementations for ConstantVisitor.
 
-    public void visitIntegerCpInfo(ClassFile classFile, IntegerCpInfo integerCpInfo)
+    public void visitIntegerConstant(Clazz clazz, IntegerConstant integerConstant)
     {
-        if (shouldBeMarkedAsUsed(integerCpInfo))
+        if (shouldBeMarkedAsUsed(integerConstant))
         {
-            markAsUsed(integerCpInfo);
+            markAsUsed(integerConstant);
         }
     }
 
 
-    public void visitLongCpInfo(ClassFile classFile, LongCpInfo longCpInfo)
+    public void visitLongConstant(Clazz clazz, LongConstant longConstant)
     {
-        if (shouldBeMarkedAsUsed(longCpInfo))
+        if (shouldBeMarkedAsUsed(longConstant))
         {
-            markAsUsed(longCpInfo);
+            markAsUsed(longConstant);
         }
     }
 
 
-    public void visitFloatCpInfo(ClassFile classFile, FloatCpInfo floatCpInfo)
+    public void visitFloatConstant(Clazz clazz, FloatConstant floatConstant)
     {
-        if (shouldBeMarkedAsUsed(floatCpInfo))
+        if (shouldBeMarkedAsUsed(floatConstant))
         {
-            markAsUsed(floatCpInfo);
+            markAsUsed(floatConstant);
         }
     }
 
 
-    public void visitDoubleCpInfo(ClassFile classFile, DoubleCpInfo doubleCpInfo)
+    public void visitDoubleConstant(Clazz clazz, DoubleConstant doubleConstant)
     {
-        if (shouldBeMarkedAsUsed(doubleCpInfo))
+        if (shouldBeMarkedAsUsed(doubleConstant))
         {
-            markAsUsed(doubleCpInfo);
+            markAsUsed(doubleConstant);
         }
     }
 
 
-    public void visitStringCpInfo(ClassFile classFile, StringCpInfo stringCpInfo)
+    public void visitStringConstant(Clazz clazz, StringConstant stringConstant)
     {
-        if (shouldBeMarkedAsUsed(stringCpInfo))
+        if (shouldBeMarkedAsUsed(stringConstant))
         {
-            markAsUsed(stringCpInfo);
+            markAsUsed(stringConstant);
 
-            markCpEntry(classFile, stringCpInfo.u2stringIndex);
+            markConstant(clazz, stringConstant.u2stringIndex);
 
             // Mark the referenced class and its parameterless constructor,
             // if the string is being used in a Class.forName construct.
-            //stringCpInfo.referencedClassAccept(dynamicClassMarker);
+            //stringConstant.referencedClassAccept(dynamicClassMarker);
 
-            // Mark the referenced class.
-            stringCpInfo.referencedClassAccept(this);
+            // Mark the referenced class or class member, if any.
+            stringConstant.referencedClassAccept(this);
+            stringConstant.referencedMemberAccept(this);
         }
     }
 
 
-    public void visitUtf8CpInfo(ClassFile classFile, Utf8CpInfo utf8CpInfo)
+    public void visitUtf8Constant(Clazz clazz, Utf8Constant utf8Constant)
     {
-        if (shouldBeMarkedAsUsed(utf8CpInfo))
+        if (shouldBeMarkedAsUsed(utf8Constant))
         {
-            markAsUsed(utf8CpInfo);
+            markAsUsed(utf8Constant);
         }
     }
 
 
-    public void visitFieldrefCpInfo(ClassFile classFile, FieldrefCpInfo fieldrefCpInfo)
+    public void visitFieldrefConstant(Clazz clazz, FieldrefConstant fieldrefConstant)
     {
-        visitRefCpInfo(classFile, fieldrefCpInfo);
+        visitRefConstant(clazz, fieldrefConstant);
     }
 
 
-    public void visitInterfaceMethodrefCpInfo(ClassFile classFile, InterfaceMethodrefCpInfo interfaceMethodrefCpInfo)
+    public void visitInterfaceMethodrefConstant(Clazz clazz, InterfaceMethodrefConstant interfaceMethodrefConstant)
     {
-        visitRefCpInfo(classFile, interfaceMethodrefCpInfo);
+        visitRefConstant(clazz, interfaceMethodrefConstant);
     }
 
 
-    public void visitMethodrefCpInfo(ClassFile classFile, MethodrefCpInfo methodrefCpInfo)
+    public void visitMethodrefConstant(Clazz clazz, MethodrefConstant methodrefConstant)
     {
-        visitRefCpInfo(classFile, methodrefCpInfo);
+        visitRefConstant(clazz, methodrefConstant);
     }
 
 
-    private void visitRefCpInfo(ClassFile classFile, RefCpInfo methodrefCpInfo)
+    private void visitRefConstant(Clazz clazz, RefConstant methodrefConstant)
     {
-        if (shouldBeMarkedAsUsed(methodrefCpInfo))
+        if (shouldBeMarkedAsUsed(methodrefConstant))
         {
-            markAsUsed(methodrefCpInfo);
+            markAsUsed(methodrefConstant);
 
-            markCpEntry(classFile, methodrefCpInfo.u2classIndex);
-            markCpEntry(classFile, methodrefCpInfo.u2nameAndTypeIndex);
+            markConstant(clazz, methodrefConstant.u2classIndex);
+            markConstant(clazz, methodrefConstant.u2nameAndTypeIndex);
 
             // When compiled with "-target 1.2" or higher, the class or
             // interface actually containing the referenced method may be
             // higher up the hierarchy. Make sure it's marked, in case it
             // isn't used elsewhere.
-            methodrefCpInfo.referencedClassAccept(this);
+            methodrefConstant.referencedClassAccept(this);
 
             // Mark the referenced method itself.
-            methodrefCpInfo.referencedMemberInfoAccept(this);
+            methodrefConstant.referencedMemberAccept(this);
         }
     }
 
 
-    public void visitClassCpInfo(ClassFile classFile, ClassCpInfo classCpInfo)
+    public void visitClassConstant(Clazz clazz, ClassConstant classConstant)
     {
-        if (shouldBeMarkedAsUsed(classCpInfo))
+        if (shouldBeMarkedAsUsed(classConstant))
         {
-            markAsUsed(classCpInfo);
+            markAsUsed(classConstant);
 
-            markCpEntry(classFile, classCpInfo.u2nameIndex);
+            markConstant(clazz, classConstant.u2nameIndex);
 
             // Mark the referenced class itself.
-            classCpInfo.referencedClassAccept(this);
+            classConstant.referencedClassAccept(this);
         }
     }
 
 
-    public void visitNameAndTypeCpInfo(ClassFile classFile, NameAndTypeCpInfo nameAndTypeCpInfo)
+    public void visitNameAndTypeConstant(Clazz clazz, NameAndTypeConstant nameAndTypeConstant)
     {
-        if (shouldBeMarkedAsUsed(nameAndTypeCpInfo))
+        if (shouldBeMarkedAsUsed(nameAndTypeConstant))
         {
-            markAsUsed(nameAndTypeCpInfo);
+            markAsUsed(nameAndTypeConstant);
 
-            markCpEntry(classFile, nameAndTypeCpInfo.u2nameIndex);
-            markCpEntry(classFile, nameAndTypeCpInfo.u2descriptorIndex);
+            markConstant(clazz, nameAndTypeConstant.u2nameIndex);
+            markConstant(clazz, nameAndTypeConstant.u2descriptorIndex);
         }
     }
 
 
-    // Implementations for AttrInfoVisitor.
+    // Implementations for AttributeVisitor.
     // Note that attributes are typically only referenced once, so we don't
     // test if they have been marked already.
 
-    public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo)
+    public void visitUnknownAttribute(Clazz clazz, UnknownAttribute unknownAttribute)
     {
         // This is the best we can do for unknown attributes.
-        markAsUsed(unknownAttrInfo);
+        markAsUsed(unknownAttribute);
 
-        markCpEntry(classFile, unknownAttrInfo.u2attrNameIndex);
+        markConstant(clazz, unknownAttribute.u2attributeNameIndex);
     }
 
 
-    public void visitInnerClassesAttrInfo(ClassFile classFile, InnerClassesAttrInfo innerClassesAttrInfo)
+    public void visitSourceFileAttribute(Clazz clazz, SourceFileAttribute sourceFileAttribute)
+    {
+        markAsUsed(sourceFileAttribute);
+
+        markConstant(clazz, sourceFileAttribute.u2attributeNameIndex);
+        markConstant(clazz, sourceFileAttribute.u2sourceFileIndex);
+    }
+
+
+    public void visitSourceDirAttribute(Clazz clazz, SourceDirAttribute sourceDirAttribute)
+    {
+        markAsUsed(sourceDirAttribute);
+
+        markConstant(clazz, sourceDirAttribute.u2attributeNameIndex);
+        markConstant(clazz, sourceDirAttribute.u2sourceDirIndex);
+    }
+
+
+    public void visitInnerClassesAttribute(Clazz clazz, InnerClassesAttribute innerClassesAttribute)
     {
         // Don't mark the attribute and its name yet. We may mark it later, in
         // InnerUsageMarker.
-        //_markAsUsed(innerClassesAttrInfo);
+        //markAsUsed(innerClassesAttribute);
 
-        //markCpEntry(classFile, innerClassesAttrInfo.u2attrNameIndex);
-        innerClassesAttrInfo.innerClassEntriesAccept(classFile, this);
+        //markConstant(clazz, innerClassesAttribute.u2attrNameIndex);
+
+        // Do mark the outer class entries.
+        innerClassesAttribute.innerClassEntriesAccept(clazz, this);
     }
 
 
-    public void visitEnclosingMethodAttrInfo(ClassFile classFile, EnclosingMethodAttrInfo enclosingMethodAttrInfo)
+    public void visitEnclosingMethodAttribute(Clazz clazz, EnclosingMethodAttribute enclosingMethodAttribute)
     {
-        markAsUsed(enclosingMethodAttrInfo);
+        markAsUsed(enclosingMethodAttribute);
 
-        markCpEntry(classFile, enclosingMethodAttrInfo.u2attrNameIndex);
-        markCpEntry(classFile, enclosingMethodAttrInfo.u2classIndex);
+        markConstant(clazz, enclosingMethodAttribute.u2attributeNameIndex);
+        markConstant(clazz, enclosingMethodAttribute.u2classIndex);
 
-        if (enclosingMethodAttrInfo.u2nameAndTypeIndex != 0)
+        if (enclosingMethodAttribute.u2nameAndTypeIndex != 0)
         {
-            markCpEntry(classFile, enclosingMethodAttrInfo.u2nameAndTypeIndex);
+            markConstant(clazz, enclosingMethodAttribute.u2nameAndTypeIndex);
         }
     }
 
 
-    public void visitConstantValueAttrInfo(ClassFile classFile, FieldInfo fieldInfo, ConstantValueAttrInfo constantValueAttrInfo)
+    public void visitDeprecatedAttribute(Clazz clazz, DeprecatedAttribute deprecatedAttribute)
     {
-        markAsUsed(constantValueAttrInfo);
+        markAsUsed(deprecatedAttribute);
 
-        markCpEntry(classFile, constantValueAttrInfo.u2attrNameIndex);
-        markCpEntry(classFile, constantValueAttrInfo.u2constantValueIndex);
+        markConstant(clazz, deprecatedAttribute.u2attributeNameIndex);
     }
 
 
-    public void visitExceptionsAttrInfo(ClassFile classFile, MethodInfo methodInfo, ExceptionsAttrInfo exceptionsAttrInfo)
+    public void visitSyntheticAttribute(Clazz clazz, SyntheticAttribute syntheticAttribute)
     {
-        markAsUsed(exceptionsAttrInfo);
+        markAsUsed(syntheticAttribute);
 
-        markCpEntry(classFile, exceptionsAttrInfo.u2attrNameIndex);
+        markConstant(clazz, syntheticAttribute.u2attributeNameIndex);
+    }
+
+
+    public void visitSignatureAttribute(Clazz clazz, SignatureAttribute signatureAttribute)
+    {
+        markAsUsed(signatureAttribute);
+
+        markConstant(clazz, signatureAttribute.u2attributeNameIndex);
+        markConstant(clazz, signatureAttribute.u2signatureIndex);
+    }
+
+
+    public void visitConstantValueAttribute(Clazz clazz, Field field, ConstantValueAttribute constantValueAttribute)
+    {
+        markAsUsed(constantValueAttribute);
+
+        markConstant(clazz, constantValueAttribute.u2attributeNameIndex);
+        markConstant(clazz, constantValueAttribute.u2constantValueIndex);
+    }
+
+
+    public void visitExceptionsAttribute(Clazz clazz, Method method, ExceptionsAttribute exceptionsAttribute)
+    {
+        markAsUsed(exceptionsAttribute);
+
+        markConstant(clazz, exceptionsAttribute.u2attributeNameIndex);
 
         // Mark the constant pool entries referenced by the exceptions.
-        exceptionsAttrInfo.exceptionEntriesAccept((ProgramClassFile)classFile, this);
+        exceptionsAttribute.exceptionEntriesAccept((ProgramClass)clazz, this);
     }
 
 
-    public void visitCodeAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo)
+    public void visitCodeAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute)
     {
-        markAsUsed(codeAttrInfo);
+        markAsUsed(codeAttribute);
 
-        markCpEntry(classFile, codeAttrInfo.u2attrNameIndex);
+        markConstant(clazz, codeAttribute.u2attributeNameIndex);
 
         // Mark the constant pool entries referenced by the instructions,
-        // and the exceptions and attributes.
-        codeAttrInfo.instructionsAccept(classFile, methodInfo, this);
-        codeAttrInfo.exceptionsAccept(classFile, methodInfo, this);
-        codeAttrInfo.attributesAccept(classFile, methodInfo, this);
+        // by the exceptions, and by the attributes.
+        codeAttribute.instructionsAccept(clazz, method, this);
+        codeAttribute.exceptionsAccept(clazz, method, this);
+        codeAttribute.attributesAccept(clazz, method, this);
     }
 
 
-    public void visitLineNumberTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LineNumberTableAttrInfo lineNumberTableAttrInfo)
+    public void visitStackMapAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, StackMapAttribute stackMapAttribute)
     {
-        markAsUsed(lineNumberTableAttrInfo);
+        markAsUsed(stackMapAttribute);
 
-        markCpEntry(classFile, lineNumberTableAttrInfo.u2attrNameIndex);
+        markConstant(clazz, stackMapAttribute.u2attributeNameIndex);
+
+        // Mark the constant pool entries referenced by the stack map frames.
+        stackMapAttribute.stackMapFramesAccept(clazz, method, codeAttribute, this);
     }
 
 
-    public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo)
+    public void visitStackMapTableAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, StackMapTableAttribute stackMapTableAttribute)
     {
-        markAsUsed(localVariableTableAttrInfo);
+        markAsUsed(stackMapTableAttribute);
 
-        markCpEntry(classFile, localVariableTableAttrInfo.u2attrNameIndex);
+        markConstant(clazz, stackMapTableAttribute.u2attributeNameIndex);
+
+        // Mark the constant pool entries referenced by the stack map frames.
+        stackMapTableAttribute.stackMapFramesAccept(clazz, method, codeAttribute, this);
+    }
+
+
+    public void visitLineNumberTableAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, LineNumberTableAttribute lineNumberTableAttribute)
+    {
+        markAsUsed(lineNumberTableAttribute);
+
+        markConstant(clazz, lineNumberTableAttribute.u2attributeNameIndex);
+    }
+
+
+    public void visitLocalVariableTableAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableTableAttribute localVariableTableAttribute)
+    {
+        markAsUsed(localVariableTableAttribute);
+
+        markConstant(clazz, localVariableTableAttribute.u2attributeNameIndex);
 
         // Mark the constant pool entries referenced by the local variables.
-        localVariableTableAttrInfo.localVariablesAccept(classFile, methodInfo, codeAttrInfo, this);
+        localVariableTableAttribute.localVariablesAccept(clazz, method, codeAttribute, this);
     }
 
 
-    public void visitLocalVariableTypeTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeTableAttrInfo localVariableTypeTableAttrInfo)
+    public void visitLocalVariableTypeTableAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableTypeTableAttribute localVariableTypeTableAttribute)
     {
-        markAsUsed(localVariableTypeTableAttrInfo);
+        markAsUsed(localVariableTypeTableAttribute);
 
-        markCpEntry(classFile, localVariableTypeTableAttrInfo.u2attrNameIndex);
+        markConstant(clazz, localVariableTypeTableAttribute.u2attributeNameIndex);
 
         // Mark the constant pool entries referenced by the local variable types.
-        localVariableTypeTableAttrInfo.localVariablesAccept(classFile, methodInfo, codeAttrInfo, this);
+        localVariableTypeTableAttribute.localVariablesAccept(clazz, method, codeAttribute, this);
     }
 
 
-    public void visitSourceFileAttrInfo(ClassFile classFile, SourceFileAttrInfo sourceFileAttrInfo)
+    public void visitAnyAnnotationsAttribute(Clazz clazz, AnnotationsAttribute annotationsAttribute)
     {
-        markAsUsed(sourceFileAttrInfo);
-
-        markCpEntry(classFile, sourceFileAttrInfo.u2attrNameIndex);
-        markCpEntry(classFile, sourceFileAttrInfo.u2sourceFileIndex);
+        // Don't mark the attribute and its contents yet. We may mark them later,
+        // in AnnotationUsageMarker.
+//        markAsUsed(annotationsAttribute);
+//
+//        markConstant(clazz, annotationsAttribute.u2attributeNameIndex);
+//
+//        // Mark the constant pool entries referenced by the annotations.
+//        annotationsAttribute.annotationsAccept(clazz, this);
     }
 
 
-    public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo)
+    public void visitAnyParameterAnnotationsAttribute(Clazz clazz, Method method, ParameterAnnotationsAttribute parameterAnnotationsAttribute)
     {
-        markAsUsed(sourceDirAttrInfo);
-
-        markCpEntry(classFile, sourceDirAttrInfo.u2attrNameIndex);
-        markCpEntry(classFile, sourceDirAttrInfo.u2sourceDirIndex);
+        // Don't mark the attribute and its contents yet. We may mark them later,
+        // in AnnotationUsageMarker.
+//        markAsUsed(parameterAnnotationsAttribute);
+//
+//        markConstant(clazz, parameterAnnotationsAttribute.u2attributeNameIndex);
+//
+//        // Mark the constant pool entries referenced by the annotations.
+//        parameterAnnotationsAttribute.annotationsAccept(clazz, method, this);
     }
 
 
-    public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo)
+    public void visitAnnotationDefaultAttribute(Clazz clazz, Method method, AnnotationDefaultAttribute annotationDefaultAttribute)
     {
-        markAsUsed(deprecatedAttrInfo);
-
-        markCpEntry(classFile, deprecatedAttrInfo.u2attrNameIndex);
-    }
-
-
-    public void visitSyntheticAttrInfo(ClassFile classFile, SyntheticAttrInfo syntheticAttrInfo)
-    {
-        markAsUsed(syntheticAttrInfo);
-
-        markCpEntry(classFile, syntheticAttrInfo.u2attrNameIndex);
-    }
-
-
-    public void visitSignatureAttrInfo(ClassFile classFile, SignatureAttrInfo signatureAttrInfo)
-    {
-        markAsUsed(signatureAttrInfo);
-
-        markCpEntry(classFile, signatureAttrInfo.u2attrNameIndex);
-        markCpEntry(classFile, signatureAttrInfo.u2signatureIndex);
-    }
-
-
-    public void visitRuntimeVisibleAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleAnnotationsAttrInfo runtimeVisibleAnnotationsAttrInfo)
-    {
-        markAsUsed(runtimeVisibleAnnotationsAttrInfo);
-
-        markCpEntry(classFile, runtimeVisibleAnnotationsAttrInfo.u2attrNameIndex);
-
-        // Mark the constant pool entries referenced by the annotations.
-        runtimeVisibleAnnotationsAttrInfo.annotationsAccept(classFile, this);
-    }
-
-
-    public void visitRuntimeInvisibleAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleAnnotationsAttrInfo runtimeInvisibleAnnotationsAttrInfo)
-    {
-        markAsUsed(runtimeInvisibleAnnotationsAttrInfo);
-
-        markCpEntry(classFile, runtimeInvisibleAnnotationsAttrInfo.u2attrNameIndex);
-
-        // Mark the constant pool entries referenced by the annotations.
-        runtimeInvisibleAnnotationsAttrInfo.annotationsAccept(classFile, this);
-    }
-
-
-    public void visitRuntimeVisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleParameterAnnotationsAttrInfo runtimeVisibleParameterAnnotationsAttrInfo)
-    {
-        markAsUsed(runtimeVisibleParameterAnnotationsAttrInfo);
-
-        markCpEntry(classFile, runtimeVisibleParameterAnnotationsAttrInfo.u2attrNameIndex);
-
-        // Mark the constant pool entries referenced by the annotations.
-        runtimeVisibleParameterAnnotationsAttrInfo.annotationsAccept(classFile, this);
-    }
-
-
-    public void visitRuntimeInvisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleParameterAnnotationsAttrInfo runtimeInvisibleParameterAnnotationsAttrInfo)
-    {
-        markAsUsed(runtimeInvisibleParameterAnnotationsAttrInfo);
-
-        markCpEntry(classFile, runtimeInvisibleParameterAnnotationsAttrInfo.u2attrNameIndex);
-
-        // Mark the constant pool entries referenced by the annotations.
-        runtimeInvisibleParameterAnnotationsAttrInfo.annotationsAccept(classFile, this);
-    }
-
-
-    public void visitAnnotationDefaultAttrInfo(ClassFile classFile, AnnotationDefaultAttrInfo annotationDefaultAttrInfo)
-    {
-        markAsUsed(annotationDefaultAttrInfo);
-
-        markCpEntry(classFile, annotationDefaultAttrInfo.u2attrNameIndex);
-
-        // Mark the constant pool entries referenced by the element value.
-        annotationDefaultAttrInfo.defaultValueAccept(classFile, this);
+        // Don't mark the attribute and its contents yet. We may mark them later,
+        // in AnnotationUsageMarker.
+//        markAsUsed(annotationDefaultAttribute);
+//
+//        markConstant(clazz, annotationDefaultAttribute.u2attributeNameIndex);
+//
+//        // Mark the constant pool entries referenced by the element value.
+//        annotationDefaultAttribute.defaultValueAccept(clazz, this);
     }
 
 
     // Implementations for ExceptionInfoVisitor.
 
-    public void visitExceptionInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, ExceptionInfo exceptionInfo)
+    public void visitExceptionInfo(Clazz clazz, Method method, CodeAttribute codeAttribute, ExceptionInfo exceptionInfo)
     {
         markAsUsed(exceptionInfo);
 
         if (exceptionInfo.u2catchType != 0)
         {
-            markCpEntry(classFile, exceptionInfo.u2catchType);
+            markConstant(clazz, exceptionInfo.u2catchType);
         }
     }
 
 
     // Implementations for InnerClassesInfoVisitor.
 
-    public void visitInnerClassesInfo(ClassFile classFile, InnerClassesInfo innerClassesInfo)
+    public void visitInnerClassesInfo(Clazz clazz, InnerClassesInfo innerClassesInfo)
     {
         // At this point, we only mark outer classes of this class.
         // Inner class can be marked later, by InnerUsageMarker.
-        if (innerClassesInfo.u2innerClassInfoIndex == 0 &&
-            classFile.getName().equals(classFile.getCpClassNameString(innerClassesInfo.u2innerClassInfoIndex)))
+        if (innerClassesInfo.u2innerClassIndex == 0 &&
+            clazz.getName().equals(clazz.getClassName(innerClassesInfo.u2innerClassIndex)))
         {
             markAsUsed(innerClassesInfo);
 
-            if (innerClassesInfo.u2innerClassInfoIndex != 0)
+            if (innerClassesInfo.u2innerClassIndex != 0)
             {
-                markCpEntry(classFile, innerClassesInfo.u2innerClassInfoIndex);
+                markConstant(clazz, innerClassesInfo.u2innerClassIndex);
             }
 
-            if (innerClassesInfo.u2outerClassInfoIndex != 0)
+            if (innerClassesInfo.u2outerClassIndex != 0)
             {
-                markCpEntry(classFile, innerClassesInfo.u2outerClassInfoIndex);
+                markConstant(clazz, innerClassesInfo.u2outerClassIndex);
             }
 
             if (innerClassesInfo.u2innerNameIndex != 0)
             {
-                markCpEntry(classFile, innerClassesInfo.u2innerNameIndex);
+                markConstant(clazz, innerClassesInfo.u2innerNameIndex);
             }
         }
+    }
+
+
+    // Implementations for StackMapFrameVisitor.
+
+    public void visitAnyStackMapFrame(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, StackMapFrame stackMapFrame) {}
+
+
+    public void visitSameOneFrame(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, SameOneFrame sameOneFrame)
+    {
+        // Mark the constant pool entries referenced by the verification types.
+        sameOneFrame.stackItemAccept(clazz, method, codeAttribute, offset, this);
+    }
+
+
+    public void visitMoreZeroFrame(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, MoreZeroFrame moreZeroFrame)
+    {
+        // Mark the constant pool entries referenced by the verification types.
+        moreZeroFrame.additionalVariablesAccept(clazz, method, codeAttribute, offset, this);
+    }
+
+
+    public void visitFullFrame(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, FullFrame fullFrame)
+    {
+        // Mark the constant pool entries referenced by the verification types.
+        fullFrame.variablesAccept(clazz, method, codeAttribute, offset, this);
+        fullFrame.stackAccept(clazz, method, codeAttribute, offset, this);
+    }
+
+
+    // Implementations for VerificationTypeVisitor.
+
+    public void visitAnyVerificationType(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, VerificationType verificationType) {}
+
+
+    public void visitObjectType(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, ObjectType objectType)
+    {
+        markConstant(clazz, objectType.u2classIndex);
     }
 
 
     // Implementations for LocalVariableInfoVisitor.
 
-    public void visitLocalVariableInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableInfo localVariableInfo)
+    public void visitLocalVariableInfo(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableInfo localVariableInfo)
     {
-        markCpEntry(classFile, localVariableInfo.u2nameIndex);
-        markCpEntry(classFile, localVariableInfo.u2descriptorIndex);
+        markConstant(clazz, localVariableInfo.u2nameIndex);
+        markConstant(clazz, localVariableInfo.u2descriptorIndex);
     }
 
 
     // Implementations for LocalVariableTypeInfoVisitor.
 
-    public void visitLocalVariableTypeInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeInfo localVariableTypeInfo)
+    public void visitLocalVariableTypeInfo(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableTypeInfo localVariableTypeInfo)
     {
-        markCpEntry(classFile, localVariableTypeInfo.u2nameIndex);
-        markCpEntry(classFile, localVariableTypeInfo.u2signatureIndex);
+        markConstant(clazz, localVariableTypeInfo.u2nameIndex);
+        markConstant(clazz, localVariableTypeInfo.u2signatureIndex);
     }
 
 
-    // Implementations for AnnotationVisitor.
-
-    public void visitAnnotation(ClassFile classFile, Annotation annotation)
-    {
-        markCpEntry(classFile, annotation.u2typeIndex);
-
-        // Mark the annotation class.
-        annotation.referencedClassFileAccept(this);
-
-        // Mark the constant pool entries referenced by the element values.
-        annotation.elementValuesAccept(classFile, this);
-    }
-
-
-    // Implementations for ElementValueVisitor.
-
-    public void visitConstantElementValue(ClassFile classFile, Annotation annotation, ConstantElementValue constantElementValue)
-    {
-        if (constantElementValue.u2elementName != 0)
-        {
-            markCpEntry(classFile, constantElementValue.u2elementName);
-
-            // Mark the annotation method.
-            constantElementValue.referencedMethodInfoAccept(this);
-        }
-
-        markCpEntry(classFile, constantElementValue.u2constantValueIndex);
-    }
-
-
-    public void visitEnumConstantElementValue(ClassFile classFile, Annotation annotation, EnumConstantElementValue enumConstantElementValue)
-    {
-        if (enumConstantElementValue.u2elementName != 0)
-        {
-            markCpEntry(classFile, enumConstantElementValue.u2elementName);
-
-            // Mark the annotation method.
-            enumConstantElementValue.referencedMethodInfoAccept(this);
-        }
-
-        markCpEntry(classFile, enumConstantElementValue.u2typeNameIndex);
-        markCpEntry(classFile, enumConstantElementValue.u2constantNameIndex);
-    }
-
-
-    public void visitClassElementValue(ClassFile classFile, Annotation annotation, ClassElementValue classElementValue)
-    {
-        if (classElementValue.u2elementName != 0)
-        {
-            markCpEntry(classFile, classElementValue.u2elementName);
-
-            // Mark the annotation method.
-            classElementValue.referencedMethodInfoAccept(this);
-        }
-
-        // Mark the referenced class constant pool entry.
-        markCpEntry(classFile, classElementValue.u2classInfoIndex);
-
-        // Mark the referenced classes.
-        classElementValue.referencedClassesAccept(this);
-    }
-
-
-    public void visitAnnotationElementValue(ClassFile classFile, Annotation annotation, AnnotationElementValue annotationElementValue)
-    {
-        if (annotationElementValue.u2elementName != 0)
-        {
-            markCpEntry(classFile, annotationElementValue.u2elementName);
-
-            // Mark the annotation method.
-            annotationElementValue.referencedMethodInfoAccept(this);
-        }
-
-        // Mark the constant pool entries referenced by the annotation.
-        annotationElementValue.annotationAccept(classFile, this);
-    }
-
-
-    public void visitArrayElementValue(ClassFile classFile, Annotation annotation, ArrayElementValue arrayElementValue)
-    {
-        if (arrayElementValue.u2elementName != 0)
-        {
-            markCpEntry(classFile, arrayElementValue.u2elementName);
-
-            // Mark the annotation method.
-            arrayElementValue.referencedMethodInfoAccept(this);
-        }
-
-        // Mark the constant pool entries referenced by the element values.
-        arrayElementValue.elementValuesAccept(classFile, annotation, this);
-    }
+//    // Implementations for AnnotationVisitor.
+//
+//    public void visitAnnotation(Clazz clazz, Annotation annotation)
+//    {
+//        markConstant(clazz, annotation.u2typeIndex);
+//
+//        // Mark the constant pool entries referenced by the element values.
+//        annotation.elementValuesAccept(clazz, this);
+//    }
+//
+//
+//    // Implementations for ElementValueVisitor.
+//
+//    public void visitConstantElementValue(Clazz clazz, Annotation annotation, ConstantElementValue constantElementValue)
+//    {
+//        if (constantElementValue.u2elementNameIndex != 0)
+//        {
+//            markConstant(clazz, constantElementValue.u2elementNameIndex);
+//        }
+//
+//        markConstant(clazz, constantElementValue.u2constantValueIndex);
+//    }
+//
+//
+//    public void visitEnumConstantElementValue(Clazz clazz, Annotation annotation, EnumConstantElementValue enumConstantElementValue)
+//    {
+//        if (enumConstantElementValue.u2elementNameIndex != 0)
+//        {
+//            markConstant(clazz, enumConstantElementValue.u2elementNameIndex);
+//        }
+//
+//        markConstant(clazz, enumConstantElementValue.u2typeNameIndex);
+//        markConstant(clazz, enumConstantElementValue.u2constantNameIndex);
+//    }
+//
+//
+//    public void visitClassElementValue(Clazz clazz, Annotation annotation, ClassElementValue classElementValue)
+//    {
+//        if (classElementValue.u2elementNameIndex != 0)
+//        {
+//            markConstant(clazz, classElementValue.u2elementNameIndex);
+//        }
+//
+//        // Mark the referenced class constant pool entry.
+//        markConstant(clazz, classElementValue.u2classInfoIndex);
+//    }
+//
+//
+//    public void visitAnnotationElementValue(Clazz clazz, Annotation annotation, AnnotationElementValue annotationElementValue)
+//    {
+//        if (annotationElementValue.u2elementNameIndex != 0)
+//        {
+//            markConstant(clazz, annotationElementValue.u2elementNameIndex);
+//        }
+//
+//        // Mark the constant pool entries referenced by the annotation.
+//        annotationElementValue.annotationAccept(clazz, this);
+//    }
+//
+//
+//    public void visitArrayElementValue(Clazz clazz, Annotation annotation, ArrayElementValue arrayElementValue)
+//    {
+//        if (arrayElementValue.u2elementNameIndex != 0)
+//        {
+//            markConstant(clazz, arrayElementValue.u2elementNameIndex);
+//        }
+//
+//        // Mark the constant pool entries referenced by the element values.
+//        arrayElementValue.elementValuesAccept(clazz, annotation, this);
+//    }
 
 
     // Implementations for InstructionVisitor.
 
-    public void visitSimpleInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, SimpleInstruction simpleInstruction) {}
-    public void visitVariableInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, VariableInstruction variableInstruction) {}
-    public void visitBranchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, BranchInstruction branchInstruction) {}
-    public void visitTableSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, TableSwitchInstruction tableSwitchInstruction) {}
-    public void visitLookUpSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, LookUpSwitchInstruction lookUpSwitchInstruction) {}
+    public void visitAnyInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, Instruction instruction) {}
 
 
-    public void visitCpInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, CpInstruction cpInstruction)
+    public void visitConstantInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, ConstantInstruction constantInstruction)
     {
-        markCpEntry(classFile, cpInstruction.cpIndex);
+        markConstant(clazz, constantInstruction.constantIndex);
     }
 
 
@@ -863,8 +894,8 @@ public class UsageMarker
      * Marks the given constant pool entry of the given class. This includes
      * visiting any referenced objects.
      */
-    private void markCpEntry(ClassFile classFile, int index)
+    private void markConstant(Clazz clazz, int index)
     {
-         classFile.constantPoolEntryAccept(index, this);
+         clazz.constantPoolEntryAccept(index, this);
     }
 }

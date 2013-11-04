@@ -20,7 +20,8 @@
 
 -printmapping out.map
 -renamesourcefileattribute SourceFile
--keepattributes InnerClasses,SourceFile,LineNumberTable,Deprecated
+-keepattributes Exceptions,InnerClasses,Signature,Deprecated,
+                SourceFile,LineNumberTable,EnclosingMethod
 
 # Preserve all annotations.
 

@@ -1,6 +1,6 @@
-/* $Id: ArgumentWordReader.java,v 1.14.2.2 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -31,7 +31,7 @@ import java.io.*;
  */
 public class ArgumentWordReader extends WordReader
 {
-    private String[] arguments;
+    private final String[] arguments;
     private int      index = 0;
 
 

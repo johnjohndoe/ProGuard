@@ -1,6 +1,6 @@
-/* $Id: MemberReferenceFixer.java,v 1.4.2.4 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -23,147 +23,158 @@ package proguard.classfile.editor;
 import proguard.classfile.*;
 import proguard.classfile.attribute.*;
 import proguard.classfile.attribute.annotation.*;
-import proguard.classfile.util.ClassUtil;
+import proguard.classfile.attribute.annotation.visitor.*;
+import proguard.classfile.attribute.visitor.AttributeVisitor;
+import proguard.classfile.constant.*;
+import proguard.classfile.constant.visitor.ConstantVisitor;
+import proguard.classfile.util.*;
 import proguard.classfile.visitor.*;
 
 /**
- * This ClassFileVisitor fixes constant pool field and method references to
+ * This ClassVisitor fixes constant pool field and method references to
  * fields and methods whose names or descriptors have changed.
  *
  * @author Eric Lafortune
  */
 public class MemberReferenceFixer
-implements   ClassFileVisitor,
-             CpInfoVisitor,
-             MemberInfoVisitor,
-             AttrInfoVisitor,
+extends      SimplifiedVisitor
+implements   ClassVisitor,
+             ConstantVisitor,
+             MemberVisitor,
+             AttributeVisitor,
              AnnotationVisitor,
              ElementValueVisitor
 {
     private static final boolean DEBUG = false;
 
 
-    private ConstantPoolEditor constantPoolEditor = new ConstantPoolEditor();
-    private StackSizeUpdater   stackSizeUpdater;
+    private final ConstantPoolEditor constantPoolEditor = new ConstantPoolEditor();
+    private final StackSizeUpdater   stackSizeUpdater   = new StackSizeUpdater();
 
     // Parameter for the visitor methods.
-    private int cpIndex;
+    private int constantIndex;
 
     // Return values for the visitor methods.
     private boolean isInterfaceMethod;
     private boolean stackSizesMayHaveChanged;
 
 
-    /**
-     * Creates a new MemberReferenceFixer.
-     * @param codeLength an estimate of the maximum length of all the code that
-     *                   will be edited.
-     */
-    public MemberReferenceFixer(int codeLength)
-    {
-        stackSizeUpdater = new StackSizeUpdater(codeLength);
-    }
+    // Implementations for ClassVisitor.
 
-
-    // Implementations for ClassFileVisitor.
-
-    public void visitProgramClassFile(ProgramClassFile programClassFile)
+    public void visitProgramClass(ProgramClass programClass)
     {
         stackSizesMayHaveChanged = false;
 
         // Fix the constant pool entries.
-        for (int index = 1; index < programClassFile.u2constantPoolCount; index++)
+        for (int index = 1; index < programClass.u2constantPoolCount; index++)
         {
-            CpInfo cpInfo = programClassFile.constantPool[index];
-            if (cpInfo != null)
+            Constant constant = programClass.constantPool[index];
+            if (constant != null)
             {
                 // Fix the entry, replacing it entirely if needed.
-                this.cpIndex = index;
+                this.constantIndex = index;
 
-                cpInfo.accept(programClassFile, this);
+                constant.accept(programClass, this);
             }
         }
 
         // Fix class members.
-        programClassFile.fieldsAccept(this);
-        programClassFile.methodsAccept(this);
+        programClass.fieldsAccept(this);
+        programClass.methodsAccept(this);
 
         // Fix the attributes.
-        programClassFile.attributesAccept(this);
+        programClass.attributesAccept(this);
     }
 
 
-    public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
+    // Implementations for ConstantVisitor.
+
+    public void visitAnyConstant(Clazz clazz, Constant constant) {}
+
+
+    public void visitStringConstant(Clazz clazz, StringConstant stringConstant)
     {
-    }
-
-
-    // Implementations for CpInfoVisitor.
-
-    public void visitIntegerCpInfo(ClassFile classFile, IntegerCpInfo integerCpInfo) {}
-    public void visitLongCpInfo(ClassFile classFile, LongCpInfo longCpInfo) {}
-    public void visitFloatCpInfo(ClassFile classFile, FloatCpInfo floatCpInfo) {}
-    public void visitDoubleCpInfo(ClassFile classFile, DoubleCpInfo doubleCpInfo) {}
-    public void visitStringCpInfo(ClassFile classFile, StringCpInfo stringCpInfo) {}
-    public void visitNameAndTypeCpInfo(ClassFile classFile, NameAndTypeCpInfo nameAndTypeCpInfo) {}
-    public void visitUtf8CpInfo(ClassFile classFile, Utf8CpInfo utf8CpInfo) {}
-
-
-    public void visitFieldrefCpInfo(ClassFile classFile, FieldrefCpInfo fieldrefCpInfo)
-    {
-        // Do we know the referenced field?
-        MemberInfo referencedMemberInfo = fieldrefCpInfo.referencedMemberInfo;
-        if (referencedMemberInfo != null)
+        // Does the string refer to a class member, due to a
+        // Class.get[Declared]{Field,Method} construct?
+        Member referencedMember = stringConstant.referencedMember;
+        if (referencedMember != null)
         {
-            ClassFile referencedClassFile = fieldrefCpInfo.referencedClassFile;
+            Clazz referencedClass = stringConstant.referencedClass;
 
-            // Does it have a new name or type?
-            String newName = referencedMemberInfo.getName(referencedClassFile);
-            String newType = referencedMemberInfo.getDescriptor(referencedClassFile);
+            // Does it have a new name?
+            String newName = referencedMember.getName(referencedClass);
 
-            if (!fieldrefCpInfo.getName(classFile).equals(newName) ||
-                !fieldrefCpInfo.getType(classFile).equals(newType))
+            if (!stringConstant.getString(clazz).equals(newName))
             {
                 if (DEBUG)
                 {
-                    debug(classFile, fieldrefCpInfo, referencedClassFile, referencedMemberInfo);
+                    debug(clazz, stringConstant, referencedClass, referencedMember);
                 }
 
-                // Update the name and type index.
-                fieldrefCpInfo.u2nameAndTypeIndex =
-                    constantPoolEditor.addNameAndTypeCpInfo((ProgramClassFile)classFile,
-                                                            newName,
-                                                            newType);
+                // Update the name.
+                stringConstant.u2stringIndex =
+                    constantPoolEditor.addUtf8Constant((ProgramClass)clazz,
+                                                       newName);
             }
         }
     }
 
 
-    public void visitInterfaceMethodrefCpInfo(ClassFile classFile, InterfaceMethodrefCpInfo interfaceMethodrefCpInfo)
+    public void visitFieldrefConstant(Clazz clazz, FieldrefConstant fieldrefConstant)
     {
-        // Do we know the referenced interface method?
-        MemberInfo referencedMemberInfo = interfaceMethodrefCpInfo.referencedMemberInfo;
-        if (referencedMemberInfo != null)
+        // Do we know the referenced field?
+        Member referencedMember = fieldrefConstant.referencedMember;
+        if (referencedMember != null)
         {
-            ClassFile referencedClassFile = interfaceMethodrefCpInfo.referencedClassFile;
+            Clazz referencedClass = fieldrefConstant.referencedClass;
 
             // Does it have a new name or type?
-            String newName = referencedMemberInfo.getName(referencedClassFile);
-            String newType = referencedMemberInfo.getDescriptor(referencedClassFile);
+            String newName = referencedMember.getName(referencedClass);
+            String newType = referencedMember.getDescriptor(referencedClass);
 
-            if (!interfaceMethodrefCpInfo.getName(classFile).equals(newName) ||
-                !interfaceMethodrefCpInfo.getType(classFile).equals(newType))
+            if (!fieldrefConstant.getName(clazz).equals(newName) ||
+                !fieldrefConstant.getType(clazz).equals(newType))
             {
                 if (DEBUG)
                 {
-                    debug(classFile, interfaceMethodrefCpInfo, referencedClassFile, referencedMemberInfo);
+                    debug(clazz, fieldrefConstant, referencedClass, referencedMember);
                 }
 
                 // Update the name and type index.
-                interfaceMethodrefCpInfo.u2nameAndTypeIndex =
-                    constantPoolEditor.addNameAndTypeCpInfo((ProgramClassFile)classFile,
-                                                            newName,
-                                                            newType);
+                fieldrefConstant.u2nameAndTypeIndex =
+                    constantPoolEditor.addNameAndTypeConstant((ProgramClass)clazz,
+                                                              newName,
+                                                              newType);
+            }
+        }
+    }
+
+
+    public void visitInterfaceMethodrefConstant(Clazz clazz, InterfaceMethodrefConstant interfaceMethodrefConstant)
+    {
+        // Do we know the referenced interface method?
+        Member referencedMember = interfaceMethodrefConstant.referencedMember;
+        if (referencedMember != null)
+        {
+            Clazz referencedClass = interfaceMethodrefConstant.referencedClass;
+
+            // Does it have a new name or type?
+            String newName = referencedMember.getName(referencedClass);
+            String newType = referencedMember.getDescriptor(referencedClass);
+
+            if (!interfaceMethodrefConstant.getName(clazz).equals(newName) ||
+                !interfaceMethodrefConstant.getType(clazz).equals(newType))
+            {
+                if (DEBUG)
+                {
+                    debug(clazz, interfaceMethodrefConstant, referencedClass, referencedMember);
+                }
+
+                // Update the name and type index.
+                interfaceMethodrefConstant.u2nameAndTypeIndex =
+                    constantPoolEditor.addNameAndTypeConstant((ProgramClass)clazz,
+                                                              newName,
+                                                              newType);
 
                 // Remember that the stack sizes of the methods in this class
                 // may have changed.
@@ -172,7 +183,7 @@ implements   ClassFileVisitor,
 
             // Check if this is an interface method.
             isInterfaceMethod = true;
-            classFile.constantPoolEntryAccept(interfaceMethodrefCpInfo.u2classIndex, this);
+            clazz.constantPoolEntryAccept(interfaceMethodrefConstant.u2classIndex, this);
 
             // Has the method become a non-interface method?
             if (!isInterfaceMethod)
@@ -180,48 +191,48 @@ implements   ClassFileVisitor,
                 if (DEBUG)
                 {
                     System.out.println("MemberReferenceFixer:");
-                    System.out.println("  Class file     = "+classFile.getName());
-                    System.out.println("  Ref class file = "+referencedClassFile.getName());
-                    System.out.println("  Ref method     = "+interfaceMethodrefCpInfo.getName(classFile)+interfaceMethodrefCpInfo.getType(classFile));
+                    System.out.println("  Class file     = "+clazz.getName());
+                    System.out.println("  Ref class      = "+referencedClass.getName());
+                    System.out.println("  Ref method     = "+interfaceMethodrefConstant.getName(clazz)+interfaceMethodrefConstant.getType(clazz));
                     System.out.println("    -> ordinary method");
                 }
 
                 // Replace the interface method reference by a method reference.
-                ((ProgramClassFile)classFile).constantPool[this.cpIndex] =
-                    new MethodrefCpInfo(interfaceMethodrefCpInfo.u2classIndex,
-                                        interfaceMethodrefCpInfo.u2nameAndTypeIndex,
-                                        referencedClassFile,
-                                        referencedMemberInfo);
+                ((ProgramClass)clazz).constantPool[this.constantIndex] =
+                    new MethodrefConstant(interfaceMethodrefConstant.u2classIndex,
+                                          interfaceMethodrefConstant.u2nameAndTypeIndex,
+                                          referencedClass,
+                                          referencedMember);
             }
         }
     }
 
 
-    public void visitMethodrefCpInfo(ClassFile classFile, MethodrefCpInfo methodrefCpInfo)
+    public void visitMethodrefConstant(Clazz clazz, MethodrefConstant methodrefConstant)
     {
         // Do we know the referenced method?
-        MemberInfo referencedMemberInfo = methodrefCpInfo.referencedMemberInfo;
-        if (referencedMemberInfo != null)
+        Member referencedMember = methodrefConstant.referencedMember;
+        if (referencedMember != null)
         {
-            ClassFile referencedClassFile = methodrefCpInfo.referencedClassFile;
+            Clazz referencedClass = methodrefConstant.referencedClass;
 
             // Does it have a new name or type?
-            String newName = referencedMemberInfo.getName(referencedClassFile);
-            String newType = referencedMemberInfo.getDescriptor(referencedClassFile);
+            String newName = referencedMember.getName(referencedClass);
+            String newType = referencedMember.getDescriptor(referencedClass);
 
-            if (!methodrefCpInfo.getName(classFile).equals(newName) ||
-                !methodrefCpInfo.getType(classFile).equals(newType))
+            if (!methodrefConstant.getName(clazz).equals(newName) ||
+                !methodrefConstant.getType(clazz).equals(newType))
             {
                 if (DEBUG)
                 {
-                    debug(classFile, methodrefCpInfo, referencedClassFile, referencedMemberInfo);
+                    debug(clazz, methodrefConstant, referencedClass, referencedMember);
                 }
 
                 // Update the name and type index.
-                methodrefCpInfo.u2nameAndTypeIndex =
-                    constantPoolEditor.addNameAndTypeCpInfo((ProgramClassFile)classFile,
-                                                            newName,
-                                                            newType);
+                methodrefConstant.u2nameAndTypeIndex =
+                    constantPoolEditor.addNameAndTypeConstant((ProgramClass)clazz,
+                                                              newName,
+                                                              newType);
 
                 // Remember that the stack sizes of the methods in this class
                 // may have changed.
@@ -230,7 +241,7 @@ implements   ClassFileVisitor,
 
             // Check if this is an interface method.
             isInterfaceMethod = false;
-            classFile.constantPoolEntryAccept(methodrefCpInfo.u2classIndex, this);
+            clazz.constantPoolEntryAccept(methodrefConstant.u2classIndex, this);
 
             // Has the method become an interface method?
             if (isInterfaceMethod)
@@ -238,241 +249,219 @@ implements   ClassFileVisitor,
                 if (DEBUG)
                 {
                     System.out.println("MemberReferenceFixer:");
-                    System.out.println("  Class file     = "+classFile.getName());
-                    System.out.println("  Ref class file = "+referencedClassFile.getName());
-                    System.out.println("  Ref method     = "+methodrefCpInfo.getName(classFile)+methodrefCpInfo.getType(classFile));
+                    System.out.println("  Class file     = "+clazz.getName());
+                    System.out.println("  Ref class      = "+referencedClass.getName());
+                    System.out.println("  Ref method     = "+methodrefConstant.getName(clazz)+methodrefConstant.getType(clazz));
                     System.out.println("    -> interface method");
                 }
 
                 // Replace the method reference by an interface method reference.
-                ((ProgramClassFile)classFile).constantPool[this.cpIndex] =
-                    new InterfaceMethodrefCpInfo(methodrefCpInfo.u2classIndex,
-                                                 methodrefCpInfo.u2nameAndTypeIndex,
-                                                 referencedClassFile,
-                                                 referencedMemberInfo);
+                ((ProgramClass)clazz).constantPool[this.constantIndex] =
+                    new InterfaceMethodrefConstant(methodrefConstant.u2classIndex,
+                                                   methodrefConstant.u2nameAndTypeIndex,
+                                                   referencedClass,
+                                                   referencedMember);
             }
         }
     }
 
 
-    public void visitClassCpInfo(ClassFile classFile, ClassCpInfo classCpInfo)
+    public void visitClassConstant(Clazz clazz, ClassConstant classConstant)
     {
         // Check if this class entry is an array type.
-        if (ClassUtil.isInternalArrayType(classCpInfo.getName(classFile)))
+        if (ClassUtil.isInternalArrayType(classConstant.getName(clazz)))
         {
             isInterfaceMethod = false;
         }
         else
         {
             // Check if this class entry refers to an interface class.
-            ClassFile referencedClassFile = classCpInfo.referencedClassFile;
-            if (referencedClassFile != null)
+            Clazz referencedClass = classConstant.referencedClass;
+            if (referencedClass != null)
             {
-                isInterfaceMethod = (referencedClassFile.getAccessFlags() & ClassConstants.INTERNAL_ACC_INTERFACE) != 0;
+                isInterfaceMethod = (referencedClass.getAccessFlags() & ClassConstants.INTERNAL_ACC_INTERFACE) != 0;
             }
         }
     }
 
 
-    // Implementations for MemberInfoVisitor.
+    // Implementations for MemberVisitor.
 
-    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
+    public void visitProgramMember(ProgramClass programClass, ProgramMember programMember)
     {
         // Fix the attributes.
-        programFieldInfo.attributesAccept(programClassFile, this);
+        programMember.attributesAccept(programClass, this);
     }
 
 
-    public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
+    // Implementations for AttributeVisitor.
+
+    public void visitAnyAttribute(Clazz clazz, Attribute attribute) {}
+
+
+    public void visitEnclosingMethodAttribute(Clazz clazz, EnclosingMethodAttribute enclosingMethodAttribute)
     {
-        // Fix the attributes.
-        programMethodInfo.attributesAccept(programClassFile, this);
-    }
-
-
-    public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo) {}
-    public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo) {}
-
-
-    // Implementations for AttrInfoVisitor.
-
-    public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo) {}
-    public void visitInnerClassesAttrInfo(ClassFile classFile, InnerClassesAttrInfo innerClassesAttrInfo) {}
-    public void visitConstantValueAttrInfo(ClassFile classFile, FieldInfo fieldInfo, ConstantValueAttrInfo constantValueAttrInfo) {}
-    public void visitExceptionsAttrInfo(ClassFile classFile, MethodInfo methodInfo, ExceptionsAttrInfo exceptionsAttrInfo) {}
-    public void visitLineNumberTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LineNumberTableAttrInfo lineNumberTableAttrInfo) {}
-    public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo) {}
-    public void visitLocalVariableTypeTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeTableAttrInfo localVariableTypeTableAttrInfo) {}
-    public void visitSourceFileAttrInfo(ClassFile classFile, SourceFileAttrInfo sourceFileAttrInfo) {}
-    public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo) {}
-    public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo) {}
-    public void visitSyntheticAttrInfo(ClassFile classFile, SyntheticAttrInfo syntheticAttrInfo) {}
-    public void visitSignatureAttrInfo(ClassFile classFile, SignatureAttrInfo signatureAttrInfo) {}
-
-
-    public void visitEnclosingMethodAttrInfo(ClassFile classFile, EnclosingMethodAttrInfo enclosingMethodAttrInfo)
-    {
-        MemberInfo referencedMemberInfo = enclosingMethodAttrInfo.referencedMethodInfo;
-        if (referencedMemberInfo != null)
+        Member referencedMember = enclosingMethodAttribute.referencedMethod;
+        if (referencedMember != null)
         {
-            ClassFile referencedClassFile = enclosingMethodAttrInfo.referencedClassFile;
+            Clazz referencedClass = enclosingMethodAttribute.referencedClass;
 
             // Does it have a new class?
-            if (!enclosingMethodAttrInfo.getClassName(classFile).equals(referencedClassFile.getName()))
+            if (!enclosingMethodAttribute.getClassName(clazz).equals(referencedClass.getName()))
             {
                 // Update the class index.
-                enclosingMethodAttrInfo.u2classIndex =
-                    constantPoolEditor.addClassCpInfo((ProgramClassFile)classFile,
-                                                      referencedClassFile);
+                enclosingMethodAttribute.u2classIndex =
+                    constantPoolEditor.addClassConstant((ProgramClass)clazz,
+                                                        referencedClass);
             }
 
             // Does it have a new name or type?
-            if (!enclosingMethodAttrInfo.getName(classFile).equals(referencedMemberInfo.getName(referencedClassFile)) ||
-                !enclosingMethodAttrInfo.getType(classFile).equals(referencedMemberInfo.getDescriptor(referencedClassFile)))
+            if (!enclosingMethodAttribute.getName(clazz).equals(referencedMember.getName(referencedClass)) ||
+                !enclosingMethodAttribute.getType(clazz).equals(referencedMember.getDescriptor(referencedClass)))
             {
                 // Update the name and type index.
-                enclosingMethodAttrInfo.u2nameAndTypeIndex =
-                    constantPoolEditor.addNameAndTypeCpInfo((ProgramClassFile)classFile,
-                                                            referencedMemberInfo.getName(referencedClassFile),
-                                                            referencedMemberInfo.getDescriptor(referencedClassFile));
+                enclosingMethodAttribute.u2nameAndTypeIndex =
+                    constantPoolEditor.addNameAndTypeConstant((ProgramClass)clazz,
+                                                              referencedMember.getName(referencedClass),
+                                                              referencedMember.getDescriptor(referencedClass));
             }
         }
     }
 
 
-    public void visitCodeAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo)
+    public void visitCodeAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute)
     {
         // Recompute the maximum stack size if necessary.
         if (stackSizesMayHaveChanged)
         {
-            stackSizeUpdater.visitCodeAttrInfo(classFile, methodInfo, codeAttrInfo);
+            stackSizeUpdater.visitCodeAttribute(clazz, method, codeAttribute);
         }
 
         // Fix the nested attributes.
-        codeAttrInfo.attributesAccept(classFile, methodInfo, this);
+        codeAttribute.attributesAccept(clazz, method, this);
     }
 
 
-    public void visitRuntimeVisibleAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleAnnotationsAttrInfo runtimeVisibleAnnotationsAttrInfo)
+    public void visitAnyAnnotationsAttribute(Clazz clazz, AnnotationsAttribute annotationsAttribute)
     {
         // Fix the annotations.
-        runtimeVisibleAnnotationsAttrInfo.annotationsAccept(classFile, this);
+        annotationsAttribute.annotationsAccept(clazz, this);
     }
 
 
-    public void visitRuntimeInvisibleAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleAnnotationsAttrInfo runtimeInvisibleAnnotationsAttrInfo)
+    public void visitAnyParameterAnnotationsAttribute(Clazz clazz, Method method, ParameterAnnotationsAttribute parameterAnnotationsAttribute)
     {
         // Fix the annotations.
-        runtimeInvisibleAnnotationsAttrInfo.annotationsAccept(classFile, this);
+        parameterAnnotationsAttribute.annotationsAccept(clazz, method, this);
     }
 
 
-    public void visitRuntimeVisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleParameterAnnotationsAttrInfo runtimeVisibleParameterAnnotationsAttrInfo)
-    {
-        // Fix the annotations.
-        runtimeVisibleParameterAnnotationsAttrInfo.annotationsAccept(classFile, this);
-    }
-
-
-    public void visitRuntimeInvisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleParameterAnnotationsAttrInfo runtimeInvisibleParameterAnnotationsAttrInfo)
-    {
-        // Fix the annotations.
-        runtimeInvisibleParameterAnnotationsAttrInfo.annotationsAccept(classFile, this);
-    }
-
-
-    public void visitAnnotationDefaultAttrInfo(ClassFile classFile, AnnotationDefaultAttrInfo annotationDefaultAttrInfo)
+    public void visitAnnotationDefaultAttribute(Clazz clazz, Method method, AnnotationDefaultAttribute annotationDefaultAttribute)
     {
         // Fix the annotation.
-        annotationDefaultAttrInfo.defaultValueAccept(classFile, this);
+        annotationDefaultAttribute.defaultValueAccept(clazz, this);
     }
 
 
     // Implementations for AnnotationVisitor.
 
-    public void visitAnnotation(ClassFile classFile, Annotation annotation)
+    public void visitAnnotation(Clazz clazz, Annotation annotation)
     {
         // Fix the element values.
-        annotation.elementValuesAccept(classFile, this);
+        annotation.elementValuesAccept(clazz, this);
     }
 
 
     // Implementations for ElementValueVisitor.
 
-    public void visitConstantElementValue(ClassFile classFile, Annotation annotation, ConstantElementValue constantElementValue)
+    public void visitConstantElementValue(Clazz clazz, Annotation annotation, ConstantElementValue constantElementValue)
     {
-        fixElementValue(classFile, annotation, constantElementValue);
+        fixElementValue(clazz, annotation, constantElementValue);
     }
 
 
-    public void visitEnumConstantElementValue(ClassFile classFile, Annotation annotation, EnumConstantElementValue enumConstantElementValue)
+    public void visitEnumConstantElementValue(Clazz clazz, Annotation annotation, EnumConstantElementValue enumConstantElementValue)
     {
-        fixElementValue(classFile, annotation, enumConstantElementValue);
+        fixElementValue(clazz, annotation, enumConstantElementValue);
     }
 
 
-    public void visitClassElementValue(ClassFile classFile, Annotation annotation, ClassElementValue classElementValue)
+    public void visitClassElementValue(Clazz clazz, Annotation annotation, ClassElementValue classElementValue)
     {
-        fixElementValue(classFile, annotation, classElementValue);
+        fixElementValue(clazz, annotation, classElementValue);
     }
 
 
-    public void visitAnnotationElementValue(ClassFile classFile, Annotation annotation, AnnotationElementValue annotationElementValue)
+    public void visitAnnotationElementValue(Clazz clazz, Annotation annotation, AnnotationElementValue annotationElementValue)
     {
-        fixElementValue(classFile, annotation, annotationElementValue);
+        fixElementValue(clazz, annotation, annotationElementValue);
 
         // Fix the annotation.
-        annotationElementValue.annotationAccept(classFile, this);
+        annotationElementValue.annotationAccept(clazz, this);
     }
 
 
-    public void visitArrayElementValue(ClassFile classFile, Annotation annotation, ArrayElementValue arrayElementValue)
+    public void visitArrayElementValue(Clazz clazz, Annotation annotation, ArrayElementValue arrayElementValue)
     {
-        fixElementValue(classFile, annotation, arrayElementValue);
+        fixElementValue(clazz, annotation, arrayElementValue);
 
         // Fix the element values.
-        arrayElementValue.elementValuesAccept(classFile, annotation, this);
+        arrayElementValue.elementValuesAccept(clazz, annotation, this);
     }
 
 
     // Small utility methods.
 
     /**
-     * Fixs the method reference of the element value, if any.
+     * Fixes the method reference of the element value, if any.
      */
-    private void fixElementValue(ClassFile    classFile,
+    private void fixElementValue(Clazz        clazz,
                                  Annotation   annotation,
                                  ElementValue elementValue)
     {
         // Do we know the referenced method?
-        MemberInfo referencedMemberInfo = elementValue.referencedMethodInfo;
-        if (referencedMemberInfo != null)
+        Member referencedMember = elementValue.referencedMethod;
+        if (referencedMember != null)
         {
             // Does it have a new name or type?
-            String methodName    = elementValue.getMethodName(classFile);
-            String newMethodName = referencedMemberInfo.getName(elementValue.referencedClassFile);
+            String methodName    = elementValue.getMethodName(clazz);
+            String newMethodName = referencedMember.getName(elementValue.referencedClass);
+
             if (!methodName.equals(newMethodName))
             {
                 // Update the element name index.
-                elementValue.u2elementName =
-                    constantPoolEditor.addUtf8CpInfo((ProgramClassFile)classFile,
-                                                     newMethodName);
+                elementValue.u2elementNameIndex =
+                    constantPoolEditor.addUtf8Constant((ProgramClass)clazz,
+                                                       newMethodName);
             }
         }
     }
 
 
-    private void debug(ClassFile  classFile,
-                       RefCpInfo  refCpInfo,
-                       ClassFile  referencedClassFile,
-                       MemberInfo referencedMemberInfo)
+    private void debug(Clazz          clazz,
+                       StringConstant stringConstant,
+                       Clazz          referencedClass,
+                       Member         referencedMember)
     {
         System.out.println("MemberReferenceFixer:");
-        System.out.println("  Class file      = "+classFile.getName());
-        System.out.println("  Ref class file  = "+referencedClassFile.getName());
-        System.out.println("  Ref member name = "+refCpInfo.getName(classFile));
-        System.out.println("                 -> "+referencedMemberInfo.getName(referencedClassFile));
-        System.out.println("  Ref descriptor  = "+refCpInfo.getType(classFile));
-        System.out.println("                 -> "+referencedMemberInfo.getDescriptor(referencedClassFile));
+        System.out.println("  Class file      = "+clazz.getName());
+        System.out.println("  Ref class       = "+referencedClass.getName());
+        System.out.println("  Ref member name = "+stringConstant.getString(clazz));
+        System.out.println("                 -> "+referencedMember.getName(referencedClass));
+    }
+
+
+    private void debug(Clazz       clazz,
+                       RefConstant refConstant,
+                       Clazz       referencedClass,
+                       Member      referencedMember)
+    {
+        System.out.println("MemberReferenceFixer:");
+        System.out.println("  Class file      = "+clazz.getName());
+        System.out.println("  Ref class       = "+referencedClass.getName());
+        System.out.println("  Ref member name = "+refConstant.getName(clazz));
+        System.out.println("                 -> "+referencedMember.getName(referencedClass));
+        System.out.println("  Ref descriptor  = "+refConstant.getType(clazz));
+        System.out.println("                 -> "+referencedMember.getDescriptor(referencedClass));
     }
 }

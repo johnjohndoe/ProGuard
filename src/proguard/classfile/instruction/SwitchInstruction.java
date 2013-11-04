@@ -1,8 +1,8 @@
-/* $Id: SwitchInstruction.java,v 1.5 2003/02/09 15:22:28 eric Exp $
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
- *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -20,35 +20,64 @@
  */
 package proguard.classfile.instruction;
 
-
-
 /**
- * This interface describes a switch instruction (either a table switch or
- * a lookup switch).
+ * This Instruction represents a simple instruction without variable arguments
+ * or constant pool references.
  *
  * @author Eric Lafortune
  */
-public interface SwitchInstruction
+public abstract class SwitchInstruction extends Instruction
 {
-    /**
-     * Gets the switch's default offset.
-     */
-    public int getDefaultSwitchOffset();
+    public int   defaultOffset;
+    public int[] jumpOffsets;
+
 
     /**
-     * Gets the switch's number of cases (not including the default one).
+     * Creates an uninitialized SwitchInstruction.
      */
-    public int getSwitchCount();
+    public SwitchInstruction() {}
+
 
     /**
-     * Gets the switch's offset specified by the given index.
-     * @param index the offset index, in the range from 0 to switchCount-1.
+     * Creates a new SwitchInstruction with the given arguments.
      */
-    public int geSwitchOffset(int index);
+    public SwitchInstruction(byte  opcode,
+                             int   defaultOffset,
+                             int[] jumpOffsets)
+    {
+        this.opcode        = opcode;
+        this.defaultOffset = defaultOffset;
+        this.jumpOffsets   = jumpOffsets;
+    }
+
 
     /**
-     * Gets the switch's case value specified by the given index.
-     * @param index the case value index, in the range from 0 to switchCount-1.
+     * Copies the given instruction into this instruction.
+     * @param switchInstruction the instruction to be copied.
+     * @return this instruction.
      */
-    public int geSwitchCaseValue(int index);
+    public SwitchInstruction copy(SwitchInstruction switchInstruction)
+    {
+        this.opcode        = switchInstruction.opcode;
+        this.defaultOffset = switchInstruction.defaultOffset;
+        this.jumpOffsets   = switchInstruction.jumpOffsets;
+
+        return this;
+    }
+
+
+    // Implementations for Instruction.
+
+    public String toString(int offset)
+    {
+        return "["+offset+"] "+toString()+" (target="+(offset+defaultOffset)+")";
+    }
+
+
+    // Implementations for Object.
+
+    public String toString()
+    {
+        return getName()+" ("+jumpOffsets.length+" offsets, default="+defaultOffset+")";
+    }
 }

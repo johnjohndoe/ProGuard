@@ -1,6 +1,6 @@
-/* $Id: SourceFileRenamer.java,v 1.2.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -22,24 +22,26 @@ package proguard.obfuscate;
 
 import proguard.classfile.*;
 import proguard.classfile.attribute.*;
-import proguard.classfile.attribute.annotation.*;
+import proguard.classfile.attribute.visitor.AttributeVisitor;
 import proguard.classfile.editor.ConstantPoolEditor;
-import proguard.classfile.visitor.ClassFileVisitor;
+import proguard.classfile.util.SimplifiedVisitor;
+import proguard.classfile.visitor.ClassVisitor;
 
 /**
- * This ClassFileVisitor changes the name stored in the source file attributes
- * and source dir attributes of the class files that it visits, if the
- * atributes are present.
+ * This ClassVisitor changes the name stored in the source file attributes
+ * and source dir attributes of the classes that it visits, if the
+ * attributes are present.
  *
  * @author Eric Lafortune
  */
 public class SourceFileRenamer
-implements   ClassFileVisitor,
-             AttrInfoVisitor
+extends      SimplifiedVisitor
+implements   ClassVisitor,
+             AttributeVisitor
 {
-    private ConstantPoolEditor constantPoolEditor = new ConstantPoolEditor();
+    private final ConstantPoolEditor constantPoolEditor = new ConstantPoolEditor();
 
-    private String newSourceFileAttribute;
+    private final String newSourceFileAttribute;
 
 
     /**
@@ -53,56 +55,40 @@ implements   ClassFileVisitor,
     }
 
 
-    // Implementations for ClassFileVisitor.
+    // Implementations for ClassVisitor.
 
-    public void visitProgramClassFile(ProgramClassFile programClassFile)
+    public void visitProgramClass(ProgramClass programClass)
     {
-        // Only visit the class file attributes.
-        programClassFile.attributesAccept(this);
+        // Only visit the class attributes.
+        programClass.attributesAccept(this);
     }
 
 
-    public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
+    public void visitLibraryClass(LibraryClass libraryClass)
     {
-        // Library class files don't have attributes.
+        // Library classes don't have attributes.
     }
 
 
-    // Implementations for AttrInfoVisitor.
+    // Implementations for AttributeVisitor.
 
-    public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo) {}
-    public void visitInnerClassesAttrInfo(ClassFile classFile, InnerClassesAttrInfo innerClassesAttrInfo) {}
-    public void visitEnclosingMethodAttrInfo(ClassFile classFile, EnclosingMethodAttrInfo enclosingMethodAttrInfo) {}
-    public void visitConstantValueAttrInfo(ClassFile classFile, FieldInfo fieldInfo, ConstantValueAttrInfo constantValueAttrInfo) {}
-    public void visitExceptionsAttrInfo(ClassFile classFile, MethodInfo methodInfo, ExceptionsAttrInfo exceptionsAttrInfo) {}
-    public void visitCodeAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo) {}
-    public void visitLineNumberTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LineNumberTableAttrInfo lineNumberTableAttrInfo) {}
-    public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo) {}
-    public void visitLocalVariableTypeTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeTableAttrInfo localVariableTypeTableAttrInfo) {}
-    public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo) {}
-    public void visitSyntheticAttrInfo(ClassFile classFile, SyntheticAttrInfo syntheticAttrInfo) {}
-    public void visitSignatureAttrInfo(ClassFile classFile, SignatureAttrInfo signatureAttrInfo) {}
-    public void visitRuntimeVisibleAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleAnnotationsAttrInfo runtimeVisibleAnnotationsAttrInfo) {}
-    public void visitRuntimeInvisibleAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleAnnotationsAttrInfo runtimeInvisibleAnnotationsAttrInfo) {}
-    public void visitRuntimeVisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleParameterAnnotationsAttrInfo runtimeVisibleParameterAnnotationsAttrInfo) {}
-    public void visitRuntimeInvisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleParameterAnnotationsAttrInfo runtimeInvisibleParameterAnnotationsAttrInfo) {}
-    public void visitAnnotationDefaultAttrInfo(ClassFile classFile, AnnotationDefaultAttrInfo annotationDefaultAttrInfo) {}
+    public void visitAnyAttribute(Clazz clazz, Attribute attribute) {}
 
 
-    public void visitSourceFileAttrInfo(ClassFile classFile, SourceFileAttrInfo sourceFileAttrInfo)
+    public void visitSourceFileAttribute(Clazz clazz, SourceFileAttribute sourceFileAttribute)
     {
         // Fix the source file attribute.
-        sourceFileAttrInfo.u2sourceFileIndex =
-            constantPoolEditor.addUtf8CpInfo((ProgramClassFile)classFile,
-                                             newSourceFileAttribute);
+        sourceFileAttribute.u2sourceFileIndex =
+            constantPoolEditor.addUtf8Constant((ProgramClass)clazz,
+                                               newSourceFileAttribute);
     }
 
 
-    public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo)
+    public void visitSourceDirAttribute(Clazz clazz, SourceDirAttribute sourceDirAttribute)
     {
         // Fix the source file attribute.
-        sourceDirAttrInfo.u2sourceDirIndex =
-            constantPoolEditor.addUtf8CpInfo((ProgramClassFile)classFile,
-                                             newSourceFileAttribute);
+        sourceDirAttribute.u2sourceDirIndex =
+            constantPoolEditor.addUtf8Constant((ProgramClass)clazz,
+                                               newSourceFileAttribute);
     }
 }

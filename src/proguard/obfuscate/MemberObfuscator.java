@@ -1,8 +1,8 @@
-/* $Id: MemberObfuscator.java,v 1.14 2002/08/29 18:02:25 eric Exp $
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
- *
- * Copyright (C) 2002 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -21,328 +21,66 @@
 package proguard.obfuscate;
 
 import proguard.classfile.*;
-import proguard.classfile.visitor.*;
+import proguard.classfile.util.*;
+import proguard.classfile.visitor.MemberVisitor;
 
 import java.util.*;
 
-
 /**
- * This ClassFileVisitor visits all the class members of visited class files,
- * collecting their names. After having visited any number of class files,
- * it can generate obfuscated class member names that are not conflicting.
+ * This MemberVisitor obfuscates all class members that it visits.
+ * It uses names from the given name factory. At the same time, it avoids names
+ * from the given descriptor map.
+ * <p>
+ * The class members must have been linked before applying this visitor.
+ *
+ * @see MethodLinker
  *
  * @author Eric Lafortune
  */
-class      MemberObfuscator
-implements ClassFileVisitor,
-           MemberInfoVisitor
+public class MemberObfuscator
+extends      SimplifiedVisitor
+implements   MemberVisitor
 {
-    private static final char UNIQUE_SUFFIX = '_';
-
-    private boolean allowAggressiveOverloading;
-
-    // Some objects that are reset and reused every time.
-
-    // The main hashtable: [class member descriptor - nested hashtable]
-    // The nested hashtables: [class member name - class member info]
-    private final Hashtable descriptorHashtable = new Hashtable();
-
-    private final NameFactory uniqueNameFactory = new NameFactory();
-    private final NameFactory nameFactory       = new NameFactory();
-    private final HashSet     namesToAvoid      = new HashSet();
+    private final boolean        allowAggressiveOverloading;
+    private final NameFactory    nameFactory;
+    private final Map            descriptorMap;
 
 
     /**
      * Creates a new MemberObfuscator.
      * @param allowAggressiveOverloading a flag that specifies whether class
      *                                   members can be overloaded aggressively.
+     * @param nameFactory                the factory that can produce
+     *                                   obfuscated member names.
+     * @param descriptorMap              the map of descriptors to
+     *                                   [new name - old name] maps.
      */
-    public MemberObfuscator(boolean allowAggressiveOverloading)
+    public MemberObfuscator(boolean        allowAggressiveOverloading,
+                            NameFactory    nameFactory,
+                            Map            descriptorMap)
     {
         this.allowAggressiveOverloading = allowAggressiveOverloading;
+        this.nameFactory                = nameFactory;
+        this.descriptorMap              = descriptorMap;
     }
 
 
-    /**
-     * Creates a set of obfuscated names for all members in the name space of
-     * the given class file.
-     */
-    public void obfuscate(ClassFile classFile)
-    {
-        // Collect method names in this class's name space.
-        classFile.accept(new ClassFileUpDownTraveler(true, true, true, false,
-                                                     this));
+    // Implementations for MemberVisitor.
 
-        // Process the method name space of each descriptor in turn.
-        Enumeration descriptorEnumeration = descriptorHashtable.elements();
-        while (descriptorEnumeration.hasMoreElements())
-        {
-            Hashtable memberNameHashtable = (Hashtable)descriptorEnumeration.nextElement();
-
-            // First collect all names that are already set in this name space.
-            // Make sure no two members already have the same name.
-            Enumeration memberNameEnumeration = memberNameHashtable.elements();
-            while (memberNameEnumeration.hasMoreElements())
-            {
-                VisitorAccepter memberInfo = (VisitorAccepter)memberNameEnumeration.nextElement();
-                memberInfo = lastVisitorAccepter(memberInfo);
-
-                // Is it a library member?
-                if (memberInfo instanceof LibraryMemberInfo)
-                {
-                    // Make sure its name won't be used as a new name.
-                    namesToAvoid.add(((LibraryMemberInfo)memberInfo).getName(null));
-                }
-                else
-                {
-                    // Does the class member have a name?
-                    String name = newMemberName(memberInfo);
-                    if (name != null)
-                    {
-                        // Only deal with it if it's not <clinit> or <init>.
-                        if (!(name.equals(ClassConstants.INTERNAL_METHOD_NAME_CLINIT) ||
-                              name.equals(ClassConstants.INTERNAL_METHOD_NAME_INIT)))
-                        {
-                            // Is this name already being used by another method
-                            // in this name space?
-                            if (namesToAvoid.contains(name))
-                            {
-                                // We can't have that. Reassign a globally unique name.
-                                String newName = uniqueNameFactory.nextName() + UNIQUE_SUFFIX;
-                                setNewMemberName(memberInfo, newName);
-                            }
-                            else
-                            {
-                                // Make sure this name won't be used as a new name.
-                                namesToAvoid.add(name);
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Then assign unique names to class members that didn't have a name yet.
-            memberNameEnumeration = memberNameHashtable.elements();
-            while (memberNameEnumeration.hasMoreElements())
-            {
-                VisitorAccepter programMemberInfo = (VisitorAccepter)memberNameEnumeration.nextElement();
-                programMemberInfo = lastVisitorAccepter(programMemberInfo);
-
-                // Is it a library member?
-                if (!(programMemberInfo instanceof LibraryMemberInfo))
-                {
-                    String name = newMemberName(programMemberInfo);
-                    if (name == null)
-                    {
-                        // Find a locally unique new name.
-                        String newName;
-                        do
-                        {
-                            newName = nameFactory.nextName();
-                        }
-                        while (namesToAvoid.contains(newName));
-
-                        // Assign the new name.
-                        setNewMemberName(programMemberInfo, newName);
-                    }
-                }
-            }
-
-            // Start with a fresh set of names for the next name space.
-            nameFactory.reset();
-            namesToAvoid.clear();
-        }
-
-        // Clean up for obfuscation of the next name space.
-        descriptorHashtable.clear();
-    }
-
-
-    // Implementations for ClassFileVisitor
-
-    public void visitProgramClassFile(ProgramClassFile programClassFile)
-    {
-        // Collect the names of all class members in the hashtable.
-        programClassFile.fieldsAccept(this);
-        programClassFile.methodsAccept(this);
-    }
-
-
-    public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
-    {
-        // Collect the names of all class members in the hashtable.
-        libraryClassFile.fieldsAccept(this);
-        libraryClassFile.methodsAccept(this);
-    }
-
-
-    // Implementations for MemberInfoVisitor
-
-    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
-    {
-        visitMemberInfo(programClassFile, programFieldInfo);
-    }
-
-
-    public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
-    {
-        String name = programMethodInfo.getName(programClassFile);
-
-        // Special case: <clinit> is always kept unchanged.
-        if (name.equals(ClassConstants.INTERNAL_METHOD_NAME_CLINIT))
-        {
-            return;
-        }
-
-        // Special case: <init> is always kept unchanged,
-        // irrespective of the descriptor.
-        if (name.equals(ClassConstants.INTERNAL_METHOD_NAME_INIT))
-        {
-            // The descriptor may have to be updated later on though,
-            // so we mark the method name as if it is new.
-            setNewMemberName(programMethodInfo, ClassConstants.INTERNAL_METHOD_NAME_INIT);
-            return;
-        }
-
-        visitMemberInfo(programClassFile, programMethodInfo);
-    }
-
-
-    private void visitMemberInfo(ProgramClassFile programClassFile, ProgramMemberInfo programMemberInfo)
-    {
-        // Get the member's original name and descriptor.
-        String descriptor = programMemberInfo.getDescriptor(programClassFile);
-        String name       = programMemberInfo.getName(programClassFile);
-
-        // Get any new name already assigned to this member in this class, earlier.
-        VisitorAccepter thisLastVisitorAccepter = lastVisitorAccepter(programMemberInfo);
-
-        // Get any name already assigned to this class member in the other classes.
-        Hashtable memberNameHashtable = retrieveNameHashtable(descriptor);
-
-        VisitorAccepter otherMemberInfo = (VisitorAccepter)memberNameHashtable.get(name);
-
-        if (otherMemberInfo == null)
-        {
-            // Store the new class member info in the hashtable.
-            memberNameHashtable.put(name, thisLastVisitorAccepter);
-        }
-        else
-        {
-            VisitorAccepter otherLastVisitorAccepter = lastVisitorAccepter(otherMemberInfo);
-
-            // Check if both members are already guarantueed to get the same name.
-            if (thisLastVisitorAccepter != otherLastVisitorAccepter)
-            {
-                if (thisLastVisitorAccepter instanceof LibraryMemberInfo)
-                {
-                    // This class member chain ends with a library class member.
-                    // Make sure we continue to use this class member's name.
-                    otherLastVisitorAccepter.setVisitorInfo(thisLastVisitorAccepter);
-                }
-                else if (otherLastVisitorAccepter instanceof LibraryMemberInfo)
-                {
-                    // The other member chain ends with a library class member.
-                    // Make sure we continue to use that class member's name.
-                    thisLastVisitorAccepter.setVisitorInfo(otherLastVisitorAccepter);
-                }
-                else
-                {
-                    // We have two non-library class members.
-                    // Check if either class member already has an assigned name.
-                    String thisName  = newMemberName(thisLastVisitorAccepter);
-                    String otherName = newMemberName(otherLastVisitorAccepter);
-
-                    if (thisName == null)
-                    {
-                        // This class member chain doesn't have an assigned name.
-                        // Make sure we continue to use the other member chain's name.
-                        thisLastVisitorAccepter.setVisitorInfo(otherLastVisitorAccepter);
-                    }
-                    else if (otherName == null)
-                    {
-                        // The other class member chain doesn't have an assigned name.
-                        // Make sure we continue to use this member chain's name.
-                        otherLastVisitorAccepter.setVisitorInfo(thisLastVisitorAccepter);
-                    }
-                    else if (!thisName.equals(otherName))
-                    {
-                        // Both chains already have assigned names, and they're
-                        // conflicting. This should be pretty rare. We'll
-                        // assign a new name that is guarantueed to be globally
-                        // unique.
-                        String newName = uniqueNameFactory.nextName() + UNIQUE_SUFFIX;
-                        setNewMemberName(thisLastVisitorAccepter, newName);
-
-                        // Make sure we continue to use this member chain's name.
-                        otherLastVisitorAccepter.setVisitorInfo(thisLastVisitorAccepter);
-                    }
-                }
-            }
-        }
-    }
-
-
-    public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo)
-    {
-        visitLibraryMemberInfo(libraryClassFile, libraryFieldInfo);
-    }
-
-
-    public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo)
+    public void visitAnyMember(Clazz clazz, Member member)
     {
         // Special cases: <clinit> and <init> are always kept unchanged.
         // We can ignore them here.
-        String name = libraryMethodInfo.getName(libraryClassFile);
+        String name = member.getName(clazz);
         if (name.equals(ClassConstants.INTERNAL_METHOD_NAME_CLINIT) ||
             name.equals(ClassConstants.INTERNAL_METHOD_NAME_INIT))
         {
             return;
         }
 
-        visitLibraryMemberInfo(libraryClassFile, libraryMethodInfo);
-    }
+        // Get the member's descriptor.
+        String descriptor = member.getDescriptor(clazz);
 
-
-    private void visitLibraryMemberInfo(LibraryClassFile libraryClassFile, LibraryMemberInfo libraryMemberInfo)
-    {
-        // Get the class member's original name and descriptor.
-        String descriptor = libraryMemberInfo.getDescriptor(libraryClassFile);
-        String name       = libraryMemberInfo.getName(libraryClassFile);
-
-        // Get any name already assigned to this class member in the other classes.
-        Hashtable memberNameHashtable = retrieveNameHashtable(descriptor);
-
-        VisitorAccepter otherMemberInfo = (VisitorAccepter)memberNameHashtable.get(name);
-
-        if (otherMemberInfo == null)
-        {
-            // Store the new class member info in the hashtable.
-            memberNameHashtable.put(name, libraryMemberInfo);
-        }
-        else
-        {
-            VisitorAccepter otherLastVisitorAccepter = lastVisitorAccepter(otherMemberInfo);
-
-            // Check if both class members are already guarantueed to get the same name.
-            if (!(otherLastVisitorAccepter instanceof LibraryMemberInfo))
-            {
-                // Make sure the other class member also gets this library class member's name.
-                otherLastVisitorAccepter.setVisitorInfo(libraryMemberInfo);
-            }
-        }
-    }
-
-
-    /**
-     * Based on the main hashtable [descriptor - nested hashtable] and a given
-     * descriptor, get the nested name hashtable. A new empty one is created if
-     * necessary.
-     * @param descriptor the class member descriptor
-     * @return the nested hashtable [name - class member info]
-     */
-    private Hashtable retrieveNameHashtable(String descriptor)
-    {
         // Check whether we're allowed to do aggressive overloading
         if (!allowAggressiveOverloading)
         {
@@ -351,56 +89,142 @@ implements ClassFileVisitor,
             descriptor = descriptor.substring(0, descriptor.indexOf(')')+1);
         }
 
-        // See if we can find the nested hashtable with this descriptor key.
-        Hashtable nameHashtable = (Hashtable)descriptorHashtable.get(descriptor);
+        // Get the name map, creating a new one if necessary.
+        Map nameMap = retrieveNameMap(descriptorMap, descriptor);
+
+        // Get the member's new name.
+        String newName = newMemberName(member);
+
+        // Assign a new one, if necessary.
+        if (newName == null)
+        {
+            // Find an acceptable new name.
+            nameFactory.reset();
+
+            do
+            {
+                newName = nameFactory.nextName();
+            }
+            while (nameMap.containsKey(newName));
+
+            // Remember not to use the new name again in this name space.
+            nameMap.put(newName, name);
+
+            // Assign the new name.
+            setNewMemberName(member, newName);
+        }
+    }
+
+
+    // Small utility methods.
+
+    /**
+     * Gets the name map, based on the given map and a given descriptor.
+     * A new empty map is created if necessary.
+     * @param descriptorMap the map of descriptors to [new name - old name] maps.
+     * @param descriptor    the class member descriptor.
+     * @return the corresponding name map.
+     */
+    static Map retrieveNameMap(Map descriptorMap, String descriptor)
+    {
+        // See if we can find the nested map with this descriptor key.
+        Map nameMap = (Map)descriptorMap.get(descriptor);
 
         // Create a new one if not.
-        if (nameHashtable == null)
+        if (nameMap == null)
         {
-            nameHashtable = new Hashtable();
-            descriptorHashtable.put(descriptor, nameHashtable);
+            nameMap = new HashMap();
+            descriptorMap.put(descriptor, nameMap);
         }
 
-        return nameHashtable;
-    }
-
-
-    static void setNewMemberName(VisitorAccepter visitorAccepter, String name)
-    {
-        lastVisitorAccepter(visitorAccepter).setVisitorInfo(name);
-    }
-
-
-    static String newMemberName(VisitorAccepter visitorAccepter)
-    {
-        Object visitorInfo = lastVisitorInfo(visitorAccepter);
-
-        return visitorInfo != null &&
-               visitorInfo instanceof String ?
-            (String)visitorInfo :
-            null;
-    }
-
-
-    static Object lastVisitorInfo(VisitorAccepter visitorAccepter)
-    {
-        return lastVisitorAccepter(visitorAccepter).getVisitorInfo();
+        return nameMap;
     }
 
 
     /**
-     * Traverses the linked list of class members to find the last one.
-     * The visitor info fields are used as pointers to the next class members.
+     * Assigns a fixed new name to the given class member.
+     * @param member the class member.
+     * @param name   the new name.
      */
-    private static VisitorAccepter lastVisitorAccepter(VisitorAccepter visitorAccepter)
+    static void setFixedNewMemberName(Member member, String name)
     {
-        VisitorAccepter lastVisitorAccepter = visitorAccepter;
-        while (lastVisitorAccepter.getVisitorInfo() != null &&
-               lastVisitorAccepter.getVisitorInfo() instanceof VisitorAccepter)
+        VisitorAccepter lastVisitorAccepter = MethodLinker.lastVisitorAccepter(member);
+
+        if (!(lastVisitorAccepter instanceof LibraryMember) &&
+            !(lastVisitorAccepter instanceof MyFixedName))
         {
-            lastVisitorAccepter = (VisitorAccepter)lastVisitorAccepter.getVisitorInfo();
+            lastVisitorAccepter.setVisitorInfo(new MyFixedName(name));
+        }
+        else
+        {
+            lastVisitorAccepter.setVisitorInfo(name);
+        }
+    }
+
+
+    /**
+     * Assigns a new name to the given class member.
+     * @param member the class member.
+     * @param name   the new name.
+     */
+    static void setNewMemberName(Member member, String name)
+    {
+        MethodLinker.lastVisitorAccepter(member).setVisitorInfo(name);
+    }
+
+
+    /**
+     * Returns whether the new name of the given class member is fixed.
+     * @param member the class member.
+     * @return whether its new name is fixed.
+     */
+    static boolean hasFixedNewMemberName(Member member)
+    {
+        VisitorAccepter lastVisitorAccepter = MethodLinker.lastVisitorAccepter(member);
+
+        return lastVisitorAccepter instanceof LibraryMember ||
+               lastVisitorAccepter instanceof MyFixedName;
+    }
+
+
+    /**
+     * Retrieves the new name of the given class member.
+     * @param member the class member.
+     * @return the class member's new name, or <code>null</code> if it doesn't
+     *         have one yet.
+     */
+    static String newMemberName(Member member)
+    {
+        return (String)MethodLinker.lastVisitorAccepter(member).getVisitorInfo();
+    }
+
+
+    /**
+     * This VisitorAccepter can be used to wrap a name string, to indicate that
+     * the name is fixed.
+     */
+    private static class MyFixedName implements VisitorAccepter
+    {
+        private String newName;
+
+
+        public MyFixedName(String newName)
+        {
+            this.newName = newName;
         }
 
-        return lastVisitorAccepter;
+
+        // Implementations for VisitorAccepter.
+
+        public Object getVisitorInfo()
+        {
+            return newName;
+        }
+
+
+        public void setVisitorInfo(Object visitorInfo)
+        {
+            newName = (String)visitorInfo;
+        }
     }
 }

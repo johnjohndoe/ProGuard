@@ -1,6 +1,6 @@
-/* $Id: SimpleInstruction.java,v 1.9.2.3 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -21,7 +21,8 @@
 package proguard.classfile.instruction;
 
 import proguard.classfile.*;
-import proguard.classfile.attribute.*;
+import proguard.classfile.attribute.CodeAttribute;
+import proguard.classfile.instruction.visitor.InstructionVisitor;
 
 /**
  * This Instruction represents a simple instruction without variable arguments
@@ -45,7 +46,7 @@ public class SimpleInstruction extends Instruction
      */
     public SimpleInstruction(byte opcode)
     {
-        this(opcode, 0);
+        this(opcode, embeddedConstant(opcode));
     }
 
 
@@ -73,34 +74,110 @@ public class SimpleInstruction extends Instruction
     }
 
 
+    /**
+     * Return the embedded constant of the given opcode, or 0 if the opcode
+     * doesn't have one.
+     */
+    private static int embeddedConstant(byte opcode)
+    {
+        switch (opcode)
+        {
+            case InstructionConstants.OP_ICONST_M1: return -1;
+
+            case InstructionConstants.OP_ICONST_1:
+            case InstructionConstants.OP_LCONST_1:
+            case InstructionConstants.OP_FCONST_1:
+            case InstructionConstants.OP_DCONST_1: return 1;
+
+            case InstructionConstants.OP_ICONST_2:
+            case InstructionConstants.OP_FCONST_2: return 2;
+
+            case InstructionConstants.OP_ICONST_3: return 3;
+
+            case InstructionConstants.OP_ICONST_4: return 4;
+
+            case InstructionConstants.OP_ICONST_5: return 5;
+
+            default: return 0;
+        }
+    }
+
+
     // Implementations for Instruction.
+
+    public byte canonicalOpcode()
+    {
+        // Replace any _1, _2, _3,... extension by _0.
+        switch (opcode)
+        {
+            case InstructionConstants.OP_ICONST_M1:
+            case InstructionConstants.OP_ICONST_0:
+            case InstructionConstants.OP_ICONST_1:
+            case InstructionConstants.OP_ICONST_2:
+            case InstructionConstants.OP_ICONST_3:
+            case InstructionConstants.OP_ICONST_4:
+            case InstructionConstants.OP_ICONST_5:
+            case InstructionConstants.OP_BIPUSH:
+            case InstructionConstants.OP_SIPUSH:   return InstructionConstants.OP_ICONST_0;
+
+            case InstructionConstants.OP_LCONST_0:
+            case InstructionConstants.OP_LCONST_1: return InstructionConstants.OP_LCONST_0;
+
+            case InstructionConstants.OP_FCONST_0:
+            case InstructionConstants.OP_FCONST_1:
+            case InstructionConstants.OP_FCONST_2: return InstructionConstants.OP_FCONST_0;
+
+            case InstructionConstants.OP_DCONST_0:
+            case InstructionConstants.OP_DCONST_1: return InstructionConstants.OP_DCONST_0;
+
+            default: return opcode;
+        }
+    }
 
     public Instruction shrink()
     {
-        int requiredConstantSize = requiredConstantSize();
-
-        // Is the (integer) constant size right?
-        if (opcode != InstructionConstants.OP_NEWARRAY &&
-            requiredConstantSize != constantSize())
+        // Reconstruct the opcode of the shortest instruction, if there are
+        // any alternatives.
+        switch (opcode)
         {
-            // Can we replace the integer push instruction?
-            switch (requiredConstantSize)
-            {
-                case 0:
-                    opcode = (byte)(InstructionConstants.OP_ICONST_0 + constant);
-                    break;
+            case InstructionConstants.OP_ICONST_M1:
+            case InstructionConstants.OP_ICONST_0:
+            case InstructionConstants.OP_ICONST_1:
+            case InstructionConstants.OP_ICONST_2:
+            case InstructionConstants.OP_ICONST_3:
+            case InstructionConstants.OP_ICONST_4:
+            case InstructionConstants.OP_ICONST_5:
+            case InstructionConstants.OP_BIPUSH:
+            case InstructionConstants.OP_SIPUSH:
+                switch (requiredConstantSize())
+                {
+                    case 0:
+                        opcode = (byte)(InstructionConstants.OP_ICONST_0 + constant);
+                        break;
+                    case 1:
+                        opcode = InstructionConstants.OP_BIPUSH;
+                        break;
+                    case 2:
+                        opcode = InstructionConstants.OP_SIPUSH;
+                        break;
+                }
+                break;
 
-                case 1:
-                    opcode = InstructionConstants.OP_BIPUSH;
-                    break;
+            case InstructionConstants.OP_LCONST_0:
+            case InstructionConstants.OP_LCONST_1:
+                opcode = (byte)(InstructionConstants.OP_LCONST_0 + constant);
+                break;
 
-                case 2:
-                    opcode = InstructionConstants.OP_SIPUSH;
-                    break;
+            case InstructionConstants.OP_FCONST_0:
+            case InstructionConstants.OP_FCONST_1:
+            case InstructionConstants.OP_FCONST_2:
+                opcode = (byte)(InstructionConstants.OP_FCONST_0 + constant);
+                break;
 
-                default:
-                    throw new IllegalArgumentException("Simple instruction can't be widened ("+this.toString()+")");
-            }
+            case InstructionConstants.OP_DCONST_0:
+            case InstructionConstants.OP_DCONST_1:
+                opcode = (byte)(InstructionConstants.OP_DCONST_0 + constant);
+                break;
         }
 
         return this;
@@ -108,41 +185,12 @@ public class SimpleInstruction extends Instruction
 
     protected void readInfo(byte[] code, int offset)
     {
+        int constantSize = constantSize();
+
         // Also initialize embedded constants that are different from 0.
-        switch (opcode)
-        {
-            case InstructionConstants.OP_ICONST_M1:
-                constant = -1;
-                break;
-
-            case InstructionConstants.OP_ICONST_1:
-            case InstructionConstants.OP_LCONST_1:
-            case InstructionConstants.OP_FCONST_1:
-            case InstructionConstants.OP_DCONST_1:
-                constant = 1;
-                break;
-
-            case InstructionConstants.OP_ICONST_2:
-            case InstructionConstants.OP_FCONST_2:
-                constant = 2;
-                break;
-
-            case InstructionConstants.OP_ICONST_3:
-                constant = 3;
-                break;
-
-            case InstructionConstants.OP_ICONST_4:
-                constant = 4;
-                break;
-
-            case InstructionConstants.OP_ICONST_5:
-                constant = 5;
-                break;
-
-            default:
-                constant = readSignedValue(code, offset, constantSize());
-                break;
-        }
+        constant = constantSize == 0 ?
+            embeddedConstant(opcode) :
+            readSignedValue(code, offset, constantSize);
     }
 
 
@@ -155,7 +203,7 @@ public class SimpleInstruction extends Instruction
             throw new IllegalArgumentException("Instruction has invalid constant size ("+this.toString(offset)+")");
         }
 
-        writeValue(code, offset, constant, constantSize);
+        writeSignedValue(code, offset, constant, constantSize);
     }
 
 
@@ -165,15 +213,9 @@ public class SimpleInstruction extends Instruction
     }
 
 
-    public void accept(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, InstructionVisitor instructionVisitor)
+    public void accept(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, InstructionVisitor instructionVisitor)
     {
-        instructionVisitor.visitSimpleInstruction(classFile, methodInfo, codeAttrInfo, offset, this);
-    }
-
-
-    public String toString(int offset)
-    {
-        return "["+offset+"] "+getName()+" (constant="+constant+")";
+        instructionVisitor.visitSimpleInstruction(clazz, method, codeAttribute, offset, this);
     }
 
 
@@ -181,7 +223,8 @@ public class SimpleInstruction extends Instruction
 
     public String toString()
     {
-        return getName()+" (constant="+constant+")";
+        return getName() +
+               (constantSize() > 0 ? " "+constant : "");
     }
 
 

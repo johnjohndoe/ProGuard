@@ -1,4 +1,4 @@
-/* $Id: ClassPathPanel.java,v 1.16.2.2 2007/01/18 21:31:52 eric Exp $
+/* $Id: ClassPathPanel.java,v 1.22 2007/08/18 10:34:56 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -36,10 +36,10 @@ import proguard.*;
  */
 class ClassPathPanel extends ListPanel
 {
-    private JFrame       owner;
-    private boolean      inputAndOutput;
-    private JFileChooser chooser;
-    private FilterDialog filterDialog;
+    private final JFrame       owner;
+    private final boolean      inputAndOutput;
+    private final JFileChooser chooser;
+    private final FilterDialog filterDialog;
 
 
     public ClassPathPanel(JFrame owner, boolean inputAndOutput)
@@ -57,11 +57,11 @@ class ClassPathPanel extends ListPanel
         chooser.setMultiSelectionEnabled(true);
         chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
         chooser.addChoosableFileFilter(
-            new ExtensionFileFilter(GUIResources.getMessage("jarWarEarZipExtensions"),
+            new ExtensionFileFilter(msg("jarWarEarZipExtensions"),
                                     new String[] { ".jar", ".war", ".ear", ".zip" }));
-        chooser.setApproveButtonText(GUIResources.getMessage("ok"));
+        chooser.setApproveButtonText(msg("ok"));
 
-        filterDialog = new FilterDialog(owner, GUIResources.getMessage("enterFilter"));
+        filterDialog = new FilterDialog(owner, msg("enterFilter"));
 
         addAddButton(inputAndOutput, false);
         if (inputAndOutput)
@@ -81,15 +81,15 @@ class ClassPathPanel extends ListPanel
     protected void addAddButton(boolean       inputAndOutput,
                                 final boolean isOutput)
     {
-        JButton addButton = new JButton(GUIResources.getMessage(inputAndOutput ?
-                                                                isOutput ? "addOutput" :
-                                                                           "addInput" :
-                                                                           "add"));
+        JButton addButton = new JButton(msg(inputAndOutput ?
+                                            isOutput       ? "addOutput" :
+                                                             "addInput" :
+                                                             "add"));
         addButton.addActionListener(new ActionListener()
         {
             public void actionPerformed(ActionEvent e)
             {
-                chooser.setDialogTitle(GUIResources.getMessage("addJars"));
+                chooser.setDialogTitle(msg("addJars"));
                 chooser.setSelectedFile(null);
                 chooser.setSelectedFiles(null);
 
@@ -105,13 +105,16 @@ class ClassPathPanel extends ListPanel
             }
         });
 
-        addButton(addButton);
+        addButton(tip(addButton, inputAndOutput ?
+                                 isOutput       ? "addOutputTip" :
+                                                  "addInputTip" :
+                                                  "addTip"));
     }
 
 
     protected void addEditButton()
     {
-        JButton editButton = new JButton(GUIResources.getMessage("edit"));
+        JButton editButton = new JButton(msg("edit"));
         editButton.addActionListener(new ActionListener()
         {
             public void actionPerformed(ActionEvent e)
@@ -132,7 +135,7 @@ class ClassPathPanel extends ListPanel
                     selectedFiles[index] = entry.getFile();
                 }
 
-                chooser.setDialogTitle(GUIResources.getMessage("chooseJars"));
+                chooser.setDialogTitle(msg("chooseJars"));
 
                 // Up to JDK 1.3.1, setSelectedFiles doesn't show in the file
                 // chooser, so we just use setSelectedFile first. It also sets
@@ -165,13 +168,13 @@ class ClassPathPanel extends ListPanel
             }
         });
 
-        addButton(editButton);
+        addButton(tip(editButton, "editTip"));
     }
 
 
     protected void addFilterButton()
     {
-        JButton filterButton = new JButton(GUIResources.getMessage("filter"));
+        JButton filterButton = new JButton(msg("filter"));
         filterButton.addActionListener(new ActionListener()
         {
             public void actionPerformed(ActionEvent e)
@@ -193,7 +196,7 @@ class ClassPathPanel extends ListPanel
             }
         });
 
-        addButton(filterButton);
+        addButton(tip(filterButton, "filterTip"));
     }
 
 
@@ -292,18 +295,40 @@ class ClassPathPanel extends ListPanel
 
 
     /**
+     * Attaches the tool tip from the GUI resources that corresponds to the
+     * given key, to the given component.
+     */
+    private static JComponent tip(JComponent component, String messageKey)
+    {
+        component.setToolTipText(msg(messageKey));
+
+        return component;
+    }
+
+
+    /**
+     * Returns the message from the GUI resources that corresponds to the given
+     * key.
+     */
+    private static String msg(String messageKey)
+    {
+         return GUIResources.getMessage(messageKey);
+    }
+
+
+    /**
      * This ListCellRenderer renders ClassPathEntry objects.
      */
     private class MyListCellRenderer implements ListCellRenderer
     {
         private static final String ARROW_IMAGE_FILE = "arrow.gif";
 
-        private JPanel cellPanel    = new JPanel(new GridBagLayout());
-        private JLabel iconLabel    = new JLabel("", JLabel.RIGHT);
-        private JLabel jarNameLabel = new JLabel("", JLabel.RIGHT);
-        private JLabel filterLabel  = new JLabel("", JLabel.RIGHT);
+        private final JPanel cellPanel    = new JPanel(new GridBagLayout());
+        private final JLabel iconLabel    = new JLabel("", JLabel.RIGHT);
+        private final JLabel jarNameLabel = new JLabel("", JLabel.RIGHT);
+        private final JLabel filterLabel  = new JLabel("", JLabel.RIGHT);
 
-        private Icon arrowIcon;
+        private final Icon arrowIcon;
 
 
         public MyListCellRenderer()

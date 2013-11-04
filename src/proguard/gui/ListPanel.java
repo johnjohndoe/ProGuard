@@ -1,4 +1,4 @@
-/* $Id: ListPanel.java,v 1.9.2.2 2007/01/18 21:31:52 eric Exp $
+/* $Id: ListPanel.java,v 1.15 2007/08/18 10:34:56 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -37,8 +37,8 @@ import javax.swing.event.*;
  */
 abstract class ListPanel extends JPanel
 {
-    protected DefaultListModel listModel = new DefaultListModel();
-    protected JList            list      = new JList(listModel);
+    protected final DefaultListModel listModel = new DefaultListModel();
+    protected final JList            list      = new JList(listModel);
 
     protected int firstSelectionButton = 2;
 
@@ -81,7 +81,7 @@ abstract class ListPanel extends JPanel
 
     protected void addRemoveButton()
     {
-        JButton removeButton = new JButton(GUIResources.getMessage("remove"));
+        JButton removeButton = new JButton(msg("remove"));
         removeButton.addActionListener(new ActionListener()
         {
             public void actionPerformed(ActionEvent e)
@@ -91,13 +91,13 @@ abstract class ListPanel extends JPanel
             }
         });
 
-        addButton(removeButton);
+        addButton(tip(removeButton, "removeTip"));
     }
 
 
     protected void addUpButton()
     {
-        JButton upButton = new JButton(GUIResources.getMessage("moveUp"));
+        JButton upButton = new JButton(msg("moveUp"));
         upButton.addActionListener(new ActionListener()
         {
             public void actionPerformed(ActionEvent e)
@@ -112,13 +112,13 @@ abstract class ListPanel extends JPanel
             }
         });
 
-        addButton(upButton);
+        addButton(tip(upButton, "moveUpTip"));
     }
 
 
     protected void addDownButton()
     {
-        JButton downButton = new JButton(GUIResources.getMessage("moveDown"));
+        JButton downButton = new JButton(msg("moveDown"));
         downButton.addActionListener(new ActionListener()
         {
             public void actionPerformed(ActionEvent e)
@@ -133,20 +133,22 @@ abstract class ListPanel extends JPanel
             }
         });
 
-        addButton(downButton);
+        addButton(tip(downButton, "moveDownTip"));
     }
 
 
     /**
      * Adds a button that allows to copy or move entries to another ListPanel.
      *
-     * @param buttonText the button text.
-     * @param panel      the other ListPanel.
+     * @param buttonTextKey the button text key.
+     * @param tipKey        the tool tip key.
+     * @param panel         the other ListPanel.
      */
-    public void addCopyToPanelButton(String          buttonText,
+    public void addCopyToPanelButton(String          buttonTextKey,
+                                     String          tipKey,
                                      final ListPanel panel)
     {
-        JButton moveButton = new JButton(buttonText);
+        JButton moveButton = new JButton(msg(buttonTextKey));
         moveButton.addActionListener(new ActionListener()
         {
             public void actionPerformed(ActionEvent e)
@@ -162,11 +164,11 @@ abstract class ListPanel extends JPanel
             }
         });
 
-        addButton(moveButton);
+        addButton(tip(moveButton, tipKey));
     }
 
 
-    protected void addButton(JButton button)
+    protected void addButton(JComponent button)
     {
         GridBagConstraints buttonConstraints = new GridBagConstraints();
         buttonConstraints.gridwidth = GridBagConstraints.REMAINDER;
@@ -313,5 +315,27 @@ abstract class ListPanel extends JPanel
         {
             getComponent(index).setEnabled(selected);
         }
+    }
+
+
+    /**
+     * Attaches the tool tip from the GUI resources that corresponds to the
+     * given key, to the given component.
+     */
+    private static JComponent tip(JComponent component, String messageKey)
+    {
+        component.setToolTipText(msg(messageKey));
+
+        return component;
+    }
+
+
+    /**
+     * Returns the message from the GUI resources that corresponds to the given
+     * key.
+     */
+    private static String msg(String messageKey)
+    {
+         return GUIResources.getMessage(messageKey);
     }
 }

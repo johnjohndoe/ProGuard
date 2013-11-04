@@ -1,6 +1,6 @@
-/* $Id: ClassUtil.java,v 1.25.2.4 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,11 +20,9 @@
  */
 package proguard.classfile.util;
 
-import proguard.classfile.*;
+import proguard.classfile.ClassConstants;
 
-import java.io.*;
-import java.util.*;
-
+import java.util.List;
 
 /**
  * Utility methods for converting between internal and external representations
@@ -41,35 +39,107 @@ public class ClassUtil
 
 
     /**
-     * Checks whether the given class file magic number is correct.
+     * Checks whether the given class magic number is correct.
      * @param magicNumber the magic number.
-     * @throws IOException when the magic number is incorrect.
+     * @throws UnsupportedOperationException when the magic number is incorrect.
      */
-    public static void checkMagicNumber(int magicNumber) throws IOException
+    public static void checkMagicNumber(int magicNumber) throws UnsupportedOperationException
     {
         if (magicNumber != ClassConstants.MAGIC)
         {
-            throw new IOException("Invalid magic number ["+Integer.toHexString(magicNumber)+"] in class file");
+            throw new UnsupportedOperationException("Invalid magic number ["+Integer.toHexString(magicNumber)+"] in class");
         }
     }
 
 
     /**
-     * Checks whether the given class file version numbers are supported.
-     * @param majorVersionNumber the major version number.
-     * @param minorVersionNumber the minor version number.
-     * @throws IOException when the version is not supported.
+     * Returns the combined class version number.
+     * @param majorVersion the major part of the class version number.
+     * @param minorVersion the minor part of the class version number.
+     * @return the combined class version number.
      */
-    public static void checkVersionNumbers(int majorVersionNumber, int minorVersionNumber) throws IOException
+    public static int internalClassVersion(int majorVersion, int minorVersion)
     {
-        if (majorVersionNumber < ClassConstants.MAJOR_VERSION_MIN ||
-            (majorVersionNumber == ClassConstants.MAJOR_VERSION_MIN &&
-             minorVersionNumber <  ClassConstants.MINOR_VERSION_MIN) ||
-            (majorVersionNumber == ClassConstants.MAJOR_VERSION_MAX &&
-             minorVersionNumber >  ClassConstants.MINOR_VERSION_MAX) ||
-            majorVersionNumber > ClassConstants.MAJOR_VERSION_MAX)
+        return (majorVersion << 16) | minorVersion;
+    }
+
+
+    /**
+     * Returns the major part of the given class version number.
+     * @param classVersion the combined class version number.
+     * @return the major part of the class version number.
+     */
+    public static int internalMajorClassVersion(int classVersion)
+    {
+        return classVersion >>> 16;
+    }
+
+
+    /**
+     * Returns the internal class version number.
+     * @param classVersion the external class version number.
+     * @return the internal class version number.
+     */
+    public static int internalMinorClassVersion(int classVersion)
+    {
+        return classVersion & 0xffff;
+    }
+
+
+    /**
+     * Returns the internal class version number.
+     * @param classVersion the external class version number.
+     * @return the internal class version number.
+     */
+    public static int internalClassVersion(String classVersion)
+    {
+        return
+            classVersion.equals(ClassConstants.EXTERNAL_CLASS_VERSION_1_0) ||
+            classVersion.equals(ClassConstants.EXTERNAL_CLASS_VERSION_1_1) ? ClassConstants.INTERNAL_CLASS_VERSION_1_0 :
+            classVersion.equals(ClassConstants.EXTERNAL_CLASS_VERSION_1_2) ? ClassConstants.INTERNAL_CLASS_VERSION_1_2 :
+            classVersion.equals(ClassConstants.EXTERNAL_CLASS_VERSION_1_3) ? ClassConstants.INTERNAL_CLASS_VERSION_1_3 :
+            classVersion.equals(ClassConstants.EXTERNAL_CLASS_VERSION_1_4) ? ClassConstants.INTERNAL_CLASS_VERSION_1_4 :
+            classVersion.equals(ClassConstants.EXTERNAL_CLASS_VERSION_1_5_ALIAS) ||
+            classVersion.equals(ClassConstants.EXTERNAL_CLASS_VERSION_1_5) ? ClassConstants.INTERNAL_CLASS_VERSION_1_5 :
+            classVersion.equals(ClassConstants.EXTERNAL_CLASS_VERSION_1_6_ALIAS) ||
+            classVersion.equals(ClassConstants.EXTERNAL_CLASS_VERSION_1_6) ? ClassConstants.INTERNAL_CLASS_VERSION_1_6 :
+                                                                             0;
+    }
+
+
+    /**
+     * Returns the minor part of the given class version number.
+     * @param classVersion the combined class version number.
+     * @return the minor part of the class version number.
+     */
+    public static String externalClassVersion(int classVersion)
+    {
+        switch (classVersion)
         {
-            throw new IOException("Unsupported version number ["+majorVersionNumber+"."+minorVersionNumber+"] for class file format");
+            case ClassConstants.INTERNAL_CLASS_VERSION_1_0: return ClassConstants.EXTERNAL_CLASS_VERSION_1_0;
+            case ClassConstants.INTERNAL_CLASS_VERSION_1_2: return ClassConstants.EXTERNAL_CLASS_VERSION_1_2;
+            case ClassConstants.INTERNAL_CLASS_VERSION_1_3: return ClassConstants.EXTERNAL_CLASS_VERSION_1_3;
+            case ClassConstants.INTERNAL_CLASS_VERSION_1_4: return ClassConstants.EXTERNAL_CLASS_VERSION_1_4;
+            case ClassConstants.INTERNAL_CLASS_VERSION_1_5: return ClassConstants.EXTERNAL_CLASS_VERSION_1_5;
+            case ClassConstants.INTERNAL_CLASS_VERSION_1_6: return ClassConstants.EXTERNAL_CLASS_VERSION_1_6;
+            default:                                        return null;
+        }
+    }
+
+
+    /**
+     * Checks whether the given class version number is supported.
+     * @param classVersion the combined class version number.
+     * @throws UnsupportedOperationException when the version is not supported.
+     */
+    public static void checkVersionNumbers(int classVersion) throws UnsupportedOperationException
+    {
+        if (classVersion < ClassConstants.INTERNAL_CLASS_VERSION_1_0 ||
+            classVersion > ClassConstants.INTERNAL_CLASS_VERSION_1_6)
+        {
+            throw new UnsupportedOperationException("Unsupported version number ["+
+                                                    internalMajorClassVersion(classVersion)+"."+
+                                                    internalMinorClassVersion(classVersion)+"] for class format");
         }
     }
 
@@ -169,6 +239,24 @@ public class ClassUtil
 
 
     /**
+     * Returns whether the given internal class name is one of the interfaces
+     * that is implemented by all array types. These class names are
+     * "<code>java/lang/Object</code>", "<code>java/lang/Cloneable</code>", and
+     * "<code>java/io/Serializable</code>"
+     * @param internalClassName the internal class name,
+     *                          e.g. "<code>java/lang/Object</code>".
+     * @return <code>true</code> if the given type is an array interface name,
+     *         <code>false</code> otherwise.
+     */
+    public static boolean isInternalArrayInterfaceName(String internalClassName)
+    {
+        return ClassConstants.INTERNAL_NAME_JAVA_LANG_OBJECT.equals(internalClassName)    ||
+               ClassConstants.INTERNAL_NAME_JAVA_LANG_CLONEABLE.equals(internalClassName) ||
+               ClassConstants.INTERNAL_NAME_JAVA_IO_SERIALIZABLE.equals(internalClassName);
+    }
+
+
+    /**
      * Returns whether the given internal type is a plain primitive type
      * (not void).
      * @param internalType the internal type,
@@ -218,6 +306,46 @@ public class ClassUtil
         return length > 1 &&
 //             internalType.charAt(0)        == ClassConstants.INTERNAL_TYPE_CLASS_START &&
                internalType.charAt(length-1) == ClassConstants.INTERNAL_TYPE_CLASS_END;
+    }
+
+
+    /**
+     * Returns the internal type of a given class name.
+     * @param internalClassName the internal class name,
+     *                          e.g. "<code>java/lang/Object</code>".
+     * @return the internal type,
+     *                          e.g. "<code>Ljava/lang/Object;</code>".
+     */
+    public static String internalTypeFromClassName(String internalClassName)
+    {
+        return internalArrayTypeFromClassName(internalClassName, 0);
+    }
+
+
+    /**
+     * Returns the internal array type of a given class name with a given number
+     * of dimensions. If the number of dimensions is 0, the class name itself is
+     * returned.
+     * @param internalClassName the internal class name,
+     *                          e.g. "<code>java/lang/Object</code>".
+     * @param dimensionCount    the number of array dimensions.
+     * @return the internal array type of the array elements,
+     *                          e.g. "<code>Ljava/lang/Object;</code>".
+     */
+    public static String internalArrayTypeFromClassName(String internalClassName,
+                                                        int    dimensionCount)
+    {
+        StringBuffer buffer = new StringBuffer(internalClassName.length() + dimensionCount + 2);
+
+        for (int dimension = 0; dimension < dimensionCount; dimension++)
+        {
+            buffer.append(ClassConstants.INTERNAL_TYPE_ARRAY);
+        }
+
+        return buffer.append(ClassConstants.INTERNAL_TYPE_CLASS_START)
+                     .append(internalClassName)
+                     .append(ClassConstants.INTERNAL_TYPE_CLASS_END)
+                     .toString();
     }
 
 
@@ -418,10 +546,10 @@ public class ClassUtil
                                 (char)0;
 
         String internalType =
-            internalTypeChar != 0 ? ("" + internalTypeChar) :
-                                    (ClassConstants.INTERNAL_TYPE_CLASS_START +
-                                     internalClassName(externalType) +
-                                     ClassConstants.INTERNAL_TYPE_CLASS_END);
+            internalTypeChar != 0 ? String.valueOf(internalTypeChar) :
+                                    ClassConstants.INTERNAL_TYPE_CLASS_START +
+                                    internalClassName(externalType) +
+                                    ClassConstants.INTERNAL_TYPE_CLASS_END;
 
         // Prepend the array part, if any.
         for (int count = 0; count < dimensionCount; count++)
@@ -511,7 +639,7 @@ public class ClassUtil
         // Append the array part, if any.
         for (int count = 0; count < dimensionCount; count++)
         {
-            externalType = externalType + ClassConstants.EXTERNAL_TYPE_ARRAY;
+            externalType += ClassConstants.EXTERNAL_TYPE_ARRAY;
         }
 
         return externalType;
@@ -633,7 +761,7 @@ public class ClassUtil
     {
         return externalFieldAccessFlags(accessFlags) +
                externalType(internalFieldDescriptor) +
-               " " +
+               ' ' +
                fieldName;
     }
 
@@ -697,22 +825,19 @@ public class ClassUtil
 
         if ((accessFlags & ClassConstants.INTERNAL_ACC_PUBLIC) != 0)
         {
-            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_PUBLIC).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_PUBLIC).append(' ');
         }
         if ((accessFlags & ClassConstants.INTERNAL_ACC_FINAL) != 0)
         {
-            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_FINAL).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_FINAL).append(' ');
         }
         if ((accessFlags & ClassConstants.INTERNAL_ACC_INTERFACE) != 0)
         {
-            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_INTERFACE).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_INTERFACE).append(' ');
         }
-        else
+        else if ((accessFlags & ClassConstants.INTERNAL_ACC_ABSTRACT) != 0)
         {
-            if ((accessFlags & ClassConstants.INTERNAL_ACC_ABSTRACT) != 0)
-            {
-                string.append(prefix).append(ClassConstants.EXTERNAL_ACC_ABSTRACT).append(" ");
-            }
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_ABSTRACT).append(' ');
         }
 
         return string.toString();
@@ -749,31 +874,31 @@ public class ClassUtil
 
         if ((accessFlags & ClassConstants.INTERNAL_ACC_PUBLIC) != 0)
         {
-            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_PUBLIC).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_PUBLIC).append(' ');
         }
         if ((accessFlags & ClassConstants.INTERNAL_ACC_PRIVATE) != 0)
         {
-            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_PRIVATE).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_PRIVATE).append(' ');
         }
         if ((accessFlags & ClassConstants.INTERNAL_ACC_PROTECTED) != 0)
         {
-            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_PROTECTED).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_PROTECTED).append(' ');
         }
         if ((accessFlags & ClassConstants.INTERNAL_ACC_STATIC) != 0)
         {
-            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_STATIC).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_STATIC).append(' ');
         }
         if ((accessFlags & ClassConstants.INTERNAL_ACC_FINAL) != 0)
         {
-            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_FINAL).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_FINAL).append(' ');
         }
         if ((accessFlags & ClassConstants.INTERNAL_ACC_VOLATILE) != 0)
         {
-            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_VOLATILE).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_VOLATILE).append(' ');
         }
         if ((accessFlags & ClassConstants.INTERNAL_ACC_TRANSIENT) != 0)
         {
-            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_TRANSIENT).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_TRANSIENT).append(' ');
         }
 
         return string.toString();
@@ -810,39 +935,39 @@ public class ClassUtil
 
         if ((accessFlags & ClassConstants.INTERNAL_ACC_PUBLIC) != 0)
         {
-            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_PUBLIC).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_PUBLIC).append(' ');
         }
         if ((accessFlags & ClassConstants.INTERNAL_ACC_PRIVATE) != 0)
         {
-            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_PRIVATE).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_PRIVATE).append(' ');
         }
         if ((accessFlags & ClassConstants.INTERNAL_ACC_PROTECTED) != 0)
         {
-            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_PROTECTED).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_PROTECTED).append(' ');
         }
         if ((accessFlags & ClassConstants.INTERNAL_ACC_STATIC) != 0)
         {
-            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_STATIC).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_STATIC).append(' ');
         }
         if ((accessFlags & ClassConstants.INTERNAL_ACC_FINAL) != 0)
         {
-            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_FINAL).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_FINAL).append(' ');
         }
         if ((accessFlags & ClassConstants.INTERNAL_ACC_SYNCHRONIZED) != 0)
         {
-            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_SYNCHRONIZED).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_SYNCHRONIZED).append(' ');
         }
         if ((accessFlags & ClassConstants.INTERNAL_ACC_NATIVE) != 0)
         {
-            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_NATIVE).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_NATIVE).append(' ');
         }
         if ((accessFlags & ClassConstants.INTERNAL_ACC_ABSTRACT) != 0)
         {
-            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_ABSTRACT).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_ABSTRACT).append(' ');
         }
         if ((accessFlags & ClassConstants.INTERNAL_ACC_STRICT) != 0)
         {
-            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_STRICT).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_STRICT).append(' ');
         }
 
         return string.toString();
@@ -881,11 +1006,10 @@ public class ClassUtil
                                                           String internalMethodDescriptor)
     {
         return internalMethodName.equals(ClassConstants.INTERNAL_METHOD_NAME_INIT) ?
-                    (ClassUtil.externalShortClassName(
-                     ClassUtil.externalClassName(internalClassName))) :
-                    (ClassUtil.externalMethodReturnType(internalMethodDescriptor) +
-                     " " +
-                     internalMethodName);
+            externalShortClassName(externalClassName(internalClassName)) :
+            (externalMethodReturnType(internalMethodDescriptor) +
+             ' ' +
+             internalMethodName);
     }
 
 
@@ -924,13 +1048,25 @@ public class ClassUtil
      */
     public static String internalPackageName(String internalClassName)
     {
-        int lastSeparatorIndex = internalClassName.lastIndexOf(ClassConstants.INTERNAL_PACKAGE_SEPARATOR);
-        if (lastSeparatorIndex < 0)
-        {
-            lastSeparatorIndex = 0;
-        }
+        String internalPackagePrefix = internalPackagePrefix(internalClassName);
+        int length = internalPackagePrefix.length();
+        return length > 0 ?
+            internalPackagePrefix.substring(0, length - 1) :
+            "";
+    }
 
-        return internalClassName.substring(0, lastSeparatorIndex);
+
+    /**
+     * Returns the internal package prefix of the given internal class name.
+     * @param internalClassName the internal class name,
+     *                          e.g. "<code>java/lang/Object</code>".
+     * @return the internal package prefix,
+     *                          e.g. "<code>java/lang/</code>".
+     */
+    public static String internalPackagePrefix(String internalClassName)
+    {
+        return internalClassName.substring(0, internalClassName.lastIndexOf(ClassConstants.INTERNAL_PACKAGE_SEPARATOR,
+                                                                            internalClassName.length() - 2) + 1);
     }
 
 
@@ -943,12 +1079,24 @@ public class ClassUtil
      */
     public static String externalPackageName(String externalClassName)
     {
-        int lastSeparatorIndex = externalClassName.lastIndexOf(ClassConstants.EXTERNAL_PACKAGE_SEPARATOR);
-        if (lastSeparatorIndex < 0)
-        {
-            lastSeparatorIndex = 0;
-        }
+        String externalPackagePrefix = externalPackagePrefix(externalClassName);
+        int length = externalPackagePrefix.length();
+        return length > 0 ?
+            externalPackagePrefix.substring(0, length - 1) :
+            "";
+    }
 
-        return externalClassName.substring(0, lastSeparatorIndex);
+
+    /**
+     * Returns the external package prefix of the given external class name.
+     * @param externalClassName the external class name,
+     *                          e.g. "<code>java.lang.Object</code>".
+     * @return the external package prefix,
+     *                          e.g. "<code>java.lang.</code>".
+     */
+    public static String externalPackagePrefix(String externalClassName)
+    {
+        return externalClassName.substring(0, externalClassName.lastIndexOf(ClassConstants.EXTERNAL_PACKAGE_SEPARATOR,
+                                                                            externalClassName.length() - 2) + 1);
     }
 }

@@ -1,6 +1,6 @@
-/* $Id: ShortestUsagePrinter.java,v 1.3.2.2 2007/01/18 21:31:53 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -21,27 +21,27 @@
 package proguard.shrink;
 
 import proguard.classfile.*;
-import proguard.classfile.util.*;
+import proguard.classfile.util.ClassUtil;
 import proguard.classfile.visitor.*;
 
-import java.io.*;
+import java.io.PrintStream;
 
 
 /**
- * This ClassFileVisitor and MemberInfoVisitor prints out the reasons why
- * class files and class members have been marked as being used.
+ * This ClassVisitor     and MemberVisitor prints out the reasons why
+ * classes and class members have been marked as being used.
  *
  * @see UsageMarker
  *
  * @author Eric Lafortune
  */
 public class ShortestUsagePrinter
-  implements ClassFileVisitor,
-             MemberInfoVisitor
+implements   ClassVisitor,
+             MemberVisitor
 {
-    private ShortestUsageMarker shortestUsageMarker;
-    private boolean             verbose;
-    private PrintStream         ps;
+    private final ShortestUsageMarker shortestUsageMarker;
+    private final boolean             verbose;
+    private final PrintStream         ps;
 
 
     /**
@@ -84,71 +84,71 @@ public class ShortestUsagePrinter
     }
 
 
-    // Implementations for ClassFileVisitor.
+    // Implementations for ClassVisitor.
 
-    public void visitProgramClassFile(ProgramClassFile programClassFile)
+    public void visitProgramClass(ProgramClass programClass)
     {
-        // Print the name of this class file.
-        ps.println(ClassUtil.externalClassName(programClassFile.getName()));
+        // Print the name of this class.
+        ps.println(ClassUtil.externalClassName(programClass.getName()));
 
-        // Print the reason for keeping this class file.
-        printReason(programClassFile);
+        // Print the reason for keeping this class.
+        printReason(programClass);
     }
 
 
-    public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
+    public void visitLibraryClass(LibraryClass libraryClass)
     {
-        // Print the name of this class file.
-        ps.println(ClassUtil.externalClassName(libraryClassFile.getName()));
+        // Print the name of this class.
+        ps.println(ClassUtil.externalClassName(libraryClass.getName()));
 
-        // Print the reason for keeping this class file.
+        // Print the reason for keeping this class.
         ps.println("  is a library class.\n");
     }
 
 
-    // Implementations for MemberInfoVisitor.
+    // Implementations for MemberVisitor.
 
-    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
+    public void visitProgramField(ProgramClass programClass, ProgramField programField)
     {
         // Print the name of this field.
-        String name = programFieldInfo.getName(programClassFile);
-        String type = programFieldInfo.getDescriptor(programClassFile);
+        String name = programField.getName(programClass);
+        String type = programField.getDescriptor(programClass);
 
-        ps.println(ClassUtil.externalClassName(programClassFile.getName()) +
+        ps.println(ClassUtil.externalClassName(programClass.getName()) +
                    (verbose ?
                         ": " + ClassUtil.externalFullFieldDescription(0, name, type):
                         "."  + name) +
-                   lineNumberRange(programClassFile, programFieldInfo));
+                   lineNumberRange(programClass, programField));
 
         // Print the reason for keeping this method.
-        printReason(programFieldInfo);
+        printReason(programField);
     }
 
 
-    public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
+    public void visitProgramMethod(ProgramClass programClass, ProgramMethod programMethod)
     {
         // Print the name of this method.
-        String name = programMethodInfo.getName(programClassFile);
-        String type = programMethodInfo.getDescriptor(programClassFile);
+        String name = programMethod.getName(programClass);
+        String type = programMethod.getDescriptor(programClass);
 
-        ps.println(ClassUtil.externalClassName(programClassFile.getName()) +
+        ps.println(ClassUtil.externalClassName(programClass.getName()) +
                    (verbose ?
-                        ": " + ClassUtil.externalFullMethodDescription(programClassFile.getName(), 0, name, type):
+                        ": " + ClassUtil.externalFullMethodDescription(programClass.getName(), 0, name, type):
                         "."  + name) +
-                   lineNumberRange(programClassFile, programMethodInfo));
+                   lineNumberRange(programClass, programMethod));
 
         // Print the reason for keeping this method.
-        printReason(programMethodInfo);
+        printReason(programMethod);
     }
 
 
-    public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo)
+    public void visitLibraryField(LibraryClass libraryClass, LibraryField libraryField)
     {
         // Print the name of this field.
-        String name = libraryFieldInfo.getName(libraryClassFile);
-        String type = libraryFieldInfo.getDescriptor(libraryClassFile);
+        String name = libraryField.getName(libraryClass);
+        String type = libraryField.getDescriptor(libraryClass);
 
-        ps.println(ClassUtil.externalClassName(libraryClassFile.getName()) +
+        ps.println(ClassUtil.externalClassName(libraryClass.getName()) +
                    (verbose ?
                         ": " + ClassUtil.externalFullFieldDescription(0, name, type):
                         "."  + name));
@@ -158,15 +158,15 @@ public class ShortestUsagePrinter
     }
 
 
-    public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo)
+    public void visitLibraryMethod(LibraryClass libraryClass, LibraryMethod libraryMethod)
     {
         // Print the name of this method.
-        String name = libraryMethodInfo.getName(libraryClassFile);
-        String type = libraryMethodInfo.getDescriptor(libraryClassFile);
+        String name = libraryMethod.getName(libraryClass);
+        String type = libraryMethod.getDescriptor(libraryClass);
 
-        ps.println(ClassUtil.externalClassName(libraryClassFile.getName()) +
+        ps.println(ClassUtil.externalClassName(libraryClass.getName()) +
                    (verbose ?
-                        ": " + ClassUtil.externalFullMethodDescription(libraryClassFile.getName(), 0, name, type):
+                        ": " + ClassUtil.externalFullMethodDescription(libraryClass.getName(), 0, name, type):
                         "."  + name));
 
         // Print the reason for keeping this method.
@@ -182,12 +182,12 @@ public class ShortestUsagePrinter
         {
             ShortestUsageMark shortestUsageMark = shortestUsageMarker.getShortestUsageMark(visitorAccepter);
 
-            // Print the reason for keeping this class file.
+            // Print the reason for keeping this class.
             ps.print("  " + shortestUsageMark.getReason());
 
             // Print the class or method that is responsible, with its reasons.
-            shortestUsageMark.acceptClassFileVisitor(this);
-            shortestUsageMark.acceptMethodInfoVisitor(this);
+            shortestUsageMark.acceptClassVisitor(this);
+            shortestUsageMark.acceptMethodVisitor(this);
         }
         else
         {
@@ -200,9 +200,9 @@ public class ShortestUsagePrinter
      * Returns the line number range of the given class member, followed by a
      * colon, or just an empty String if no range is available.
      */
-    private static String lineNumberRange(ProgramClassFile programClassFile, ProgramMemberInfo programMemberInfo)
+    private static String lineNumberRange(ProgramClass programClass, ProgramMember programMember)
     {
-        String range = programMemberInfo.getLineNumberRange(programClassFile);
+        String range = programMember.getLineNumberRange(programClass);
         return range != null ?
             (" (" + range + ")") :
             "";

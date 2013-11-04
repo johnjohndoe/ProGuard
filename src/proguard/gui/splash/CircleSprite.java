@@ -1,6 +1,6 @@
-/* $Id: CircleSprite.java,v 1.7.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,7 +20,7 @@
  */
 package proguard.gui.splash;
 
-import java.awt.Graphics;
+import java.awt.*;
 
 /**
  * This Sprite represents an animated circle. It can optionally be filled.
@@ -29,29 +29,25 @@ import java.awt.Graphics;
  */
 public class CircleSprite implements Sprite
 {
-    private boolean       filled;
-    private VariableColor color;
-    private VariableInt   x;
-    private VariableInt   y;
-    private VariableInt   radius;
+    private final boolean     filled;
+    private final VariableInt x;
+    private final VariableInt y;
+    private final VariableInt radius;
 
 
     /**
      * Creates a new CircleSprite.
      * @param filled specifies whether the rectangle should be filled.
-     * @param color  the variable color of the circle.
      * @param x      the variable x-coordinate of the center of the circle.
      * @param y      the variable y-coordinate of the center of the circle.
      * @param radius the variable radius of the circle.
      */
-    public CircleSprite(boolean       filled,
-                        VariableColor color,
-                        VariableInt   x,
-                        VariableInt   y,
-                        VariableInt   radius)
+    public CircleSprite(boolean     filled,
+                        VariableInt x,
+                        VariableInt y,
+                        VariableInt radius)
     {
         this.filled = filled;
-        this.color  = color;
         this.x      = x;
         this.y      = y;
         this.radius = radius;
@@ -62,8 +58,6 @@ public class CircleSprite implements Sprite
 
     public void paint(Graphics graphics, long time)
     {
-        graphics.setColor(color.getColor(time));
-
         int xt = x.getInt(time);
         int yt = y.getInt(time);
         int r  = radius.getInt(time);

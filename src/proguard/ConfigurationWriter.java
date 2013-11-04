@@ -1,6 +1,6 @@
-/* $Id: ConfigurationWriter.java,v 1.18.2.4 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,12 +20,12 @@
  */
 package proguard;
 
-import proguard.classfile.*;
-import proguard.classfile.util.*;
-import proguard.util.*;
+import proguard.classfile.ClassConstants;
+import proguard.classfile.util.ClassUtil;
+import proguard.util.ListUtil;
 
 import java.io.*;
-import java.util.*;
+import java.util.List;
 
 
 /**
@@ -35,13 +35,6 @@ import java.util.*;
  */
 public class ConfigurationWriter
 {
-    private static final String[] KEEP_NAMES_OPTIONS = new String[]
-    {
-        ConfigurationConstants.KEEP_NAMES_OPTION,
-        ConfigurationConstants.KEEP_CLASS_MEMBER_NAMES_OPTION,
-        ConfigurationConstants.KEEP_CLASSES_WITH_MEMBER_NAMES_OPTION
-    };
-
     private static final String[] KEEP_OPTIONS = new String[]
     {
         ConfigurationConstants.KEEP_OPTION,
@@ -49,22 +42,8 @@ public class ConfigurationWriter
         ConfigurationConstants.KEEP_CLASSES_WITH_MEMBERS_OPTION
     };
 
-    private static final String[] WHY_ARE_YOU_KEEPING_OPTIONS = new String[]
-    {
-        ConfigurationConstants.WHY_ARE_YOU_KEEPING_OPTION,
-        ConfigurationConstants.WHY_ARE_YOU_KEEPING_OPTION,
-        ConfigurationConstants.WHY_ARE_YOU_KEEPING_OPTION
-    };
 
-    private static final String[] ASSUME_NO_SIDE_EFFECT_OPTIONS = new String[]
-    {
-        ConfigurationConstants.ASSUME_NO_SIDE_EFFECTS_OPTION,
-        ConfigurationConstants.ASSUME_NO_SIDE_EFFECTS_OPTION,
-        ConfigurationConstants.ASSUME_NO_SIDE_EFFECTS_OPTION
-    };
-
-
-    private PrintWriter writer;
+    private final PrintWriter writer;
     private File        baseDir;
 
 
@@ -128,44 +107,57 @@ public class ConfigurationWriter
         // Write the other options.
         writeOption(ConfigurationConstants.DONT_SKIP_NON_PUBLIC_LIBRARY_CLASSES_OPTION,       !configuration.skipNonPublicLibraryClasses);
         writeOption(ConfigurationConstants.DONT_SKIP_NON_PUBLIC_LIBRARY_CLASS_MEMBERS_OPTION, !configuration.skipNonPublicLibraryClassMembers);
+        writeOption(ConfigurationConstants.TARGET_OPTION,                                     ClassUtil.externalClassVersion(configuration.targetClassVersion));
+        writeOption(ConfigurationConstants.FORCE_PROCESSING_OPTION,                           configuration.lastModified == Long.MAX_VALUE);
 
-        writeOption(ConfigurationConstants.DONT_SHRINK_OPTION,                                !configuration.shrink);
-        writeOption(ConfigurationConstants.PRINT_USAGE_OPTION,                                configuration.printUsage);
+        writeOption(ConfigurationConstants.DONT_SHRINK_OPTION, !configuration.shrink);
+        writeOption(ConfigurationConstants.PRINT_USAGE_OPTION, configuration.printUsage);
 
-        writeOption(ConfigurationConstants.DONT_OPTIMIZE_OPTION ,                             !configuration.optimize);
-        writeOption(ConfigurationConstants.ALLOW_ACCESS_MODIFICATION_OPTION,                  configuration.allowAccessModification);
+        writeOption(ConfigurationConstants.DONT_OPTIMIZE_OPTION,             !configuration.optimize);
+        writeOption(ConfigurationConstants.OPTIMIZATION_PASSES,              configuration.optimizationPasses);
+        writeOption(ConfigurationConstants.ALLOW_ACCESS_MODIFICATION_OPTION, configuration.allowAccessModification);
 
-        writeOption(ConfigurationConstants.DONT_OBFUSCATE_OPTION,                             !configuration.obfuscate);
-        writeOption(ConfigurationConstants.PRINT_MAPPING_OPTION,                              configuration.printMapping);
-        writeOption(ConfigurationConstants.APPLY_MAPPING_OPTION,                              configuration.applyMapping);
-        writeOption(ConfigurationConstants.OBFUSCATION_DICTIONARY_OPTION,                     configuration.obfuscationDictionary);
-        writeOption(ConfigurationConstants.OVERLOAD_AGGRESSIVELY_OPTION,                      configuration.overloadAggressively);
-        writeOption(ConfigurationConstants.USE_UNIQUE_CLASS_MEMBER_NAMES_OPTION,              configuration.useUniqueClassMemberNames);
-        writeOption(ConfigurationConstants.DEFAULT_PACKAGE_OPTION,                            configuration.defaultPackage);
-        writeOption(ConfigurationConstants.DONT_USE_MIXED_CASE_CLASS_NAMES_OPTION,            !configuration.useMixedCaseClassNames);
-        writeOption(ConfigurationConstants.KEEP_ATTRIBUTES_OPTION,                            ListUtil.commaSeparatedString(configuration.keepAttributes));
-        writeOption(ConfigurationConstants.RENAME_SOURCE_FILE_ATTRIBUTE_OPTION,               configuration.newSourceFileAttribute);
+        writeOption(ConfigurationConstants.DONT_OBFUSCATE_OPTION,                  !configuration.obfuscate);
+        writeOption(ConfigurationConstants.PRINT_MAPPING_OPTION,                   configuration.printMapping);
+        writeOption(ConfigurationConstants.APPLY_MAPPING_OPTION,                   configuration.applyMapping);
+        writeOption(ConfigurationConstants.OBFUSCATION_DICTIONARY_OPTION,          configuration.obfuscationDictionary);
+        writeOption(ConfigurationConstants.OVERLOAD_AGGRESSIVELY_OPTION,           configuration.overloadAggressively);
+        writeOption(ConfigurationConstants.USE_UNIQUE_CLASS_MEMBER_NAMES_OPTION,   configuration.useUniqueClassMemberNames);
+        writeOption(ConfigurationConstants.DONT_USE_MIXED_CASE_CLASS_NAMES_OPTION, !configuration.useMixedCaseClassNames);
+        writeOption(ConfigurationConstants.FLATTEN_PACKAGE_HIERARCHY_OPTION,       configuration.flattenPackageHierarchy == null ? null : ClassUtil.externalClassName(configuration.flattenPackageHierarchy));
+        writeOption(ConfigurationConstants.REPACKAGE_CLASSES_OPTION,               configuration.repackageClasses        == null ? null : ClassUtil.externalClassName(configuration.repackageClasses));
+        writeOption(ConfigurationConstants.KEEP_ATTRIBUTES_OPTION,                 ListUtil.commaSeparatedString(configuration.keepAttributes));
+        writeOption(ConfigurationConstants.RENAME_SOURCE_FILE_ATTRIBUTE_OPTION,    configuration.newSourceFileAttribute);
+        writeOption(ConfigurationConstants.ADAPT_RESOURCE_FILE_NAMES_OPTION,       ListUtil.commaSeparatedString(configuration.adaptResourceFileNames));
+        writeOption(ConfigurationConstants.ADAPT_RESOURCE_FILE_CONTENTS_OPTION,    ListUtil.commaSeparatedString(configuration.adaptResourceFileContents));
 
-        writeOption(ConfigurationConstants.VERBOSE_OPTION,                                    configuration.verbose);
-        writeOption(ConfigurationConstants.DONT_NOTE_OPTION,                                  !configuration.note);
-        writeOption(ConfigurationConstants.DONT_WARN_OPTION,                                  !configuration.warn);
-        writeOption(ConfigurationConstants.IGNORE_WARNINGS_OPTION,                            configuration.ignoreWarnings);
+        writeOption(ConfigurationConstants.DONT_PREVERIFY_OPTION, !configuration.preverify);
+        writeOption(ConfigurationConstants.MICRO_EDITION_OPTION,  configuration.microEdition);
 
-        writeOption(ConfigurationConstants.PRINT_SEEDS_OPTION,                                configuration.printSeeds);
+        writeOption(ConfigurationConstants.VERBOSE_OPTION,             configuration.verbose);
+        writeOption(ConfigurationConstants.DONT_NOTE_OPTION,           !configuration.note);
+        writeOption(ConfigurationConstants.DONT_WARN_OPTION,           !configuration.warn);
+        writeOption(ConfigurationConstants.IGNORE_WARNINGS_OPTION,     configuration.ignoreWarnings);
+        writeOption(ConfigurationConstants.PRINT_CONFIGURATION_OPTION, configuration.printConfiguration);
+        writeOption(ConfigurationConstants.DUMP_OPTION,                configuration.dump);
+
+        writeOption(ConfigurationConstants.PRINT_SEEDS_OPTION,     configuration.printSeeds);
         writer.println();
 
         // Write the "why are you keeping" options.
-        writeOptions(WHY_ARE_YOU_KEEPING_OPTIONS, configuration.whyAreYouKeeping);
+        writeOptions(ConfigurationConstants.WHY_ARE_YOU_KEEPING_OPTION, configuration.whyAreYouKeeping);
 
         // Write the keep options.
         writeOptions(KEEP_OPTIONS, configuration.keep);
 
-        // Write the keep names options.
-        writeOptions(KEEP_NAMES_OPTIONS, configuration.keepNames);
-
         // Write the "no side effect methods" options.
-        writeOptions(ASSUME_NO_SIDE_EFFECT_OPTIONS, configuration.assumeNoSideEffects);
-}
+        writeOptions(ConfigurationConstants.ASSUME_NO_SIDE_EFFECTS_OPTION, configuration.assumeNoSideEffects);
+
+        if (writer.checkError())
+        {
+            throw new IOException("Can't write configuration");
+        }
+    }
 
 
     private void writeJarOptions(String    inputEntryOptionName,
@@ -181,7 +173,9 @@ public class ConfigurationWriter
                      outputEntryOptionName :
                      inputEntryOptionName;
 
-                writer.print(optionName + " " + relativeFileName(entry.getFile()));
+                writer.print(optionName);
+                writer.print(' ');
+                writer.print(relativeFileName(entry.getFile()));
 
                 // Append the filters, if any.
                 boolean filtered = false;
@@ -235,11 +229,24 @@ public class ConfigurationWriter
     }
 
 
+    private void writeOption(String optionName, int argument)
+    {
+        if (argument != 1)
+        {
+            writer.print(optionName);
+            writer.print(' ');
+            writer.println(argument);
+        }
+    }
+
+
     private void writeOption(String optionName, String arguments)
     {
         if (arguments != null)
         {
-            writer.println(optionName + " " + quotedString(arguments));
+            writer.print(optionName);
+            writer.print(' ');
+            writer.println(quotedString(arguments));
         }
     }
 
@@ -250,7 +257,9 @@ public class ConfigurationWriter
         {
             if (file.getPath().length() > 0)
             {
-                writer.println(optionName + " " + relativeFileName(file));
+                writer.print(optionName);
+                writer.print(' ');
+                writer.println(relativeFileName(file));
             }
             else
             {
@@ -261,19 +270,63 @@ public class ConfigurationWriter
 
 
     private void writeOptions(String[] optionNames,
-                              List     classSpecifications)
+                              List     keepSpecifications)
     {
-        if (classSpecifications != null)
+        if (keepSpecifications != null)
         {
-            for (int index = 0; index < classSpecifications.size(); index++)
+            for (int index = 0; index < keepSpecifications.size(); index++)
             {
-                writeOption(optionNames, (ClassSpecification)classSpecifications.get(index));
+                writeOption(optionNames, (KeepSpecification)keepSpecifications.get(index));
             }
         }
     }
 
 
-    private void writeOption(String[]           optionNames,
+    private void writeOption(String[]          optionNames,
+                             KeepSpecification keepSpecification)
+    {
+        // Compose the option name.
+        String optionName = optionNames[keepSpecification.markConditionally ? 2 :
+                                        keepSpecification.markClasses       ? 0 :
+                                                                              1];
+
+        if (keepSpecification.allowShrinking)
+        {
+            optionName += ConfigurationConstants.ARGUMENT_SEPARATOR_KEYWORD +
+                          ConfigurationConstants.ALLOW_SHRINKING_SUBOPTION;
+        }
+
+        if (keepSpecification.allowOptimization)
+        {
+            optionName += ConfigurationConstants.ARGUMENT_SEPARATOR_KEYWORD +
+                          ConfigurationConstants.ALLOW_OPTIMIZATION_SUBOPTION;
+        }
+
+        if (keepSpecification.allowObfuscation)
+        {
+            optionName += ConfigurationConstants.ARGUMENT_SEPARATOR_KEYWORD +
+                          ConfigurationConstants.ALLOW_OBFUSCATION_SUBOPTION;
+        }
+
+        // Write out the option with the proper class specification.
+        writeOption(optionName, keepSpecification);
+    }
+
+
+    private void writeOptions(String optionName,
+                              List   classSpecifications)
+    {
+        if (classSpecifications != null)
+        {
+            for (int index = 0; index < classSpecifications.size(); index++)
+            {
+                writeOption(optionName, (ClassSpecification)classSpecifications.get(index));
+            }
+        }
+    }
+
+
+    private void writeOption(String             optionName,
                              ClassSpecification classSpecification)
     {
         writer.println();
@@ -281,12 +334,16 @@ public class ConfigurationWriter
         // Write out the comments for this option.
         writeComments(classSpecification.comments);
 
-        // Write out the proper class specification option name.
-        writer.print(optionNames[classSpecification.markConditionally ? 2 :
-                                 classSpecification.markClassFiles    ? 0 :
-                                                                        1]);
+        writer.print(optionName);
+        writer.print(' ');
 
-        writer.print(" ");
+        // Write out the required annotation, if any.
+        if (classSpecification.annotationType != null)
+        {
+            writer.print(ConfigurationConstants.ANNOTATION_KEYWORD);
+            writer.print(ClassUtil.externalType(classSpecification.annotationType));
+            writer.print(' ');
+        }
 
         // Write out the class access flags.
         writer.print(ClassUtil.externalClassAccessFlags(classSpecification.requiredUnsetAccessFlags,
@@ -300,10 +357,10 @@ public class ConfigurationWriter
               classSpecification.requiredUnsetAccessFlags) &
              ClassConstants.INTERNAL_ACC_INTERFACE) == 0)
         {
-            writer.print("class");
+            writer.print(ConfigurationConstants.CLASS_KEYWORD);
         }
 
-        writer.print(" ");
+        writer.print(' ');
 
         // Write out the class name.
         writer.print(classSpecification.className != null ?
@@ -311,20 +368,38 @@ public class ConfigurationWriter
             ConfigurationConstants.ANY_CLASS_KEYWORD);
 
         // Write out the extends template, if any.
-        if (classSpecification.extendsClassName != null)
+        if (classSpecification.extendsAnnotationType != null ||
+            classSpecification.extendsClassName      != null)
         {
-            writer.print(" extends " + ClassUtil.externalClassName(classSpecification.extendsClassName));
+            writer.print(' ');
+            writer.print(ConfigurationConstants.EXTENDS_KEYWORD);
+            writer.print(' ');
+
+            // Write out the required extends annotation, if any.
+            if (classSpecification.extendsAnnotationType != null)
+            {
+                writer.print(ConfigurationConstants.ANNOTATION_KEYWORD);
+                writer.print(ClassUtil.externalType(classSpecification.extendsAnnotationType));
+                writer.print(' ');
+            }
+
+            // Write out the extended class name.
+            writer.print(classSpecification.extendsClassName != null ?
+                ClassUtil.externalClassName(classSpecification.extendsClassName) :
+                ConfigurationConstants.ANY_CLASS_KEYWORD);
         }
 
         // Write out the keep field and keep method options, if any.
         if (classSpecification.fieldSpecifications  != null ||
             classSpecification.methodSpecifications != null)
         {
-            writer.println(" {");
+            writer.print(' ');
+            writer.println(ConfigurationConstants.OPEN_KEYWORD);
 
             writeFieldSpecification( classSpecification.fieldSpecifications);
             writeMethodSpecification(classSpecification.methodSpecifications);
-            writer.println("}");
+
+            writer.println(ConfigurationConstants.CLOSE_KEYWORD);
         }
         else
         {
@@ -348,6 +423,12 @@ public class ConfigurationWriter
                 }
 
                 writer.print('#');
+
+                if (comments.charAt(index) != ' ')
+                {
+                    writer.print(' ');
+                }
+
                 writer.println(comments.substring(index, breakIndex));
 
                 index = breakIndex + 1;
@@ -356,78 +437,86 @@ public class ConfigurationWriter
     }
 
 
-    private void writeFieldSpecification(List classMemberSpecifications)
+    private void writeFieldSpecification(List memberSpecifications)
     {
-        if (classMemberSpecifications != null)
+        if (memberSpecifications != null)
         {
-            for (int index = 0; index < classMemberSpecifications.size(); index++)
+            for (int index = 0; index < memberSpecifications.size(); index++)
             {
-                ClassMemberSpecification classMemberSpecification =
-                    (ClassMemberSpecification)classMemberSpecifications.get(index);
+                MemberSpecification memberSpecification =
+                    (MemberSpecification)memberSpecifications.get(index);
 
                 writer.print("    ");
 
-                // Write out the field access flags.
-                writer.print(ClassUtil.externalFieldAccessFlags(classMemberSpecification.requiredUnsetAccessFlags,
-                                                                ConfigurationConstants.NEGATOR_KEYWORD));
-
-                writer.print(ClassUtil.externalFieldAccessFlags(classMemberSpecification.requiredSetAccessFlags));
-
-                // Write out the field name and descriptor.
-                String name       = classMemberSpecification.name;
-                String descriptor = classMemberSpecification.descriptor;
-
-                if (name == null)
+                // Write out the required annotation, if any.
+                if (memberSpecification.annotationType != null)
                 {
-                    name = ConfigurationConstants.ANY_CLASS_MEMBER_KEYWORD;
+                    writer.print(ConfigurationConstants.ANNOTATION_KEYWORD);
+                    writer.println(ClassUtil.externalType(memberSpecification.annotationType));
+                    writer.print("    ");
                 }
 
-                writer.print(descriptor != null ?
-                    ClassUtil.externalFullFieldDescription(0,
-                                                           name,
-                                                           descriptor) :
-                    ConfigurationConstants.ANY_FIELD_KEYWORD);
+                // Write out the field access flags.
+                writer.print(ClassUtil.externalFieldAccessFlags(memberSpecification.requiredUnsetAccessFlags,
+                                                                ConfigurationConstants.NEGATOR_KEYWORD));
 
-                writer.println(";");
+                writer.print(ClassUtil.externalFieldAccessFlags(memberSpecification.requiredSetAccessFlags));
+
+                // Write out the field name and descriptor.
+                String name       = memberSpecification.name;
+                String descriptor = memberSpecification.descriptor;
+
+                writer.print(descriptor == null ? name == null ?
+                    ConfigurationConstants.ANY_FIELD_KEYWORD             :
+                    ConfigurationConstants.ANY_TYPE_KEYWORD + ' ' + name :
+                    ClassUtil.externalFullFieldDescription(0,
+                                                           name == null ? ConfigurationConstants.ANY_CLASS_MEMBER_KEYWORD : name,
+                                                           descriptor));
+
+                writer.println(ConfigurationConstants.SEPARATOR_KEYWORD);
             }
         }
     }
 
 
-    private void writeMethodSpecification(List classMemberSpecifications)
+    private void writeMethodSpecification(List memberSpecifications)
     {
-        if (classMemberSpecifications != null)
+        if (memberSpecifications != null)
         {
-            for (int index = 0; index < classMemberSpecifications.size(); index++)
+            for (int index = 0; index < memberSpecifications.size(); index++)
             {
-                ClassMemberSpecification classMemberSpecification =
-                    (ClassMemberSpecification)classMemberSpecifications.get(index);
+                MemberSpecification memberSpecification =
+                    (MemberSpecification)memberSpecifications.get(index);
 
                 writer.print("    ");
 
-                // Write out the method access flags.
-                writer.print(ClassUtil.externalMethodAccessFlags(classMemberSpecification.requiredUnsetAccessFlags,
-                                                                 ConfigurationConstants.NEGATOR_KEYWORD));
-
-                writer.print(ClassUtil.externalMethodAccessFlags(classMemberSpecification.requiredSetAccessFlags));
-
-                // Write out the method name and descriptor.
-                String name       = classMemberSpecification.name;
-                String descriptor = classMemberSpecification.descriptor;
-
-                if (name == null)
+                // Write out the required annotation, if any.
+                if (memberSpecification.annotationType != null)
                 {
-                    name = ConfigurationConstants.ANY_CLASS_MEMBER_KEYWORD;
+                    writer.print(ConfigurationConstants.ANNOTATION_KEYWORD);
+                    writer.println(ClassUtil.externalType(memberSpecification.annotationType));
+                    writer.print("    ");
                 }
 
-                writer.print(descriptor != null ?
+                // Write out the method access flags.
+                writer.print(ClassUtil.externalMethodAccessFlags(memberSpecification.requiredUnsetAccessFlags,
+                                                                 ConfigurationConstants.NEGATOR_KEYWORD));
+
+                writer.print(ClassUtil.externalMethodAccessFlags(memberSpecification.requiredSetAccessFlags));
+
+                // Write out the method name and descriptor.
+                String name       = memberSpecification.name;
+                String descriptor = memberSpecification.descriptor;
+
+                writer.print(descriptor == null ? name == null ?
+                    ConfigurationConstants.ANY_METHOD_KEYWORD :
+                    ConfigurationConstants.ANY_TYPE_KEYWORD + ' ' + name + ConfigurationConstants.OPEN_ARGUMENTS_KEYWORD + ConfigurationConstants.ANY_ARGUMENTS_KEYWORD + ConfigurationConstants.CLOSE_ARGUMENTS_KEYWORD :
                     ClassUtil.externalFullMethodDescription(ClassConstants.INTERNAL_METHOD_NAME_INIT,
                                                             0,
-                                                            name,
-                                                            descriptor) :
-                    ConfigurationConstants.ANY_METHOD_KEYWORD);
+                                                            name == null ? ConfigurationConstants.ANY_CLASS_MEMBER_KEYWORD : name,
+                                                            descriptor));
 
-                writer.println(";");
+                writer.println(ConfigurationConstants.SEPARATOR_KEYWORD);
             }
         }
     }

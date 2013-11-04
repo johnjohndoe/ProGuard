@@ -1,6 +1,6 @@
-/* $Id: InternalTypeEnumeration.java,v 1.9.2.2 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,13 +20,13 @@
  */
 package proguard.classfile.util;
 
-import proguard.classfile.*;
+import proguard.classfile.ClassConstants;
 
 
 /**
  * An <code>InternalTypeEnumeration</code> provides an enumeration of all
- * types listed in a given internal descriptor string. The return type can
- * retrieved separately.
+ * parameter types listed in a given internal descriptor string. The return type
+ * can retrieved separately.
  * <p>
  * A <code>InternalTypeEnumeration</code> object can be reused for processing
  * different subsequent descriptors, by means of the <code>setDescriptor</code>

@@ -1,6 +1,6 @@
-/* $Id: TimeSwitchSprite.java,v 1.7.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,7 +20,7 @@
  */
 package proguard.gui.splash;
 
-import java.awt.Graphics;
+import java.awt.*;
 
 /**
  * This Sprite displays another Sprite in a given time interval.
@@ -30,14 +30,14 @@ import java.awt.Graphics;
  */
 public class TimeSwitchSprite implements Sprite
 {
-    private long   onTime;
-    private long   offtime;
-    private Sprite sprite;
+    private final long   onTime;
+    private final long offTime;
+    private final Sprite sprite;
 
 
     /**
-     * Creates a new TimeSwitchSprite for displaying a given Sprite starting at a
-     * given time.
+     * Creates a new TimeSwitchSprite for displaying a given Sprite starting at
+     * a given time.
      * @param onTime the start time.
      * @param sprite the toggled Sprite.
      */
@@ -48,16 +48,16 @@ public class TimeSwitchSprite implements Sprite
 
 
     /**
-     * Creates a new TimeSwitchSprite for displaying a given Sprite  in a given
+     * Creates a new TimeSwitchSprite for displaying a given Sprite in a given
      * time interval.
-     * @param onTime the start time.
+     * @param onTime  the start time.
      * @param offTime the stop time.
-     * @param sprite the toggled Sprite.
+     * @param sprite  the toggled Sprite.
      */
-    public TimeSwitchSprite(long onTime, long offtime, Sprite sprite)
+    public TimeSwitchSprite(long onTime, long offTime, Sprite sprite)
     {
         this.onTime  = onTime;
-        this.offtime = offtime;
+        this.offTime = offTime;
         this.sprite  = sprite;
     }
 
@@ -66,7 +66,7 @@ public class TimeSwitchSprite implements Sprite
 
     public void paint(Graphics graphics, long time)
     {
-        if (time >= onTime && (offtime <= 0 || time <= offtime))
+        if (time >= onTime && (offTime <= 0 || time <= offTime))
         {
             sprite.paint(graphics, time - onTime);
         }

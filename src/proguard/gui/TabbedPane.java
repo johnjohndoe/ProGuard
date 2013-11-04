@@ -1,6 +1,6 @@
-/* $Id: TabbedPane.java,v 1.7.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,10 +20,9 @@
  */
 package proguard.gui;
 
+import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-
-import javax.swing.*;
 
 
 /**
@@ -37,9 +36,9 @@ import javax.swing.*;
 public class TabbedPane
      extends JPanel
 {
-    private CardLayout  cardLayout  = new CardLayout();
-    private JPanel      cardPanel   = new JPanel(cardLayout);
-    private ButtonGroup buttonGroup = new ButtonGroup();
+    private final CardLayout  cardLayout  = new CardLayout();
+    private final JPanel      cardPanel   = new JPanel(cardLayout);
+    private final ButtonGroup buttonGroup = new ButtonGroup();
 
 
     /**
@@ -91,7 +90,7 @@ public class TabbedPane
                     return;
                 }
 
-                if (b == false && isArmed())
+                if (!b && isArmed())
                 {
                     setSelected(!this.isSelected());
                 }

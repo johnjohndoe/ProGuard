@@ -1,6 +1,6 @@
-/* $Id: MemberFinder.java,v 1.7.2.5 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -30,79 +30,81 @@ import proguard.classfile.visitor.*;
  * @author Eric Lafortune
  */
 public class MemberFinder
-  implements MemberInfoVisitor
+extends      SimplifiedVisitor
+implements   MemberVisitor
 {
-    private static class MemberFoundException extends IllegalArgumentException {};
+    private static class MemberFoundException extends RuntimeException {}
     private static final MemberFoundException MEMBER_FOUND = new MemberFoundException();
 
-    private ClassFile  classFile;
-    private MemberInfo memberInfo;
+    private Clazz  clazz;
+    private Member member;
 
 
     /**
      * Finds the field with the given name and descriptor in the given
-     * class file or its hierarchy.
+     * class or its hierarchy.
      */
-    public FieldInfo findField(ClassFile referencingClassFile,
-                               ClassFile classFile,
-                               String    name,
-                               String    descriptor)
+    public Field findField(Clazz  referencingClass,
+                           Clazz  clazz,
+                           String name,
+                           String descriptor)
     {
-        return (FieldInfo)findMember(referencingClassFile, classFile, name, descriptor, true);
+        return (Field)findMember(referencingClass, clazz, name, descriptor, true);
     }
 
 
     /**
      * Finds the method with the given name and descriptor in the given
-     * class file or its hierarchy.
+     * class or its hierarchy.
      */
-    public MethodInfo findMethod(ClassFile referencingClassFile,
-                                 ClassFile classFile,
-                                 String    name,
-                                 String    descriptor)
+    public Method findMethod(Clazz  referencingClass,
+                             Clazz  clazz,
+                             String name,
+                             String descriptor)
     {
-        return (MethodInfo)findMember(referencingClassFile, classFile, name, descriptor, false);
+        return (Method)findMember(referencingClass, clazz, name, descriptor, false);
     }
 
 
     /**
      * Finds the class member with the given name and descriptor in the given
-     * class file or its hierarchy.
+     * class or its hierarchy.
      */
-    public MemberInfo findMember(ClassFile referencingClassFile,
-                                 ClassFile classFile,
-                                 String    name,
-                                 String    descriptor,
-                                 boolean   isField)
+    public Member findMember(Clazz   referencingClass,
+                             Clazz   clazz,
+                             String  name,
+                             String  descriptor,
+                             boolean isField)
     {
         // Organize a search in the hierarchy of superclasses and interfaces.
         // The class member may be in a different class, if the code was
         // compiled with "-target 1.2" or higher (the default in JDK 1.4).
         try
         {
-            this.classFile  = null;
-            this.memberInfo = null;
-            classFile.hierarchyAccept(true, true, true, false, isField ?
-                (ClassFileVisitor)new NamedFieldVisitor(name, descriptor,
-                                  new MemberInfoClassFileAccessFilter(referencingClassFile, this)) :
-                (ClassFileVisitor)new NamedMethodVisitor(name, descriptor,
-                                  new MemberInfoClassFileAccessFilter(referencingClassFile, this)));
+            this.clazz  = null;
+            this.member = null;
+            clazz.hierarchyAccept(true, true, true, false, isField ?
+                (ClassVisitor)new NamedFieldVisitor(name, descriptor,
+                              new MemberClassAccessFilter(referencingClass, this)) :
+                (ClassVisitor)new NamedMethodVisitor(name, descriptor,
+                              new MemberClassAccessFilter(referencingClass, this)));
         }
         catch (MemberFoundException ex)
         {
+            // We've found the member we were looking for.
         }
 
-        return memberInfo;
+        return member;
     }
 
 
     /**
-     * Returns the corresponding class file of the most recently found class
+     * Returns the corresponding class of the most recently found class
      * member.
      */
-    public ClassFile correspondingClassFile()
+    public Clazz correspondingClass()
     {
-        return classFile;
+        return clazz;
     }
 
 
@@ -110,20 +112,21 @@ public class MemberFinder
      * Returns whether the given method is overridden anywhere down the class
      * hierarchy.
      */
-    public boolean isOverriden(ClassFile  classFile,
-                               MethodInfo methodInfo)
+    public boolean isOverriden(Clazz  clazz,
+                               Method method)
     {
-        String name       = methodInfo.getName(classFile);
-        String descriptor = methodInfo.getDescriptor(classFile);
+        String name       = method.getName(clazz);
+        String descriptor = method.getDescriptor(clazz);
 
         // Go looking for the method down the class hierarchy.
         try
         {
-            this.classFile  = null;
-            this.memberInfo = null;
-            classFile.hierarchyAccept(false, false, false, true,
-                                      new NamedMethodVisitor(name, descriptor,
-                                      new MemberInfoAccessFilter(0, ClassConstants.INTERNAL_ACC_PRIVATE, this)));
+            this.clazz  = null;
+            this.member = null;
+
+            clazz.hierarchyAccept(false, false, false, true,
+                new NamedMethodVisitor(name, descriptor,
+                new MemberAccessFilter(0, ClassConstants.INTERNAL_ACC_PRIVATE, this)));
         }
         catch (MemberFoundException ex)
         {
@@ -139,24 +142,24 @@ public class MemberFinder
      * Returns whether the given field is shadowed anywhere down the class
      * hierarchy.
      */
-    public boolean isShadowed(ClassFile classFile,
-                              FieldInfo fieldInfo)
+    public boolean isShadowed(Clazz clazz,
+                              Field field)
     {
-        String name       = fieldInfo.getName(classFile);
-        String descriptor = fieldInfo.getDescriptor(classFile);
+        String name       = field.getName(clazz);
+        String descriptor = field.getDescriptor(clazz);
 
-        // Go looking for the method down the class hierarchy.
+        // Go looking for the field down the class hierarchy.
         try
         {
-            this.classFile  = null;
-            this.memberInfo = null;
-            classFile.hierarchyAccept(false, false, false, true,
-                                      new NamedFieldVisitor(name, descriptor,
-                                      new MemberInfoAccessFilter(0, ClassConstants.INTERNAL_ACC_PRIVATE, this)));
+            this.clazz  = null;
+            this.member = null;
+            clazz.hierarchyAccept(false, false, false, true,
+                new NamedFieldVisitor(name, descriptor,
+                new MemberAccessFilter(0, ClassConstants.INTERNAL_ACC_PRIVATE, this)));
         }
         catch (MemberFoundException ex)
         {
-            // We've found an overriding method.
+            // We've found a shadowing field.
             return true;
         }
 
@@ -164,65 +167,30 @@ public class MemberFinder
     }
 
 
-//    // Implementations for ClassFileVisitor.
+//    // Implementations for ClassVisitor.
 //
-//    public void visitProgramClassFile(ProgramClassFile programClassFile)
+//    private void visitAnyClass(Clazz clazz)
 //    {
-//        visitClassFile(programClassFile);
-//    }
-//
-//
-//    public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
-//    {
-//        visitClassFile(libraryClassFile);
-//    }
-//
-//
-//    private void visitClassFile(ClassFile classFile)
-//    {
-//        if (memberInfo == null)
+//        if (member == null)
 //        {
-//            memberInfo = isField ?
-//                (MemberInfo)classFile.findField(name, descriptor) :
-//                (MemberInfo)classFile.findMethod(name, descriptor);
+//            member = isField ?
+//                (Member)clazz.findField(name, descriptor) :
+//                (Member)clazz.findMethod(name, descriptor);
 //
-//            if (memberInfo != null)
+//            if (member != null)
 //            {
-//                this.classFile = classFile;
+//                this.clazz = clazz;
 //            }
 //        }
 //    }
 
 
-    // Implementations for MemberInfoVisitor.
+    // Implementations for MemberVisitor.
 
-    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
+    public void visitAnyMember(Clazz clazz, Member member)
     {
-        visitMemberInfo(programClassFile, programFieldInfo);
-    }
-
-
-    public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
-    {
-        visitMemberInfo(programClassFile, programMethodInfo);
-    }
-
-
-    public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo)
-    {
-        visitMemberInfo(libraryClassFile, libraryFieldInfo);
-    }
-
-    public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo)
-    {
-        visitMemberInfo(libraryClassFile, libraryMethodInfo);
-    }
-
-
-    private void visitMemberInfo(ClassFile classFile, MemberInfo memberInfo)
-    {
-        this.classFile  = classFile;
-        this.memberInfo = memberInfo;
+        this.clazz  = clazz;
+        this.member = member;
 
         throw MEMBER_FOUND;
     }

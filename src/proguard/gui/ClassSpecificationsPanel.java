@@ -1,6 +1,6 @@
-/* $Id: ClassSpecificationsPanel.java,v 1.5.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,14 +20,14 @@
  */
 package proguard.gui;
 
-import proguard.*;
+import proguard.ClassSpecification;
 import proguard.classfile.util.ClassUtil;
 
-import java.awt.Component;
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
-
-import javax.swing.*;
+import java.util.List;
 
 
 /**
@@ -38,7 +38,7 @@ import javax.swing.*;
  */
 class ClassSpecificationsPanel extends ListPanel
 {
-    private ClassSpecificationDialog classSpecificationDialog;
+    protected final ClassSpecificationDialog classSpecificationDialog;
 
 
     public ClassSpecificationsPanel(JFrame owner, boolean fullKeepOptions)
@@ -61,28 +61,28 @@ class ClassSpecificationsPanel extends ListPanel
 
     protected void addAddButton()
     {
-        JButton addButton = new JButton(GUIResources.getMessage("add"));
+        JButton addButton = new JButton(msg("add"));
         addButton.addActionListener(new ActionListener()
         {
             public void actionPerformed(ActionEvent e)
             {
-                classSpecificationDialog.setClassSpecification(new ClassSpecification());
+                setClassSpecification(createClassSpecification());
                 int returnValue = classSpecificationDialog.showDialog();
                 if (returnValue == ClassSpecificationDialog.APPROVE_OPTION)
                 {
                     // Add the new element.
-                    addElement(classSpecificationDialog.getClassSpecification());
+                    addElement(getClassSpecification());
                 }
             }
         });
 
-        addButton(addButton);
+        addButton(tip(addButton, "addTip"));
     }
 
 
     protected void addEditButton()
     {
-        JButton editButton = new JButton(GUIResources.getMessage("edit"));
+        JButton editButton = new JButton(msg("edit"));
         editButton.addActionListener(new ActionListener()
         {
             public void actionPerformed(ActionEvent e)
@@ -90,18 +90,36 @@ class ClassSpecificationsPanel extends ListPanel
                 ClassSpecification selectedClassSpecification =
                     (ClassSpecification)list.getSelectedValue();
 
-                classSpecificationDialog.setClassSpecification(selectedClassSpecification);
+                setClassSpecification(selectedClassSpecification);
                 int returnValue = classSpecificationDialog.showDialog();
                 if (returnValue == ClassSpecificationDialog.APPROVE_OPTION)
                 {
                     // Replace the old element.
-                    setElementAt(classSpecificationDialog.getClassSpecification(),
+                    setElementAt(getClassSpecification(),
                                  list.getSelectedIndex());
                 }
             }
         });
 
-        addButton(editButton);
+        addButton(tip(editButton, "editTip"));
+    }
+
+
+    protected ClassSpecification createClassSpecification()
+    {
+        return new ClassSpecification();
+    }
+
+
+    protected void setClassSpecification(ClassSpecification classSpecification)
+    {
+        classSpecificationDialog.setClassSpecification(classSpecification);
+    }
+
+
+    protected ClassSpecification getClassSpecification()
+    {
+        return classSpecificationDialog.getClassSpecification();
     }
 
 
@@ -148,11 +166,33 @@ class ClassSpecificationsPanel extends ListPanel
 
 
     /**
+     * Attaches the tool tip from the GUI resources that corresponds to the
+     * given key, to the given component.
+     */
+    private static JComponent tip(JComponent component, String messageKey)
+    {
+        component.setToolTipText(msg(messageKey));
+
+        return component;
+    }
+
+
+    /**
+     * Returns the message from the GUI resources that corresponds to the given
+     * key.
+     */
+    private static String msg(String messageKey)
+    {
+         return GUIResources.getMessage(messageKey);
+    }
+
+
+    /**
      * This ListCellRenderer renders ClassSpecification objects.
      */
     private static class MyListCellRenderer implements ListCellRenderer
     {
-        JLabel label = new JLabel();
+        private final JLabel label = new JLabel();
 
 
         // Implementations for ListCellRenderer.
@@ -163,14 +203,14 @@ class ClassSpecificationsPanel extends ListPanel
                                                       boolean isSelected,
                                                       boolean cellHasFocus)
         {
-            ClassSpecification option = (ClassSpecification)value;
+            ClassSpecification classSpecification = (ClassSpecification)value;
 
-            String comments = option.comments;
+            String comments = classSpecification.comments;
 
-            label.setText(comments                 != null ? comments.trim()                                                                                        :
-                          option.className         != null ? (GUIResources.getMessage("class") + ' ' + ClassUtil.externalClassName(option.className))               :
-                          option.extendsClassName  != null ? (GUIResources.getMessage("extensionsOf") + ' ' + ClassUtil.externalClassName(option.extendsClassName)) :
-                                                             (GUIResources.getMessage("specificationNumber") + index));
+            label.setText(comments                            != null ? comments.trim()                                                                                        :
+                          classSpecification.className        != null ? (msg("class") + ' ' + ClassUtil.externalClassName(classSpecification.className))               :
+                          classSpecification.extendsClassName != null ? (msg("extensionsOf") + ' ' + ClassUtil.externalClassName(classSpecification.extendsClassName)) :
+                                                                        (msg("specificationNumber") + index));
 
             if (isSelected)
             {

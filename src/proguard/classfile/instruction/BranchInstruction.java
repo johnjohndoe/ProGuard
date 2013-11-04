@@ -1,6 +1,6 @@
-/* $Id: BranchInstruction.java,v 1.15.2.3 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -21,7 +21,8 @@
 package proguard.classfile.instruction;
 
 import proguard.classfile.*;
-import proguard.classfile.attribute.*;
+import proguard.classfile.attribute.CodeAttribute;
+import proguard.classfile.instruction.visitor.InstructionVisitor;
 
 /**
  * This interface describes an instruction that branches to a given offset in
@@ -63,6 +64,19 @@ public class BranchInstruction extends Instruction
 
     // Implementations for Instruction.
 
+    public byte canonicalOpcode()
+    {
+        // Remove the _w extension, if any.
+        switch (opcode)
+        {
+            case InstructionConstants.OP_GOTO_W: return InstructionConstants.OP_GOTO;
+
+            case InstructionConstants.OP_JSR_W: return InstructionConstants.OP_JSR;
+
+            default: return opcode;
+        }
+    }
+
     public Instruction shrink()
     {
         // Do we need an ordinary branch or a wide branch?
@@ -80,7 +94,7 @@ public class BranchInstruction extends Instruction
         }
         else
         {
-            // Can we replace the ordinary branch by a wide branch?
+            // Should we replace the ordinary branch by a wide branch?
             if      (opcode == InstructionConstants.OP_GOTO)
             {
                 opcode = InstructionConstants.OP_GOTO_W;
@@ -111,7 +125,7 @@ public class BranchInstruction extends Instruction
             throw new IllegalArgumentException("Instruction has invalid branch offset size ("+this.toString(offset)+")");
         }
 
-        writeValue(code, offset, branchOffset, branchOffsetSize());
+        writeSignedValue(code, offset, branchOffset, branchOffsetSize());
     }
 
 
@@ -121,15 +135,15 @@ public class BranchInstruction extends Instruction
     }
 
 
-    public void accept(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, InstructionVisitor instructionVisitor)
+    public void accept(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, InstructionVisitor instructionVisitor)
     {
-        instructionVisitor.visitBranchInstruction(classFile, methodInfo, codeAttrInfo, offset, this);
+        instructionVisitor.visitBranchInstruction(clazz, method, codeAttribute, offset, this);
     }
 
 
     public String toString(int offset)
     {
-        return "["+offset+"] "+getName()+" (offset="+branchOffset+", target="+(offset+branchOffset)+")";
+        return "["+offset+"] "+toString()+" (target="+(offset+branchOffset)+")";
     }
 
 
@@ -137,7 +151,7 @@ public class BranchInstruction extends Instruction
 
     public String toString()
     {
-        return getName()+" (offset="+branchOffset+")";
+        return getName()+" "+(branchOffset >= 0 ? "+" : "")+branchOffset;
     }
 
 

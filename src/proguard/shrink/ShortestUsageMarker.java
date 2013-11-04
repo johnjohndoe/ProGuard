@@ -1,6 +1,6 @@
-/* $Id: ShortestUsageMarker.java,v 1.3.2.2 2007/01/18 21:31:53 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -21,18 +21,15 @@
 package proguard.shrink;
 
 import proguard.classfile.*;
-import proguard.classfile.attribute.*;
-import proguard.classfile.attribute.annotation.*;
-import proguard.classfile.instruction.*;
 import proguard.classfile.visitor.*;
 
 
 /**
- * This ClassFileVisitor and MemberInfoVisitor recursively marks all classes
+ * This ClassVisitor and MemberVisitor recursively marks all classes
  * and class elements that are being used. For each element, it finds the
  * shortest chain of dependencies.
  *
- * @see ClassFileShrinker
+ * @see ClassShrinker
  *
  * @author Eric Lafortune
  */
@@ -46,53 +43,53 @@ public class ShortestUsageMarker extends UsageMarker
     private ShortestUsageMark currentUsageMark = INITIAL_MARK;
 
     // A utility object to check for recursive causes.
-    private MyRecursiveCauseChecker recursiveCauseChecker = new MyRecursiveCauseChecker();
+    private final MyRecursiveCauseChecker recursiveCauseChecker = new MyRecursiveCauseChecker();
 
 
     // Overriding implementations for UsageMarker.
 
-    protected void markProgramClassBody(ProgramClassFile programClassFile)
+    protected void markProgramClassBody(ProgramClass programClass)
     {
         ShortestUsageMark previousUsageMark = currentUsageMark;
 
-        currentUsageMark = new ShortestUsageMark(getShortestUsageMark(programClassFile),
+        currentUsageMark = new ShortestUsageMark(getShortestUsageMark(programClass),
                                                  "is extended by ",
                                                  10000,
-                                                 programClassFile);
+                                                 programClass);
 
-        super.markProgramClassBody(programClassFile);
+        super.markProgramClassBody(programClass);
 
         currentUsageMark = previousUsageMark;
     }
 
 
-    protected void markProgramMethodBody(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
+    protected void markProgramMethodBody(ProgramClass programClass, ProgramMethod programMethod)
     {
         ShortestUsageMark previousUsageMark = currentUsageMark;
 
-        currentUsageMark = new ShortestUsageMark(getShortestUsageMark(programMethodInfo),
+        currentUsageMark = new ShortestUsageMark(getShortestUsageMark(programMethod),
                                                  "is invoked by  ",
                                                  1,
-                                                 programClassFile,
-                                                 programMethodInfo);
+                                                 programClass,
+                                                 programMethod);
 
-        super.markProgramMethodBody(programClassFile, programMethodInfo);
+        super.markProgramMethodBody(programClass, programMethod);
 
         currentUsageMark = previousUsageMark;
     }
 
 
-    protected void markMethodHierarchy(ClassFile classFile, MethodInfo methodInfo)
+    protected void markMethodHierarchy(Clazz clazz, Method method)
     {
         ShortestUsageMark previousUsageMark = currentUsageMark;
 
-        currentUsageMark = new ShortestUsageMark(getShortestUsageMark(methodInfo),
+        currentUsageMark = new ShortestUsageMark(getShortestUsageMark(method),
                                                  "implements     ",
                                                  100,
-                                                 classFile,
-                                                 methodInfo);
+                                                 clazz,
+                                                 method);
 
-        super.markMethodHierarchy(classFile, methodInfo);
+        super.markMethodHierarchy(clazz, method);
 
         currentUsageMark = previousUsageMark;
     }
@@ -120,8 +117,8 @@ public class ShortestUsageMarker extends UsageMarker
     {
         Object visitorInfo = visitorAccepter.getVisitorInfo();
 
-        return //!(visitorAccepter instanceof ClassFile &&
-               //  isCausedBy(currentUsageMark, (ClassFile)visitorAccepter)) &&
+        return //!(visitorAccepter instanceof Clazz &&
+               //  isCausedBy(currentUsageMark, (Clazz)visitorAccepter)) &&
                (visitorInfo == null                           ||
                !(visitorInfo instanceof ShortestUsageMark)   ||
                !((ShortestUsageMark)visitorInfo).isCertain() ||
@@ -177,67 +174,67 @@ public class ShortestUsageMarker extends UsageMarker
     // Small utility methods.
 
     private boolean isCausedBy(ShortestUsageMark shortestUsageMark,
-                               ClassFile         classFile)
+                               Clazz             clazz)
     {
-        return recursiveCauseChecker.check(shortestUsageMark, classFile);
+        return recursiveCauseChecker.check(shortestUsageMark, clazz);
     }
 
 
-    private class MyRecursiveCauseChecker implements ClassFileVisitor, MemberInfoVisitor
+    private class MyRecursiveCauseChecker implements ClassVisitor, MemberVisitor
     {
-        private ClassFile checkClassFile;
-        private boolean   isRecursing;
+        private Clazz   checkClass;
+        private boolean isRecursing;
 
 
         public boolean check(ShortestUsageMark shortestUsageMark,
-                             ClassFile         classFile)
+                             Clazz             clazz)
         {
-            checkClassFile = classFile;
-            isRecursing    = false;
+            checkClass  = clazz;
+            isRecursing = false;
 
-            shortestUsageMark.acceptClassFileVisitor(this);
-            shortestUsageMark.acceptMethodInfoVisitor(this);
+            shortestUsageMark.acceptClassVisitor(this);
+            shortestUsageMark.acceptMethodVisitor(this);
 
             return isRecursing;
         }
 
-        // Implementations for ClassFileVisitor.
+        // Implementations for ClassVisitor.
 
-        public void visitProgramClassFile(ProgramClassFile programClassFile)
+        public void visitProgramClass(ProgramClass programClass)
         {
-            checkCause(programClassFile);
+            checkCause(programClass);
         }
 
 
-        public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
+        public void visitLibraryClass(LibraryClass libraryClass)
         {
-            checkCause(libraryClassFile);
+            checkCause(libraryClass);
         }
 
 
-        // Implementations for MemberInfoVisitor.
+        // Implementations for MemberVisitor.
 
-        public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
+        public void visitProgramField(ProgramClass programClass, ProgramField programField)
         {
-            checkCause(programFieldInfo);
+            checkCause(programField);
         }
 
 
-        public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
+        public void visitProgramMethod(ProgramClass programClass, ProgramMethod programMethod)
         {
-            checkCause(programMethodInfo);
+            checkCause(programMethod);
         }
 
 
-        public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo)
+        public void visitLibraryField(LibraryClass libraryClass, LibraryField libraryField)
         {
-             checkCause(libraryFieldInfo);
+             checkCause(libraryField);
        }
 
 
-        public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo)
+        public void visitLibraryMethod(LibraryClass libraryClass, LibraryMethod libraryMethod)
         {
-            checkCause(libraryMethodInfo);
+            checkCause(libraryMethod);
         }
 
 
@@ -250,13 +247,13 @@ public class ShortestUsageMarker extends UsageMarker
                 ShortestUsageMark shortestUsageMark = ShortestUsageMarker.this.getShortestUsageMark(visitorAccepter);
 
                 // Check the class of this mark, if any
-                isRecursing = shortestUsageMark.isCausedBy(checkClassFile);
+                isRecursing = shortestUsageMark.isCausedBy(checkClass);
 
                 // Check the causing class or method, if still necessary.
                 if (!isRecursing)
                 {
-                    shortestUsageMark.acceptClassFileVisitor(this);
-                    shortestUsageMark.acceptMethodInfoVisitor(this);
+                    shortestUsageMark.acceptClassVisitor(this);
+                    shortestUsageMark.acceptMethodVisitor(this);
                 }
             }
         }

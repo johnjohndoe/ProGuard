@@ -1,6 +1,6 @@
-/* $Id: DirectoryWriter.java,v 1.3.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,21 +20,21 @@
  */
 package proguard.io;
 
-import proguard.classfile.*;
+import proguard.classfile.ClassConstants;
 
 import java.io.*;
 
 
 /**
- * This DataEntryWriter writes sends data entries to individual files in a
- * given directory.
+ * This DataEntryWriter writes data entries to individual files in a given
+ * directory.
  *
  * @author Eric Lafortune
  */
 public class DirectoryWriter implements DataEntryWriter
 {
-    private File    baseFile;
-    private boolean isFile;
+    private final File    baseFile;
+    private final boolean isFile;
 
     private File         currentFile;
     private OutputStream currentOutputStream;

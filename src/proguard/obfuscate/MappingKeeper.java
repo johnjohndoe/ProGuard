@@ -1,6 +1,6 @@
-/* $Id: MappingKeeper.java,v 1.10.2.3 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -32,11 +32,11 @@ import proguard.classfile.util.*;
  */
 public class MappingKeeper implements MappingProcessor
 {
-    private ClassPool      classPool;
-    private WarningPrinter warningPrinter;
+    private final ClassPool      classPool;
+    private final WarningPrinter warningPrinter;
 
     // A field acting as a parameter.
-    private ClassFile classFile;
+    private Clazz clazz;
 
 
     /**
@@ -56,14 +56,14 @@ public class MappingKeeper implements MappingProcessor
 
     // Implementations for MappingProcessor.
 
-    public boolean processClassFileMapping(String className,
-                                           String newClassName)
+    public boolean processClassMapping(String className,
+                                       String newClassName)
     {
         // Find the class.
         String name = ClassUtil.internalClassName(className);
 
-        classFile = classPool.getClass(name);
-        if (classFile != null)
+        clazz = classPool.getClass(name);
+        if (clazz != null)
         {
             String newName = ClassUtil.internalClassName(newClassName);
 
@@ -71,7 +71,7 @@ public class MappingKeeper implements MappingProcessor
             // was set before.
             if (warningPrinter != null)
             {
-                String currentNewName = ClassFileObfuscator.newClassName(classFile);
+                String currentNewName = ClassObfuscator.newClassName(clazz);
                 if (currentNewName != null &&
                     !currentNewName.equals(newName))
                 {
@@ -84,8 +84,7 @@ public class MappingKeeper implements MappingProcessor
                 }
             }
 
-            // Make sure the mapping name will be kept.
-            ClassFileObfuscator.setNewClassName(classFile, newName);
+            ClassObfuscator.setNewClassName(clazz, newName);
 
             // The class members have to be kept as well.
             return true;
@@ -100,20 +99,20 @@ public class MappingKeeper implements MappingProcessor
                                     String fieldName,
                                     String newFieldName)
     {
-        if (classFile != null)
+        if (clazz != null)
         {
             // Find the field.
             String name       = fieldName;
             String descriptor = ClassUtil.internalType(fieldType);
 
-            FieldInfo fieldInfo = classFile.findField(name, descriptor);
-            if (fieldInfo != null)
+            Field field = clazz.findField(name, descriptor);
+            if (field != null)
             {
                 // Print out a warning if the mapping conflicts with a name that
                 // was set before.
                 if (warningPrinter != null)
                 {
-                    String currentNewName = MemberInfoObfuscator.newMemberName(fieldInfo);
+                    String currentNewName = MemberObfuscator.newMemberName(field);
                     if (currentNewName != null &&
                         !currentNewName.equals(newFieldName))
                     {
@@ -126,7 +125,7 @@ public class MappingKeeper implements MappingProcessor
                 }
 
                 // Make sure the mapping name will be kept.
-                MemberInfoObfuscator.setFixedNewMemberName(fieldInfo, newFieldName);
+                MemberObfuscator.setFixedNewMemberName(field, newFieldName);
             }
         }
     }
@@ -139,21 +138,21 @@ public class MappingKeeper implements MappingProcessor
                                      String methodNameAndArguments,
                                      String newMethodName)
     {
-        if (classFile != null)
+        if (clazz != null)
         {
             // Find the method.
             String name       = ClassUtil.externalMethodName(methodNameAndArguments);
             String descriptor = ClassUtil.internalMethodDescriptor(methodReturnType,
                                                                    methodNameAndArguments);
 
-            MethodInfo methodInfo = classFile.findMethod(name, descriptor);
-            if (methodInfo != null)
+            Method method = clazz.findMethod(name, descriptor);
+            if (method != null)
             {
                 // Print out a warning if the mapping conflicts with a name that
                 // was set before.
                 if (warningPrinter != null)
                 {
-                    String currentNewName = MemberInfoObfuscator.newMemberName(methodInfo);
+                    String currentNewName = MemberObfuscator.newMemberName(method);
                     if (currentNewName != null &&
                         !currentNewName.equals(newMethodName))
                     {
@@ -166,7 +165,7 @@ public class MappingKeeper implements MappingProcessor
                 }
 
                 // Make sure the mapping name will be kept.
-                MemberInfoObfuscator.setFixedNewMemberName(methodInfo, newMethodName);
+                MemberObfuscator.setFixedNewMemberName(method, newMethodName);
             }
         }
     }

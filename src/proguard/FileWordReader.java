@@ -1,6 +1,6 @@
-/* $Id: FileWordReader.java,v 1.12.2.2 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -31,7 +31,7 @@ import java.net.URL;
  */
 public class FileWordReader extends WordReader
 {
-    private String           name;
+    private final String           name;
     private LineNumberReader reader;
 
 
@@ -56,8 +56,8 @@ public class FileWordReader extends WordReader
     {
         super(null);
 
-        this.name    = url.toString();
-        this.reader  = new LineNumberReader(
+        this.name   = url.toString();
+        this.reader = new LineNumberReader(
                        new BufferedReader(
                        new InputStreamReader(url.openStream())));
     }

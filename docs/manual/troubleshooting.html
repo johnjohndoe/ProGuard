@@ -14,7 +14,9 @@ While preparing a configuration for processing your code, you may bump into a
 few problems. The following sections discuss some common issues and solutions:
 <ul>
 <li><a href="#processing">Problems while processing</a>
-<li><a href="#preverifying">Problems while preverifying for J2ME</a>
+<li><a href="#afterprocessing">Unexpected observations after processing</a>
+<li><a href="#preverifying">Problems while preverifying for Java Micro
+    Edition</a>
 <li><a href="#runtime">Problems at run-time</a>
 </ul>
 
@@ -24,7 +26,7 @@ few problems. The following sections discuss some common issues and solutions:
 ProGuard may print out some notes and non-fatal warnings:
 
 <dl>
-<dt><a name="dynamical"><b>Note: ... calls '(...)Class.forName(variable).newInstance()'</b></a></dt>
+<dt><a name="dynamicalclass"><b>Note: ... calls '(...)Class.forName(variable).newInstance()'</b></a></dt>
 
 <dd>ProGuard lists all class casts of dynamically created class instances,
     like "<code>(MyClass)Class.forName(variable).newInstance()</code>".
@@ -32,6 +34,15 @@ ProGuard may print out some notes and non-fatal warnings:
     with an option like "<code>-keep class MyClass</code>", or their
     implementations with an option like "<code>-keep class * implements
     MyClass</code>". You can switch off these notes by specifying the
+    <code>-dontnote</code> option.</dd>
+
+<dt><a name="dynamicalclassmember"><b>Note: ... accesses a field/method '...' dynamically</b></a></dt>
+
+<dd>ProGuard lists a number of constructs like
+    "<code>.getField("myField")</code>". Depending on your application, you
+    may need to figure out where the mentioned class members are defined and
+    keep them with an option like "<code>-keep class MyClass { MyFieldType
+    myField; }</code>". You can switch off these notes by specifying the
     <code>-dontnote</code> option.</dd>
 
 <dt><a name="duplicateclass"><b>Note: duplicate definition of program/library class</b></a></dt>
@@ -204,39 +215,11 @@ Should ProGuard crash while processing your application:
 </dl>
 <p>
 
-<a name="preverifying">&nbsp;</a>
-<h2>Problems while preverifying for J2ME</h2>
+<a name="afterprocessing">&nbsp;</a>
+<h2>Unexpected observations after processing</h2>
 
-If ProGuard seems to run fine, but the preverifier subsequently produces
-errors, it's usually for a single reason:
-<dl>
-
-<dt><a name="invalidclassexception1"><b>InvalidClassException</b>,
-    <b>class loading error</b>, or
-    <b>verification error</b></a></dt>
-
-<dd>If you get any such message from the preverifier, you are probably working
-    on a platform with a case-insensitive file system, such as Windows. The
-    <code>preverify</code> tool always unpacks the jars, so class files with
-    similar lower-case and upper-case names overwrite each other. You can use
-    ProGuard's <code>-dontusemixedcaseclassnames</code> option to work around
-    this problem.
-    <p>
-    If the above doesn't help, there is probably a bug in the optimization step
-    of ProGuard. Make sure you are using the latest version. You should be able
-    to work around the problem by using the <code>-dontoptimize</code> option.
-    You can check the bug database to see if it is a known problem (often with
-    a fix). Otherwise, please report it, preferably with the simplest example
-    on which you can find ProGuard to fail.</dd>
-
-</dl>
-<p>
-
-<a name="runtime">&nbsp;</a>
-<h2>Problems at run-time</h2>
-
-If ProGuard runs fine, but your processed application doesn't work, there
-might be several reasons:
+If ProGuard seems to run fine, but your processed code doesn't look right,
+there might be a couple of reasons:
 
 <dl>
 <dt><a name="disappearingclasses"><b>Disappearing classes</b></a></dt>
@@ -264,7 +247,11 @@ might be several reasons:
     some class is missing, ProGuard won't match the elements that you might be
     expecting. It may help to double-check for typos too. You can use the
     <code>-printseeds</code> option to see which elements are being kept
-    exactly.</dd>
+    exactly.
+    <p>
+    If you are using marker interfaces to keep other classes, the marker
+    interfaces themselves are probably being removed in the shrinking step.
+    You should therefore always explicitly keep any marker interfaces.</dd>
 
 <dt><a name="notobfuscated"><b>Variable names not being obfuscated</b></a></dt>
 
@@ -276,6 +263,47 @@ might be several reasons:
     <code>LocalVariableTable</code> or <code>LocalVariableTypeTable</code>
     attributes.</dd>
 
+</dl>
+
+<a name="preverifying">&nbsp;</a>
+<h2>Problems while preverifying for Java Micro Edition</h2>
+
+If ProGuard seems to run fine, but the external preverifier subsequently
+produces errors, it's usually for a single reason:
+
+<dl>
+<dt><a name="invalidclassexception1"><b>InvalidClassException</b>,
+    <b>class loading error</b>, or
+    <b>verification error</b></a></dt>
+
+<dd>If you get any such message from the preverifier, you are probably working
+    on a platform with a case-insensitive file system, such as Windows. The
+    <code>preverify</code> tool always unpacks the jars, so class files with
+    similar lower-case and upper-case names overwrite each other. You can use
+    ProGuard's <code>-dontusemixedcaseclassnames</code> option to work around
+    this problem.
+    <p>
+    If the above doesn't help, there is probably a bug in the optimization step
+    of ProGuard. Make sure you are using the latest version. You should be able
+    to work around the problem by using the <code>-dontoptimize</code> option.
+    You can check the bug database to see if it is a known problem (often with
+    a fix). Otherwise, please report it, preferably with the simplest example
+    on which you can find ProGuard to fail.</dd>
+
+</dl>
+
+Note that it is no longer necessary to use an external preverifier. With the
+<code>-microedition</code> option, ProGuard will preverify the class files for
+Java Micro Edition.
+<p>
+
+<a name="runtime">&nbsp;</a>
+<h2>Problems at run-time</h2>
+
+If ProGuard runs fine, but your processed application doesn't work, there
+might be several reasons:
+
+<dl>
 <dt><a name="stacktraces"><b>Stack traces without class names or line numbers</b></a></dt>
 
 <dd>If your stack traces don't contain any class names or lines numbers,
@@ -311,22 +339,33 @@ might be several reasons:
 
 <dd>Your processed code may be unable to find some resource files. ProGuard
     currently simply copies resource files over from the input jars to the
-    output jar. Their names and contents remain unchanged. If you've used the
-    <code>-defaultpackage</code> option, the package names of some classes may
-    have changed, and along with them, the directory in which they look for
-    their resource files. It's better not to use this option in these
-    circumstances. Also note that directory entries in jar files aren't copied
-    at all.</dd>
+    output jar. Their names and contents remain unchanged. If a class looks
+    for a resource file in its directory, this will fail if the package name
+    of the class has changed. You should then keep the class name, with the
+    <code>-keepnames</code> option. Also note that directory entries in jar
+    files aren't copied at all.</dd>
+
+<dt><a name="invalidjarfile"><b>Invalid or corrupt jarfile</b></a></dt>
+
+<dd>You are probably starting your application with the java option
+    <code>-jar</code> instead of the option <code>-classpath</code>. The java
+    virtual machine returns with this error message if your jar doesn't
+    contain a manifest file (<code>META-INF/MANIFEST.MF</code>), if the
+    manifest file doesn't specify a main class (<code>Main-Class:</code> ...),
+    or if the jar doesn't contain this main class. You should then make sure
+    that the input jar contains a valid manifest file to start with, that this
+    manifest file is the one that is copied (the first manifest file that is
+    encountered), and that the main class is kept in your configuration,</dd>
 
 <dt><a name="invalidclassexception2"><b>InvalidClassException</b>,
     <b>class loading error</b>, or
-    <b>verification error</b> (in J2ME)</a></dt>
+    <b>verification error</b> (in Java Micro Edition)</a></dt>
 
-<dd>If you get such an error in J2ME, you may have
-    forgotten to preverify your program jar <i>after</i> having processed it
-    with ProGuard.</dd>
+<dd>If you get such an error in Java Micro Edition, you may have forgotten to
+    specify the <code>-microedition</code> option, so the processed class
+    files are preverified properly.</dd>
 
-<dt><a name="failingmidlets"><b>Failing midlets in J2ME</b></a></dt>
+<dt><a name="failingmidlets"><b>Failing midlets</b> (in Java Micro Edition)</a></dt>
 
 <dd>If your midlet simply won't start, you might try using the
     <code>-dontusemixedcaseclassnames</code> option. Even if it has been
@@ -354,13 +393,13 @@ might be several reasons:
     enumeration type, as shown in the examples.</dd>
 
 <dt><a name="nosuchfieldormethod"><b>Error: No Such Field or Method</b>,
-    <b>Error verifying method</b> (in a J2ME emulator)</a></dt>
+    <b>Error verifying method</b> (in a Java Micro Edition emulator)</a></dt>
 
-<dd>If you get such a message in a Motorola or Sony Ericsson J2ME phone
-    emulator, it's because these emulators don't like packageless classes
-    and/or overloaded fields and methods. You can work around it by not using
-    the options <b>-defaultpackage ''</b> and <b>-overloadaggressively</b>. If
-    you're using the J2ME WTK plugin, you can adapt the configuration
+<dd>If you get such a message in a Motorola or Sony Ericsson phone emulator,
+    it's because these emulators don't like packageless classes and/or
+    overloaded fields and methods. You can work around it by not using the
+    options <b>-repackageclasses ''</b> and <b>-overloadaggressively</b>. If
+    you're using the JME WTK plugin, you can adapt the configuration
     <code>proguard/wtk/default.pro</code> that's inside the
     <code>proguard.jar</code>.</dd>
 
@@ -369,8 +408,7 @@ might be several reasons:
 <dd>You are probably compiling or running some code that has been obfuscated
     with the <code>-overloadaggressively</code> option. This option triggers a
     bug in <code>sun.tools.java.MethodSet.add</code> in Sun's JDK 1.2.2, which
-    is used for (dynamic) compilation. You should then not use this
-    option.</dd>
+    is used for (dynamic) compilation. You should then avoid this option.</dd>
 
 <dt><a name="classformaterror"><b>ClassFormatError: repetitive field name/signature</b></a></dt>
 

@@ -1,6 +1,6 @@
-/* $Id: Utf8UsageMarker.java,v 1.23.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -23,21 +23,28 @@ package proguard.obfuscate;
 import proguard.classfile.*;
 import proguard.classfile.attribute.*;
 import proguard.classfile.attribute.annotation.*;
+import proguard.classfile.attribute.annotation.visitor.*;
+import proguard.classfile.attribute.preverification.*;
+import proguard.classfile.attribute.visitor.*;
+import proguard.classfile.constant.*;
+import proguard.classfile.constant.visitor.ConstantVisitor;
+import proguard.classfile.util.SimplifiedVisitor;
 import proguard.classfile.visitor.*;
 
 /**
- * This ClassFileVisitor marks all UTF-8 constant pool entries that are
- * being used in the classes it visits.
+ * This ClassVisitor marks all UTF-8 constant pool entries that are
+ * being used in the program classes it visits.
  *
  * @see Utf8Shrinker
  *
  * @author Eric Lafortune
  */
 public class Utf8UsageMarker
-  implements ClassFileVisitor,
-             MemberInfoVisitor,
-             CpInfoVisitor,
-             AttrInfoVisitor,
+extends      SimplifiedVisitor
+implements   ClassVisitor,
+             MemberVisitor,
+             ConstantVisitor,
+             AttributeVisitor,
              InnerClassesInfoVisitor,
              LocalVariableInfoVisitor,
              LocalVariableTypeInfoVisitor,
@@ -48,342 +55,308 @@ public class Utf8UsageMarker
     private static final Object USED = new Object();
 
 
-    // Implementations for ClassFileVisitor.
+    // Implementations for ClassVisitor.
 
-    public void visitProgramClassFile(ProgramClassFile programClassFile)
+    public void visitProgramClass(ProgramClass programClass)
     {
         // Mark the UTF-8 entries referenced by the other constant pool entries.
-        programClassFile.constantPoolEntriesAccept(this);
+        programClass.constantPoolEntriesAccept(this);
 
         // Mark the UTF-8 entries referenced by the fields and methods.
-        programClassFile.fieldsAccept(this);
-        programClassFile.methodsAccept(this);
+        programClass.fieldsAccept(this);
+        programClass.methodsAccept(this);
 
         // Mark the UTF-8 entries referenced by the attributes.
-        programClassFile.attributesAccept(this);
+        programClass.attributesAccept(this);
     }
 
 
-    public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
-    {
-    }
+    // Implementations for MemberVisitor.
 
-
-    // Implementations for MemberInfoVisitor.
-
-    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
-    {
-        visitMemberInfo(programClassFile, programFieldInfo);
-    }
-
-
-    public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
-    {
-        visitMemberInfo(programClassFile, programMethodInfo);
-    }
-
-
-    private void visitMemberInfo(ProgramClassFile programClassFile, ProgramMemberInfo programMemberInfo)
+    public void visitProgramMember(ProgramClass programClass, ProgramMember programMember)
     {
         // Mark the name and descriptor UTF-8 entries.
-        markCpUtf8Entry(programClassFile, programMemberInfo.u2nameIndex);
-        markCpUtf8Entry(programClassFile, programMemberInfo.u2descriptorIndex);
+        markCpUtf8Entry(programClass, programMember.u2nameIndex);
+        markCpUtf8Entry(programClass, programMember.u2descriptorIndex);
 
         // Mark the UTF-8 entries referenced by the attributes.
-        programMemberInfo.attributesAccept(programClassFile, this);
+        programMember.attributesAccept(programClass, this);
     }
 
 
-    public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo) {}
-    public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo) {}
+    // Implementations for ConstantVisitor.
+
+    public void visitAnyConstant(Clazz clazz, Constant constant) {}
 
 
-    // Implementations for CpInfoVisitor.
-
-    public void visitIntegerCpInfo(ClassFile classFile, IntegerCpInfo integerCpInfo) {}
-    public void visitLongCpInfo(ClassFile classFile, LongCpInfo longCpInfo) {}
-    public void visitFloatCpInfo(ClassFile classFile, FloatCpInfo floatCpInfo) {}
-    public void visitDoubleCpInfo(ClassFile classFile, DoubleCpInfo doubleCpInfo) {}
-    public void visitUtf8CpInfo(ClassFile classFile, Utf8CpInfo utf8CpInfo) {}
-    public void visitFieldrefCpInfo(ClassFile classFile, FieldrefCpInfo fieldrefCpInfo) {}
-    public void visitInterfaceMethodrefCpInfo(ClassFile classFile, InterfaceMethodrefCpInfo interfaceMethodrefCpInfo) {}
-    public void visitMethodrefCpInfo(ClassFile classFile, MethodrefCpInfo methodrefCpInfo) {}
-
-
-    public void visitStringCpInfo(ClassFile classFile, StringCpInfo stringCpInfo)
+    public void visitStringConstant(Clazz clazz, StringConstant stringConstant)
     {
-        markCpUtf8Entry(classFile, stringCpInfo.u2stringIndex);
+        markCpUtf8Entry(clazz, stringConstant.u2stringIndex);
     }
 
 
-    public void visitClassCpInfo(ClassFile classFile, ClassCpInfo classCpInfo)
+    public void visitClassConstant(Clazz clazz, ClassConstant classConstant)
     {
-        markCpUtf8Entry(classFile, classCpInfo.u2nameIndex);
+        markCpUtf8Entry(clazz, classConstant.u2nameIndex);
     }
 
 
-    public void visitNameAndTypeCpInfo(ClassFile classFile, NameAndTypeCpInfo nameAndTypeCpInfo)
+    public void visitNameAndTypeConstant(Clazz clazz, NameAndTypeConstant nameAndTypeConstant)
     {
-        markCpUtf8Entry(classFile, nameAndTypeCpInfo.u2nameIndex);
-        markCpUtf8Entry(classFile, nameAndTypeCpInfo.u2descriptorIndex);
+        markCpUtf8Entry(clazz, nameAndTypeConstant.u2nameIndex);
+        markCpUtf8Entry(clazz, nameAndTypeConstant.u2descriptorIndex);
     }
 
 
-    // Implementations for AttrInfoVisitor.
+    // Implementations for AttributeVisitor.
 
-    public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo)
+    public void visitUnknownAttribute(Clazz clazz, UnknownAttribute unknownAttribute)
     {
         // This is the best we can do for unknown attributes.
-        markCpUtf8Entry(classFile, unknownAttrInfo.u2attrNameIndex);
+        markCpUtf8Entry(clazz, unknownAttribute.u2attributeNameIndex);
     }
 
 
-    public void visitInnerClassesAttrInfo(ClassFile classFile, InnerClassesAttrInfo innerClassesAttrInfo)
+    public void visitSourceFileAttribute(Clazz clazz, SourceFileAttribute sourceFileAttribute)
     {
-        markCpUtf8Entry(classFile, innerClassesAttrInfo.u2attrNameIndex);
+        markCpUtf8Entry(clazz, sourceFileAttribute.u2attributeNameIndex);
+
+        markCpUtf8Entry(clazz, sourceFileAttribute.u2sourceFileIndex);
+    }
+
+
+    public void visitSourceDirAttribute(Clazz clazz, SourceDirAttribute sourceDirAttribute)
+    {
+        markCpUtf8Entry(clazz, sourceDirAttribute.u2attributeNameIndex);
+
+        markCpUtf8Entry(clazz, sourceDirAttribute.u2sourceDirIndex);
+    }
+
+
+    public void visitInnerClassesAttribute(Clazz clazz, InnerClassesAttribute innerClassesAttribute)
+    {
+        markCpUtf8Entry(clazz, innerClassesAttribute.u2attributeNameIndex);
 
         // Mark the UTF-8 entries referenced by the inner classes.
-        innerClassesAttrInfo.innerClassEntriesAccept(classFile, this);
+        innerClassesAttribute.innerClassEntriesAccept(clazz, this);
     }
 
 
-    public void visitEnclosingMethodAttrInfo(ClassFile classFile, EnclosingMethodAttrInfo enclosingMethodAttrInfo)
+    public void visitEnclosingMethodAttribute(Clazz clazz, EnclosingMethodAttribute enclosingMethodAttribute)
     {
-        markCpUtf8Entry(classFile, enclosingMethodAttrInfo.u2attrNameIndex);
+        markCpUtf8Entry(clazz, enclosingMethodAttribute.u2attributeNameIndex);
 
         // These entries have already been marked in the constant pool.
-        //classFile.constantPoolEntryAccept(this, enclosingMethodAttrInfo.u2classIndex);
-        //classFile.constantPoolEntryAccept(this, enclosingMethodAttrInfo.u2nameAndTypeIndex);
+        //clazz.constantPoolEntryAccept(this, enclosingMethodAttribute.u2classIndex);
+        //clazz.constantPoolEntryAccept(this, enclosingMethodAttribute.u2nameAndTypeIndex);
     }
 
 
-    public void visitConstantValueAttrInfo(ClassFile classFile, FieldInfo fieldInfo, ConstantValueAttrInfo constantValueAttrInfo)
+    public void visitDeprecatedAttribute(Clazz clazz, DeprecatedAttribute deprecatedAttribute)
     {
-        markCpUtf8Entry(classFile, constantValueAttrInfo.u2attrNameIndex);
+        markCpUtf8Entry(clazz, deprecatedAttribute.u2attributeNameIndex);
     }
 
 
-    public void visitExceptionsAttrInfo(ClassFile classFile, MethodInfo methodInfo, ExceptionsAttrInfo exceptionsAttrInfo)
+    public void visitSyntheticAttribute(Clazz clazz, SyntheticAttribute syntheticAttribute)
     {
-        markCpUtf8Entry(classFile, exceptionsAttrInfo.u2attrNameIndex);
+        markCpUtf8Entry(clazz, syntheticAttribute.u2attributeNameIndex);
     }
 
 
-    public void visitCodeAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo)
+    public void visitSignatureAttribute(Clazz clazz, SignatureAttribute signatureAttribute)
     {
-        markCpUtf8Entry(classFile, codeAttrInfo.u2attrNameIndex);
+        markCpUtf8Entry(clazz, signatureAttribute.u2attributeNameIndex);
+
+        markCpUtf8Entry(clazz, signatureAttribute.u2signatureIndex);
+    }
+
+
+    public void visitConstantValueAttribute(Clazz clazz, Field field, ConstantValueAttribute constantValueAttribute)
+    {
+        markCpUtf8Entry(clazz, constantValueAttribute.u2attributeNameIndex);
+    }
+
+
+    public void visitExceptionsAttribute(Clazz clazz, Method method, ExceptionsAttribute exceptionsAttribute)
+    {
+        markCpUtf8Entry(clazz, exceptionsAttribute.u2attributeNameIndex);
+    }
+
+
+    public void visitCodeAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute)
+    {
+        markCpUtf8Entry(clazz, codeAttribute.u2attributeNameIndex);
 
         // Mark the UTF-8 entries referenced by the attributes.
-        codeAttrInfo.attributesAccept(classFile, methodInfo, this);
+        codeAttribute.attributesAccept(clazz, method, this);
     }
 
 
-    public void visitLineNumberTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LineNumberTableAttrInfo lineNumberTableAttrInfo)
+    public void visitStackMapAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, StackMapAttribute stackMapAttribute)
     {
-        markCpUtf8Entry(classFile, lineNumberTableAttrInfo.u2attrNameIndex);
+        markCpUtf8Entry(clazz, stackMapAttribute.u2attributeNameIndex);
     }
 
 
-    public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo)
+    public void visitStackMapTableAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, StackMapTableAttribute stackMapTableAttribute)
     {
-        markCpUtf8Entry(classFile, localVariableTableAttrInfo.u2attrNameIndex);
+        markCpUtf8Entry(clazz, stackMapTableAttribute.u2attributeNameIndex);
+    }
+
+
+    public void visitLineNumberTableAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, LineNumberTableAttribute lineNumberTableAttribute)
+    {
+        markCpUtf8Entry(clazz, lineNumberTableAttribute.u2attributeNameIndex);
+    }
+
+
+    public void visitLocalVariableTableAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableTableAttribute localVariableTableAttribute)
+    {
+        markCpUtf8Entry(clazz, localVariableTableAttribute.u2attributeNameIndex);
 
         // Mark the UTF-8 entries referenced by the local variables.
-        localVariableTableAttrInfo.localVariablesAccept(classFile, methodInfo, codeAttrInfo, this);
+        localVariableTableAttribute.localVariablesAccept(clazz, method, codeAttribute, this);
     }
 
 
-    public void visitLocalVariableTypeTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeTableAttrInfo localVariableTypeTableAttrInfo)
+    public void visitLocalVariableTypeTableAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableTypeTableAttribute localVariableTypeTableAttribute)
     {
-        markCpUtf8Entry(classFile, localVariableTypeTableAttrInfo.u2attrNameIndex);
+        markCpUtf8Entry(clazz, localVariableTypeTableAttribute.u2attributeNameIndex);
 
         // Mark the UTF-8 entries referenced by the local variable types.
-        localVariableTypeTableAttrInfo.localVariablesAccept(classFile, methodInfo, codeAttrInfo, this);
+        localVariableTypeTableAttribute.localVariablesAccept(clazz, method, codeAttribute, this);
     }
 
 
-    public void visitSourceFileAttrInfo(ClassFile classFile, SourceFileAttrInfo sourceFileAttrInfo)
+    public void visitAnyAnnotationsAttribute(Clazz clazz, AnnotationsAttribute annotationsAttribute)
     {
-        markCpUtf8Entry(classFile, sourceFileAttrInfo.u2attrNameIndex);
-
-        markCpUtf8Entry(classFile, sourceFileAttrInfo.u2sourceFileIndex);
-    }
-
-
-    public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo)
-    {
-        markCpUtf8Entry(classFile, sourceDirAttrInfo.u2attrNameIndex);
-
-        markCpUtf8Entry(classFile, sourceDirAttrInfo.u2sourceDirIndex);
-    }
-
-
-    public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo)
-    {
-        markCpUtf8Entry(classFile, deprecatedAttrInfo.u2attrNameIndex);
-    }
-
-
-    public void visitSyntheticAttrInfo(ClassFile classFile, SyntheticAttrInfo syntheticAttrInfo)
-    {
-        markCpUtf8Entry(classFile, syntheticAttrInfo.u2attrNameIndex);
-    }
-
-
-    public void visitSignatureAttrInfo(ClassFile classFile, SignatureAttrInfo signatureAttrInfo)
-    {
-        markCpUtf8Entry(classFile, signatureAttrInfo.u2attrNameIndex);
-
-        markCpUtf8Entry(classFile, signatureAttrInfo.u2signatureIndex);
-    }
-
-
-    public void visitRuntimeVisibleAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleAnnotationsAttrInfo runtimeVisibleAnnotationsAttrInfo)
-    {
-        markCpUtf8Entry(classFile, runtimeVisibleAnnotationsAttrInfo.u2attrNameIndex);
+        markCpUtf8Entry(clazz, annotationsAttribute.u2attributeNameIndex);
 
         // Mark the UTF-8 entries referenced by the annotations.
-        runtimeVisibleAnnotationsAttrInfo.annotationsAccept(classFile, this);
+        annotationsAttribute.annotationsAccept(clazz, this);
     }
 
 
-    public void visitRuntimeInvisibleAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleAnnotationsAttrInfo runtimeInvisibleAnnotationsAttrInfo)
+    public void visitAnyParameterAnnotationsAttribute(Clazz clazz, Method method, ParameterAnnotationsAttribute parameterAnnotationsAttribute)
     {
-        markCpUtf8Entry(classFile, runtimeInvisibleAnnotationsAttrInfo.u2attrNameIndex);
+        markCpUtf8Entry(clazz, parameterAnnotationsAttribute.u2attributeNameIndex);
 
         // Mark the UTF-8 entries referenced by the annotations.
-        runtimeInvisibleAnnotationsAttrInfo.annotationsAccept(classFile, this);
+        parameterAnnotationsAttribute.annotationsAccept(clazz, method, this);
     }
 
 
-    public void visitRuntimeVisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleParameterAnnotationsAttrInfo runtimeVisibleParameterAnnotationsAttrInfo)
+    public void visitAnnotationDefaultAttribute(Clazz clazz, Method method, AnnotationDefaultAttribute annotationDefaultAttribute)
     {
-        markCpUtf8Entry(classFile, runtimeVisibleParameterAnnotationsAttrInfo.u2attrNameIndex);
-
-        // Mark the UTF-8 entries referenced by the annotations.
-        runtimeVisibleParameterAnnotationsAttrInfo.annotationsAccept(classFile, this);
-    }
-
-
-    public void visitRuntimeInvisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleParameterAnnotationsAttrInfo runtimeInvisibleParameterAnnotationsAttrInfo)
-    {
-        markCpUtf8Entry(classFile, runtimeInvisibleParameterAnnotationsAttrInfo.u2attrNameIndex);
-
-        // Mark the UTF-8 entries referenced by the annotations.
-        runtimeInvisibleParameterAnnotationsAttrInfo.annotationsAccept(classFile, this);
-    }
-
-
-    public void visitAnnotationDefaultAttrInfo(ClassFile classFile, AnnotationDefaultAttrInfo annotationDefaultAttrInfo)
-    {
-        markCpUtf8Entry(classFile, annotationDefaultAttrInfo.u2attrNameIndex);
+        markCpUtf8Entry(clazz, annotationDefaultAttribute.u2attributeNameIndex);
 
         // Mark the UTF-8 entries referenced by the element value.
-        annotationDefaultAttrInfo.defaultValueAccept(classFile, this);
+        annotationDefaultAttribute.defaultValueAccept(clazz, this);
     }
 
 
     // Implementations for InnerClassesInfoVisitor.
 
-    public void visitInnerClassesInfo(ClassFile classFile, InnerClassesInfo innerClassesInfo)
+    public void visitInnerClassesInfo(Clazz clazz, InnerClassesInfo innerClassesInfo)
     {
         if (innerClassesInfo.u2innerNameIndex != 0)
         {
-            markCpUtf8Entry(classFile, innerClassesInfo.u2innerNameIndex);
+            markCpUtf8Entry(clazz, innerClassesInfo.u2innerNameIndex);
         }
     }
 
 
     // Implementations for LocalVariableInfoVisitor.
 
-    public void visitLocalVariableInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableInfo localVariableInfo)
+    public void visitLocalVariableInfo(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableInfo localVariableInfo)
     {
-        markCpUtf8Entry(classFile, localVariableInfo.u2nameIndex);
-        markCpUtf8Entry(classFile, localVariableInfo.u2descriptorIndex);
+        markCpUtf8Entry(clazz, localVariableInfo.u2nameIndex);
+        markCpUtf8Entry(clazz, localVariableInfo.u2descriptorIndex);
     }
 
 
     // Implementations for LocalVariableTypeInfoVisitor.
 
-    public void visitLocalVariableTypeInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeInfo localVariableTypeInfo)
+    public void visitLocalVariableTypeInfo(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableTypeInfo localVariableTypeInfo)
     {
-        markCpUtf8Entry(classFile, localVariableTypeInfo.u2nameIndex);
-        markCpUtf8Entry(classFile, localVariableTypeInfo.u2signatureIndex);
+        markCpUtf8Entry(clazz, localVariableTypeInfo.u2nameIndex);
+        markCpUtf8Entry(clazz, localVariableTypeInfo.u2signatureIndex);
     }
 
 
     // Implementations for AnnotationVisitor.
 
-    public void visitAnnotation(ClassFile classFile, Annotation annotation)
+    public void visitAnnotation(Clazz clazz, Annotation annotation)
     {
-        markCpUtf8Entry(classFile, annotation.u2typeIndex);
+        markCpUtf8Entry(clazz, annotation.u2typeIndex);
 
         // Mark the UTF-8 entries referenced by the element values.
-        annotation.elementValuesAccept(classFile, this);
+        annotation.elementValuesAccept(clazz, this);
     }
 
 
     // Implementations for ElementValueVisitor.
 
-    public void visitConstantElementValue(ClassFile classFile, Annotation annotation, ConstantElementValue constantElementValue)
+    public void visitConstantElementValue(Clazz clazz, Annotation annotation, ConstantElementValue constantElementValue)
     {
-        if (constantElementValue.u2elementName != 0)
+        if (constantElementValue.u2elementNameIndex != 0)
         {
-            markCpUtf8Entry(classFile, constantElementValue.u2elementName);
+            markCpUtf8Entry(clazz, constantElementValue.u2elementNameIndex);
         }
 
         // Only the string constant element value refers to a UTF-8 entry.
         if (constantElementValue.u1tag == ClassConstants.ELEMENT_VALUE_STRING_CONSTANT)
         {
-            markCpUtf8Entry(classFile, constantElementValue.u2constantValueIndex);
+            markCpUtf8Entry(clazz, constantElementValue.u2constantValueIndex);
         }
     }
 
 
-    public void visitEnumConstantElementValue(ClassFile classFile, Annotation annotation, EnumConstantElementValue enumConstantElementValue)
+    public void visitEnumConstantElementValue(Clazz clazz, Annotation annotation, EnumConstantElementValue enumConstantElementValue)
     {
-        if (enumConstantElementValue.u2elementName != 0)
+        if (enumConstantElementValue.u2elementNameIndex != 0)
         {
-            markCpUtf8Entry(classFile, enumConstantElementValue.u2elementName);
+            markCpUtf8Entry(clazz, enumConstantElementValue.u2elementNameIndex);
         }
 
-        markCpUtf8Entry(classFile, enumConstantElementValue.u2typeNameIndex);
-        markCpUtf8Entry(classFile, enumConstantElementValue.u2constantNameIndex);
+        markCpUtf8Entry(clazz, enumConstantElementValue.u2typeNameIndex);
+        markCpUtf8Entry(clazz, enumConstantElementValue.u2constantNameIndex);
     }
 
 
-    public void visitClassElementValue(ClassFile classFile, Annotation annotation, ClassElementValue classElementValue)
+    public void visitClassElementValue(Clazz clazz, Annotation annotation, ClassElementValue classElementValue)
     {
-        if (classElementValue.u2elementName != 0)
+        if (classElementValue.u2elementNameIndex != 0)
         {
-            markCpUtf8Entry(classFile, classElementValue.u2elementName);
+            markCpUtf8Entry(clazz, classElementValue.u2elementNameIndex);
         }
 
-        markCpUtf8Entry(classFile, classElementValue.u2classInfoIndex);
+        markCpUtf8Entry(clazz, classElementValue.u2classInfoIndex);
     }
 
 
-    public void visitAnnotationElementValue(ClassFile classFile, Annotation annotation, AnnotationElementValue annotationElementValue)
+    public void visitAnnotationElementValue(Clazz clazz, Annotation annotation, AnnotationElementValue annotationElementValue)
     {
-        if (annotationElementValue.u2elementName != 0)
+        if (annotationElementValue.u2elementNameIndex != 0)
         {
-            markCpUtf8Entry(classFile, annotationElementValue.u2elementName);
+            markCpUtf8Entry(clazz, annotationElementValue.u2elementNameIndex);
         }
 
         // Mark the UTF-8 entries referenced by the annotation.
-        annotationElementValue.annotationAccept(classFile, this);
+        annotationElementValue.annotationAccept(clazz, this);
     }
 
 
-    public void visitArrayElementValue(ClassFile classFile, Annotation annotation, ArrayElementValue arrayElementValue)
+    public void visitArrayElementValue(Clazz clazz, Annotation annotation, ArrayElementValue arrayElementValue)
     {
-        if (arrayElementValue.u2elementName != 0)
+        if (arrayElementValue.u2elementNameIndex != 0)
         {
-            markCpUtf8Entry(classFile, arrayElementValue.u2elementName);
+            markCpUtf8Entry(clazz, arrayElementValue.u2elementNameIndex);
         }
 
         // Mark the UTF-8 entries referenced by the element values.
-        arrayElementValue.elementValuesAccept(classFile, annotation, this);
+        arrayElementValue.elementValuesAccept(clazz, annotation, this);
     }
 
 
@@ -392,15 +365,15 @@ public class Utf8UsageMarker
     /**
      * Marks the given UTF-8 constant pool entry of the given class.
      */
-    private void markCpUtf8Entry(ClassFile classFile, int index)
+    private void markCpUtf8Entry(Clazz clazz, int index)
     {
-         markAsUsed((Utf8CpInfo)((ProgramClassFile)classFile).getCpEntry(index));
+         markAsUsed((Utf8Constant)((ProgramClass)clazz).getConstant(index));
     }
 
 
     /**
      * Marks the given VisitorAccepter as being used.
-     * In this context, the VisitorAccepter will be a Utf8CpInfo object.
+     * In this context, the VisitorAccepter will be a Utf8Constant object.
      */
     private static void markAsUsed(VisitorAccepter visitorAccepter)
     {
@@ -410,7 +383,7 @@ public class Utf8UsageMarker
 
     /**
      * Returns whether the given VisitorAccepter has been marked as being used.
-     * In this context, the VisitorAccepter will be a Utf8CpInfo object.
+     * In this context, the VisitorAccepter will be a Utf8Constant object.
      */
     static boolean isUsed(VisitorAccepter visitorAccepter)
     {

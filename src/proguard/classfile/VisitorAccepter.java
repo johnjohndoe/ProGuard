@@ -1,8 +1,7 @@
-/* $Id: VisitorAccepter.java,v 1.12.2.2 2007/01/18 21:31:51 eric Exp $
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
- *
- * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This library is free software; you can redistribute it and/or modify it

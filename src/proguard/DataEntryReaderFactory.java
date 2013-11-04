@@ -1,6 +1,6 @@
-/* $Id: DataEntryReaderFactory.java,v 1.3.2.2 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -39,7 +39,7 @@ public class DataEntryReaderFactory
      * @param messagePrefix  a prefix for messages that are printed out.
      * @param classPathEntry the input class path entry.
      * @param reader         a data entry reader to which the reading of actual
-     *                       class files and resource files can be delegated.
+     *                       classes and resource files can be delegated.
      * @return a DataEntryReader for reading the given class path entry.
      */
     public static DataEntryReader createDataEntryReader(String          messagePrefix,
@@ -47,10 +47,10 @@ public class DataEntryReaderFactory
                                                         DataEntryReader reader)
     {
         String entryName = classPathEntry.getName();
-        boolean isJar = entryName.endsWith(".jar");
-        boolean isWar = entryName.endsWith(".war");
-        boolean isEar = entryName.endsWith(".ear");
-        boolean isZip = entryName.endsWith(".zip");
+        boolean isJar = endsWithIgnoreCase(entryName, ".jar");
+        boolean isWar = endsWithIgnoreCase(entryName, ".war");
+        boolean isEar = endsWithIgnoreCase(entryName, ".ear");
+        boolean isZip = endsWithIgnoreCase(entryName, ".zip");
 
         String filter    = classPathEntry.getFilter();
         String jarFilter = classPathEntry.getJarFilter();
@@ -74,8 +74,10 @@ public class DataEntryReaderFactory
         // Add a filter, if specified.
         if (filter != null)
         {
-            reader = new FilteredDataEntryReader(new DataEntryNameFilter(new FileNameListMatcher(filter)),
-                                                 reader);
+            reader = new FilteredDataEntryReader(
+                     new DataEntryNameFilter(
+                     new ListParser(new FileNameParser()).parse(filter)),
+                         reader);
         }
 
         // Unzip any jars, if necessary.
@@ -123,7 +125,7 @@ public class DataEntryReaderFactory
             {
                 jarReader = new FilteredDataEntryReader(
                             new DataEntryNameFilter(
-                            new FileNameListMatcher(jarFilter)),
+                            new ListParser(new FileNameParser()).parse(jarFilter)),
                                 jarReader);
             }
 
@@ -134,5 +136,18 @@ public class DataEntryReaderFactory
                        jarReader,
                        reader);
         }
+    }
+
+
+    /**
+     * Returns whether the given string ends with the given suffix, ignoring its
+     * case.
+     */
+    private static boolean endsWithIgnoreCase(String string, String suffix)
+    {
+        int stringLength = string.length();
+        int suffixLength = suffix.length();
+
+        return string.regionMatches(true, stringLength - suffixLength, suffix, 0, suffixLength);
     }
 }

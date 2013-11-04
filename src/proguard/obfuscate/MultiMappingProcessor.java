@@ -1,6 +1,6 @@
-/* $Id: MultiMappingProcessor.java,v 1.3.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,10 +20,6 @@
  */
 package proguard.obfuscate;
 
-import proguard.classfile.*;
-import proguard.classfile.util.ClassUtil;
-
-
 /**
  * This MappingKeeper delegates all method calls to each MappingProcessor
  * in a given list.
@@ -32,7 +28,7 @@ import proguard.classfile.util.ClassUtil;
  */
 public class MultiMappingProcessor implements MappingProcessor
 {
-    private MappingProcessor[] mappingProcessors;
+    private final MappingProcessor[] mappingProcessors;
 
 
     /**
@@ -48,15 +44,15 @@ public class MultiMappingProcessor implements MappingProcessor
 
     // Implementations for MappingProcessor.
 
-    public boolean processClassFileMapping(String className,
-                                           String newClassName)
+    public boolean processClassMapping(String className,
+                                       String newClassName)
     {
         boolean result = false;
 
         for (int index = 0; index < mappingProcessors.length; index++)
         {
-            result |= mappingProcessors[index].processClassFileMapping(className,
-                                                                       newClassName);
+            result |= mappingProcessors[index].processClassMapping(className,
+                                                                   newClassName);
         }
 
         return result;

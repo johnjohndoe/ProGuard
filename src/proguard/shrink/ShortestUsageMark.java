@@ -1,6 +1,6 @@
-/* $Id: ShortestUsageMark.java,v 1.4.2.2 2007/01/18 21:31:53 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -29,17 +29,17 @@ import proguard.classfile.visitor.*;
  * other elements. It can be certain or preliminary. It also contains additional
  * information about the reasons why an element is being kept.
  *
- * @see ClassFileShrinker
+ * @see ClassShrinker
  *
  * @author Eric Lafortune
  */
-class ShortestUsageMark
+final class ShortestUsageMark
 {
-    private boolean    certain;
-    private String     reason;
-    private int        depth;
-    private ClassFile  classFile;
-    private MethodInfo methodInfo;
+    private final boolean certain;
+    private final String  reason;
+    private final int     depth;
+    private Clazz   clazz;
+    private Method  method;
 
 
     /**
@@ -58,14 +58,14 @@ class ShortestUsageMark
      * Creates a new certain ShortestUsageMark.
      * @param previousUsageMark the previous mark to which this one is linked.
      * @param reason            the reason for this mark.
-     * @param classFile         the class causing this mark.
+     * @param clazz             the class causing this mark.
      */
     public ShortestUsageMark(ShortestUsageMark previousUsageMark,
                              String            reason,
                              int               cost,
-                             ClassFile         classFile)
+                             Clazz             clazz)
     {
-        this(previousUsageMark, reason, cost, classFile, null);
+        this(previousUsageMark, reason, cost, clazz, null);
     }
 
 
@@ -73,21 +73,21 @@ class ShortestUsageMark
      * Creates a new certain ShortestUsageMark.
      * @param previousUsageMark the previous mark to which this one is linked.
      * @param reason            the reason for this mark.
-     * @param classFile         the class causing this mark.
-     * @param methodInfo        the method in the above class causing this mark.
+     * @param clazz             the class causing this mark.
+     * @param method            the method in the above class causing this mark.
      * @param cost              the added cost of following this path.
      */
     public ShortestUsageMark(ShortestUsageMark previousUsageMark,
                              String            reason,
                              int               cost,
-                             ClassFile         classFile,
-                             MethodInfo        methodInfo)
+                             Clazz             clazz,
+                             Method            method)
     {
-        this.certain    = true;
-        this.reason     = reason;
-        this.depth      = previousUsageMark.depth + cost;
-        this.classFile  = classFile;
-        this.methodInfo = methodInfo;
+        this.certain = true;
+        this.reason  = reason;
+        this.depth   = previousUsageMark.depth + cost;
+        this.clazz   = clazz;
+        this.method  = method;
     }
 
 
@@ -99,11 +99,11 @@ class ShortestUsageMark
     public ShortestUsageMark(ShortestUsageMark otherUsageMark,
                              boolean           certain)
     {
-        this.certain    = certain;
-        this.reason     = otherUsageMark.reason;
-        this.depth      = otherUsageMark.depth;
-        this.classFile  = otherUsageMark.classFile;
-        this.methodInfo = otherUsageMark.methodInfo;
+        this.certain = certain;
+        this.reason  = otherUsageMark.reason;
+        this.depth   = otherUsageMark.depth;
+        this.clazz   = otherUsageMark.clazz;
+        this.method  = otherUsageMark.method;
     }
 
 
@@ -136,37 +136,37 @@ class ShortestUsageMark
 
 
     /**
-     * Returns whether this is mark is caused by the given class file.
+     * Returns whether this is mark is caused by the given class.
      */
-    public boolean isCausedBy(ClassFile classFile)
+    public boolean isCausedBy(Clazz clazz)
     {
-        return classFile.equals(this.classFile);
+        return clazz.equals(this.clazz);
     }
 
 
     /**
-     * Applies the given class file visitor to this mark's class, if any,
+     * Applies the given class visitor to this mark's class, if any,
      * and if this mark doesn't have a method.
      */
-    public void acceptClassFileVisitor(ClassFileVisitor classFileVisitor)
+    public void acceptClassVisitor(ClassVisitor classVisitor)
     {
-        if (classFile  != null &&
-            methodInfo == null)
+        if (clazz  != null &&
+            method == null)
         {
-            classFile.accept(classFileVisitor);
+            clazz.accept(classVisitor);
         }
     }
 
 
     /**
-     * Applies the given class file visitor to this mark's method, if any.
+     * Applies the given class visitor to this mark's method, if any.
      */
-    public void acceptMethodInfoVisitor(MemberInfoVisitor memberInfoVisitor)
+    public void acceptMethodVisitor(MemberVisitor memberVisitor)
     {
-        if (classFile  != null &&
-            methodInfo != null)
+        if (clazz  != null &&
+            method != null)
         {
-            methodInfo.accept(classFile, memberInfoVisitor);
+            method.accept(clazz, memberVisitor);
         }
     }
 
@@ -177,7 +177,7 @@ class ShortestUsageMark
     {
         return "certain=" + certain + ", depth="+depth+": " +
                reason +
-               (classFile  != null ? classFile.getName() : "(none)") + ": " +
-               (methodInfo != null ? methodInfo.getName(classFile) : "(none)");
+               (clazz      != null ? clazz.getName() : "(none)") + ": " +
+               (method     != null ? method.getName(clazz) : "(none)");
     }
 }

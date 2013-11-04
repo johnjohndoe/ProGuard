@@ -1,6 +1,6 @@
-/* $Id: EvaluationSimplifier.java,v 1.4.2.20 2007/09/03 21:05:29 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -21,24 +21,25 @@
 package proguard.optimize.evaluation;
 
 import proguard.classfile.*;
+import proguard.classfile.visitor.ClassPrinter;
 import proguard.classfile.attribute.*;
-import proguard.classfile.attribute.annotation.*;
-import proguard.classfile.editor.*;
+import proguard.classfile.attribute.visitor.AttributeVisitor;
+import proguard.classfile.editor.CodeAttributeEditor;
 import proguard.classfile.instruction.*;
+import proguard.classfile.instruction.visitor.InstructionVisitor;
 import proguard.classfile.util.*;
-import proguard.classfile.visitor.*;
-import proguard.optimize.*;
-import proguard.optimize.evaluation.value.*;
+import proguard.evaluation.value.*;
+import proguard.optimize.info.SideEffectInstructionChecker;
 
 /**
- * This MemberInfoVisitor performs partial evaluation on the program methods
- * that it visits.
+ * This AttributeVisitor simplifies the code attributes that it visits, based
+ * on partial evaluation.
  *
  * @author Eric Lafortune
  */
 public class EvaluationSimplifier
-implements   MemberInfoVisitor,
-             AttrInfoVisitor,
+extends      SimplifiedVisitor
+implements   AttributeVisitor,
              InstructionVisitor
 {
     //*
@@ -51,22 +52,17 @@ implements   MemberInfoVisitor,
     private static boolean DEBUG          = true;
     //*/
 
-    private static final int INITIAL_CODE_LENGTH = 1024;
-    private static final int INITIAL_VALUE_COUNT = 32;
+    private final InstructionVisitor extraPushInstructionVisitor;
+    private final InstructionVisitor extraBranchInstructionVisitor;
+    private final InstructionVisitor extraDeletedInstructionVisitor;
+    private final InstructionVisitor extraAddedInstructionVisitor;
 
-    private InstructionVisitor extraPushInstructionVisitor;
-    private InstructionVisitor extraBranchInstructionVisitor;
-    private InstructionVisitor extraDeletedInstructionVisitor;
+    private final PartialEvaluator             partialEvaluator;
+    private final SideEffectInstructionChecker sideEffectInstructionChecker = new SideEffectInstructionChecker(true);
+    private final CodeAttributeEditor          codeAttributeEditor          = new CodeAttributeEditor();
 
-    private PartialEvaluator             partialEvaluator             = new PartialEvaluator();
-    private SideEffectInstructionChecker sideEffectInstructionChecker = new SideEffectInstructionChecker(true);
-    private ClassFileCleaner             classFileCleaner             = new ClassFileCleaner();
-    private CodeAttrInfoEditor           codeAttrInfoEditor           = new CodeAttrInfoEditor(INITIAL_CODE_LENGTH);
-
-
-    private Variables parameters   = new TracedVariables(INITIAL_VALUE_COUNT);
-    private boolean[] isNecessary  = new boolean[INITIAL_CODE_LENGTH];
-    private boolean[] isSimplified = new boolean[INITIAL_CODE_LENGTH];
+    private boolean[] isNecessary  = new boolean[ClassConstants.TYPICAL_CODE_LENGTH];
+    private boolean[] isSimplified = new boolean[ClassConstants.TYPICAL_CODE_LENGTH];
 
 
     /**
@@ -74,180 +70,140 @@ implements   MemberInfoVisitor,
      */
     public EvaluationSimplifier()
     {
-        this(null, null, null);
+        this(new PartialEvaluator(), null, null, null, null);
     }
 
 
     /**
      * Creates a new EvaluationSimplifier.
+     * @param partialEvaluator               the partial evaluator that will
+     *                                       execute the code and provide
+     *                                       information about the results.
      * @param extraPushInstructionVisitor    an optional extra visitor for all
      *                                       simplified push instructions.
      * @param extraBranchInstructionVisitor  an optional extra visitor for all
      *                                       simplified branch instructions.
      * @param extraDeletedInstructionVisitor an optional extra visitor for all
      *                                       deleted instructions.
+     * @param extraAddedInstructionVisitor   an optional extra visitor for all
+     *                                       added instructions.
      */
-    public EvaluationSimplifier(InstructionVisitor extraPushInstructionVisitor,
+    public EvaluationSimplifier(PartialEvaluator   partialEvaluator,
+                                InstructionVisitor extraPushInstructionVisitor,
                                 InstructionVisitor extraBranchInstructionVisitor,
-                                InstructionVisitor extraDeletedInstructionVisitor)
+                                InstructionVisitor extraDeletedInstructionVisitor,
+                                InstructionVisitor extraAddedInstructionVisitor)
     {
-        this.extraPushInstructionVisitor    = extraPushInstructionVisitor;
-        this.extraBranchInstructionVisitor  = extraBranchInstructionVisitor;
-        this.extraDeletedInstructionVisitor = extraDeletedInstructionVisitor;
+        this.partialEvaluator                      = partialEvaluator;
+        this.extraPushInstructionVisitor           = extraPushInstructionVisitor;
+        this.extraBranchInstructionVisitor         = extraBranchInstructionVisitor;
+        this.extraDeletedInstructionVisitor        = extraDeletedInstructionVisitor;
+        this.extraAddedInstructionVisitor          = extraAddedInstructionVisitor;
     }
 
 
-    // Implementations for MemberInfoVisitor.
+    // Implementations for AttributeVisitor.
 
-    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo) {}
+    public void visitAnyAttribute(Clazz clazz, Attribute attribute) {}
 
 
-    public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
+    public void visitCodeAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute)
     {
 //        DEBUG = DEBUG_ANALYSIS = DEBUG_RESULTS =
-//            programClassFile.getName().equals("abc/Def") &&
-//            programMethodInfo.getName(programClassFile).equals("abc");
+//            clazz.getName().equals("abc/Def") &&
+//            method.getName(clazz).equals("abc");
 
+        // TODO: Remove this when the partial evaluator has stabilized.
+        // Catch any unexpected exceptions from the actual visiting method.
         try
         {
             // Process the code.
-            programMethodInfo.attributesAccept(programClassFile, this);
+            visitCodeAttribute0(clazz, method, codeAttribute);
         }
         catch (RuntimeException ex)
         {
-            // TODO: Remove this when the partial evaluator has stabilized.
             System.err.println("Unexpected error while optimizing after partial evaluation:");
-            System.err.println("  ClassFile   = ["+programClassFile.getName()+"]");
-            System.err.println("  Method      = ["+programMethodInfo.getName(programClassFile)+programMethodInfo.getDescriptor(programClassFile)+"]");
+            System.err.println("  Class       = ["+clazz.getName()+"]");
+            System.err.println("  Method      = ["+method.getName(clazz)+method.getDescriptor(clazz)+"]");
+            System.err.println("  Exception   = ["+ex.getClass().getName()+"] ("+ex.getMessage()+")");
             System.err.println("Not optimizing this method");
 
             if (DEBUG)
             {
+                method.accept(clazz, new ClassPrinter());
+
                 throw ex;
             }
         }
     }
 
 
-    public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo) {}
-    public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo) {}
-
-
-    // Implementations for AttrInfoVisitor.
-
-    public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo) {}
-    public void visitInnerClassesAttrInfo(ClassFile classFile, InnerClassesAttrInfo innerClassesAttrInfo) {}
-    public void visitEnclosingMethodAttrInfo(ClassFile classFile, EnclosingMethodAttrInfo enclosingMethodAttrInfo) {}
-    public void visitConstantValueAttrInfo(ClassFile classFile, FieldInfo fieldInfo, ConstantValueAttrInfo constantValueAttrInfo) {}
-    public void visitExceptionsAttrInfo(ClassFile classFile, MethodInfo methodInfo, ExceptionsAttrInfo exceptionsAttrInfo) {}
-    public void visitLineNumberTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LineNumberTableAttrInfo lineNumberTableAttrInfo) {}
-    public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo) {}
-    public void visitLocalVariableTypeTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeTableAttrInfo localVariableTypeTableAttrInfo) {}
-    public void visitSourceFileAttrInfo(ClassFile classFile, SourceFileAttrInfo sourceFileAttrInfo) {}
-    public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo) {}
-    public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo) {}
-    public void visitSyntheticAttrInfo(ClassFile classFile, SyntheticAttrInfo syntheticAttrInfo) {}
-    public void visitSignatureAttrInfo(ClassFile classFile, SignatureAttrInfo signatureAttrInfo) {}
-    public void visitRuntimeVisibleAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleAnnotationsAttrInfo runtimeVisibleAnnotationsAttrInfo) {}
-    public void visitRuntimeInvisibleAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleAnnotationsAttrInfo runtimeInvisibleAnnotationsAttrInfo) {}
-    public void visitRuntimeVisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleParameterAnnotationsAttrInfo runtimeVisibleParameterAnnotationsAttrInfo) {}
-    public void visitRuntimeInvisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleParameterAnnotationsAttrInfo runtimeInvisibleParameterAnnotationsAttrInfo) {}
-    public void visitAnnotationDefaultAttrInfo(ClassFile classFile, AnnotationDefaultAttrInfo annotationDefaultAttrInfo) {}
-
-
-    public void visitCodeAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo)
+    public void visitCodeAttribute0(Clazz clazz, Method method, CodeAttribute codeAttribute)
     {
         if (DEBUG_RESULTS)
         {
             System.out.println();
-            System.out.println("Class "+ClassUtil.externalClassName(classFile.getName()));
-            System.out.println("Method "+ClassUtil.externalFullMethodDescription(classFile.getName(),
+            System.out.println("Class "+ClassUtil.externalClassName(clazz.getName()));
+            System.out.println("Method "+ClassUtil.externalFullMethodDescription(clazz.getName(),
                                                                                  0,
-                                                                                 methodInfo.getName(classFile),
-                                                                                 methodInfo.getDescriptor(classFile)));
-            System.out.println("  Params:"+parameters);
+                                                                                 method.getName(clazz),
+                                                                                 method.getDescriptor(clazz)));
         }
 
-        // Initialize the method parameters.
-        initializeParameters(classFile, methodInfo, codeAttrInfo);
-
         // Initialize the necessary array.
-        initializeNecessary(codeAttrInfo);
+        initializeNecessary(codeAttribute);
 
         // Evaluate the method.
-        Value returnValue = partialEvaluator.evaluate(classFile,
-                                                      methodInfo,
-                                                      codeAttrInfo,
-                                                      parameters);
+        partialEvaluator.visitCodeAttribute(clazz, method, codeAttribute);
 
-        // Clean up the visitor information in the exceptions right away.
-        codeAttrInfo.exceptionsAccept(classFile, methodInfo, classFileCleaner);
-
-        int codeLength = codeAttrInfo.u4codeLength;
+        int codeLength = codeAttribute.u4codeLength;
 
         // Reset the code changes.
-        codeAttrInfoEditor.reset(codeLength);
+        codeAttributeEditor.reset(codeLength);
 
         // Replace any instructions that can be simplified.
         if (DEBUG_ANALYSIS) System.out.println("Instruction simplification:");
 
-        codeAttrInfo.instructionsAccept(classFile, methodInfo, this);
+        codeAttribute.instructionsAccept(clazz, method, this);
 
         // Mark all essential instructions that have been encountered as used.
         if (DEBUG_ANALYSIS) System.out.println("Usage initialization: ");
 
-
         // The invocation of the "super" or "this" <init> method inside a
-        // constructor is always necessary, even if it is assumed to have no
-        // side effects.
-        boolean markSuperOrThis =
-            methodInfo.getName(classFile).equals(ClassConstants.INTERNAL_METHOD_NAME_INIT);
+        // constructor is always necessary.
+        int superInitializationOffset = partialEvaluator.superInitializationOffset();
+        if (superInitializationOffset != PartialEvaluator.NONE)
+        {
+            if (DEBUG_ANALYSIS) System.out.print(superInitializationOffset+"(super.<init>),");
 
-        int aload0Offset = 0;
+            isNecessary[superInitializationOffset] = true;
+        }
 
+        // Also mark infinite loops and instructions that cause side effects.
         int offset = 0;
         do
         {
             if (partialEvaluator.isTraced(offset))
             {
-                Instruction instruction = InstructionFactory.create(codeAttrInfo.code,
+                Instruction instruction = InstructionFactory.create(codeAttribute.code,
                                                                     offset);
 
-                // Remember the most recent aload0 instruction index.
-                if (instruction.opcode == InstructionConstants.OP_ALOAD_0)
-                {
-                    aload0Offset = offset;
-                }
-
-                // Mark that the instruction is necessary if it is the first
-                // invocation of the "super" or "this" <init> method
-                // inside a constructor.
-                else if (markSuperOrThis &&
-                         instruction.opcode == InstructionConstants.OP_INVOKESPECIAL &&
-                         partialEvaluator.stackProducerOffsets(offset).contains(aload0Offset))
-                {
-                    markSuperOrThis = false;
-
-                    if (DEBUG_ANALYSIS) System.out.print(offset+"(<init>),");
-                    isNecessary[offset] = true;
-                }
-
                 // Mark that the instruction is necessary if it is an infinite loop.
-                else if (instruction.opcode == InstructionConstants.OP_GOTO &&
-                         partialEvaluator.branchTargets(offset).instructionOffsetValue().instructionOffset(0) == offset)
+                if (instruction.opcode == InstructionConstants.OP_GOTO &&
+                    partialEvaluator.branchTargets(offset).instructionOffsetValue().instructionOffset(0) == offset)
                 {
                     if (DEBUG_ANALYSIS) System.out.print(offset+"(infinite loop),");
                     isNecessary[offset] = true;
                 }
 
                 // Mark that the instruction is necessary if it has side effects.
-                else if (sideEffectInstructionChecker.hasSideEffects(classFile,
-                                                                     methodInfo,
-                                                                     codeAttrInfo,
+                else if (sideEffectInstructionChecker.hasSideEffects(clazz,
+                                                                     method,
+                                                                     codeAttribute,
                                                                      offset,
                                                                      instruction))
                 {
-                    if (DEBUG_ANALYSIS) System.out.print(offset +",");
+                    if (DEBUG_ANALYSIS) System.out.print(offset+",");
                     isNecessary[offset] = true;
                 }
             }
@@ -340,7 +296,7 @@ implements   MemberInfoVisitor,
                 !isNecessary[offset] &&
                 !isSimplified[offset])
             {
-                Instruction instruction = InstructionFactory.create(codeAttrInfo.code,
+                Instruction instruction = InstructionFactory.create(codeAttribute.code,
                                                                     offset);
 
                 // Make sure any non-dup/swap instructions are always consistent
@@ -349,8 +305,8 @@ implements   MemberInfoVisitor,
                 {
                     // Make sure any popping instructions are always
                     // consistent after this offset.
-                    fixPopInstruction(classFile,
-                                      codeAttrInfo,
+                    fixPopInstruction(clazz,
+                                      codeAttribute,
                                       offset,
                                       instruction);
                 }
@@ -382,15 +338,15 @@ implements   MemberInfoVisitor,
             {
                 if (partialEvaluator.isTraced(offset))
                 {
-                    Instruction instruction = InstructionFactory.create(codeAttrInfo.code,
+                    Instruction instruction = InstructionFactory.create(codeAttribute.code,
                                                                         offset);
 
                     // Make sure any dup/swap instructions are always consistent
                     // at this offset.
                     if (isDupOrSwap(instruction))
                     {
-                        updated |= fixDupInstruction(classFile,
-                                                     codeAttrInfo,
+                        updated |= fixDupInstruction(clazz,
+                                                     codeAttribute,
                                                      offset,
                                                      instruction);
                     }
@@ -414,7 +370,7 @@ implements   MemberInfoVisitor,
                 isNecessary[offset] &&
                 !isSimplified[offset])
             {
-                Instruction instruction = InstructionFactory.create(codeAttrInfo.code,
+                Instruction instruction = InstructionFactory.create(codeAttribute.code,
                                                                     offset);
 
                 // Make sure any non-dup/swap instructions are always consistent
@@ -423,8 +379,8 @@ implements   MemberInfoVisitor,
                 {
                     // Make sure any pushing instructions are always
                     // consistent after this offset.
-                    fixPushInstruction(classFile,
-                                       codeAttrInfo,
+                    fixPushInstruction(clazz,
+                                       codeAttribute,
                                        offset,
                                        instruction);
                 }
@@ -453,14 +409,14 @@ implements   MemberInfoVisitor,
             if (//partialEvaluator.isTraced(offset) &&
                 isNecessary[offset]   &&
                 !isSimplified[offset] &&
-                !codeAttrInfoEditor.isModified(offset))
+                !codeAttributeEditor.isModified(offset))
             {
-                Instruction instruction = InstructionFactory.create(codeAttrInfo.code,
+                Instruction instruction = InstructionFactory.create(codeAttribute.code,
                                                                     offset);
                 if (isDupOrSwap(instruction))
                 {
-                    markConsumingPopInstructions(classFile,
-                                                 codeAttrInfo,
+                    markConsumingPopInstructions(clazz,
+                                                 codeAttribute,
                                                  offset,
                                                  instruction);
                 }
@@ -539,14 +495,14 @@ implements   MemberInfoVisitor,
             // Is it an initialization that hasn't been marked yet, and whose
             // corresponding variable is used for storage?
             int variableIndex = partialEvaluator.initializedVariable(offset);
-            if (variableIndex != PartialEvaluator.NONE &&
+            if (variableIndex >= 0 &&
                 !isNecessary[offset] &&
-                isVariableReferenced(codeAttrInfo, variableIndex))
+                isVariableReferenced(codeAttribute, offset+1, variableIndex))
             {
                 if (DEBUG_ANALYSIS) System.out.println(offset +",");
 
                 // Figure out what kind of initialization value has to be stored.
-                int pushComputationalType = partialEvaluator.variableValueAfter(offset, variableIndex).computationalType();
+                int pushComputationalType = partialEvaluator.getVariablesAfter(offset).getValue(variableIndex).computationalType();
                 increaseStackSize(offset, pushComputationalType, false);
             }
 
@@ -555,14 +511,13 @@ implements   MemberInfoVisitor,
         while (offset < codeLength);
         if (DEBUG_ANALYSIS) System.out.println();
 
-
         if (DEBUG_RESULTS)
         {
             System.out.println("Simplification results:");
             offset = 0;
             do
             {
-                Instruction instruction = InstructionFactory.create(codeAttrInfo.code,
+                Instruction instruction = InstructionFactory.create(codeAttribute.code,
                                                                     offset);
                 System.out.println((isNecessary[offset] ? " + " : " - ")+instruction.toString(offset));
 
@@ -580,10 +535,10 @@ implements   MemberInfoVisitor,
                         System.out.println("     has overall been using information from instructions setting stack: "+stackProducerOffsets);
                     }
 
-                    InstructionOffsetValue unusedProducerOffsets = partialEvaluator.unusedProducerOffsets(offset);
-                    if (unusedProducerOffsets.instructionOffsetCount() > 0)
+                    int initializationOffset = partialEvaluator.initializationOffset(offset);
+                    if (initializationOffset != PartialEvaluator.NONE)
                     {
-                        System.out.println("     no longer needs information from instructions setting stack: "+unusedProducerOffsets);
+                        System.out.println("     is to be initialized at ["+initializationOffset+"]");
                     }
 
                     InstructionOffsetValue branchTargets = partialEvaluator.branchTargets(offset);
@@ -592,19 +547,19 @@ implements   MemberInfoVisitor,
                         System.out.println("     has overall been branching to "+branchTargets);
                     }
 
-                    Instruction preInsertion = codeAttrInfoEditor.preInsertions[offset];
+                    Instruction preInsertion = codeAttributeEditor.preInsertions[offset];
                     if (preInsertion != null)
                     {
                         System.out.println("     is preceded by: "+preInsertion);
                     }
 
-                    Instruction replacement = codeAttrInfoEditor.replacements[offset];
+                    Instruction replacement = codeAttributeEditor.replacements[offset];
                     if (replacement != null)
                     {
                         System.out.println("     is replaced by: "+replacement);
                     }
 
-                    Instruction postInsertion = codeAttrInfoEditor.postInsertions[offset];
+                    Instruction postInsertion = codeAttributeEditor.postInsertions[offset];
                     if (postInsertion != null)
                     {
                         System.out.println("     is followed by: "+postInsertion);
@@ -623,20 +578,20 @@ implements   MemberInfoVisitor,
         offset = 0;
         do
         {
-            Instruction instruction = InstructionFactory.create(codeAttrInfo.code,
+            Instruction instruction = InstructionFactory.create(codeAttribute.code,
                                                                 offset);
             if (!isNecessary[offset])
             {
-                codeAttrInfoEditor.deleteInstruction(offset);
+                codeAttributeEditor.deleteInstruction(offset);
 
-                codeAttrInfoEditor.insertBeforeInstruction(offset, null);
-                codeAttrInfoEditor.replaceInstruction(offset, null);
-                codeAttrInfoEditor.insertAfterInstruction(offset, null);
+                codeAttributeEditor.insertBeforeInstruction(offset, null);
+                codeAttributeEditor.replaceInstruction(offset, null);
+                codeAttributeEditor.insertAfterInstruction(offset, null);
 
                 // Visit the instruction, if required.
                 if (extraDeletedInstructionVisitor != null)
                 {
-                    instruction.accept(classFile, methodInfo, codeAttrInfo, offset, extraDeletedInstructionVisitor);
+                    instruction.accept(clazz, method, codeAttribute, offset, extraDeletedInstructionVisitor);
                 }
             }
 
@@ -645,7 +600,7 @@ implements   MemberInfoVisitor,
         while (offset < codeLength);
 
         // Apply all accumulated changes to the code.
-        codeAttrInfoEditor.visitCodeAttrInfo(classFile, methodInfo, codeAttrInfo);
+        codeAttributeEditor.visitCodeAttribute(clazz, method, codeAttribute);
     }
 
 
@@ -667,6 +622,10 @@ implements   MemberInfoVisitor,
 
         // Mark all instructions whose stack values are used.
         nextOffset = markProducers(partialEvaluator.stackProducerOffsets(consumerOffset), nextOffset);
+
+        // Mark the initializer of the variables and stack entries used by the
+        // instruction.
+        nextOffset = markProducer(partialEvaluator.initializationOffset(consumerOffset), nextOffset);
 
         if (DEBUG_ANALYSIS) System.out.print(",");
 
@@ -693,22 +652,39 @@ implements   MemberInfoVisitor,
             {
                 // Has the other instruction been marked yet?
                 int offset = producerOffsets.instructionOffset(offsetIndex);
-                if (offset > PartialEvaluator.AT_METHOD_ENTRY &&
-                    !isNecessary[offset])
-                {
-                    if (DEBUG_ANALYSIS) System.out.print("["+offset +"]");
+                nextOffset = markProducer(offset, nextOffset);
+            }
+        }
 
-                    // Mark it.
-                    isNecessary[offset] = true;
+        return nextOffset;
+    }
 
-                    // Restart at this instruction if it has a higher offset.
-                    if (nextOffset < offset)
-                    {
-                        if (DEBUG_ANALYSIS) System.out.print("!");
 
-                        nextOffset = offset;
-                    }
-                }
+    /**
+     * Marks the instruction at the given offset.
+     * @param producerOffset the offsets of the producer to be marked.
+     * @param nextOffset     the offset of the instruction to be investigated
+     *                       next.
+     * @return the updated offset of the instruction to be investigated next.
+     *         It is always greater than or equal the original offset, because
+     *         instructions are investigated starting at the highest index.
+     */
+    private int markProducer(int producerOffset, int nextOffset)
+    {
+        if (producerOffset > PartialEvaluator.AT_METHOD_ENTRY &&
+            !isNecessary[producerOffset])
+        {
+            if (DEBUG_ANALYSIS) System.out.print("["+producerOffset +"]");
+
+            // Mark it.
+            isNecessary[producerOffset] = true;
+
+            // Restart at this instruction if it has a higher offset.
+            if (nextOffset < producerOffset)
+            {
+                if (DEBUG_ANALYSIS) System.out.print("!");
+
+                nextOffset = producerOffset;
             }
         }
 
@@ -920,8 +896,8 @@ implements   MemberInfoVisitor,
                 new BranchInstruction(InstructionConstants.OP_GOTO_W,
                                       branchTarget - branchOrigin).shrink();
 
-            codeAttrInfoEditor.replaceInstruction(branchOrigin,
-                                                  replacementInstruction);
+            codeAttributeEditor.replaceInstruction(branchOrigin,
+                                                   replacementInstruction);
 
             // Restart at the branch origin if it has a higher offset.
             if (nextOffset < branchOrigin)
@@ -955,16 +931,16 @@ implements   MemberInfoVisitor,
     /**
      * Marks the specified instruction if it is a required dup/swap instruction,
      * replacing it by an appropriate variant if necessary.
-     * @param classFile    the class that is being checked.
-     * @param codeAttrInfo the code that is being checked.
-     * @param dupOffset    the offset of the dup/swap instruction.
-     * @param instruction  the dup/swap instruction.
+     * @param clazz         the class that is being checked.
+     * @param codeAttribute the code that is being checked.
+     * @param dupOffset     the offset of the dup/swap instruction.
+     * @param instruction   the dup/swap instruction.
      * @return whether the instruction is updated.
      */
-    private boolean fixDupInstruction(ClassFile    classFile,
-                                      CodeAttrInfo codeAttrInfo,
-                                      int          dupOffset,
-                                      Instruction  instruction)
+    private boolean fixDupInstruction(Clazz         clazz,
+                                      CodeAttribute codeAttribute,
+                                      int           dupOffset,
+                                      Instruction   instruction)
     {
         byte    oldOpcode = instruction.opcode;
         byte    newOpcode = 0;
@@ -1190,14 +1166,14 @@ implements   MemberInfoVisitor,
             if      (newOpcode == 0)
             {
                 // Delete the instruction.
-                codeAttrInfoEditor.deleteInstruction(dupOffset);
+                codeAttributeEditor.deleteInstruction(dupOffset);
 
                 if (DEBUG_ANALYSIS) System.out.println("  Marking but deleting instruction "+instruction.toString(dupOffset));
             }
             else if (newOpcode == oldOpcode)
             {
                 // Leave the instruction unchanged.
-                codeAttrInfoEditor.undeleteInstruction(dupOffset);
+                codeAttributeEditor.undeleteInstruction(dupOffset);
 
                 if (DEBUG_ANALYSIS) System.out.println("  Marking unchanged instruction "+instruction.toString(dupOffset));
             }
@@ -1205,8 +1181,8 @@ implements   MemberInfoVisitor,
             {
                 // Replace the instruction.
                 Instruction replacementInstruction = new SimpleInstruction(newOpcode);
-                codeAttrInfoEditor.replaceInstruction(dupOffset,
-                                                      replacementInstruction);
+                codeAttributeEditor.replaceInstruction(dupOffset,
+                                                       replacementInstruction);
 
                 if (DEBUG_ANALYSIS) System.out.println("  Replacing instruction "+instruction.toString(dupOffset)+" by "+replacementInstruction.toString());
             }
@@ -1219,17 +1195,17 @@ implements   MemberInfoVisitor,
     /**
      * Pops the stack after the given necessary instruction, if it pushes an
      * entry that is not used at all.
-     * @param classFile      the class that is being checked.
-     * @param codeAttrInfo   the code that is being checked.
-     * @param producerOffset the offset of the instruction.
-     * @param instruction    the instruction.
+     * @param clazz          the class that is being checked.
+     * @param codeAttribute  the code that is being checked.
+     * @param producerOffset the offset of the producer instruction.
+     * @param instruction    the producer instruction.
      */
-    private void fixPushInstruction(ClassFile    classFile,
-                                    CodeAttrInfo codeAttrInfo,
-                                    int          producerOffset,
-                                    Instruction  instruction)
+    private void fixPushInstruction(Clazz         clazz,
+                                    CodeAttribute codeAttribute,
+                                    int           producerOffset,
+                                    Instruction   instruction)
     {
-        int pushCount = instruction.stackPushCount(classFile);
+        int pushCount = instruction.stackPushCount(clazz);
         if (pushCount > 0)
         {
             boolean stackEntryPresent0 = isStackEntryNecessaryAfter(producerOffset, 0, false);
@@ -1253,27 +1229,25 @@ implements   MemberInfoVisitor,
     /**
      * Pops the stack before the given unnecessary instruction, if the stack
      * contains an entry that it would have popped.
-     * @param classFile      the class that is being checked.
-     * @param codeAttrInfo   the code that is being checked.
+     * @param clazz          the class that is being checked.
+     * @param codeAttribute  the code that is being checked.
      * @param consumerOffset the offset of the consumer instruction.
-     * @param instruction    the instruction.
+     * @param instruction    the consumer instruction.
      */
-    private void fixPopInstruction(ClassFile    classFile,
-                                   CodeAttrInfo codeAttrInfo,
-                                   int          consumerOffset,
-                                   Instruction  instruction)
+    private void fixPopInstruction(Clazz         clazz,
+                                   CodeAttribute codeAttribute,
+                                   int           consumerOffset,
+                                   Instruction   instruction)
     {
-        int popCount = instruction.stackPopCount(classFile);
+        int popCount = instruction.stackPopCount(clazz);
         if (popCount > 0)
         {
             if (partialEvaluator.stackProducerOffsets(consumerOffset).contains(PartialEvaluator.AT_CATCH_ENTRY) ||
-                isStackEntryNecessaryBefore(consumerOffset, 0, false) &&
-                !isStackEntryNecessaryBefore(consumerOffset, 0, true))
+                (isStackEntryNecessaryBefore(consumerOffset, 0, false) &&
+                 !isStackEntryNecessaryBefore(consumerOffset, 0, true)))
             {
                 // Is the consumer a simple pop or pop2 instruction?
-                byte popOpcode = instruction.opcode;
-                if (popOpcode == InstructionConstants.OP_POP ||
-                    popOpcode == InstructionConstants.OP_POP2)
+                if (isPop(instruction))
                 {
                     if (DEBUG_ANALYSIS) System.out.println("  Popping value again at "+instruction.toString(consumerOffset));
 
@@ -1301,10 +1275,10 @@ implements   MemberInfoVisitor,
      * @param producerOffset      the offset of the producer instruction.
      * @param producerInstruction the producer instruction.
      */
-    private void markConsumingPopInstructions(ClassFile    clazz,
-                                              CodeAttrInfo codeAttribute,
-                                              int          producerOffset,
-                                              Instruction  producerInstruction)
+    private void markConsumingPopInstructions(Clazz         clazz,
+                                              CodeAttribute codeAttribute,
+                                              int           producerOffset,
+                                              Instruction   producerInstruction)
     {
         // Loop over all pushed stack entries.
         int pushCount = producerInstruction.stackPushCount(clazz);
@@ -1312,7 +1286,7 @@ implements   MemberInfoVisitor,
         {
             // Loop over all consumers of this entry.
             InstructionOffsetValue consumerOffsets =
-                partialEvaluator.stackTopConsumerOffsetsAfter(producerOffset, stackIndex);
+                partialEvaluator.getStackAfter(producerOffset).getTopConsumerValue(stackIndex).instructionOffsetValue();
 
             int consumerCount = consumerOffsets.instructionOffsetCount();
             for (int consumerIndex = 0; consumerIndex < consumerCount; consumerIndex++)
@@ -1362,18 +1336,28 @@ implements   MemberInfoVisitor,
             computationalType == Value.TYPE_FLOAT     ? InstructionConstants.OP_FCONST_0    :
             computationalType == Value.TYPE_DOUBLE    ? InstructionConstants.OP_DCONST_0    :
             computationalType == Value.TYPE_REFERENCE ? InstructionConstants.OP_ACONST_NULL :
-                                                        InstructionConstants.OP_NOP;
+            InstructionConstants.OP_NOP;
 
         Instruction replacementInstruction = new SimpleInstruction(replacementOpcode);
 
         // Insert the pop or push instruction.
-        codeAttrInfoEditor.insertBeforeInstruction(offset,
-                                                   replacementInstruction);
+        codeAttributeEditor.insertBeforeInstruction(offset,
+                                                    replacementInstruction);
+
+        if (extraAddedInstructionVisitor != null)
+        {
+            replacementInstruction.accept(null, null, null, offset, extraAddedInstructionVisitor);
+        }
 
         // Delete the original instruction if necessary.
         if (delete)
         {
-            codeAttrInfoEditor.deleteInstruction(offset);
+            codeAttributeEditor.deleteInstruction(offset);
+
+            if (extraDeletedInstructionVisitor != null)
+            {
+                extraDeletedInstructionVisitor.visitSimpleInstruction(null, null, null, offset, null);
+            }
         }
     }
 
@@ -1412,8 +1396,8 @@ implements   MemberInfoVisitor,
             Instruction replacementInstruction = new SimpleInstruction(replacementOpcode);
 
             // Insert the pop instruction.
-            codeAttrInfoEditor.replaceInstruction(offset,
-                                                  replacementInstruction);
+            codeAttributeEditor.replaceInstruction(offset,
+                                                   replacementInstruction);
 
             remainingPopCount -= count;
 
@@ -1435,10 +1419,15 @@ implements   MemberInfoVisitor,
             Instruction replacementInstruction = new SimpleInstruction(replacementOpcode);
 
             // Insert the pop instruction.
-            codeAttrInfoEditor.insertBeforeInstruction(offset,
-                                                       replacementInstruction);
+            codeAttributeEditor.insertBeforeInstruction(offset,
+                                                        replacementInstruction);
 
             remainingPopCount -= count;
+
+            if (extraAddedInstructionVisitor != null)
+            {
+                replacementInstruction.accept(null, null, null, offset, extraAddedInstructionVisitor);
+            }
         }
 
         if (after && remainingPopCount > 0)
@@ -1454,22 +1443,27 @@ implements   MemberInfoVisitor,
             Instruction replacementInstruction = new SimpleInstruction(replacementOpcode);
 
             // Insert the pop instruction.
-            codeAttrInfoEditor.insertAfterInstruction(offset,
-                                                      replacementInstruction);
+            codeAttributeEditor.insertAfterInstruction(offset,
+                                                       replacementInstruction);
 
             remainingPopCount -= count;
+
+            if (extraAddedInstructionVisitor != null)
+            {
+                replacementInstruction.accept(null, null, null, offset, extraAddedInstructionVisitor);
+            }
         }
 
         if (remainingPopCount > 0)
         {
-            throw new IllegalArgumentException("Unsupported stack size reduction ["+popCount+"] at ["+offset+"]");
+            throw new IllegalArgumentException("Unsupported stack size reduction ["+popCount+"]");
         }
     }
 
 
     // Implementations for InstructionVisitor.
 
-    public void visitSimpleInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, SimpleInstruction simpleInstruction)
+    public void visitSimpleInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, SimpleInstruction simpleInstruction)
     {
         if (partialEvaluator.isTraced(offset))
         {
@@ -1497,7 +1491,7 @@ implements   MemberInfoVisitor,
                 case InstructionConstants.OP_I2B:
                 case InstructionConstants.OP_I2C:
                 case InstructionConstants.OP_I2S:
-                    replaceIntegerPushInstruction(offset, simpleInstruction);
+                    replaceIntegerPushInstruction(offset);
                     break;
 
                 case InstructionConstants.OP_LALOAD:
@@ -1516,7 +1510,7 @@ implements   MemberInfoVisitor,
                 case InstructionConstants.OP_I2L:
                 case InstructionConstants.OP_F2L:
                 case InstructionConstants.OP_D2L:
-                    replaceLongPushInstruction(offset, simpleInstruction);
+                    replaceLongPushInstruction(offset);
                     break;
 
                 case InstructionConstants.OP_FALOAD:
@@ -1529,7 +1523,7 @@ implements   MemberInfoVisitor,
                 case InstructionConstants.OP_I2F:
                 case InstructionConstants.OP_L2F:
                 case InstructionConstants.OP_D2F:
-                    replaceFloatPushInstruction(offset, simpleInstruction);
+                    replaceFloatPushInstruction(offset);
                     break;
 
                 case InstructionConstants.OP_DALOAD:
@@ -1542,18 +1536,18 @@ implements   MemberInfoVisitor,
                 case InstructionConstants.OP_I2D:
                 case InstructionConstants.OP_L2D:
                 case InstructionConstants.OP_F2D:
-                    replaceDoublePushInstruction(offset, simpleInstruction);
+                    replaceDoublePushInstruction(offset);
                     break;
 
                 case InstructionConstants.OP_AALOAD:
-                    replaceReferencePushInstruction(offset, simpleInstruction);
+                    replaceReferencePushInstruction(offset);
                     break;
             }
         }
     }
 
 
-    public void visitVariableInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, VariableInstruction variableInstruction)
+    public void visitVariableInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, VariableInstruction variableInstruction)
     {
         if (partialEvaluator.isTraced(offset))
         {
@@ -1564,7 +1558,7 @@ implements   MemberInfoVisitor,
                 case InstructionConstants.OP_ILOAD_1:
                 case InstructionConstants.OP_ILOAD_2:
                 case InstructionConstants.OP_ILOAD_3:
-                    replaceIntegerPushInstruction(offset, variableInstruction);
+                    replaceIntegerPushInstruction(offset);
                     break;
 
                 case InstructionConstants.OP_LLOAD:
@@ -1572,7 +1566,7 @@ implements   MemberInfoVisitor,
                 case InstructionConstants.OP_LLOAD_1:
                 case InstructionConstants.OP_LLOAD_2:
                 case InstructionConstants.OP_LLOAD_3:
-                    replaceLongPushInstruction(offset, variableInstruction);
+                    replaceLongPushInstruction(offset);
                     break;
 
                 case InstructionConstants.OP_FLOAD:
@@ -1580,7 +1574,7 @@ implements   MemberInfoVisitor,
                 case InstructionConstants.OP_FLOAD_1:
                 case InstructionConstants.OP_FLOAD_2:
                 case InstructionConstants.OP_FLOAD_3:
-                    replaceFloatPushInstruction(offset, variableInstruction);
+                    replaceFloatPushInstruction(offset);
                     break;
 
                 case InstructionConstants.OP_DLOAD:
@@ -1588,7 +1582,7 @@ implements   MemberInfoVisitor,
                 case InstructionConstants.OP_DLOAD_1:
                 case InstructionConstants.OP_DLOAD_2:
                 case InstructionConstants.OP_DLOAD_3:
-                    replaceDoublePushInstruction(offset, variableInstruction);
+                    replaceDoublePushInstruction(offset);
                     break;
 
                 case InstructionConstants.OP_ALOAD:
@@ -1596,7 +1590,7 @@ implements   MemberInfoVisitor,
                 case InstructionConstants.OP_ALOAD_1:
                 case InstructionConstants.OP_ALOAD_2:
                 case InstructionConstants.OP_ALOAD_3:
-                    replaceReferencePushInstruction(offset, variableInstruction);
+                    replaceReferencePushInstruction(offset);
                     break;
 
             }
@@ -1604,13 +1598,41 @@ implements   MemberInfoVisitor,
     }
 
 
-    public void visitCpInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, CpInstruction cpInstruction)
+    public void visitConstantInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, ConstantInstruction constantInstruction)
     {
-        // Constant pool instructions are not simplified at this point.
+        if (partialEvaluator.isTraced(offset))
+        {
+            switch (constantInstruction.opcode)
+            {
+                case InstructionConstants.OP_GETSTATIC:
+                case InstructionConstants.OP_GETFIELD:
+                    replaceAnyPushInstruction(offset);
+                    break;
+
+                case InstructionConstants.OP_INVOKEVIRTUAL:
+                case InstructionConstants.OP_INVOKESPECIAL:
+                case InstructionConstants.OP_INVOKESTATIC:
+                case InstructionConstants.OP_INVOKEINTERFACE:
+                    if (constantInstruction.stackPushCount(clazz) > 0 &&
+                        !sideEffectInstructionChecker.hasSideEffects(clazz,
+                                                                     method,
+                                                                     codeAttribute,
+                                                                     offset,
+                                                                     constantInstruction))
+                    {
+                        replaceAnyPushInstruction(offset);
+                    }
+                    break;
+
+                case InstructionConstants.OP_CHECKCAST:
+                    replaceReferencePushInstruction(offset);
+                    break;
+            }
+        }
     }
 
 
-    public void visitBranchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, BranchInstruction branchInstruction)
+    public void visitBranchInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, BranchInstruction branchInstruction)
     {
         if (partialEvaluator.isTraced(offset))
         {
@@ -1634,33 +1656,17 @@ implements   MemberInfoVisitor,
     }
 
 
-    public void visitTableSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, TableSwitchInstruction tableSwitchInstruction)
+    public void visitAnySwitchInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, SwitchInstruction switchInstruction)
     {
         if (partialEvaluator.isTraced(offset))
         {
             // First try to simplify it to a simple branch.
-            replaceBranchInstruction(offset, tableSwitchInstruction);
+            replaceBranchInstruction(offset, switchInstruction);
 
             // Otherwise make sure all branch targets are valid.
             if (!isSimplified[offset])
             {
-                replaceTableSwitchInstruction(offset, tableSwitchInstruction);
-            }
-        }
-    }
-
-
-    public void visitLookUpSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, LookUpSwitchInstruction lookUpSwitchInstruction)
-    {
-        if (partialEvaluator.isTraced(offset))
-        {
-            // First try to simplify it to a simple branch.
-            replaceBranchInstruction(offset, lookUpSwitchInstruction);
-
-            // Otherwise make sure all branch targets are valid.
-            if (!isSimplified[offset])
-            {
-                replaceLookUpSwitchInstruction(offset, lookUpSwitchInstruction);
+                replaceSwitchInstruction(offset, switchInstruction);
             }
         }
     }
@@ -1669,12 +1675,43 @@ implements   MemberInfoVisitor,
     // Small utility methods.
 
     /**
-     * Replaces the given integer instruction by a simpler push instruction,
-     * if possible.
+     * Replaces the push instruction at the given offset by a simpler push
+     * instruction, if possible.
      */
-    private void replaceIntegerPushInstruction(int offset, Instruction instruction)
+    private void replaceAnyPushInstruction(int offset)
     {
-        Value pushedValue = partialEvaluator.stackTopValueAfter(offset, 0);
+        Value pushedValue = partialEvaluator.getStackAfter(offset).getTop(0);
+        if (pushedValue.isSpecific())
+        {
+            switch (pushedValue.computationalType())
+            {
+                case Value.TYPE_INTEGER:
+                    replaceIntegerPushInstruction(offset);
+                    break;
+                case Value.TYPE_LONG:
+                    replaceLongPushInstruction(offset);
+                    break;
+                case Value.TYPE_FLOAT:
+                    replaceFloatPushInstruction(offset);
+                    break;
+                case Value.TYPE_DOUBLE:
+                    replaceDoublePushInstruction(offset);
+                    break;
+                case Value.TYPE_REFERENCE:
+                    replaceReferencePushInstruction(offset);
+                    break;
+            }
+        }
+    }
+
+
+    /**
+     * Replaces the integer pushing instruction at the given offset by a simpler
+     * push instruction, if possible.
+     */
+    private void replaceIntegerPushInstruction(int offset)
+    {
+        Value pushedValue = partialEvaluator.getStackAfter(offset).getTop(0);
         if (pushedValue.isSpecific())
         {
             int value = pushedValue.integerValue().value();
@@ -1689,12 +1726,12 @@ implements   MemberInfoVisitor,
 
 
     /**
-     * Replaces the given long instruction by a simpler push instruction,
-     * if possible.
+     * Replaces the long pushing instruction at the given offset by a simpler
+     * push instruction, if possible.
      */
-    private void replaceLongPushInstruction(int offset, Instruction instruction)
+    private void replaceLongPushInstruction(int offset)
     {
-        Value pushedValue = partialEvaluator.stackTopValueAfter(offset, 0);
+        Value pushedValue = partialEvaluator.getStackAfter(offset).getTop(0);
         if (pushedValue.isSpecific())
         {
             long value = pushedValue.longValue().value();
@@ -1710,12 +1747,12 @@ implements   MemberInfoVisitor,
 
 
     /**
-     * Replaces the given float instruction by a simpler push instruction,
-     * if possible.
+     * Replaces the float pushing instruction at the given offset by a simpler
+     * push instruction, if possible.
      */
-    private void replaceFloatPushInstruction(int offset, Instruction instruction)
+    private void replaceFloatPushInstruction(int offset)
     {
-        Value pushedValue = partialEvaluator.stackTopValueAfter(offset, 0);
+        Value pushedValue = partialEvaluator.getStackAfter(offset).getTop(0);
         if (pushedValue.isSpecific())
         {
             float value = pushedValue.floatValue().value();
@@ -1732,12 +1769,12 @@ implements   MemberInfoVisitor,
 
 
     /**
-     * Replaces the given double instruction by a simpler push instruction,
-     * if possible.
+     * Replaces the double pushing instruction at the given offset by a simpler
+     * push instruction, if possible.
      */
-    private void replaceDoublePushInstruction(int offset, Instruction instruction)
+    private void replaceDoublePushInstruction(int offset)
     {
-        Value pushedValue = partialEvaluator.stackTopValueAfter(offset, 0);
+        Value pushedValue = partialEvaluator.getStackAfter(offset).getTop(0);
         if (pushedValue.isSpecific())
         {
             double value = pushedValue.doubleValue().value();
@@ -1753,21 +1790,18 @@ implements   MemberInfoVisitor,
 
 
     /**
-     * Replaces the given reference instruction by a simpler push instruction,
-     * if possible.
+     * Replaces the reference pushing instruction at the given offset by a
+     * simpler push instruction, if possible.
      */
-    private void replaceReferencePushInstruction(int offset, Instruction instruction)
+    private void replaceReferencePushInstruction(int offset)
     {
-        Value pushedValue = partialEvaluator.stackTopValueAfter(offset, 0);
+        Value pushedValue = partialEvaluator.getStackAfter(offset).getTop(0);
         if (pushedValue.isSpecific())
         {
-            ReferenceValue value = pushedValue.referenceValue();
-            if (value.isNull() == Value.ALWAYS)
-            {
-                replacePushInstruction(offset,
-                                       InstructionConstants.OP_ACONST_NULL,
-                                       0);
-            }
+            // A reference value can only be specific if it is null.
+            replacePushInstruction(offset,
+                                   InstructionConstants.OP_ACONST_NULL,
+                                   0);
         }
     }
 
@@ -1783,7 +1817,7 @@ implements   MemberInfoVisitor,
 
         if (DEBUG_ANALYSIS) System.out.println("  Replacing instruction at ["+offset+"] by "+replacementInstruction.toString());
 
-        codeAttrInfoEditor.replaceInstruction(offset, replacementInstruction);
+        codeAttributeEditor.replaceInstruction(offset, replacementInstruction);
 
         // Mark that the instruction has been simplified.
         isSimplified[offset] = true;
@@ -1805,7 +1839,7 @@ implements   MemberInfoVisitor,
     private void replaceJsrInstruction(int offset, BranchInstruction branchInstruction)
     {
         // Is the subroutine ever returning?
-        if (!isReturningFromSubroutine(offset + branchInstruction.branchOffset))
+        if (!partialEvaluator.isSubroutineReturning(offset + branchInstruction.branchOffset))
         {
             // All 'jsr' instructions to this subroutine can be replaced
             // by unconditional branch instructions.
@@ -1839,7 +1873,7 @@ implements   MemberInfoVisitor,
                 if (DEBUG_ANALYSIS) System.out.println("  Deleting zero branch instruction at ["+offset+"]");
 
                 // Delete the branch instruction.
-                codeAttrInfoEditor.deleteInstruction(offset);
+                codeAttributeEditor.deleteInstruction(offset);
             }
             else
             {
@@ -1850,8 +1884,8 @@ implements   MemberInfoVisitor,
 
                 if (DEBUG_ANALYSIS) System.out.println("  Replacing branch instruction at ["+offset+"] by "+replacementInstruction.toString());
 
-                codeAttrInfoEditor.replaceInstruction(offset,
-                                                      replacementInstruction);
+                codeAttributeEditor.replaceInstruction(offset,
+                                                       replacementInstruction);
 
                 // Mark that the instruction has been simplified.
                 isSimplified[offset] = true;
@@ -1869,10 +1903,9 @@ implements   MemberInfoVisitor,
 
 
     /**
-     * Makes sure all branch targets of the given table switch instruction are
-     * valid.
+     * Makes sure all branch targets of the given switch instruction are valid.
      */
-    private void replaceTableSwitchInstruction(int offset, TableSwitchInstruction tableSwitchInstruction)
+    private void replaceSwitchInstruction(int offset, SwitchInstruction switchInstruction)
     {
         // Get the actual branch targets.
         InstructionOffsetValue branchTargets = partialEvaluator.branchTargets(offset);
@@ -1880,118 +1913,38 @@ implements   MemberInfoVisitor,
             branchTargets.instructionOffset(branchTargets.instructionOffsetCount()-1) -
             offset;
 
-        boolean replace = false;
-
-        TableSwitchInstruction replacementInstruction =
-            new TableSwitchInstruction().copy(tableSwitchInstruction);
-
-        // Copy the jump offsets.
-        int   jumpOffsetCount = tableSwitchInstruction.jumpOffsetCount;
-        int[] jumpOffsets     = tableSwitchInstruction.jumpOffsets;
-        int[] newJumpOffsets  = new int[jumpOffsetCount];
-
-        System.arraycopy(jumpOffsets,  0, newJumpOffsets, 0, jumpOffsetCount);
-        replacementInstruction.jumpOffsets = newJumpOffsets;
+        Instruction replacementInstruction = null;
 
         // Check the jump offsets.
-        for (int index = 0; index < jumpOffsetCount; index++)
+        int[] jumpOffsets = switchInstruction.jumpOffsets;
+        for (int index = 0; index < jumpOffsets.length; index++)
         {
-            int jumpOffset = jumpOffsets[index];
-            if (!branchTargets.contains(offset + jumpOffset))
+            if (!branchTargets.contains(offset + jumpOffsets[index]))
             {
                 // Replace the unused offset.
-                newJumpOffsets[index] = defaultOffset;
+                jumpOffsets[index] = defaultOffset;
 
                 // Remember to replace the instruction.
-                replace = true;
+                replacementInstruction = switchInstruction;
             }
         }
 
         // Check the default offset.
-        if (!branchTargets.contains(offset + tableSwitchInstruction.defaultOffset))
+        if (!branchTargets.contains(offset + switchInstruction.defaultOffset))
         {
             // Replace the unused offset.
-            replacementInstruction.defaultOffset = defaultOffset;
+            switchInstruction.defaultOffset = defaultOffset;
 
             // Remember to replace the instruction.
-            replace = true;
+            replacementInstruction = switchInstruction;
         }
 
-        if (replace)
+        if (replacementInstruction != null)
         {
-            if (DEBUG_ANALYSIS) System.out.println("  Replacing table switch instruction at ["+offset+"] by "+replacementInstruction.toString());
+            if (DEBUG_ANALYSIS) System.out.println("  Replacing switch instruction at ["+offset+"] by "+replacementInstruction.toString());
 
-            codeAttrInfoEditor.replaceInstruction(offset,
-                                                  replacementInstruction);
-
-            // Visit the instruction, if required.
-            if (extraBranchInstructionVisitor != null)
-            {
-                // Note: we're not passing the right arguments for now,
-                // knowing that they aren't used anyway.
-                extraBranchInstructionVisitor.visitBranchInstruction(null, null, null, offset, null);
-            }
-        }
-    }
-
-
-    /**
-     * Makes sure all branch targets of the given lookup switch instruction are
-     * valid.
-     */
-    private void replaceLookUpSwitchInstruction(int offset, LookUpSwitchInstruction lookUpSwitchInstruction)
-    {
-        // Get the actual branch targets.
-        InstructionOffsetValue branchTargets = partialEvaluator.branchTargets(offset);
-        int defaultOffset =
-            branchTargets.instructionOffset(branchTargets.instructionOffsetCount()-1) -
-            offset;
-
-        boolean replace = false;
-
-        LookUpSwitchInstruction replacementInstruction =
-            new LookUpSwitchInstruction().copy(lookUpSwitchInstruction);
-
-        // Copy the jump offsets.
-        int   jumpOffsetCount = lookUpSwitchInstruction.jumpOffsetCount;
-        int[] jumpOffsets     = lookUpSwitchInstruction.jumpOffsets;
-        int[] newJumpOffsets  = new int[jumpOffsetCount];
-
-        System.arraycopy(jumpOffsets,  0, newJumpOffsets, 0, jumpOffsetCount);
-        replacementInstruction.jumpOffsets = newJumpOffsets;
-
-        // Check the jump offsets.
-        for (int index = 0; index < jumpOffsetCount; index++)
-        {
-            int jumpOffset = jumpOffsets[index];
-            if (!branchTargets.contains(offset + jumpOffset))
-            {
-                // Replace the unused offset.
-                newJumpOffsets[index] = defaultOffset;
-
-                // Remember to replace the instruction.
-                replace = true;
-            }
-        }
-
-        // Check the default offset.
-        if (!branchTargets.contains(offset + lookUpSwitchInstruction.defaultOffset))
-        {
-            // Replace the unused offset.
-            replacementInstruction.defaultOffset = defaultOffset;
-
-            // Remember to replace the instruction.
-            replace = true;
-        }
-
-        if (replace)
-        {
-            if (DEBUG_ANALYSIS) System.out.println("  Replacing lookup switch instruction at ["+offset+"] by "+replacementInstruction.toString());
-
-            replacementInstruction.jumpOffsets = newJumpOffsets;
-
-            codeAttrInfoEditor.replaceInstruction(offset,
-                                                  replacementInstruction);
+            codeAttributeEditor.replaceInstruction(offset,
+                                                   replacementInstruction);
 
             // Visit the instruction, if required.
             if (extraBranchInstructionVisitor != null)
@@ -2015,8 +1968,8 @@ implements   MemberInfoVisitor,
 
         if (DEBUG_ANALYSIS) System.out.println("  Inserting infinite loop at unreachable instruction at ["+offset+"]");
 
-        codeAttrInfoEditor.replaceInstruction(offset,
-                                              replacementInstruction);
+        codeAttributeEditor.replaceInstruction(offset,
+                                               replacementInstruction);
 
         // Mark that the instruction has been simplified.
         isNecessary[offset]  = true;
@@ -2049,58 +2002,11 @@ implements   MemberInfoVisitor,
 
 
     /**
-     * Initializes the parameter data structure.
-     */
-    private void initializeParameters(ClassFile    classFile,
-                                      MethodInfo   methodInfo,
-                                      CodeAttrInfo codeAttrInfo)
-    {
-        // Initialize the parameters.
-        boolean isStatic =
-            (methodInfo.getAccessFlags() & ClassConstants.INTERNAL_ACC_STATIC) != 0;
-
-        // Count the number of parameters, taking into account their Categories.
-        String parameterDescriptor = methodInfo.getDescriptor(classFile);
-        int parameterSize = (isStatic ? 0 : 1) +
-            ClassUtil.internalMethodParameterSize(parameterDescriptor);
-
-        // Reuse the existing parameters object, ensuring the right size.
-        parameters.reset(parameterSize);
-
-        // Go over the parameters again.
-        InternalTypeEnumeration internalTypeEnumeration =
-            new InternalTypeEnumeration(parameterDescriptor);
-
-        int parameterIndex = 0;
-
-        // Put the caller's reference in parameter 0.
-        if (!isStatic)
-        {
-            parameters.store(parameterIndex++, ReferenceValueFactory.create(false));
-        }
-
-        while (internalTypeEnumeration.hasMoreTypes())
-        {
-            String type = internalTypeEnumeration.nextType();
-
-            // Get a generic corresponding value.
-            Value value = ValueFactory.create(type);
-
-            // Store the value in the parameter.
-            parameters.store(parameterIndex, value);
-
-            // Increment the index according to the Category of the value.
-            parameterIndex += value.isCategory2() ? 2 : 1;
-        }
-    }
-
-
-    /**
      * Initializes the necessary data structure.
      */
-    private void initializeNecessary(CodeAttrInfo codeAttrInfo)
+    private void initializeNecessary(CodeAttribute codeAttribute)
     {
-        int codeLength = codeAttrInfo.u4codeLength;
+        int codeLength = codeAttribute.u4codeLength;
 
         // Create new arrays for storing information at each instruction offset.
         if (isNecessary.length < codeLength)
@@ -2120,52 +2026,28 @@ implements   MemberInfoVisitor,
 
 
     /**
-     * Returns whether the subroutine starting at the given offset is ever
-     * returning.
-     */
-    private boolean isReturningFromSubroutine(int subroutineOffset)
-    {
-        int subroutineEnd = partialEvaluator.subroutineEnd(subroutineOffset);
-        return partialEvaluator.isSubroutineEnd(subroutineEnd) &&
-               partialEvaluator.isTraced(subroutineEnd);
-    }
-
-
-    /**
      * Returns whether the given variable is ever referenced (stored) by an
      * instruction that is marked as necessary.
      */
-    private boolean isVariableReferenced(CodeAttrInfo codeAttrInfo,
-                                         int          variableIndex)
+    private boolean isVariableReferenced(CodeAttribute codeAttribute,
+                                         int           startOffset,
+                                         int           variableIndex)
     {
-        int codeLength = codeAttrInfo.u4codeLength;
+        int codeLength = codeAttribute.u4codeLength;
 
-        for (int offset = 0; offset < codeLength; offset++)
+        for (int offset = startOffset; offset < codeLength; offset++)
         {
             if (isNecessary[offset]   &&
                 !isSimplified[offset] &&
-                partialEvaluator.variableValueBefore(offset, variableIndex) != null &&
-                isVariableNecessaryBefore(offset, variableIndex, false))
+                isNecessary(partialEvaluator.getVariablesBefore(offset).getProducerValue(variableIndex),
+                            true,
+                            false))
             {
                 return true;
             }
         }
 
         return false;
-    }
-
-
-    /**
-     * Returns whether the given variable is present before execution of the
-     * instruction at the given offset.
-     */
-    private boolean isVariableNecessaryBefore(int     instructionOffset,
-                                              int     variableIndex,
-                                              boolean all)
-    {
-        return isNecessary(partialEvaluator.variableProducerOffsetsBefore(instructionOffset, variableIndex),
-                           true,
-                           all);
     }
 
 
@@ -2180,7 +2062,7 @@ implements   MemberInfoVisitor,
 
 //        if (present1 ^ present2)
 //        {
-//            throw new IllegalArgumentException("Can't handle partial use of dup2 instructions at ["+instructionOffset+"]");
+//            throw new IllegalArgumentException("Can't handle partial use of dup2 instructions");
 //        }
 
         return present1 || present2;
@@ -2195,7 +2077,7 @@ implements   MemberInfoVisitor,
                                                 int     stackIndex,
                                                 boolean all)
     {
-        return isNecessary(partialEvaluator.stackTopConsumerOffsetsBefore(instructionOffset, stackIndex),
+        return isNecessary(partialEvaluator.getStackBefore(instructionOffset).getTopConsumerValue(stackIndex),
                            false,
                            all);
     }
@@ -2209,9 +2091,23 @@ implements   MemberInfoVisitor,
                                                int     stackIndex,
                                                boolean all)
     {
-        return isNecessary(partialEvaluator.stackTopConsumerOffsetsAfter(instructionOffset, stackIndex),
+        return isNecessary(partialEvaluator.getStackAfter(instructionOffset).getTopConsumerValue(stackIndex),
                            false,
-                           all);
+                           all) ||
+               partialEvaluator.getStackAfter(instructionOffset).getTopProducerValue(stackIndex).instructionOffsetValue().contains(PartialEvaluator.AT_METHOD_ENTRY);
+    }
+
+
+    /**
+     * Returns whether any or all of the instructions at the given offsets are
+     * marked as necessary.
+     */
+    private boolean isNecessary(Value   offsets,
+                                boolean producer,
+                                boolean all)
+    {
+        return offsets != null &&
+               isNecessary(offsets.instructionOffsetValue(), producer, all);
     }
 
 
@@ -2229,8 +2125,8 @@ implements   MemberInfoVisitor,
         {
             int offset = offsets.instructionOffset(offsetIndex);
 
-            if (all ^ (offset == PartialEvaluator.AT_METHOD_ENTRY ||
-                       (isNecessary[offset] && (producer || !isSimplified[offset]))))
+            if (offset != PartialEvaluator.AT_METHOD_ENTRY &&
+                (all ^ (isNecessary[offset] && (producer || !isSimplified[offset]))))
             {
                 return !all;
             }

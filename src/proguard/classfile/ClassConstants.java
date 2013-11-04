@@ -1,8 +1,7 @@
-/* $Id: ClassConstants.java,v 1.25.2.2 2006/12/11 21:57:29 eric Exp $
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
- *
- * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
  * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This library is free software; you can redistribute it and/or modify it
@@ -21,11 +20,9 @@
  */
 package proguard.classfile;
 
-
 /**
- * Constants used in representing a Java class file (*.class).
+ * Constants used in representing a Java class (*.class).
  *
- * @author Mark Welsh
  * @author Eric Lafortune
  */
 public interface ClassConstants
@@ -34,10 +31,35 @@ public interface ClassConstants
 
     public static final int MAGIC = 0xCAFEBABE;
 
-    public static final int MAJOR_VERSION_MIN = 45;
-    public static final int MINOR_VERSION_MIN = 3;
-    public static final int MAJOR_VERSION_MAX = 50;
-    public static final int MINOR_VERSION_MAX = 0;
+    public static final int INTERNAL_CLASS_VERSION_1_0_MAJOR = 45;
+    public static final int INTERNAL_CLASS_VERSION_1_0_MINOR = 3;
+    public static final int INTERNAL_CLASS_VERSION_1_2_MAJOR = 46;
+    public static final int INTERNAL_CLASS_VERSION_1_2_MINOR = 0;
+    public static final int INTERNAL_CLASS_VERSION_1_3_MAJOR = 47;
+    public static final int INTERNAL_CLASS_VERSION_1_3_MINOR = 0;
+    public static final int INTERNAL_CLASS_VERSION_1_4_MAJOR = 48;
+    public static final int INTERNAL_CLASS_VERSION_1_4_MINOR = 0;
+    public static final int INTERNAL_CLASS_VERSION_1_5_MAJOR = 49;
+    public static final int INTERNAL_CLASS_VERSION_1_5_MINOR = 0;
+    public static final int INTERNAL_CLASS_VERSION_1_6_MAJOR = 50;
+    public static final int INTERNAL_CLASS_VERSION_1_6_MINOR = 0;
+
+    public static final int INTERNAL_CLASS_VERSION_1_0 = (INTERNAL_CLASS_VERSION_1_0_MAJOR << 16) | INTERNAL_CLASS_VERSION_1_0_MINOR;
+    public static final int INTERNAL_CLASS_VERSION_1_2 = (INTERNAL_CLASS_VERSION_1_2_MAJOR << 16) | INTERNAL_CLASS_VERSION_1_2_MINOR;
+    public static final int INTERNAL_CLASS_VERSION_1_3 = (INTERNAL_CLASS_VERSION_1_3_MAJOR << 16) | INTERNAL_CLASS_VERSION_1_3_MINOR;
+    public static final int INTERNAL_CLASS_VERSION_1_4 = (INTERNAL_CLASS_VERSION_1_4_MAJOR << 16) | INTERNAL_CLASS_VERSION_1_4_MINOR;
+    public static final int INTERNAL_CLASS_VERSION_1_5 = (INTERNAL_CLASS_VERSION_1_5_MAJOR << 16) | INTERNAL_CLASS_VERSION_1_5_MINOR;
+    public static final int INTERNAL_CLASS_VERSION_1_6 = (INTERNAL_CLASS_VERSION_1_6_MAJOR << 16) | INTERNAL_CLASS_VERSION_1_6_MINOR;
+
+    public static final String EXTERNAL_CLASS_VERSION_1_0       = "1.0";
+    public static final String EXTERNAL_CLASS_VERSION_1_1       = "1.1";
+    public static final String EXTERNAL_CLASS_VERSION_1_2       = "1.2";
+    public static final String EXTERNAL_CLASS_VERSION_1_3       = "1.3";
+    public static final String EXTERNAL_CLASS_VERSION_1_4       = "1.4";
+    public static final String EXTERNAL_CLASS_VERSION_1_5       = "1.5";
+    public static final String EXTERNAL_CLASS_VERSION_1_6       = "1.6";
+    public static final String EXTERNAL_CLASS_VERSION_1_5_ALIAS = "5";
+    public static final String EXTERNAL_CLASS_VERSION_1_6_ALIAS = "6";
 
     public static final int INTERNAL_ACC_PUBLIC       = 0x0001;
     public static final int INTERNAL_ACC_PRIVATE      = 0x0002;
@@ -114,19 +136,21 @@ public interface ClassConstants
     public static final int CONSTANT_InterfaceMethodref = 11;
     public static final int CONSTANT_NameAndType        = 12;
 
-    public static final String ATTR_InnerClasses                         = "InnerClasses";
-    public static final String ATTR_EnclosingMethod                      = "EnclosingMethod";
-    public static final String ATTR_ConstantValue                        = "ConstantValue";
-    public static final String ATTR_Exceptions                           = "Exceptions";
-    public static final String ATTR_Code                                 = "Code";
-    public static final String ATTR_LineNumberTable                      = "LineNumberTable";
-    public static final String ATTR_LocalVariableTable                   = "LocalVariableTable";
-    public static final String ATTR_LocalVariableTypeTable               = "LocalVariableTypeTable";
     public static final String ATTR_SourceFile                           = "SourceFile";
     public static final String ATTR_SourceDir                            = "SourceDir";
+    public static final String ATTR_InnerClasses                         = "InnerClasses";
+    public static final String ATTR_EnclosingMethod                      = "EnclosingMethod";
     public static final String ATTR_Deprecated                           = "Deprecated";
     public static final String ATTR_Synthetic                            = "Synthetic";
     public static final String ATTR_Signature                            = "Signature";
+    public static final String ATTR_ConstantValue                        = "ConstantValue";
+    public static final String ATTR_Exceptions                           = "Exceptions";
+    public static final String ATTR_Code                                 = "Code";
+    public static final String ATTR_StackMap                             = "StackMap";
+    public static final String ATTR_StackMapTable                        = "StackMapTable";
+    public static final String ATTR_LineNumberTable                      = "LineNumberTable";
+    public static final String ATTR_LocalVariableTable                   = "LocalVariableTable";
+    public static final String ATTR_LocalVariableTypeTable               = "LocalVariableTypeTable";
     public static final String ATTR_RuntimeVisibleAnnotations            = "RuntimeVisibleAnnotations";
     public static final String ATTR_RuntimeInvisibleAnnotations          = "RuntimeInvisibleAnnotations";
     public static final String ATTR_RuntimeVisibleParameterAnnotations   = "RuntimeVisibleParameterAnnotations";
@@ -141,21 +165,24 @@ public interface ClassConstants
 
     public static final char EXTERNAL_PACKAGE_SEPARATOR = '.';
     public static final char INTERNAL_PACKAGE_SEPARATOR = '/';
-
-    public static final char INTERNAL_SPECIAL_CHARACTER = '-';
+    public static final char INNER_CLASS_SEPARATOR      = '$';
+    public static final char SPECIAL_CLASS_CHARACTER    = '-';
+    public static final char SPECIAL_MEMBER_SEPARATOR   = '$';
 
     public static final char EXTERNAL_METHOD_ARGUMENTS_OPEN      = '(';
     public static final char EXTERNAL_METHOD_ARGUMENTS_CLOSE     = ')';
     public static final char EXTERNAL_METHOD_ARGUMENTS_SEPARATOR = ',';
 
-    public static final char INTERNAL_METHOD_ARGUMENTS_OPEN      = '(';
-    public static final char INTERNAL_METHOD_ARGUMENTS_CLOSE     = ')';
+    public static final char INTERNAL_METHOD_ARGUMENTS_OPEN  = '(';
+    public static final char INTERNAL_METHOD_ARGUMENTS_CLOSE = ')';
 
+    public static final String INTERNAL_PACKAGE_JAVA_LANG         = "java/lang/";
     public static final String INTERNAL_NAME_JAVA_LANG_OBJECT     = "java/lang/Object";
     public static final String INTERNAL_TYPE_JAVA_LANG_OBJECT     = "Ljava/lang/Object;";
-    public static final String INTERNAL_PACKAGE_JAVA_LANG         = "java/lang/";
-
     public static final String INTERNAL_NAME_JAVA_LANG_CLONEABLE  = "java/lang/Cloneable";
+    public static final String INTERNAL_NAME_JAVA_LANG_THROWABLE  = "java/lang/Throwable";
+    public static final String INTERNAL_NAME_JAVA_LANG_CLASS      = "java/lang/Class";
+    public static final String INTERNAL_NAME_JAVA_LANG_STRING     = "java/lang/String";
     public static final String INTERNAL_NAME_JAVA_IO_SERIALIZABLE = "java/io/Serializable";
 
     public static final String INTERNAL_METHOD_NAME_INIT   = "<init>";
@@ -164,42 +191,62 @@ public interface ClassConstants
     public static final String INTERNAL_METHOD_TYPE_CLINIT = "()V";
 
     public static final String INTERNAL_CLASS_NAME_JAVA_LANG_CLASS = "java/lang/Class";
-    public static final String INTERNAL_METHOD_NAME_CLASS_FOR_NAME = "forName";
-    public static final String INTERNAL_METHOD_TYPE_CLASS_FOR_NAME = "(Ljava/lang/String;)Ljava/lang/Class;";
 
-    public static final String INTERNAL_METHOD_NAME_DOT_CLASS       = "class$";
+    public static final String INTERNAL_METHOD_NAME_CLASS_FOR_NAME            = "forName";
+    public static final String INTERNAL_METHOD_TYPE_CLASS_FOR_NAME            = "(Ljava/lang/String;)Ljava/lang/Class;";
+    public static final String INTERNAL_METHOD_NAME_CLASS_GET_COMPONENT_TYPE  = "getComponentType";
+    public static final String INTERNAL_METHOD_TYPE_CLASS_GET_COMPONENT_TYPE  = "()Ljava/lang/Class;";
+    public static final String INTERNAL_METHOD_NAME_CLASS_GET_FIELD           = "getField";
+    public static final String INTERNAL_METHOD_TYPE_CLASS_GET_FIELD           = "(Ljava/lang/String;)Ljava/lang/reflect/Field;";
+    public static final String INTERNAL_METHOD_NAME_CLASS_GET_DECLARED_FIELD  = "getDeclaredField";
+    public static final String INTERNAL_METHOD_TYPE_CLASS_GET_DECLARED_FIELD  = "(Ljava/lang/String;)Ljava/lang/reflect/Field;";
+    public static final String INTERNAL_METHOD_NAME_CLASS_GET_METHOD          = "getMethod";
+    public static final String INTERNAL_METHOD_TYPE_CLASS_GET_METHOD          = "(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;";
+    public static final String INTERNAL_METHOD_NAME_CLASS_GET_DECLARED_METHOD = "getDeclaredMethod";
+    public static final String INTERNAL_METHOD_TYPE_CLASS_GET_DECLARED_METHOD = "(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;";
+
+    public static final String INTERNAL_METHOD_NAME_DOT_CLASS_JAVAC = "class$";
     public static final String INTERNAL_METHOD_TYPE_DOT_CLASS_JAVAC = "(Ljava/lang/String;)Ljava/lang/Class;";
+    public static final String INTERNAL_METHOD_NAME_DOT_CLASS_JIKES = "class";
     public static final String INTERNAL_METHOD_TYPE_DOT_CLASS_JIKES = "(Ljava/lang/String;Z)Ljava/lang/Class;";
 
     public static final String INTERNAL_METHOD_NAME_NEW_INSTANCE = "newInstance";
     public static final String INTERNAL_METHOD_TYPE_NEW_INSTANCE = "()Ljava/lang/Object;";
 
-    public static final char   INTERNAL_TYPE_VOID          = 'V';
-    public static final char   INTERNAL_TYPE_BOOLEAN       = 'Z';
-    public static final char   INTERNAL_TYPE_BYTE          = 'B';
-    public static final char   INTERNAL_TYPE_CHAR          = 'C';
-    public static final char   INTERNAL_TYPE_SHORT         = 'S';
-    public static final char   INTERNAL_TYPE_INT           = 'I';
-    public static final char   INTERNAL_TYPE_FLOAT         = 'F';
-    public static final char   INTERNAL_TYPE_LONG          = 'J';
-    public static final char   INTERNAL_TYPE_DOUBLE        = 'D';
-    public static final char   INTERNAL_TYPE_CLASS_START   = 'L';
-    public static final char   INTERNAL_TYPE_CLASS_END     = ';';
-    public static final char   INTERNAL_TYPE_ARRAY         = '[';
-    public static final char   INTERNAL_TYPE_GENERIC_START = '<';
-    public static final char   INTERNAL_TYPE_GENERIC_END   = '>';
+    public static final char INTERNAL_TYPE_VOID          = 'V';
+    public static final char INTERNAL_TYPE_BOOLEAN       = 'Z';
+    public static final char INTERNAL_TYPE_BYTE          = 'B';
+    public static final char INTERNAL_TYPE_CHAR          = 'C';
+    public static final char INTERNAL_TYPE_SHORT         = 'S';
+    public static final char INTERNAL_TYPE_INT           = 'I';
+    public static final char INTERNAL_TYPE_LONG          = 'J';
+    public static final char INTERNAL_TYPE_FLOAT         = 'F';
+    public static final char INTERNAL_TYPE_DOUBLE        = 'D';
+    public static final char INTERNAL_TYPE_CLASS_START   = 'L';
+    public static final char INTERNAL_TYPE_CLASS_END     = ';';
+    public static final char INTERNAL_TYPE_ARRAY         = '[';
+    public static final char INTERNAL_TYPE_GENERIC_START = '<';
+    public static final char INTERNAL_TYPE_GENERIC_END   = '>';
 
     public static final String EXTERNAL_TYPE_JAVA_LANG_OBJECT = "java.lang.Object";
     public static final String EXTERNAL_PACKAGE_JAVA_LANG     = "java.lang.";
 
-    public static final String EXTERNAL_TYPE_VOID        = "void";
-    public static final String EXTERNAL_TYPE_BOOLEAN     = "boolean";
-    public static final String EXTERNAL_TYPE_BYTE        = "byte";
-    public static final String EXTERNAL_TYPE_CHAR        = "char";
-    public static final String EXTERNAL_TYPE_SHORT       = "short";
-    public static final String EXTERNAL_TYPE_INT         = "int";
-    public static final String EXTERNAL_TYPE_FLOAT       = "float";
-    public static final String EXTERNAL_TYPE_LONG        = "long";
-    public static final String EXTERNAL_TYPE_DOUBLE      = "double";
-    public static final String EXTERNAL_TYPE_ARRAY       = "[]";
+    public static final String EXTERNAL_TYPE_VOID    = "void";
+    public static final String EXTERNAL_TYPE_BOOLEAN = "boolean";
+    public static final String EXTERNAL_TYPE_BYTE    = "byte";
+    public static final String EXTERNAL_TYPE_CHAR    = "char";
+    public static final String EXTERNAL_TYPE_SHORT   = "short";
+    public static final String EXTERNAL_TYPE_INT     = "int";
+    public static final String EXTERNAL_TYPE_FLOAT   = "float";
+    public static final String EXTERNAL_TYPE_LONG    = "long";
+    public static final String EXTERNAL_TYPE_DOUBLE  = "double";
+    public static final String EXTERNAL_TYPE_ARRAY   = "[]";
+
+    public static final int TYPICAL_CONSTANT_POOL_SIZE     = 256;
+    public static final int TYPICAL_FIELD_COUNT            = 64;
+    public static final int TYPICAL_METHOD_COUNT           = 64;
+    public static final int TYPICAL_CODE_LENGTH            = 1024;
+    public static final int TYPICAL_EXCEPTION_TABLE_LENGTH = 16;
+    public static final int TYPICAL_VARIABLES_SIZE         = 64;
+    public static final int TYPICAL_STACK_SIZE             = 16;
 }

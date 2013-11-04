@@ -1,6 +1,6 @@
-/* $Id: SingleImplementationFixer.java,v 1.3.2.2 2007/01/18 21:31:53 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -21,14 +21,15 @@
 package proguard.optimize.peephole;
 
 import proguard.classfile.*;
-import proguard.classfile.attribute.*;
-import proguard.classfile.attribute.annotation.*;
+import proguard.classfile.constant.*;
+import proguard.classfile.constant.visitor.ConstantVisitor;
 import proguard.classfile.editor.*;
-import proguard.classfile.editor.ConstantPoolEditor;
-import proguard.classfile.visitor.*;
+import proguard.classfile.util.SimplifiedVisitor;
+import proguard.classfile.visitor.ClassVisitor;
+import proguard.optimize.info.SingleImplementationMarker;
 
 /**
- * This ClassFileVisitor cleans up after the SingleImplementationInliner.
+ * This ClassVisitor cleans up after the SingleImplementationInliner.
  * It fixes the names of interfaces that have single implementations, lets
  * the implementations and fields references point to them again. This is
  * necessary after the SingleImplementationInliner has overzealously renamed
@@ -37,70 +38,57 @@ import proguard.classfile.visitor.*;
  * single implementations.
  *
  * @see SingleImplementationInliner
- * @see ClassFileReferenceFixer
+ * @see ClassReferenceFixer
  * @author Eric Lafortune
  */
 public class SingleImplementationFixer
-implements   ClassFileVisitor,
-             CpInfoVisitor
+extends      SimplifiedVisitor
+implements   ClassVisitor,
+             ConstantVisitor
 {
-    private ConstantPoolEditor constantPoolEditor = new ConstantPoolEditor();
+    private final ConstantPoolEditor constantPoolEditor = new ConstantPoolEditor();
 
 
-    // Implementations for ClassFileVisitor.
+    // Implementations for ClassVisitor.
 
-    public void visitProgramClassFile(ProgramClassFile programClassFile)
+    public void visitProgramClass(ProgramClass programClass)
     {
         // Is this an interface with a single implementation?
-        ClassFile singleImplementationClassFile =
-            SingleImplementationMarker.singleImplementation(programClassFile);
+        Clazz singleImplementationClass =
+            SingleImplementationMarker.singleImplementation(programClass);
 
-        if (singleImplementationClassFile != null)
+        if (singleImplementationClass != null)
         {
             // Fix the reference to its own name.
-            fixThisClassReference(programClassFile);
+            fixThisClassReference(programClass);
 
             // Fix the reference from its single interface or implementation.
-            fixInterfaceReference((ProgramClassFile)programClassFile.subClasses[0],
-                                  programClassFile);
+            fixInterfaceReference((ProgramClass)programClass.subClasses[0],
+                                  programClass);
         }
 
         // Fix the field references in the constant pool.
-        programClassFile.constantPoolEntriesAccept(this);
+        programClass.constantPoolEntriesAccept(this);
     }
 
 
-    public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
+    // Implementations for ConstantVisitor.
+
+    public void visitAnyConstant(Clazz clazz, Constant constant) {}
+
+
+    public void visitFieldrefConstant(Clazz clazz, FieldrefConstant fieldrefConstant)
     {
-    }
-
-
-    // Implementations for CpInfoVisitor.
-
-    public void visitIntegerCpInfo(ClassFile classFile, IntegerCpInfo integerCpInfo) {}
-    public void visitLongCpInfo(ClassFile classFile, LongCpInfo longCpInfo) {}
-    public void visitFloatCpInfo(ClassFile classFile, FloatCpInfo floatCpInfo) {}
-    public void visitDoubleCpInfo(ClassFile classFile, DoubleCpInfo doubleCpInfo) {}
-    public void visitStringCpInfo(ClassFile classFile, StringCpInfo stringCpInfo) {}
-    public void visitUtf8CpInfo(ClassFile classFile, Utf8CpInfo utf8CpInfo) {}
-    public void visitInterfaceMethodrefCpInfo(ClassFile classFile, InterfaceMethodrefCpInfo interfaceMethodrefCpInfo) {}
-    public void visitMethodrefCpInfo(ClassFile classFile, MethodrefCpInfo methodrefCpInfo) {}
-    public void visitClassCpInfo(ClassFile classFile, ClassCpInfo classCpInfo) {}
-    public void visitNameAndTypeCpInfo(ClassFile classFile, NameAndTypeCpInfo nameAndTypeCpInfo) {}
-
-
-    public void visitFieldrefCpInfo(ClassFile classFile, FieldrefCpInfo fieldrefCpInfo)
-    {
-        // Update the referenced class file if it is an interface with a single
+        // Update the referenced class if it is an interface with a single
         // implementation.
-        ClassFile singleImplementationClassFile =
-            SingleImplementationMarker.singleImplementation(fieldrefCpInfo.referencedClassFile);
+        Clazz singleImplementationClass =
+            SingleImplementationMarker.singleImplementation(fieldrefConstant.referencedClass);
 
-        if (singleImplementationClassFile != null)
+        if (singleImplementationClass != null)
         {
             // Fix the reference to the interface.
-            fixFieldrefClassReference((ProgramClassFile)classFile,
-                                      fieldrefCpInfo);
+            fixFieldrefClassReference((ProgramClass)clazz,
+                                      fieldrefConstant);
         }
     }
 
@@ -108,48 +96,48 @@ implements   ClassFileVisitor,
     // Small utility methods.
 
     /**
-     * Fixes the given class file, so its name points to itself again.
+     * Fixes the given class, so its name points to itself again.
      */
-    private void fixThisClassReference(ProgramClassFile programClassFile)
+    private void fixThisClassReference(ProgramClass programClass)
     {
         // We have to add a new class entry to avoid an existing entry with the
         // same name being reused. The names have to be fixed later, based on
-        // their referenced class files.
+        // their referenced classes.
         int nameIndex =
-            constantPoolEditor.addUtf8CpInfo(programClassFile,
-                                             programClassFile.getName());
-        programClassFile.u2thisClass =
-            constantPoolEditor.addCpInfo(programClassFile,
-                                         new ClassCpInfo(nameIndex,
-                                                         programClassFile));
+            constantPoolEditor.addUtf8Constant(programClass,
+                                               programClass.getName());
+        programClass.u2thisClass =
+            constantPoolEditor.addConstant(programClass,
+                                           new ClassConstant(nameIndex,
+                                                             programClass));
     }
 
 
     /**
-     * Fixes the given class file, so it points to the given interface again.
+     * Fixes the given class, so it points to the given interface again.
      */
-    private void fixInterfaceReference(ProgramClassFile programClassFile,
-                                       ProgramClassFile interfaceClassFile)
+    private void fixInterfaceReference(ProgramClass programClass,
+                                       ProgramClass interfaceClass)
     {
         // Make sure the class refers to the given interface again.
-        String interfaceName = interfaceClassFile.getName();
+        String interfaceName = interfaceClass.getName();
 
-        int interfacesCount = programClassFile.u2interfacesCount;
+        int interfacesCount = programClass.u2interfacesCount;
         for (int index = 0; index < interfacesCount; index++)
         {
-            if (interfaceName.equals(programClassFile.getInterfaceName(index)))
+            if (interfaceName.equals(programClass.getInterfaceName(index)))
             {
                 // Update the class index.
                 // We have to add a new class entry to avoid an existing entry
                 // with the same name being reused. The names have to be fixed
-                // later, based on their referenced class files.
+                // later, based on their referenced classes.
                 int nameIndex =
-                    constantPoolEditor.addUtf8CpInfo(programClassFile,
-                                                     interfaceName);
-                programClassFile.u2interfaces[index] =
-                    constantPoolEditor.addCpInfo(programClassFile,
-                                                 new ClassCpInfo(nameIndex,
-                                                                 interfaceClassFile));
+                    constantPoolEditor.addUtf8Constant(programClass,
+                                                       interfaceName);
+                programClass.u2interfaces[index]       =
+                    constantPoolEditor.addConstant(programClass,
+                                                   new ClassConstant(nameIndex,
+                                                                     interfaceClass));
                 break;
 
             }
@@ -160,22 +148,22 @@ implements   ClassFileVisitor,
     /**
      * Fixes the given field reference, so its class index points to its
      * class again. Note that this could be a different class than the one
-     * in the original class file.
+     * in the original class.
      */
-    private void fixFieldrefClassReference(ProgramClassFile programClassFile,
-                                           FieldrefCpInfo   fieldrefCpInfo)
+    private void fixFieldrefClassReference(ProgramClass     programClass,
+                                           FieldrefConstant fieldrefConstant)
     {
-        ClassFile referencedClassFile = fieldrefCpInfo.referencedClassFile;
+        Clazz referencedClass = fieldrefConstant.referencedClass;
 
         // We have to add a new class entry to avoid an existing entry with the
         // same name being reused. The names have to be fixed later, based on
-        // their referenced class files.
+        // their referenced classes.
         int nameIndex =
-            constantPoolEditor.addUtf8CpInfo(programClassFile,
-                                             fieldrefCpInfo.getClassName(programClassFile));
-        fieldrefCpInfo.u2classIndex =
-            constantPoolEditor.addCpInfo(programClassFile,
-                                         new ClassCpInfo(nameIndex,
-                                                         referencedClassFile));
+            constantPoolEditor.addUtf8Constant(programClass,
+                                               fieldrefConstant.getClassName(programClass));
+        fieldrefConstant.u2classIndex =
+            constantPoolEditor.addConstant(programClass,
+                                           new ClassConstant(nameIndex,
+                                                             referencedClass));
     }
 }

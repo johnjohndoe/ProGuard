@@ -1,6 +1,6 @@
-/* $Id: AllFieldVisitor.java,v 1.13.2.2 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -24,32 +24,32 @@ import proguard.classfile.*;
 
 
 /**
- * This ClassFileVisitor lets a given MemberInfoVisitor visit all FieldMemberInfo
- * objects of the class files it visits.
+ * This ClassVisitor lets a given MemberVisitor visit all FieldMember
+ * objects of the classes      it visits.
  *
  * @author Eric Lafortune
  */
-public class AllFieldVisitor implements ClassFileVisitor
+public class AllFieldVisitor implements ClassVisitor
 {
-    private MemberInfoVisitor memberInfoVisitor;
+    private final MemberVisitor memberVisitor;
 
 
-    public AllFieldVisitor(MemberInfoVisitor memberInfoVisitor)
+    public AllFieldVisitor(MemberVisitor memberVisitor)
     {
-        this.memberInfoVisitor = memberInfoVisitor;
+        this.memberVisitor = memberVisitor;
     }
 
 
-    // Implementations for ClassFileVisitor.
+    // Implementations for ClassVisitor.
 
-    public void visitProgramClassFile(ProgramClassFile programClassFile)
+    public void visitProgramClass(ProgramClass programClass)
     {
-        programClassFile.fieldsAccept(memberInfoVisitor);
+        programClass.fieldsAccept(memberVisitor);
     }
 
 
-    public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
+    public void visitLibraryClass(LibraryClass libraryClass)
     {
-        libraryClassFile.fieldsAccept(memberInfoVisitor);
+        libraryClass.fieldsAccept(memberVisitor);
     }
 }

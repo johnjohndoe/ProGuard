@@ -1,6 +1,6 @@
-/* $Id: JarWriter.java,v 1.3.2.3 2007/07/30 21:42:34 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -21,8 +21,8 @@
 package proguard.io;
 
 import java.io.*;
-import java.util.jar.*;
 import java.util.*;
+import java.util.jar.*;
 import java.util.zip.*;
 
 
@@ -34,9 +34,9 @@ import java.util.zip.*;
  */
 public class JarWriter implements DataEntryWriter, Finisher
 {
-    private DataEntryWriter dataEntryWriter;
-    private Manifest        manifest;
-    private String          comment;
+    private final DataEntryWriter dataEntryWriter;
+    private final Manifest        manifest;
+    private final String          comment;
 
     private OutputStream    currentParentOutputStream;
     private ZipOutputStream currentJarOutputStream;
@@ -44,7 +44,7 @@ public class JarWriter implements DataEntryWriter, Finisher
     private DataEntry       currentDataEntry;
 
     // The names of the jar entries that are already in the jar.
-    private Set jarEntryNames = new HashSet();
+    private final Set jarEntryNames = new HashSet();
 
 
     /**

@@ -1,6 +1,6 @@
-/* $Id: ConstantDouble.java,v 1.5 2004/08/15 12:39:30 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -27,7 +27,7 @@ package proguard.gui.splash;
  */
 public class ConstantDouble implements VariableDouble
 {
-    private double value;
+    private final double value;
 
 
     /**

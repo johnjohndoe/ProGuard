@@ -1,6 +1,6 @@
-/* $Id: Configuration.java,v 1.17.2.3 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,9 +20,8 @@
  */
 package proguard;
 
-import java.util.*;
 import java.io.File;
-
+import java.util.List;
 
 /**
  * The ProGuard configuration.
@@ -51,7 +50,7 @@ public class Configuration
      * Specifies whether to skip non-public library classes while reading
      * library jars.
      */
-    public boolean   skipNonPublicLibraryClasses = true;
+    public boolean   skipNonPublicLibraryClasses      = true;
 
     /**
      * Specifies whether to skip non-public library class members while reading
@@ -59,22 +58,31 @@ public class Configuration
      */
     public boolean   skipNonPublicLibraryClassMembers = true;
 
+    /**
+     * Specifies the version number of the output classes, or 0 if the version
+     * number can be left unchanged.
+     */
+    public int       targetClassVersion;
+
+    /**
+     * Specifies the last modification time of this configuration. This time
+     * is necessary to check whether the input has to be processed. Setting it
+     * to Long.MAX_VALUE forces processing, even if the modification times
+     * of the output appear more recent than the modification times of the
+     * input.
+     */
+    public long      lastModified                     = 0L;
+
     ///////////////////////////////////////////////////////////////////////////
     // Keep options.
     ///////////////////////////////////////////////////////////////////////////
 
     /**
-     * A list of {@link ClassSpecification} instances, whose class names and
-     * class member names are to be kept from shrinking, optimization, and
+     * A list of {@link KeepSpecification} instances, whose class names and
+     * class member names are to be kept from shrinking, optimization, and/or
      * obfuscation.
      */
     public List      keep;
-
-    /**
-     * A list of {@link ClassSpecification} instances, whose class names and
-     * class member names are to be kept from obfuscation.
-     */
-    public List      keepNames;
 
     /**
      * An optional output file for listing the kept seeds.
@@ -89,7 +97,7 @@ public class Configuration
     /**
      * Specifies whether the code should be shrunk.
      */
-    public boolean   shrink                      = true;
+    public boolean   shrink                           = true;
 
     /**
      * An optional output file for listing the unused classes and class
@@ -110,7 +118,12 @@ public class Configuration
     /**
      * Specifies whether the code should be optimized.
      */
-    public boolean   optimize                    = true;
+    public boolean   optimize                         = true;
+
+    /**
+     * Specifies the number of optimization passes.
+     */
+    public int       optimizationPasses               = 1;
 
     /**
      * A list of {@link ClassSpecification} instances, whose methods are
@@ -121,7 +134,7 @@ public class Configuration
     /**
      * Specifies whether the access of class members can be modified.
      */
-    public boolean   allowAccessModification     = false;
+    public boolean   allowAccessModification          = false;
 
     ///////////////////////////////////////////////////////////////////////////
     // Obfuscation options.
@@ -130,7 +143,7 @@ public class Configuration
     /**
      * Specifies whether the code should be obfuscated.
      */
-    public boolean   obfuscate                   = true;
+    public boolean   obfuscate                        = true;
 
     /**
      * An optional output file for listing the obfuscation mapping.
@@ -151,23 +164,29 @@ public class Configuration
     /**
      * Specifies whether to apply aggressive name overloading on class members.
      */
-    public boolean   overloadAggressively        = false;
+    public boolean   overloadAggressively             = false;
 
     /**
      * Specifies whether to generate globally unique class member names.
      */
-    public boolean   useUniqueClassMemberNames   = false;
+    public boolean   useUniqueClassMemberNames        = false;
 
     /**
-     * An optional default package to which all classes whose name is obfuscated
-     * can be moved.
+     * Specifies whether obfuscated packages and classes can get mixed-case names.
      */
-    public String    defaultPackage;
+    public boolean   useMixedCaseClassNames           = true;
 
     /**
-     * Specifies whether to use mixed case class names.
+     * An optional base package if the obfuscated package hierarchy is to be
+     * flattened, <code>null</code> otherwise.
      */
-    public boolean   useMixedCaseClassNames      = true;
+    public String    flattenPackageHierarchy;
+
+    /**
+     * An optional base package if the obfuscated classes are to be repackaged
+     * into a single package, <code>null</code> otherwise.
+     */
+    public String    repackageClasses;
 
     /**
      * A list of <code>String</code>s specifying optional attributes to be kept.
@@ -182,6 +201,34 @@ public class Configuration
      */
     public String    newSourceFileAttribute;
 
+    /**
+     * A list of <code>String</code>s specifying a filter for files whose
+     * names are to be adapted, based on corresponding obfuscated class names.
+     */
+    public List      adaptResourceFileNames;
+
+    /**
+     * A list of <code>String</code>s specifying a filter for files whose
+     * contents are to be adapted, based on obfuscated class names.
+     */
+    public List      adaptResourceFileContents;
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Preverification options.
+    ///////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Specifies whether the code should be preverified.
+     */
+    public boolean   preverify                        = true;
+
+    /**
+     * Specifies whether the code should be preverified for Java Micro Edition
+     * (creating StackMap attributes) instead of for Java Standard Edition
+     * (creating StackMapTable attributes).
+     */
+    public boolean   microEdition                     = false;
+
     ///////////////////////////////////////////////////////////////////////////
     // General options.
     ///////////////////////////////////////////////////////////////////////////
@@ -189,22 +236,29 @@ public class Configuration
     /**
      * Specifies whether to print verbose messages.
      */
-    public boolean   verbose                     = false;
+    public boolean   verbose                          = false;
 
     /**
      * Specifies whether to print any notes.
      */
-    public boolean   note                        = true;
+    public boolean   note                             = true;
 
     /**
      * Specifies whether to print any warnings.
      */
-    public boolean   warn                        = true;
+    public boolean   warn                             = true;
 
     /**
      * Specifies whether to ignore any warnings.
      */
-    public boolean   ignoreWarnings              = false;
+    public boolean   ignoreWarnings                   = false;
+
+    /**
+     * An optional output file for printing out the configuration that ProGuard
+     * is using (with included files and replaced variables).
+     * An empty file name means the standard output.
+     */
+    public File      printConfiguration;
 
     /**
      * An optional output file for printing out the processed code in a more

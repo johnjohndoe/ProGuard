@@ -1,6 +1,6 @@
-/* $Id: PushPopRemover.java,v 1.11.2.3 2007/01/18 21:31:53 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -21,9 +21,11 @@
 package proguard.optimize.peephole;
 
 import proguard.classfile.*;
-import proguard.classfile.attribute.*;
-import proguard.classfile.editor.*;
+import proguard.classfile.attribute.CodeAttribute;
+import proguard.classfile.editor.CodeAttributeEditor;
 import proguard.classfile.instruction.*;
+import proguard.classfile.instruction.visitor.InstructionVisitor;
+import proguard.classfile.util.SimplifiedVisitor;
 
 /**
  * This InstructionVisitor deletes all push/pop instruction pairs. In this
@@ -32,25 +34,27 @@ import proguard.classfile.instruction.*;
  *
  * @author Eric Lafortune
  */
-public class PushPopRemover implements InstructionVisitor
+public class PushPopRemover
+extends      SimplifiedVisitor
+implements   InstructionVisitor
 {
-    private BranchTargetFinder branchTargetFinder;
-    private CodeAttrInfoEditor codeAttrInfoEditor;
-    private InstructionVisitor extraInstructionVisitor;
+    private final BranchTargetFinder  branchTargetFinder;
+    private final CodeAttributeEditor codeAttributeEditor;
+    private final InstructionVisitor  extraInstructionVisitor;
 
 
     /**
      * Creates a new PushPopRemover.
-     * @param branchTargetFinder      a branch target finder that has been
-     *                                initialized to indicate branch targets
-     *                                in the visited code.
-     * @param codeAttrInfoEditor      a code editor that can be used for
-     *                                accumulating changes to the code.
+     * @param branchTargetFinder    a branch target finder that has been
+     *                              initialized to indicate branch targets
+     *                              in the visited code.
+     * @param codeAttributeEditor   a code editor that can be used for
+     *                              accumulating changes to the code.
      */
-    public PushPopRemover(BranchTargetFinder branchTargetFinder,
-                          CodeAttrInfoEditor codeAttrInfoEditor)
+    public PushPopRemover(BranchTargetFinder  branchTargetFinder,
+                          CodeAttributeEditor codeAttributeEditor)
     {
-        this(branchTargetFinder, codeAttrInfoEditor, null);
+        this(branchTargetFinder, codeAttributeEditor, null);
     }
 
 
@@ -59,30 +63,27 @@ public class PushPopRemover implements InstructionVisitor
      * @param branchTargetFinder      a branch target finder that has been
      *                                initialized to indicate branch targets
      *                                in the visited code.
-     * @param codeAttrInfoEditor      a code editor that can be used for
+     * @param codeAttributeEditor     a code editor that can be used for
      *                                accumulating changes to the code.
      * @param extraInstructionVisitor an optional extra visitor for all deleted
      *                                push instructions.
      */
-    public PushPopRemover(BranchTargetFinder branchTargetFinder,
-                          CodeAttrInfoEditor codeAttrInfoEditor,
-                          InstructionVisitor extraInstructionVisitor)
+    public PushPopRemover(BranchTargetFinder  branchTargetFinder,
+                          CodeAttributeEditor codeAttributeEditor,
+                          InstructionVisitor  extraInstructionVisitor)
     {
         this.branchTargetFinder      = branchTargetFinder;
-        this.codeAttrInfoEditor      = codeAttrInfoEditor;
+        this.codeAttributeEditor     = codeAttributeEditor;
         this.extraInstructionVisitor = extraInstructionVisitor;
     }
 
 
     // Implementations for InstructionVisitor.
 
-    public void visitCpInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, CpInstruction cpInstruction) {}
-    public void visitBranchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, BranchInstruction branchInstruction) {}
-    public void visitTableSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, TableSwitchInstruction tableSwitchInstruction) {}
-    public void visitLookUpSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, LookUpSwitchInstruction lookUpSwitchInstruction) {}
+    public void visitAnyInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, Instruction instruction) {}
 
 
-    public void visitSimpleInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, SimpleInstruction simpleInstruction)
+    public void visitSimpleInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, SimpleInstruction simpleInstruction)
     {
         switch (simpleInstruction.opcode)
         {
@@ -109,18 +110,18 @@ public class PushPopRemover implements InstructionVisitor
             case InstructionConstants.OP_LDC_W:
             case InstructionConstants.OP_LDC2_W:
                 // All these simple instructions are pushing instructions.
-                deleteWithSubsequentPop(classFile, methodInfo, codeAttrInfo, offset, simpleInstruction);
+                deleteWithSubsequentPop(clazz, method, codeAttribute, offset, simpleInstruction);
                 break;
         }
     }
 
-    public void visitVariableInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, VariableInstruction variableInstruction)
+    public void visitVariableInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, VariableInstruction variableInstruction)
     {
         if (variableInstruction.isLoad() &&
             variableInstruction.opcode != InstructionConstants.OP_RET)
         {
             // All load instructions are pushing instructions.
-            deleteWithSubsequentPop(classFile, methodInfo, codeAttrInfo, offset, variableInstruction);
+            deleteWithSubsequentPop(clazz, method, codeAttribute, offset, variableInstruction);
         }
     }
 
@@ -131,35 +132,35 @@ public class PushPopRemover implements InstructionVisitor
      * Deletes the given instruction and its subsequent compatible pop instruction,
      * if any, and if the latter is not a branch target.
      */
-    private void deleteWithSubsequentPop(ClassFile    classFile,
-                                         MethodInfo   methodInfo,
-                                         CodeAttrInfo codeAttrInfo,
-                                         int          offset,
-                                         Instruction  instruction)
+    private void deleteWithSubsequentPop(Clazz         clazz,
+                                         Method        method,
+                                         CodeAttribute codeAttribute,
+                                         int           offset,
+                                         Instruction   instruction)
     {
         boolean isCategory2 = instruction.isCategory2();
 
         int nextOffset = offset + instruction.length(offset);
 
-        if (!codeAttrInfoEditor.isModified(offset)     &&
-            !codeAttrInfoEditor.isModified(nextOffset) &&
+        if (!codeAttributeEditor.isModified(offset)     &&
+            !codeAttributeEditor.isModified(nextOffset) &&
             !branchTargetFinder.isTarget(nextOffset))
         {
-            Instruction nextInstruction = InstructionFactory.create(codeAttrInfo.code,
+            Instruction nextInstruction = InstructionFactory.create(codeAttribute.code,
                                                                     nextOffset);
             int nextOpcode = nextInstruction.opcode;
             if ((nextOpcode == InstructionConstants.OP_POP ||
                  nextOpcode == InstructionConstants.OP_POP2) &&
-                nextInstruction.isCategory2() == isCategory2)
+                                                             nextInstruction.isCategory2() == isCategory2)
             {
                 // Delete the pushing instruction and the pop instruction.
-                codeAttrInfoEditor.deleteInstruction(offset);
-                codeAttrInfoEditor.deleteInstruction(nextOffset);
+                codeAttributeEditor.deleteInstruction(offset);
+                codeAttributeEditor.deleteInstruction(nextOffset);
 
                 // Visit the instruction, if required.
                 if (extraInstructionVisitor != null)
                 {
-                    instruction.accept(classFile, methodInfo, codeAttrInfo, offset, extraInstructionVisitor);
+                    instruction.accept(clazz, method, codeAttribute, offset, extraInstructionVisitor);
                 }
             }
         }

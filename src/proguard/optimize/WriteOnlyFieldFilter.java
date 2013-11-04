@@ -1,6 +1,6 @@
-/* $Id: WriteOnlyFieldFilter.java,v 1.1.2.2 2007/01/18 21:31:53 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -21,45 +21,45 @@
 package proguard.optimize;
 
 import proguard.classfile.*;
-import proguard.classfile.visitor.MemberInfoVisitor;
+import proguard.classfile.util.SimplifiedVisitor;
+import proguard.classfile.visitor.MemberVisitor;
+import proguard.optimize.info.ReadWriteFieldMarker;
 
 /**
- * This <code>MemberInfoVisitor</code> delegates its visits to program fields to
- * another given <code>MemberInfoVisitor</code>, but only when the visited
+ * This <code>MemberVisitor</code> delegates its visits to program fields to
+ * other given <code>MemberVisitor</code> instances, but only when the visited
  * field has been marked as write-only.
  *
- * @see WriteOnlyFieldMarker#isWriteOnly(VisitorAccepter)
+ * @see ReadWriteFieldMarker
  * @author Eric Lafortune
  */
 public class WriteOnlyFieldFilter
-  implements MemberInfoVisitor
+extends      SimplifiedVisitor
+implements   MemberVisitor
 {
-    private MemberInfoVisitor memberInfoVisitor;
+    private final MemberVisitor writeOnlyFieldVisitor;
 
 
     /**
      * Creates a new WriteOnlyFieldFilter.
-     * @param memberInfoVisitor the <code>MemberInfoVisitor</code> to which
-     *                          visits will be delegated.
+     * @param writeOnlyFieldVisitor the <code>MemberVisitor</code> to which
+     *                              visits to write-only fields will be delegated.
      */
-    public WriteOnlyFieldFilter(MemberInfoVisitor memberInfoVisitor)
+    public WriteOnlyFieldFilter(MemberVisitor writeOnlyFieldVisitor)
     {
-        this.memberInfoVisitor = memberInfoVisitor;
+        this.writeOnlyFieldVisitor = writeOnlyFieldVisitor;
     }
 
 
-    // Implementations for MemberInfoVisitor.
+    // Implementations for MemberVisitor.
 
-    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
+    public void visitProgramField(ProgramClass programClass, ProgramField programField)
     {
-        if (WriteOnlyFieldMarker.isWriteOnly(programFieldInfo))
+
+        if (ReadWriteFieldMarker.isWritten(programField) &&
+            !ReadWriteFieldMarker.isRead(programField))
         {
-            memberInfoVisitor.visitProgramFieldInfo(programClassFile, programFieldInfo);
+            writeOnlyFieldVisitor.visitProgramField(programClass, programField);
         }
     }
-
-
-    public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo) {}
-    public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo) {}
-    public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo) {}
 }

@@ -1,6 +1,6 @@
-/* $Id: InstructionFactory.java,v 1.6.2.2 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -27,22 +27,12 @@ package proguard.classfile.instruction;
  */
 public class InstructionFactory
 {
-    // Shared copies of Instruction objects, to avoid creating a lot of objects.
-    private static final SimpleInstruction       simpleInstruction       = new SimpleInstruction();
-    private static final CpInstruction           cpInstruction           = new CpInstruction();
-    private static final VariableInstruction     variableInstruction     = new VariableInstruction();
-    private static final BranchInstruction       branchInstruction       = new BranchInstruction();
-    private static final TableSwitchInstruction  tableSwitchInstruction  = new TableSwitchInstruction();
-    private static final LookUpSwitchInstruction lookUpSwitchInstruction = new LookUpSwitchInstruction();
-
-
     /**
      * Creates a new Instruction from the data in the byte array, starting
      * at the given index.
      */
     public static Instruction create(byte[] code, int offset)
     {
-        // We'll re-use the static Instruction objects.
         Instruction instruction;
 
         int  index  = offset;
@@ -175,7 +165,7 @@ public class InstructionFactory
 
             case InstructionConstants.OP_MONITORENTER:
             case InstructionConstants.OP_MONITOREXIT:
-                instruction = simpleInstruction;
+                instruction = new SimpleInstruction();
                 break;
 
             // Instructions with a contant pool index.
@@ -198,7 +188,7 @@ public class InstructionFactory
             case InstructionConstants.OP_CHECKCAST:
             case InstructionConstants.OP_INSTANCEOF:
             case InstructionConstants.OP_MULTIANEWARRAY:
-                instruction = cpInstruction;
+                instruction = new ConstantInstruction();
                 break;
 
             // Instructions with a local variable index.
@@ -257,8 +247,7 @@ public class InstructionFactory
             case InstructionConstants.OP_IINC:
 
             case InstructionConstants.OP_RET:
-                variableInstruction.wide = wide;
-                instruction = variableInstruction;
+                instruction = new VariableInstruction(wide);
                 break;
 
             // Instructions with a branch offset operand.
@@ -284,21 +273,21 @@ public class InstructionFactory
 
             case InstructionConstants.OP_GOTO_W:
             case InstructionConstants.OP_JSR_W:
-                instruction = branchInstruction;
+                instruction = new BranchInstruction();
                 break;
 
             //  The tableswitch instruction.
             case InstructionConstants.OP_TABLESWITCH:
-                instruction = tableSwitchInstruction;
+                instruction = new TableSwitchInstruction();
                 break;
 
             //  The lookupswitch instruction.
             case InstructionConstants.OP_LOOKUPSWITCH:
-                instruction = lookUpSwitchInstruction;
+                instruction = new LookUpSwitchInstruction();
                 break;
 
             default:
-                throw new IllegalArgumentException("Unknown instruction ["+opcode+"] at offset "+offset);
+                throw new IllegalArgumentException("Unknown instruction opcode ["+opcode+"] at offset "+offset);
         }
 
         instruction.opcode = opcode;

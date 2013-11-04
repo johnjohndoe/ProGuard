@@ -1,6 +1,6 @@
-/* $Id: ConfigurationTask.java,v 1.7.2.2 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,11 +20,10 @@
  */
 package proguard.ant;
 
+import org.apache.tools.ant.*;
 import proguard.*;
 
-import org.apache.tools.ant.*;
-
-import java.io.*;
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -34,7 +33,7 @@ import java.util.*;
  */
 public class ConfigurationTask extends Task
 {
-    protected Configuration configuration = new Configuration();
+    protected final Configuration configuration = new Configuration();
 
 
     /**
@@ -53,11 +52,14 @@ public class ConfigurationTask extends Task
         configuration.keep = extendClassSpecifications(configuration.keep,
                                                        this.configuration.keep);
 
-        configuration.keepNames = extendClassSpecifications(configuration.keepNames,
-                                                            this.configuration.keepNames);
+        configuration.whyAreYouKeeping = extendClassSpecifications(configuration.whyAreYouKeeping,
+                                                                   this.configuration.whyAreYouKeeping);
 
-        configuration.keepAttributes = extendAttributes(configuration.keepAttributes,
-                                                        this.configuration.keepAttributes);
+        configuration.assumeNoSideEffects = extendClassSpecifications(configuration.assumeNoSideEffects,
+                                                                      this.configuration.assumeNoSideEffects);
+
+        configuration.keepAttributes = extendList(configuration.keepAttributes,
+                                                  this.configuration.keepAttributes);
     }
 
 
@@ -87,75 +89,80 @@ public class ConfigurationTask extends Task
     }
 
 
-    public void addConfiguredKeep(ClassSpecificationElement classSpecificationElement)
+    public void addConfiguredKeep(KeepSpecificationElement keepSpecificationElement)
     {
-        configuration.keep = extendClassSpecifications(configuration.keep,
-                                                       classSpecificationElement,
-                                                       true,
-                                                       false);
+        configuration.keep = extendKeepSpecifications(configuration.keep,
+                                                      keepSpecificationElement,
+                                                      true,
+                                                      false);
     }
 
 
-    public void addConfiguredKeepclassmembers(ClassSpecificationElement classSpecificationElement)
+    public void addConfiguredKeepclassmembers(KeepSpecificationElement keepSpecificationElement)
     {
-        configuration.keep = extendClassSpecifications(configuration.keep,
-                                                       classSpecificationElement,
-                                                       false,
-                                                       false);
+        configuration.keep = extendKeepSpecifications(configuration.keep,
+                                                      keepSpecificationElement,
+                                                      false,
+                                                      false);
     }
 
 
-    public void addConfiguredKeepclasseswithmembers(ClassSpecificationElement classSpecificationElement)
+    public void addConfiguredKeepclasseswithmembers(KeepSpecificationElement keepSpecificationElement)
     {
-        configuration.keep = extendClassSpecifications(configuration.keep,
-                                                       classSpecificationElement,
-                                                       true,
-                                                       true);
+        configuration.keep = extendKeepSpecifications(configuration.keep,
+                                                      keepSpecificationElement,
+                                                      true,
+                                                      true);
     }
 
 
-    public void addConfiguredKeepnames(ClassSpecificationElement classSpecificationElement)
+    public void addConfiguredKeepnames(KeepSpecificationElement keepSpecificationElement)
     {
-        configuration.keepNames = extendClassSpecifications(configuration.keepNames,
-                                                            classSpecificationElement,
-                                                            true,
-                                                            false);
+        // Set the shrinking flag, based on the name (backward compatibility).
+        keepSpecificationElement.setAllowshrinking(true);
+
+        configuration.keep = extendKeepSpecifications(configuration.keep,
+                                                      keepSpecificationElement,
+                                                      true,
+                                                      false);
     }
 
 
-    public void addConfiguredKeepclassmembernames(ClassSpecificationElement classSpecificationElement)
+    public void addConfiguredKeepclassmembernames(KeepSpecificationElement keepSpecificationElement)
     {
-        configuration.keepNames = extendClassSpecifications(configuration.keepNames,
-                                                            classSpecificationElement,
-                                                            false,
-                                                            false);
+        // Set the shrinking flag, based on the name (backward compatibility).
+        keepSpecificationElement.setAllowshrinking(true);
+
+        configuration.keep = extendKeepSpecifications(configuration.keep,
+                                                      keepSpecificationElement,
+                                                      false,
+                                                      false);
     }
 
 
-    public void addConfiguredKeepclasseswithmembernames(ClassSpecificationElement classSpecificationElement)
+    public void addConfiguredKeepclasseswithmembernames(KeepSpecificationElement keepSpecificationElement)
     {
-        configuration.keepNames = extendClassSpecifications(configuration.keepNames,
-                                                            classSpecificationElement,
-                                                            true,
-                                                            true);
+        // Set the shrinking flag, based on the name (backward compatibility).
+        keepSpecificationElement.setAllowshrinking(true);
+
+        configuration.keep = extendKeepSpecifications(configuration.keep,
+                                                      keepSpecificationElement,
+                                                      true,
+                                                      true);
     }
 
 
     public void addConfiguredWhyareyoukeeping(ClassSpecificationElement classSpecificationElement)
     {
         configuration.whyAreYouKeeping = extendClassSpecifications(configuration.whyAreYouKeeping,
-                                                                   classSpecificationElement,
-                                                                   true,
-                                                                   false);
+                                                                   classSpecificationElement);
     }
 
 
     public void addConfiguredAssumenosideeffects(ClassSpecificationElement classSpecificationElement)
     {
         configuration.assumeNoSideEffects = extendClassSpecifications(configuration.assumeNoSideEffects,
-                                                                      classSpecificationElement,
-                                                                      false,
-                                                                      false);
+                                                                      classSpecificationElement);
     }
 
 
@@ -163,6 +170,20 @@ public class ConfigurationTask extends Task
     {
         configuration.keepAttributes = extendAttributes(configuration.keepAttributes,
                                                         keepAttributeElement);
+    }
+
+
+    public void addConfiguredAdaptResourceFileNames(FilterElement filterElement)
+    {
+        configuration.adaptResourceFileNames = extendFilter(configuration.adaptResourceFileNames,
+                                                            filterElement);
+    }
+
+
+    public void addConfiguredAdaptResourceFileContents(FilterElement filterElement)
+    {
+        configuration.adaptResourceFileContents = extendFilter(configuration.adaptResourceFileContents,
+                                                               filterElement);
     }
 
 
@@ -205,19 +226,6 @@ public class ConfigurationTask extends Task
 
     // Small utility methods.
 
-    private String optionalFileName(String fileName)
-    {
-        return
-            fileName.equalsIgnoreCase("false") ||
-            fileName.equalsIgnoreCase("no")    ||
-            fileName.equalsIgnoreCase("off")    ? null :
-            fileName.equalsIgnoreCase("true")  ||
-            fileName.equalsIgnoreCase("yes")   ||
-            fileName.equalsIgnoreCase("on")     ? ""   :
-                                                  fileName;
-    }
-
-
     private ClassPath extendClassPath(ClassPath        classPath,
                                       ClassPathElement classPathElement,
                                       boolean          output)
@@ -251,19 +259,33 @@ public class ConfigurationTask extends Task
     }
 
 
+    private List extendKeepSpecifications(List                     keepSpecifications,
+                                          KeepSpecificationElement keepSpecificationElement,
+                                          boolean                  markClasses,
+                                          boolean                  markClassesConditionally)
+    {
+        if (keepSpecifications == null)
+        {
+            keepSpecifications = new ArrayList();
+        }
+
+        keepSpecificationElement.appendTo(keepSpecifications,
+                                          markClasses,
+                                          markClassesConditionally);
+
+        return keepSpecifications;
+    }
+
+
     private List extendClassSpecifications(List                      classSpecifications,
-                                           ClassSpecificationElement classSpecificationElement,
-                                           boolean                   markClassFiles,
-                                           boolean                   markClassFilesConditionally)
+                                           ClassSpecificationElement classSpecificationElement)
     {
         if (classSpecifications == null)
         {
             classSpecifications = new ArrayList();
         }
 
-        classSpecificationElement.appendTo(classSpecifications,
-                                           markClassFiles,
-                                           markClassFilesConditionally);
+        classSpecificationElement.appendTo(classSpecifications);
 
         return classSpecifications;
     }
@@ -300,19 +322,33 @@ public class ConfigurationTask extends Task
     }
 
 
-    private List extendAttributes(List attributes,
-                                  List additionalAttributes)
+    private List extendFilter(List          filter,
+                              FilterElement filterElement)
     {
-        if (additionalAttributes != null)
+        if (filter == null)
         {
-            if (attributes == null)
-            {
-                attributes = new ArrayList();
-            }
-
-            attributes.addAll(additionalAttributes);
+            filter = new ArrayList();
         }
 
-        return attributes;
+        filterElement.appendTo(filter);
+
+        return filter;
+    }
+
+
+    private List extendList(List list,
+                            List additionalList)
+    {
+        if (additionalList != null)
+        {
+            if (list == null)
+            {
+                list = new ArrayList();
+            }
+
+            list.addAll(additionalList);
+        }
+
+        return list;
     }
 }

@@ -1,6 +1,6 @@
-/* $Id: VariableInstruction.java,v 1.20.2.4 2007/05/22 21:39:12 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -21,7 +21,8 @@
 package proguard.classfile.instruction;
 
 import proguard.classfile.*;
-import proguard.classfile.attribute.*;
+import proguard.classfile.attribute.CodeAttribute;
+import proguard.classfile.instruction.visitor.InstructionVisitor;
 
 /**
  * This Instruction represents an instruction that refers to a variable on the
@@ -31,15 +32,27 @@ import proguard.classfile.attribute.*;
  */
 public class VariableInstruction extends Instruction
 {
+    public boolean wide;
     public int     variableIndex;
     public int     constant;
-    public boolean wide;
 
 
     /**
      * Creates an uninitialized VariableInstruction.
      */
     public VariableInstruction() {}
+
+
+    public VariableInstruction(boolean wide)
+    {
+        this.wide = wide;
+    }
+
+
+    public VariableInstruction(byte opcode)
+    {
+        this(opcode, embeddedVariable(opcode), 0);
+    }
 
 
     public VariableInstruction(byte opcode,
@@ -78,14 +91,60 @@ public class VariableInstruction extends Instruction
 
 
     /**
-     * Returns whether this instruction loads the value of a variable onto the
-     * stack, or if it stores one.
+     * Return the embedded variable of the given opcode, or 0 if the opcode
+     * doesn't have one.
+     */
+    private static int embeddedVariable(byte opcode)
+    {
+        switch (opcode)
+        {
+            case InstructionConstants.OP_ILOAD_1:
+            case InstructionConstants.OP_LLOAD_1:
+            case InstructionConstants.OP_FLOAD_1:
+            case InstructionConstants.OP_DLOAD_1:
+            case InstructionConstants.OP_ALOAD_1:
+            case InstructionConstants.OP_ISTORE_1:
+            case InstructionConstants.OP_LSTORE_1:
+            case InstructionConstants.OP_FSTORE_1:
+            case InstructionConstants.OP_DSTORE_1:
+            case InstructionConstants.OP_ASTORE_1: return 1;
+
+            case InstructionConstants.OP_ILOAD_2:
+            case InstructionConstants.OP_LLOAD_2:
+            case InstructionConstants.OP_FLOAD_2:
+            case InstructionConstants.OP_DLOAD_2:
+            case InstructionConstants.OP_ALOAD_2:
+            case InstructionConstants.OP_ISTORE_2:
+            case InstructionConstants.OP_LSTORE_2:
+            case InstructionConstants.OP_FSTORE_2:
+            case InstructionConstants.OP_DSTORE_2:
+            case InstructionConstants.OP_ASTORE_2: return 2;
+
+            case InstructionConstants.OP_ILOAD_3:
+            case InstructionConstants.OP_LLOAD_3:
+            case InstructionConstants.OP_FLOAD_3:
+            case InstructionConstants.OP_DLOAD_3:
+            case InstructionConstants.OP_ALOAD_3:
+            case InstructionConstants.OP_ISTORE_3:
+            case InstructionConstants.OP_LSTORE_3:
+            case InstructionConstants.OP_FSTORE_3:
+            case InstructionConstants.OP_DSTORE_3:
+            case InstructionConstants.OP_ASTORE_3: return 3;
+
+            default: return 0;
+        }
+    }
+
+
+    /**
+     * Returns whether this instruction loads the value of a variable.
+     * The value is true for the ret instruction, but false for the iinc
+     * instruction.
      */
     public boolean isLoad()
     {
-        // A load instruction can be recognized as follows.
-        // Note that this includes the ret instruction, which has a negative opcode.
-        // The iinc instruction is considered a store instruction.
+        // A load instruction can be recognized as follows. Note that this
+        // includes the ret instruction, which has a negative opcode.
         return opcode <  InstructionConstants.OP_ISTORE &&
                opcode != InstructionConstants.OP_IINC;
     }
@@ -93,53 +152,60 @@ public class VariableInstruction extends Instruction
 
     // Implementations for Instruction.
 
-    public Instruction shrink()
+    public byte canonicalOpcode()
     {
-        // First widen the instruction.
+        // Remove the _0, _1, _2, _3 extension, if any.
         switch (opcode)
         {
             case InstructionConstants.OP_ILOAD_0:
             case InstructionConstants.OP_ILOAD_1:
             case InstructionConstants.OP_ILOAD_2:
-            case InstructionConstants.OP_ILOAD_3: opcode = InstructionConstants.OP_ILOAD; break;
+            case InstructionConstants.OP_ILOAD_3: return InstructionConstants.OP_ILOAD;
             case InstructionConstants.OP_LLOAD_0:
             case InstructionConstants.OP_LLOAD_1:
             case InstructionConstants.OP_LLOAD_2:
-            case InstructionConstants.OP_LLOAD_3: opcode = InstructionConstants.OP_LLOAD; break;
+            case InstructionConstants.OP_LLOAD_3: return InstructionConstants.OP_LLOAD;
             case InstructionConstants.OP_FLOAD_0:
             case InstructionConstants.OP_FLOAD_1:
             case InstructionConstants.OP_FLOAD_2:
-            case InstructionConstants.OP_FLOAD_3: opcode = InstructionConstants.OP_FLOAD; break;
+            case InstructionConstants.OP_FLOAD_3: return InstructionConstants.OP_FLOAD;
             case InstructionConstants.OP_DLOAD_0:
             case InstructionConstants.OP_DLOAD_1:
             case InstructionConstants.OP_DLOAD_2:
-            case InstructionConstants.OP_DLOAD_3: opcode = InstructionConstants.OP_DLOAD; break;
+            case InstructionConstants.OP_DLOAD_3: return InstructionConstants.OP_DLOAD;
             case InstructionConstants.OP_ALOAD_0:
             case InstructionConstants.OP_ALOAD_1:
             case InstructionConstants.OP_ALOAD_2:
-            case InstructionConstants.OP_ALOAD_3: opcode = InstructionConstants.OP_ALOAD; break;
+            case InstructionConstants.OP_ALOAD_3: return InstructionConstants.OP_ALOAD;
 
             case InstructionConstants.OP_ISTORE_0:
             case InstructionConstants.OP_ISTORE_1:
             case InstructionConstants.OP_ISTORE_2:
-            case InstructionConstants.OP_ISTORE_3: opcode = InstructionConstants.OP_ISTORE; break;
+            case InstructionConstants.OP_ISTORE_3: return InstructionConstants.OP_ISTORE;
             case InstructionConstants.OP_LSTORE_0:
             case InstructionConstants.OP_LSTORE_1:
             case InstructionConstants.OP_LSTORE_2:
-            case InstructionConstants.OP_LSTORE_3: opcode = InstructionConstants.OP_LSTORE; break;
+            case InstructionConstants.OP_LSTORE_3: return InstructionConstants.OP_LSTORE;
             case InstructionConstants.OP_FSTORE_0:
             case InstructionConstants.OP_FSTORE_1:
             case InstructionConstants.OP_FSTORE_2:
-            case InstructionConstants.OP_FSTORE_3: opcode = InstructionConstants.OP_FSTORE; break;
+            case InstructionConstants.OP_FSTORE_3: return InstructionConstants.OP_FSTORE;
             case InstructionConstants.OP_DSTORE_0:
             case InstructionConstants.OP_DSTORE_1:
             case InstructionConstants.OP_DSTORE_2:
-            case InstructionConstants.OP_DSTORE_3: opcode = InstructionConstants.OP_DSTORE; break;
+            case InstructionConstants.OP_DSTORE_3: return InstructionConstants.OP_DSTORE;
             case InstructionConstants.OP_ASTORE_0:
             case InstructionConstants.OP_ASTORE_1:
             case InstructionConstants.OP_ASTORE_2:
-            case InstructionConstants.OP_ASTORE_3: opcode = InstructionConstants.OP_ASTORE; break;
+            case InstructionConstants.OP_ASTORE_3: return InstructionConstants.OP_ASTORE;
+
+            default: return opcode;
         }
+    }
+
+    public Instruction shrink()
+    {
+        opcode = canonicalOpcode();
 
         // Is this instruction pointing to a variable with index from 0 to 3?
         if (variableIndex <= 3)
@@ -212,7 +278,7 @@ public class VariableInstruction extends Instruction
         }
 
         writeValue(code, offset, variableIndex, variableIndexSize); offset += variableIndexSize;
-        writeValue(code, offset, constant,      constantSize);
+        writeSignedValue(code, offset, constant, constantSize);
     }
 
 
@@ -222,15 +288,9 @@ public class VariableInstruction extends Instruction
     }
 
 
-    public void accept(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, InstructionVisitor instructionVisitor)
+    public void accept(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, InstructionVisitor instructionVisitor)
     {
-        instructionVisitor.visitVariableInstruction(classFile, methodInfo, codeAttrInfo, offset, this);
-    }
-
-
-    public String toString(int offset)
-    {
-        return "["+offset+"] "+getName()+(wide?"_w":"")+" (variableIndex="+variableIndex+", constant="+constant+")";
+        instructionVisitor.visitVariableInstruction(clazz, method, codeAttribute, offset, this);
     }
 
 
@@ -238,7 +298,10 @@ public class VariableInstruction extends Instruction
 
     public String toString()
     {
-        return getName()+" (variableIndex="+variableIndex+", constant="+constant+")";
+        return getName() +
+               (wide ? "_w" : "") +
+               " v"+variableIndex +
+               (constantSize() > 0 ? ", "+constant : "");
     }
 
 

@@ -25,7 +25,7 @@
 
 # Put all obfuscated classes into the nameless root package.
 
--defaultpackage ''
+-repackageclasses ''
 
 # Allow classes and class members to be made public.
 
@@ -40,11 +40,10 @@
 # If you want to preserve the Ant task as well, you'll have to specify the
 # main ant.jar.
 
-#-libraryjars /usr/local/java/ant1.6.2/lib/ant.jar
+#-libraryjars /usr/local/java/ant1.6.5/lib/ant.jar
 #-keep public class proguard.ant.* {
-#    public void set*(%);
-#    public void set*(**);
-#    public void add*(**);
+#    public void set*(***);
+#    public void add*(***);
 #}
 
 

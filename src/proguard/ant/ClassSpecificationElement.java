@@ -1,6 +1,6 @@
-/* $Id: ClassSpecificationElement.java,v 1.4.2.2 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,11 +20,11 @@
  */
 package proguard.ant;
 
-import org.apache.tools.ant.*;
-import org.apache.tools.ant.types.*;
+import org.apache.tools.ant.BuildException;
+import org.apache.tools.ant.types.DataType;
 import proguard.*;
-import proguard.classfile.*;
-import proguard.classfile.util.*;
+import proguard.classfile.ClassConstants;
+import proguard.classfile.util.ClassUtil;
 
 import java.util.*;
 
@@ -38,8 +38,10 @@ public class ClassSpecificationElement extends DataType
     private static final String ANY_CLASS_KEYWORD  = "*";
 
     private String access;
+    private String annotation;
     private String type;
     private String name;
+    private String extendsAnnotation;
     private String extends_;
     private List   fieldSpecifications  = new ArrayList();
     private List   methodSpecifications = new ArrayList();
@@ -48,13 +50,8 @@ public class ClassSpecificationElement extends DataType
     /**
      * Adds the contents of this class specification element to the given list.
      * @param classSpecifications the class specifications to be extended.
-     * @param markClassFiles      specifies whether to mark the class files.
-     * @param markConditionally   specifies whether to mark the class files
-     *                            and class members conditionally.
      */
-    public void appendTo(List    classSpecifications,
-                         boolean markClassFiles,
-                         boolean markConditionally)
+    public void appendTo(List classSpecifications)
     {
         // Get the referenced file set, or else this one.
         ClassSpecificationElement classSpecificationElement = isReference() ?
@@ -62,11 +59,26 @@ public class ClassSpecificationElement extends DataType
                                                      this.getClass().getName()) :
             this;
 
-        // Create a new class specification.
-        String access   = classSpecificationElement.access;
-        String type     = classSpecificationElement.type;
-        String name     = classSpecificationElement.name;
-        String extends_ = classSpecificationElement.extends_;
+        ClassSpecification classSpecification =
+            createClassSpecification(classSpecificationElement);
+
+        // Add it to the list.
+        classSpecifications.add(classSpecification);
+    }
+
+
+    /**
+     * Creates a new class specification corresponding to the contents of this
+     * class specification element.
+     */
+    protected ClassSpecification createClassSpecification(ClassSpecificationElement classSpecificationElement)
+    {
+        String access            = classSpecificationElement.access;
+        String annotation        = classSpecificationElement.annotation;
+        String type              = classSpecificationElement.type;
+        String name              = classSpecificationElement.name;
+        String extendsAnnotation = classSpecificationElement.extendsAnnotation;
+        String extends_          = classSpecificationElement.extends_;
 
         // For backward compatibility, allow a single "*" wildcard to match
         // any class.
@@ -77,25 +89,25 @@ public class ClassSpecificationElement extends DataType
         }
 
         ClassSpecification classSpecification =
-            new ClassSpecification(requiredAccessFlags(true,  access, type),
+            new ClassSpecification(null,
+                                   requiredAccessFlags(true,  access, type),
                                    requiredAccessFlags(false, access, type),
-                                   name     != null ? ClassUtil.internalClassName(name)     : null,
-                                   extends_ != null ? ClassUtil.internalClassName(extends_) : null,
-                                   markClassFiles,
-                                   markConditionally);
+                                   annotation        != null ? ClassUtil.internalType(annotation)   : null,
+                                   name              != null ? ClassUtil.internalClassName(name)         : null,
+                                   extendsAnnotation != null ? ClassUtil.internalType(extendsAnnotation) : null,
+                                   extends_          != null ? ClassUtil.internalClassName(extends_)     : null);
 
         for (int index = 0; index < fieldSpecifications.size(); index++)
         {
-            classSpecification.addField((ClassMemberSpecification)fieldSpecifications.get(index));
+            classSpecification.addField((MemberSpecification)fieldSpecifications.get(index));
         }
 
         for (int index = 0; index < methodSpecifications.size(); index++)
         {
-            classSpecification.addMethod((ClassMemberSpecification)methodSpecifications.get(index));
+            classSpecification.addMethod((MemberSpecification)methodSpecifications.get(index));
         }
 
-        // Add it to the list.
-        classSpecifications.add(classSpecification);
+        return classSpecification;
     }
 
 
@@ -104,6 +116,12 @@ public class ClassSpecificationElement extends DataType
     public void setAccess(String access)
     {
         this.access = access;
+    }
+
+
+    public void setAnnotation(String annotation)
+    {
+        this.annotation = annotation;
     }
 
 
@@ -116,6 +134,12 @@ public class ClassSpecificationElement extends DataType
     public void setName(String name)
     {
         this.name = name;
+    }
+
+
+    public void setExtendsannotation(String extendsAnnotation)
+    {
+        this.extendsAnnotation = extendsAnnotation;
     }
 
 
@@ -133,42 +157,42 @@ public class ClassSpecificationElement extends DataType
 
     // Ant task nested elements.
 
-    public void addConfiguredField(ClassMemberSpecificationElement classMemberSpecificationElement)
+    public void addConfiguredField(MemberSpecificationElement memberSpecificationElement)
     {
         if (fieldSpecifications == null)
         {
             fieldSpecifications = new ArrayList();
         }
 
-        classMemberSpecificationElement.appendTo(fieldSpecifications,
-                                                 false,
-                                                 false);
+        memberSpecificationElement.appendTo(fieldSpecifications,
+                                            false,
+                                            false);
     }
 
 
-    public void addConfiguredMethod(ClassMemberSpecificationElement classMemberSpecificationElement)
+    public void addConfiguredMethod(MemberSpecificationElement memberSpecificationElement)
     {
         if (methodSpecifications == null)
         {
             methodSpecifications = new ArrayList();
         }
 
-        classMemberSpecificationElement.appendTo(methodSpecifications,
-                                                 true,
-                                                 false);
+        memberSpecificationElement.appendTo(methodSpecifications,
+                                            true,
+                                            false);
     }
 
 
-    public void addConfiguredConstructor(ClassMemberSpecificationElement classMemberSpecificationElement)
+    public void addConfiguredConstructor(MemberSpecificationElement memberSpecificationElement)
     {
         if (methodSpecifications == null)
         {
             methodSpecifications = new ArrayList();
         }
 
-        classMemberSpecificationElement.appendTo(methodSpecifications,
-                                                 true,
-                                                 true);
+        memberSpecificationElement.appendTo(methodSpecifications,
+                                            true,
+                                            true);
     }
 
 

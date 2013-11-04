@@ -1,6 +1,6 @@
-/* $Id: NameFactoryResetter.java,v 1.3.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -21,24 +21,22 @@
 package proguard.obfuscate;
 
 import proguard.classfile.*;
-import proguard.classfile.visitor.ClassFileVisitor;
-
-import java.util.Map;
+import proguard.classfile.visitor.ClassVisitor;
 
 /**
- * This ClassFileVisitor resets a given name factory whenever it visits a class
+ * This ClassVisitor resets a given name factory whenever it visits a class
  * file.
  *
  * @author Eric Lafortune
  */
-public class NameFactoryResetter implements ClassFileVisitor
+public class NameFactoryResetter implements ClassVisitor
 {
-    private NameFactory nameFactory;
+    private final NameFactory nameFactory;
 
 
     /**
-     * Creates a new MapCleaner.
-     * @param map the map to be cleared.
+     * Creates a new NameFactoryResetter.
+     * @param nameFactory the name factory to be reset.
      */
     public NameFactoryResetter(NameFactory nameFactory)
     {
@@ -46,15 +44,15 @@ public class NameFactoryResetter implements ClassFileVisitor
     }
 
 
-    // Implementations for ClassFileVisitor.
+    // Implementations for ClassVisitor.
 
-    public void visitProgramClassFile(ProgramClassFile programClassFile)
+    public void visitProgramClass(ProgramClass programClass)
     {
         nameFactory.reset();
     }
 
 
-    public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
+    public void visitLibraryClass(LibraryClass libraryClass)
     {
         nameFactory.reset();
     }

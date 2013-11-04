@@ -1,6 +1,6 @@
-/* $Id: ExtensionMatcher.java,v 1.4.2.2 2007/01/18 21:31:53 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -21,13 +21,14 @@
 package proguard.util;
 
 /**
- * This StringMatcher tests whether strings end in a given extension.
+ * This StringMatcher tests whether strings end in a given extension, ignoring
+ * its case.
  *
  * @author Eric Lafortune
  */
 public class ExtensionMatcher implements StringMatcher
 {
-    private String extension;
+    private final String extension;
 
 
     /**
@@ -44,6 +45,19 @@ public class ExtensionMatcher implements StringMatcher
 
     public boolean matches(String string)
     {
-        return string.endsWith(extension);
+        return endsWithIgnoreCase(string, extension);
+    }
+
+
+    /**
+     * Returns whether the given string ends with the given suffix, ignoring its
+     * case.
+     */
+    private static boolean endsWithIgnoreCase(String string, String suffix)
+    {
+        int stringLength = string.length();
+        int suffixLength = suffix.length();
+
+        return string.regionMatches(true, stringLength - suffixLength, suffix, 0, suffixLength);
     }
 }

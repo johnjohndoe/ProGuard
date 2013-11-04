@@ -1,6 +1,6 @@
-/* $Id: MultiClassPoolVisitor.java,v 1.2 2004/08/15 12:39:30 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,7 +20,7 @@
  */
 package proguard.classfile.visitor;
 
-import proguard.classfile.*;
+import proguard.classfile.ClassPool;
 
 
 /**
@@ -80,9 +80,9 @@ public class MultiClassPoolVisitor implements ClassPoolVisitor
 
     public void visitClassPool(ClassPool classPool)
     {
-        for (int i = 0; i < classPoolVisitorCount; i++)
+        for (int index = 0; index < classPoolVisitorCount; index++)
         {
-            classPoolVisitors[i].visitClassPool(classPool);
+            classPoolVisitors[index].visitClassPool(classPool);
         }
     }
 }

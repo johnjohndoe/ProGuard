@@ -1,6 +1,6 @@
-/* $Id: GotoCommonCodeReplacer.java,v 1.2.2.6 2007/01/18 21:31:53 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -21,91 +21,92 @@
 package proguard.optimize.peephole;
 
 import proguard.classfile.*;
-import proguard.classfile.attribute.CodeAttrInfo;
-import proguard.classfile.editor.CodeAttrInfoEditor;
+import proguard.classfile.attribute.*;
+import proguard.classfile.attribute.visitor.AttributeVisitor;
+import proguard.classfile.editor.CodeAttributeEditor;
 import proguard.classfile.instruction.*;
+import proguard.classfile.instruction.visitor.InstructionVisitor;
+import proguard.classfile.util.SimplifiedVisitor;
 
 /**
- * This InstructionVisitor redirects unconditional branches so any common code
- * is shared, and the code preceding the branch can be removed.
+ * This AttributeVisitor redirects unconditional branches so any common code
+ * is shared, and the code preceding the branch can be removed, in the code
+ * attributes that it visits.
  *
  * @author Eric Lafortune
  */
-public class GotoCommonCodeReplacer implements InstructionVisitor
+public class GotoCommonCodeReplacer
+extends      SimplifiedVisitor
+implements   AttributeVisitor,
+             InstructionVisitor
 {
     private static final boolean DEBUG = false;
 
 
-    private BranchTargetFinder branchTargetFinder;
-    private CodeAttrInfoEditor codeAttrInfoEditor;
-    private InstructionVisitor extraInstructionVisitor;
+    private final InstructionVisitor  extraInstructionVisitor;
+
+    private final BranchTargetFinder  branchTargetFinder  = new BranchTargetFinder();
+    private final CodeAttributeEditor codeAttributeEditor = new CodeAttributeEditor();
 
 
     /**
      * Creates a new GotoCommonCodeReplacer.
-     * @param branchTargetFinder      a branch target finder that has been
-     *                                initialized to indicate branch targets
-     *                                in the visited code.
-     * @param codeAttrInfoEditor      a code editor that can be used for
-     *                                accumulating changes to the code.
-     */
-    public GotoCommonCodeReplacer(BranchTargetFinder branchTargetFinder,
-                                  CodeAttrInfoEditor codeAttrInfoEditor)
-    {
-        this(branchTargetFinder, codeAttrInfoEditor, null);
-    }
-
-
-    /**
-     * Creates a new GotoCommonCodeReplacer.
-     * @param branchTargetFinder      a branch target finder that has been
-     *                                initialized to indicate branch targets
-     *                                in the visited code.
-     * @param codeAttrInfoEditor      a code editor that can be used for
-     *                                accumulating changes to the code.
      * @param extraInstructionVisitor an optional extra visitor for all replaced
      *                                goto instructions.
      */
-    public GotoCommonCodeReplacer(BranchTargetFinder branchTargetFinder,
-                                  CodeAttrInfoEditor codeAttrInfoEditor,
-                                  InstructionVisitor extraInstructionVisitor)
+    public GotoCommonCodeReplacer(InstructionVisitor  extraInstructionVisitor)
     {
-        this.branchTargetFinder      = branchTargetFinder;
-        this.codeAttrInfoEditor      = codeAttrInfoEditor;
         this.extraInstructionVisitor = extraInstructionVisitor;
+    }
+
+
+    // Implementations for AttributeVisitor.
+
+    public void visitAnyAttribute(Clazz clazz, Attribute attribute) {}
+
+
+    public void visitCodeAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute)
+    {
+        // Mark all branch targets.
+        branchTargetFinder.visitCodeAttribute(clazz, method, codeAttribute);
+
+        // Reset the code attribute editor.
+        codeAttributeEditor.reset(codeAttribute.u4codeLength);
+
+        // Remap the variables of the instructions.
+        codeAttribute.instructionsAccept(clazz, method, this);
+
+        // Apply the code atribute editor.
+        codeAttributeEditor.visitCodeAttribute(clazz, method, codeAttribute);
     }
 
 
     // Implementations for InstructionVisitor.
 
-    public void visitSimpleInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, SimpleInstruction simpleInstruction) {}
-    public void visitCpInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, CpInstruction cpInstruction) {}
-    public void visitVariableInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, VariableInstruction variableInstruction) {}
-    public void visitTableSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, TableSwitchInstruction tableSwitchInstruction) {}
-    public void visitLookUpSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, LookUpSwitchInstruction lookUpSwitchInstruction) {}
+    public void visitAnyInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, Instruction instruction) {}
 
 
-    public void visitBranchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, BranchInstruction branchInstruction)
+    public void visitBranchInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, BranchInstruction branchInstruction)
     {
         // Check if the instruction is an unconditional goto instruction that
         // isn't the target of a branch itself.
         byte opcode = branchInstruction.opcode;
         if ((opcode == InstructionConstants.OP_GOTO ||
              opcode == InstructionConstants.OP_GOTO_W) &&
-             !branchTargetFinder.isBranchTarget(offset))
+            !branchTargetFinder.isBranchTarget(offset))
         {
             int branchOffset = branchInstruction.branchOffset;
             int targetOffset = offset + branchOffset;
 
             // Get the number of common bytes.
-            int commonCount = commonByteCodeCount(codeAttrInfo, offset, targetOffset);
+            int commonCount = commonByteCodeCount(codeAttribute, offset, targetOffset);
 
             if (commonCount > 0 &&
-                !exceptionBoundary(codeAttrInfo, offset, targetOffset))
+                !exceptionBoundary(codeAttribute, offset, targetOffset))
             {
                 if (DEBUG)
                 {
-                    System.out.println("GotoCommonCodeReplacer: "+classFile.getName()+"."+methodInfo.getName(classFile)+" ("+commonCount+" instructions)");
+                    System.out.println("GotoCommonCodeReplacer: "+clazz.getName()+"."+method.getName(clazz)+" ("+commonCount+" instructions)");
                 }
 
                 // Delete the common instructions.
@@ -114,11 +115,11 @@ public class GotoCommonCodeReplacer implements InstructionVisitor
                     int deleteOffset = offset - delta;
                     if (branchTargetFinder.isInstruction(deleteOffset))
                     {
-                        codeAttrInfoEditor.replaceInstruction(     deleteOffset, null);
-                        codeAttrInfoEditor.insertBeforeInstruction(deleteOffset, null);
-                        codeAttrInfoEditor.insertAfterInstruction( deleteOffset, null);
+                        codeAttributeEditor.replaceInstruction(     deleteOffset, null);
+                        codeAttributeEditor.insertBeforeInstruction(deleteOffset, null);
+                        codeAttributeEditor.insertAfterInstruction( deleteOffset, null);
 
-                        codeAttrInfoEditor.deleteInstruction(deleteOffset);
+                        codeAttributeEditor.deleteInstruction(deleteOffset);
                     }
                 }
 
@@ -128,14 +129,14 @@ public class GotoCommonCodeReplacer implements InstructionVisitor
                 {
                     Instruction newGotoInstruction =
                          new BranchInstruction(opcode, newBranchOffset);
-                    codeAttrInfoEditor.replaceInstruction(offset,
-                                                          newGotoInstruction);
+                    codeAttributeEditor.replaceInstruction(offset,
+                                                           newGotoInstruction);
                 }
 
                 // Visit the instruction, if required.
                 if (extraInstructionVisitor != null)
                 {
-                    extraInstructionVisitor.visitBranchInstruction(classFile, methodInfo, codeAttrInfo, offset, branchInstruction);
+                    extraInstructionVisitor.visitBranchInstruction(clazz, method, codeAttribute, offset, branchInstruction);
                 }
             }
         }
@@ -148,10 +149,10 @@ public class GotoCommonCodeReplacer implements InstructionVisitor
      * Returns the number of common bytes preceding the given offsets,
      * avoiding branches and exception blocks.
      */
-    private int commonByteCodeCount(CodeAttrInfo codeAttrInfo, int offset1, int offset2)
+    private int commonByteCodeCount(CodeAttribute codeAttribute, int offset1, int offset2)
     {
         // Find the block of common instructions preceding it.
-        byte[] code = codeAttrInfo.code;
+        byte[] code = codeAttribute.code;
 
         int successfulDelta = 0;
 
@@ -232,7 +233,7 @@ public class GotoCommonCodeReplacer implements InstructionVisitor
      * Returns the whether there is a boundary of an exception block between
      * the given offsets (including both).
      */
-    private boolean exceptionBoundary(CodeAttrInfo codeAttrInfo, int offset1, int offset2)
+    private boolean exceptionBoundary(CodeAttribute codeAttribute, int offset1, int offset2)
     {
         // Swap the offsets if the second one is smaller than the first one.
         if (offset2 < offset1)

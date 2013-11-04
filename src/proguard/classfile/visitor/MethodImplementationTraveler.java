@@ -1,6 +1,6 @@
-/* $Id: MethodImplementationTraveler.java,v 1.3.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -21,57 +21,52 @@
 package proguard.classfile.visitor;
 
 import proguard.classfile.*;
-
+import proguard.classfile.util.SimplifiedVisitor;
 
 /**
- * This <code>MemberInfoVisitor</code> lets a given
- * <code>MemberInfoVisitor</code> travel to all concrete implementations of
- * the visited methods in their class hierarchies.
+ * This <code>MemberVisitor</code> lets a given <code>MemberVisitor</code>
+ * travel to all concrete implementations of the visited methods in their class
+ * hierarchies.
  *
  * @author Eric Lafortune
  */
 public class MethodImplementationTraveler
-  implements MemberInfoVisitor
+extends      SimplifiedVisitor
+implements   MemberVisitor
 {
-    private boolean           visitThisMethod;
-    private MemberInfoVisitor memberInfoVisitor;
+    private final boolean       visitThisMethod;
+    private final MemberVisitor memberVisitor;
 
 
     /**
      * Creates a new MethodImplementationTraveler.
      * @param visitThisMethod   specifies whether to visit the originally
      *                          visited methods.
-     * @param memberInfoVisitor the <code>MemberInfoVisitor</code> to which
+     * @param memberVisitor     the <code>MemberVisitor</code> to which
      *                          visits will be delegated.
      */
-    public MethodImplementationTraveler(boolean           visitThisMethod,
-                                        MemberInfoVisitor memberInfoVisitor)
+    public MethodImplementationTraveler(boolean       visitThisMethod,
+                                        MemberVisitor memberVisitor)
     {
-        this.visitThisMethod   = visitThisMethod;
-        this.memberInfoVisitor = memberInfoVisitor;
+        this.visitThisMethod = visitThisMethod;
+        this.memberVisitor   = memberVisitor;
     }
 
 
-    // Implementations for MemberInfoVisitor.
+    // Implementations for MemberVisitor.
 
-    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo) {}
-
-
-    public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
+    public void visitProgramMethod(ProgramClass programClass, ProgramMethod programMethod)
     {
-        programClassFile.methodImplementationsAccept(programMethodInfo,
-                                                     visitThisMethod,
-                                                     memberInfoVisitor);
+        programClass.methodImplementationsAccept(programMethod,
+                                                 visitThisMethod,
+                                                 memberVisitor);
     }
 
 
-    public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo) {}
-
-
-    public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo)
+    public void visitLibraryMethod(LibraryClass libraryClass, LibraryMethod libraryMethod)
     {
-        libraryClassFile.methodImplementationsAccept(libraryMethodInfo,
-                                                     visitThisMethod,
-                                                     memberInfoVisitor);
+        libraryClass.methodImplementationsAccept(libraryMethod,
+                                                 visitThisMethod,
+                                                 memberVisitor);
     }
 }

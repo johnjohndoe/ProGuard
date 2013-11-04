@@ -1,6 +1,6 @@
-/* $Id: ChangedCodePrinter.java,v 1.7.2.2 2007/01/18 21:31:53 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -23,154 +23,242 @@ package proguard.optimize;
 import proguard.classfile.*;
 import proguard.classfile.attribute.*;
 import proguard.classfile.attribute.annotation.*;
+import proguard.classfile.attribute.preverification.*;
+import proguard.classfile.attribute.visitor.AttributeVisitor;
 import proguard.classfile.util.ClassUtil;
-import proguard.classfile.visitor.*;
 
 /**
- * This AttrInfoVisitor delegates its call to another AttrInfoVisitor, and
+ * This AttributeVisitor delegates its call to another AttributeVisitor, and
  * prints out the code if the other visitor has changed it.
  *
  * @author Eric Lafortune
  */
-public class ChangedCodePrinter implements AttrInfoVisitor
+public class ChangedCodePrinter
+implements   AttributeVisitor
 {
-    private AttrInfoVisitor attrInfoVisitor;
+    private final AttributeVisitor attributeVisitor;
 
 
-    public ChangedCodePrinter(AttrInfoVisitor attrInfoVisitor)
+    public ChangedCodePrinter(AttributeVisitor attributeVisitor)
     {
-        this.attrInfoVisitor = attrInfoVisitor;
+        this.attributeVisitor = attributeVisitor;
     }
 
 
-    // Implementations for AttrInfoVisitor.
+    // Implementations for AttributeVisitor.
 
-    public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo)
-    {
-      attrInfoVisitor.visitUnknownAttrInfo(classFile, unknownAttrInfo);
-    }
 
-    public void visitInnerClassesAttrInfo(ClassFile classFile, InnerClassesAttrInfo innerClassesAttrInfo)
+    public void visitUnknownAttribute(Clazz clazz, UnknownAttribute unknownAttribute)
     {
-      attrInfoVisitor.visitInnerClassesAttrInfo(classFile, innerClassesAttrInfo);
-    }
-
-    public void visitEnclosingMethodAttrInfo(ClassFile classFile, EnclosingMethodAttrInfo enclosingMethodAttrInfo)
-    {
-        attrInfoVisitor.visitEnclosingMethodAttrInfo(classFile, enclosingMethodAttrInfo);
-    }
-
-    public void visitConstantValueAttrInfo(ClassFile classFile, FieldInfo fieldInfo, ConstantValueAttrInfo constantValueAttrInfo)
-    {
-      attrInfoVisitor.visitConstantValueAttrInfo(classFile, fieldInfo, constantValueAttrInfo);
-    }
-
-    public void visitExceptionsAttrInfo(ClassFile classFile, MethodInfo methodInfo, ExceptionsAttrInfo exceptionsAttrInfo)
-    {
-      attrInfoVisitor.visitExceptionsAttrInfo(classFile, methodInfo, exceptionsAttrInfo);
-    }
-
-    public void visitLineNumberTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LineNumberTableAttrInfo lineNumberTableAttrInfo)
-    {
-      attrInfoVisitor.visitLineNumberTableAttrInfo(classFile, methodInfo, codeAttrInfo, lineNumberTableAttrInfo);
-    }
-
-    public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo)
-    {
-      attrInfoVisitor.visitLocalVariableTableAttrInfo(classFile, methodInfo, codeAttrInfo, localVariableTableAttrInfo);
-    }
-
-    public void visitLocalVariableTypeTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeTableAttrInfo localVariableTypeTableAttrInfo)
-    {
-        attrInfoVisitor.visitLocalVariableTypeTableAttrInfo(classFile, methodInfo, codeAttrInfo, localVariableTypeTableAttrInfo);
-    }
-
-    public void visitSourceFileAttrInfo(ClassFile classFile, SourceFileAttrInfo sourceFileAttrInfo)
-    {
-      attrInfoVisitor.visitSourceFileAttrInfo(classFile, sourceFileAttrInfo);
-    }
-
-    public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo)
-    {
-      attrInfoVisitor.visitSourceDirAttrInfo(classFile, sourceDirAttrInfo);
-    }
-
-    public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo)
-    {
-      attrInfoVisitor.visitDeprecatedAttrInfo(classFile, deprecatedAttrInfo);
-    }
-
-    public void visitSyntheticAttrInfo(ClassFile classFile, SyntheticAttrInfo syntheticAttrInfo)
-    {
-      attrInfoVisitor.visitSyntheticAttrInfo(classFile, syntheticAttrInfo);
-    }
-
-    public void visitSignatureAttrInfo(ClassFile classFile, SignatureAttrInfo signatureAttrInfo)
-    {
-      attrInfoVisitor.visitSignatureAttrInfo(classFile, signatureAttrInfo);
-    }
-
-    public void visitRuntimeVisibleAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleAnnotationsAttrInfo runtimeVisibleAnnotationsAttrInfo)
-    {
-        attrInfoVisitor.visitRuntimeVisibleAnnotationAttrInfo(classFile, runtimeVisibleAnnotationsAttrInfo);
-    }
-
-    public void visitRuntimeInvisibleAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleAnnotationsAttrInfo runtimeInvisibleAnnotationsAttrInfo)
-    {
-        attrInfoVisitor.visitRuntimeInvisibleAnnotationAttrInfo(classFile, runtimeInvisibleAnnotationsAttrInfo);
-    }
-
-    public void visitRuntimeVisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleParameterAnnotationsAttrInfo runtimeVisibleParameterAnnotationsAttrInfo)
-    {
-        attrInfoVisitor.visitRuntimeVisibleParameterAnnotationAttrInfo(classFile, runtimeVisibleParameterAnnotationsAttrInfo);
-    }
-
-    public void visitRuntimeInvisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleParameterAnnotationsAttrInfo runtimeInvisibleParameterAnnotationsAttrInfo)
-    {
-        attrInfoVisitor.visitRuntimeInvisibleParameterAnnotationAttrInfo(classFile, runtimeInvisibleParameterAnnotationsAttrInfo);
-    }
-
-    public void visitAnnotationDefaultAttrInfo(ClassFile classFile, AnnotationDefaultAttrInfo annotationDefaultAttrInfo)
-    {
-        attrInfoVisitor.visitAnnotationDefaultAttrInfo(classFile, annotationDefaultAttrInfo);
+        attributeVisitor.visitUnknownAttribute(clazz, unknownAttribute);
     }
 
 
-
-    public void visitCodeAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo)
+    public void visitSourceFileAttribute(Clazz clazz, SourceFileAttribute sourceFileAttribute)
     {
-        byte[] code    = codeAttrInfo.code;
+        attributeVisitor.visitSourceFileAttribute(clazz, sourceFileAttribute);
+    }
+
+
+    public void visitSourceDirAttribute(Clazz clazz, SourceDirAttribute sourceDirAttribute)
+    {
+        attributeVisitor.visitSourceDirAttribute(clazz, sourceDirAttribute);
+    }
+
+
+    public void visitInnerClassesAttribute(Clazz clazz, InnerClassesAttribute innerClassesAttribute)
+    {
+        attributeVisitor.visitInnerClassesAttribute(clazz, innerClassesAttribute);
+    }
+
+
+    public void visitEnclosingMethodAttribute(Clazz clazz, EnclosingMethodAttribute enclosingMethodAttribute)
+    {
+        attributeVisitor.visitEnclosingMethodAttribute(clazz, enclosingMethodAttribute);
+    }
+
+
+    public void visitDeprecatedAttribute(Clazz clazz, DeprecatedAttribute deprecatedAttribute)
+    {
+        attributeVisitor.visitDeprecatedAttribute(clazz, deprecatedAttribute);
+    }
+
+
+    public void visitSyntheticAttribute(Clazz clazz, SyntheticAttribute syntheticAttribute)
+    {
+        attributeVisitor.visitSyntheticAttribute(clazz, syntheticAttribute);
+    }
+
+
+    public void visitSignatureAttribute(Clazz clazz, SignatureAttribute syntheticAttribute)
+    {
+        attributeVisitor.visitSignatureAttribute(clazz, syntheticAttribute);
+    }
+
+
+    public void visitDeprecatedAttribute(Clazz clazz, Field field, DeprecatedAttribute deprecatedAttribute)
+    {
+        attributeVisitor.visitDeprecatedAttribute(clazz, field, deprecatedAttribute);
+    }
+
+
+    public void visitSyntheticAttribute(Clazz clazz, Field field, SyntheticAttribute syntheticAttribute)
+    {
+        attributeVisitor.visitSyntheticAttribute(clazz, field, syntheticAttribute);
+    }
+
+
+    public void visitSignatureAttribute(Clazz clazz, Field field, SignatureAttribute syntheticAttribute)
+    {
+        attributeVisitor.visitSignatureAttribute(clazz, field, syntheticAttribute);
+    }
+
+
+    public void visitDeprecatedAttribute(Clazz clazz, Method method, DeprecatedAttribute deprecatedAttribute)
+    {
+        attributeVisitor.visitDeprecatedAttribute(clazz, method, deprecatedAttribute);
+    }
+
+
+    public void visitSyntheticAttribute(Clazz clazz, Method method, SyntheticAttribute syntheticAttribute)
+    {
+        attributeVisitor.visitSyntheticAttribute(clazz, method, syntheticAttribute);
+    }
+
+
+    public void visitSignatureAttribute(Clazz clazz, Method method, SignatureAttribute syntheticAttribute)
+    {
+        attributeVisitor.visitSignatureAttribute(clazz, method, syntheticAttribute);
+    }
+
+
+    public void visitConstantValueAttribute(Clazz clazz, Field field, ConstantValueAttribute constantValueAttribute)
+    {
+        attributeVisitor.visitConstantValueAttribute(clazz, field, constantValueAttribute);
+    }
+
+
+    public void visitExceptionsAttribute(Clazz clazz, Method method, ExceptionsAttribute exceptionsAttribute)
+    {
+        attributeVisitor.visitExceptionsAttribute(clazz, method, exceptionsAttribute);
+    }
+
+
+    public void visitStackMapAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, StackMapAttribute stackMapAttribute)
+    {
+        attributeVisitor.visitStackMapAttribute(clazz, method, codeAttribute, stackMapAttribute);
+    }
+
+
+    public void visitStackMapTableAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, StackMapTableAttribute stackMapTableAttribute)
+    {
+        attributeVisitor.visitStackMapTableAttribute(clazz, method, codeAttribute, stackMapTableAttribute);
+    }
+
+
+    public void visitLineNumberTableAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, LineNumberTableAttribute lineNumberTableAttribute)
+    {
+        attributeVisitor.visitLineNumberTableAttribute(clazz, method, codeAttribute, lineNumberTableAttribute);
+    }
+
+
+    public void visitLocalVariableTableAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableTableAttribute localVariableTableAttribute)
+    {
+        attributeVisitor.visitLocalVariableTableAttribute(clazz, method, codeAttribute, localVariableTableAttribute);
+    }
+
+
+    public void visitLocalVariableTypeTableAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableTypeTableAttribute localVariableTypeTableAttribute)
+    {
+        attributeVisitor.visitLocalVariableTypeTableAttribute(clazz, method, codeAttribute, localVariableTypeTableAttribute);
+    }
+
+
+    public void visitRuntimeVisibleAnnotationsAttribute(Clazz clazz, RuntimeVisibleAnnotationsAttribute runtimeVisibleAnnotationsAttribute)
+    {
+        attributeVisitor.visitRuntimeVisibleAnnotationsAttribute(clazz, runtimeVisibleAnnotationsAttribute);
+    }
+
+
+    public void visitRuntimeInvisibleAnnotationsAttribute(Clazz clazz, RuntimeInvisibleAnnotationsAttribute runtimeInvisibleAnnotationsAttribute)
+    {
+        attributeVisitor.visitRuntimeInvisibleAnnotationsAttribute(clazz, runtimeInvisibleAnnotationsAttribute);
+    }
+
+
+    public void visitRuntimeVisibleAnnotationsAttribute(Clazz clazz, Field field, RuntimeVisibleAnnotationsAttribute runtimeVisibleAnnotationsAttribute)
+    {
+        attributeVisitor.visitRuntimeVisibleAnnotationsAttribute(clazz, field, runtimeVisibleAnnotationsAttribute);
+    }
+
+
+    public void visitRuntimeInvisibleAnnotationsAttribute(Clazz clazz, Field field, RuntimeInvisibleAnnotationsAttribute runtimeInvisibleAnnotationsAttribute)
+    {
+        attributeVisitor.visitRuntimeInvisibleAnnotationsAttribute(clazz, field, runtimeInvisibleAnnotationsAttribute);
+    }
+
+
+    public void visitRuntimeVisibleAnnotationsAttribute(Clazz clazz, Method method, RuntimeVisibleAnnotationsAttribute runtimeVisibleAnnotationsAttribute)
+    {
+        attributeVisitor.visitRuntimeVisibleAnnotationsAttribute(clazz, method, runtimeVisibleAnnotationsAttribute);
+    }
+
+
+    public void visitRuntimeInvisibleAnnotationsAttribute(Clazz clazz, Method method, RuntimeInvisibleAnnotationsAttribute runtimeInvisibleAnnotationsAttribute)
+    {
+        attributeVisitor.visitRuntimeInvisibleAnnotationsAttribute(clazz, method, runtimeInvisibleAnnotationsAttribute);
+    }
+
+
+    public void visitRuntimeVisibleParameterAnnotationsAttribute(Clazz clazz, Method method, RuntimeVisibleParameterAnnotationsAttribute runtimeVisibleParameterAnnotationsAttribute)
+    {
+        attributeVisitor.visitRuntimeVisibleParameterAnnotationsAttribute(clazz, method, runtimeVisibleParameterAnnotationsAttribute);
+    }
+
+
+    public void visitRuntimeInvisibleParameterAnnotationsAttribute(Clazz clazz, Method method, RuntimeInvisibleParameterAnnotationsAttribute runtimeInvisibleParameterAnnotationsAttribute)
+    {
+        attributeVisitor.visitRuntimeInvisibleParameterAnnotationsAttribute(clazz, method, runtimeInvisibleParameterAnnotationsAttribute);
+    }
+
+
+    public void visitAnnotationDefaultAttribute(Clazz clazz, Method method, AnnotationDefaultAttribute annotationDefaultAttribute)
+    {
+        attributeVisitor.visitAnnotationDefaultAttribute(clazz, method, annotationDefaultAttribute);
+    }
+
+
+    public void visitCodeAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute)
+    {
+        byte[] code    = codeAttribute.code;
         byte[] oldCode = new byte[code.length];
 
         // Copy the current code.
-        for (int index = 0; index < codeAttrInfo.u4codeLength; index++)
-        {
-            oldCode[index] = code[index];
-        }
+        System.arraycopy(code, 0, oldCode, 0, codeAttribute.u4codeLength);
 
         // Delegate to the real visitor.
-        attrInfoVisitor.visitCodeAttrInfo(classFile, methodInfo, codeAttrInfo);
+        attributeVisitor.visitCodeAttribute(clazz, method, codeAttribute);
 
         // Check if the code has changed.
-        if (codeHasChanged(codeAttrInfo, oldCode))
+        if (codeHasChanged(codeAttribute, oldCode))
         {
-            printChangedCode(classFile, methodInfo, codeAttrInfo, oldCode);
+            printChangedCode(clazz, method, codeAttribute, oldCode);
         }
     }
 
 
     // Small utility methods.
 
-    private boolean codeHasChanged(CodeAttrInfo codeAttrInfo, byte[] oldCode)
+    private boolean codeHasChanged(CodeAttribute codeAttribute, byte[] oldCode)
     {
-        if (oldCode.length != codeAttrInfo.u4codeLength)
+        if (oldCode.length != codeAttribute.u4codeLength)
         {
             return true;
         }
 
-        for (int index = 0; index < codeAttrInfo.u4codeLength; index++)
+        for (int index = 0; index < codeAttribute.u4codeLength; index++)
         {
-            if (oldCode[index] != codeAttrInfo.code[index])
+            if (oldCode[index] != codeAttribute.code[index])
             {
                 return true;
             }
@@ -180,24 +268,24 @@ public class ChangedCodePrinter implements AttrInfoVisitor
     }
 
 
-    private void printChangedCode(ClassFile    classFile,
-                                  MethodInfo   methodInfo,
-                                  CodeAttrInfo codeAttrInfo,
-                                  byte[]       oldCode)
+    private void printChangedCode(Clazz         clazz,
+                                  Method        method,
+                                  CodeAttribute codeAttribute,
+                                  byte[]        oldCode)
     {
-        System.out.println("Class "+ClassUtil.externalClassName(classFile.getName()));
-        System.out.println("Method "+ClassUtil.externalFullMethodDescription(classFile.getName(),
+        System.out.println("Class "+ClassUtil.externalClassName(clazz.getName()));
+        System.out.println("Method "+ClassUtil.externalFullMethodDescription(clazz.getName(),
                                                                              0,
-                                                                             methodInfo.getName(classFile),
-                                                                             methodInfo.getDescriptor(classFile)));
+                                                                             method.getName(clazz),
+                                                                             method.getDescriptor(clazz)));
 
-        for (int index = 0; index < codeAttrInfo.u4codeLength; index++)
+        for (int index = 0; index < codeAttribute.u4codeLength; index++)
         {
             System.out.println(
-                (oldCode[index] == codeAttrInfo.code[index]? "  -- ":"  => ")+
+                (oldCode[index] == codeAttribute.code[index]? "  -- ":"  => ")+
                 index+": "+
-                Integer.toHexString(0x100|oldCode[index]          &0xff).substring(1)+" "+
-                Integer.toHexString(0x100|codeAttrInfo.code[index]&0xff).substring(1));
+                Integer.toHexString(0x100|oldCode[index]           &0xff).substring(1)+" "+
+                Integer.toHexString(0x100|codeAttribute.code[index]&0xff).substring(1));
         }
     }
 }

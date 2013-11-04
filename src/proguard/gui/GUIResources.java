@@ -1,6 +1,6 @@
-/* $Id: GUIResources.java,v 1.6.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -21,7 +21,7 @@
 package proguard.gui;
 
 import java.text.MessageFormat;
-import java.util.*;
+import java.util.ResourceBundle;
 
 
 /**
@@ -31,8 +31,8 @@ import java.util.*;
  */
 class GUIResources
 {
-    private static ResourceBundle messages  = ResourceBundle.getBundle(new GUIResources().getClass().getName());
-    private static MessageFormat  formatter = new MessageFormat("");
+    private static final ResourceBundle messages  = ResourceBundle.getBundle(GUIResources.class.getName());
+    private static final MessageFormat  formatter = new MessageFormat("");
 
 
     /**

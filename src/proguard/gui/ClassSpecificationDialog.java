@@ -1,6 +1,6 @@
-/* $Id: ClassSpecificationDialog.java,v 1.4.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,25 +20,22 @@
  */
 package proguard.gui;
 
-import java.awt.*;
-import java.awt.event.*;
+import proguard.*;
+import proguard.classfile.ClassConstants;
+import proguard.classfile.util.ClassUtil;
 
 import javax.swing.*;
 import javax.swing.border.*;
-import javax.swing.border.Border;
-
+import java.awt.*;
+import java.awt.event.*;
 import java.util.List;
-
-import proguard.ClassSpecification;
-import proguard.classfile.ClassConstants;
-import proguard.classfile.util.ClassUtil;
 
 /**
  * This <code>JDialog</code> allows the user to enter a String.
  *
  * @author Eric Lafortune
  */
-class ClassSpecificationDialog extends JDialog
+final class ClassSpecificationDialog extends JDialog
 {
     /**
      * Return value if the dialog is canceled (with the Cancel button or by
@@ -52,21 +49,28 @@ class ClassSpecificationDialog extends JDialog
     public static final int APPROVE_OPTION = 0;
 
 
-    private JTextArea commentsTextArea = new JTextArea(4, 20);
+    private final JTextArea commentsTextArea = new JTextArea(4, 20);
 
-    private JRadioButton keepClassesAndMembersRadioButton  = new JRadioButton(GUIResources.getMessage("keep"));
-    private JRadioButton keepClassMembersRadioButton       = new JRadioButton(GUIResources.getMessage("keepClassMembers"));
-    private JRadioButton keepClassesWithMembersRadioButton = new JRadioButton(GUIResources.getMessage("keepClassesWithMembers"));
+    private final JRadioButton keepClassesAndMembersRadioButton  = new JRadioButton(msg("keep"));
+    private final JRadioButton keepClassMembersRadioButton       = new JRadioButton(msg("keepClassMembers"));
+    private final JRadioButton keepClassesWithMembersRadioButton = new JRadioButton(msg("keepClassesWithMembers"));
 
-    private JRadioButton[] publicRadioButtons;
-    private JRadioButton[] finalRadioButtons;
-    private JRadioButton[] interfaceRadioButtons;
-    private JRadioButton[] abstractRadioButtons;
+    private final JRadioButton allowShrinkingRadioButton    = new JRadioButton(msg("allowShrinking"));
+    private final JRadioButton allowOptimizationRadioButton = new JRadioButton(msg("allowOptimization"));
+    private final JRadioButton allowObfuscationRadioButton  = new JRadioButton(msg("allowObfuscation"));
 
-    private JTextField classNameTextField        = new JTextField(20);
-    private JTextField extendsClassNameTextField = new JTextField(20);
 
-    private ClassMemberSpecificationsPanel classMembersPanel;
+    private final JRadioButton[] publicRadioButtons;
+    private final JRadioButton[] finalRadioButtons;
+    private final JRadioButton[] interfaceRadioButtons;
+    private final JRadioButton[] abstractRadioButtons;
+
+    private final JTextField annotationTypeTextField        = new JTextField(20);
+    private final JTextField classNameTextField             = new JTextField(20);
+    private final JTextField extendsAnnotationTypeTextField = new JTextField(20);
+    private final JTextField extendsClassNameTextField      = new JTextField(20);
+
+    private final MemberSpecificationsPanel memberSpecificationsPanel;
 
     private int returnValue;
 
@@ -124,17 +128,23 @@ class ClassSpecificationDialog extends JDialog
         lastLabelConstraints.anchor    = GridBagConstraints.CENTER;
         lastLabelConstraints.insets    = labelConstraints.insets;
 
+        GridBagConstraints advancedButtonConstraints = new GridBagConstraints();
+        advancedButtonConstraints.weightx = 1.0;
+        advancedButtonConstraints.weighty = 1.0;
+        advancedButtonConstraints.anchor  = GridBagConstraints.SOUTHWEST;
+        advancedButtonConstraints.insets  = new Insets(4, 4, 8, 4);
+
         GridBagConstraints okButtonConstraints = new GridBagConstraints();
         okButtonConstraints.weightx = 1.0;
         okButtonConstraints.weighty = 1.0;
         okButtonConstraints.anchor  = GridBagConstraints.SOUTHEAST;
-        okButtonConstraints.insets  = new Insets(4, 4, 8, 4);
+        okButtonConstraints.insets  = advancedButtonConstraints.insets;
 
         GridBagConstraints cancelButtonConstraints = new GridBagConstraints();
         cancelButtonConstraints.gridwidth = GridBagConstraints.REMAINDER;
         cancelButtonConstraints.weighty   = 1.0;
         cancelButtonConstraints.anchor    = GridBagConstraints.SOUTHEAST;
-        cancelButtonConstraints.insets    = okButtonConstraints.insets;
+        cancelButtonConstraints.insets    = advancedButtonConstraints.insets;
 
         GridBagLayout layout = new GridBagLayout();
 
@@ -143,12 +153,12 @@ class ClassSpecificationDialog extends JDialog
         // Create the comments panel.
         JPanel commentsPanel = new JPanel(layout);
         commentsPanel.setBorder(BorderFactory.createTitledBorder(etchedBorder,
-                                                                 GUIResources.getMessage("comments")));
+                                                                 msg("comments")));
 
         JScrollPane commentsScrollPane = new JScrollPane(commentsTextArea);
         commentsScrollPane.setBorder(classNameTextField.getBorder());
 
-        commentsPanel.add(commentsScrollPane, constraintsLastStretch);
+        commentsPanel.add(tip(commentsScrollPane, "commentsTip"), constraintsLastStretch);
 
         // Create the keep option panel.
         ButtonGroup keepButtonGroup = new ButtonGroup();
@@ -158,50 +168,92 @@ class ClassSpecificationDialog extends JDialog
 
         JPanel keepOptionPanel = new JPanel(layout);
         keepOptionPanel.setBorder(BorderFactory.createTitledBorder(etchedBorder,
-                                                                   GUIResources.getMessage("keepTitle")));
+                                                                   msg("keepTitle")));
 
-        keepOptionPanel.add(keepClassesAndMembersRadioButton,  constraintsLastStretch);
-        keepOptionPanel.add(keepClassMembersRadioButton,       constraintsLastStretch);
-        keepOptionPanel.add(keepClassesWithMembersRadioButton, constraintsLastStretch);
+        keepOptionPanel.add(tip(keepClassesAndMembersRadioButton,  "keepTip"),                   constraintsLastStretch);
+        keepOptionPanel.add(tip(keepClassMembersRadioButton,       "keepClassMembersTip"),       constraintsLastStretch);
+        keepOptionPanel.add(tip(keepClassesWithMembersRadioButton, "keepClassesWithMembersTip"), constraintsLastStretch);
+
+        // Create the allow option panel.
+        final JPanel allowOptionPanel = new JPanel(layout);
+        allowOptionPanel.setBorder(BorderFactory.createTitledBorder(etchedBorder,
+                                                                    msg("allowTitle")));
+
+        allowOptionPanel.add(tip(allowShrinkingRadioButton,    "allowShrinkingTip"),    constraintsLastStretch);
+        allowOptionPanel.add(tip(allowOptimizationRadioButton, "allowOptimizationTip"), constraintsLastStretch);
+        allowOptionPanel.add(tip(allowObfuscationRadioButton,  "allowObfuscationTip"),  constraintsLastStretch);
 
         // Create the access panel.
         JPanel accessPanel = new JPanel(layout);
         accessPanel.setBorder(BorderFactory.createTitledBorder(etchedBorder,
-                                                               GUIResources.getMessage("access")));
+                                                               msg("access")));
 
-        accessPanel.add(Box.createGlue(),         labelConstraints);
-        accessPanel.add(new JLabel(GUIResources.getMessage("required")),   labelConstraints);
-        accessPanel.add(new JLabel(GUIResources.getMessage("not")),        labelConstraints);
-        accessPanel.add(new JLabel(GUIResources.getMessage("dontCare")), labelConstraints);
-        accessPanel.add(Box.createGlue(),         constraintsLastStretch);
+        accessPanel.add(Box.createGlue(),                                labelConstraints);
+        accessPanel.add(tip(new JLabel(msg("required")), "requiredTip"), labelConstraints);
+        accessPanel.add(tip(new JLabel(msg("not")),      "notTip"),      labelConstraints);
+        accessPanel.add(tip(new JLabel(msg("dontCare")), "dontCareTip"), labelConstraints);
+        accessPanel.add(Box.createGlue(),                                constraintsLastStretch);
 
         publicRadioButtons    = addRadioButtonTriplet("Public",    accessPanel);
         finalRadioButtons     = addRadioButtonTriplet("Final",     accessPanel);
         interfaceRadioButtons = addRadioButtonTriplet("Interface", accessPanel);
         abstractRadioButtons  = addRadioButtonTriplet("Abstract",  accessPanel);
 
+        // Create the annotation type panel.
+        final JPanel annotationTypePanel = new JPanel(layout);
+        annotationTypePanel.setBorder(BorderFactory.createTitledBorder(etchedBorder,
+                                                                       msg("annotation")));
+
+        annotationTypePanel.add(tip(annotationTypeTextField, "classNameTip"), constraintsLastStretch);
+
         // Create the class name panel.
         JPanel classNamePanel = new JPanel(layout);
         classNamePanel.setBorder(BorderFactory.createTitledBorder(etchedBorder,
-                                                                  GUIResources.getMessage("class")));
+                                                                  msg("class")));
 
-        classNamePanel.add(classNameTextField, constraintsLastStretch);
+        classNamePanel.add(tip(classNameTextField, "classNameTip"), constraintsLastStretch);
+
+        // Create the extends annotation type panel.
+        final JPanel extendsAnnotationTypePanel = new JPanel(layout);
+        extendsAnnotationTypePanel.setBorder(BorderFactory.createTitledBorder(etchedBorder,
+                                                                              msg("extendsImplementsAnnotation")));
+
+        extendsAnnotationTypePanel.add(tip(extendsAnnotationTypeTextField, "classNameTip"), constraintsLastStretch);
 
         // Create the extends class name panel.
         JPanel extendsClassNamePanel = new JPanel(layout);
         extendsClassNamePanel.setBorder(BorderFactory.createTitledBorder(etchedBorder,
-                                                                         GUIResources.getMessage("extendsImplementsClass")));
+                                                                         msg("extendsImplementsClass")));
 
-        extendsClassNamePanel.add(extendsClassNameTextField, constraintsLastStretch);
+        extendsClassNamePanel.add(tip(extendsClassNameTextField, "classNameTip"), constraintsLastStretch);
 
 
         // Create the class member list panel.
-        classMembersPanel = new ClassMemberSpecificationsPanel(this, fullKeepOptions);
-        classMembersPanel.setBorder(BorderFactory.createTitledBorder(etchedBorder,
-                                                                     GUIResources.getMessage("classMembers")));
+        memberSpecificationsPanel = new MemberSpecificationsPanel(this, fullKeepOptions);
+        memberSpecificationsPanel.setBorder(BorderFactory.createTitledBorder(etchedBorder,
+                                                                             msg("classMembers")));
+
+        // Create the Advanced button.
+        final JButton advancedButton = new JButton(msg("basic"));
+        advancedButton.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
+                boolean visible = !allowOptionPanel.isVisible();
+
+                allowOptionPanel.setVisible(visible);
+                annotationTypePanel.setVisible(visible);
+                extendsAnnotationTypePanel.setVisible(visible);
+
+                advancedButton.setText(msg(visible ? "basic" : "advanced"));
+
+                pack();
+            }
+        });
+        advancedButton.doClick();
 
         // Create the Ok button.
-        JButton okButton = new JButton(GUIResources.getMessage("ok"));
+        JButton okButton = new JButton(msg("ok"));
         okButton.addActionListener(new ActionListener()
         {
             public void actionPerformed(ActionEvent e)
@@ -212,7 +264,7 @@ class ClassSpecificationDialog extends JDialog
         });
 
         // Create the Cancel button.
-        JButton cancelButton = new JButton(GUIResources.getMessage("cancel"));
+        JButton cancelButton = new JButton(msg("cancel"));
         cancelButton.addActionListener(new ActionListener()
         {
             public void actionPerformed(ActionEvent e)
@@ -223,18 +275,22 @@ class ClassSpecificationDialog extends JDialog
 
         // Add all panels to the main panel.
         JPanel mainPanel = new JPanel(layout);
-        mainPanel.add(commentsPanel,         panelConstraints);
+        mainPanel.add(tip(commentsPanel,              "commentsTip"),                    panelConstraints);
         if (fullKeepOptions)
         {
-            mainPanel.add(keepOptionPanel,       panelConstraints);
+            mainPanel.add(tip(keepOptionPanel,        "keepTitleTip"),                   panelConstraints);
+            mainPanel.add(tip(allowOptionPanel,       "allowTitleTip"),                  panelConstraints);
         }
-        mainPanel.add(accessPanel,           panelConstraints);
-        mainPanel.add(classNamePanel,        panelConstraints);
-        mainPanel.add(extendsClassNamePanel, panelConstraints);
-        mainPanel.add(classMembersPanel,     stretchPanelConstraints);
+        mainPanel.add(tip(accessPanel,                "accessTip"),                      panelConstraints);
+        mainPanel.add(tip(annotationTypePanel,        "annotationTip"),                  panelConstraints);
+        mainPanel.add(tip(classNamePanel,             "classTip"),                       panelConstraints);
+        mainPanel.add(tip(extendsAnnotationTypePanel, "extendsImplementsAnnotationTip"), panelConstraints);
+        mainPanel.add(tip(extendsClassNamePanel,      "extendsImplementsClassTip"),      panelConstraints);
+        mainPanel.add(tip(memberSpecificationsPanel,  "classMembersTip"),                stretchPanelConstraints);
 
-        mainPanel.add(okButton,              okButtonConstraints);
-        mainPanel.add(cancelButton,          cancelButtonConstraints);
+        mainPanel.add(tip(advancedButton, "advancedTip"), advancedButtonConstraints);
+        mainPanel.add(okButton,                           okButtonConstraints);
+        mainPanel.add(cancelButton,                       cancelButtonConstraints);
 
         getContentPane().add(mainPanel);
     }
@@ -286,28 +342,48 @@ class ClassSpecificationDialog extends JDialog
 
 
     /**
-     * Sets the ClassSpecification to be represented in this dialog.
+     * Sets the KeepSpecification to be represented in this dialog.
      */
-    public void setClassSpecification(ClassSpecification classSpecification)
+    public void setKeepSpecification(KeepSpecification keepSpecification)
     {
-        String  className         = classSpecification.className;
-        String  extendsClassName  = classSpecification.extendsClassName;
-        boolean markClassFiles    = classSpecification.markClassFiles;
-        boolean markConditionally = classSpecification.markConditionally;
-        String  comments          = classSpecification.comments;
-        List    keepFieldOptions  = classSpecification.fieldSpecifications;
-        List    keepMethodOptions = classSpecification.methodSpecifications;
-
-        // Set the comments text area.
-        commentsTextArea.setText(comments == null ? "" : comments);
+        boolean markClasses       = keepSpecification.markClasses;
+        boolean markConditionally = keepSpecification.markConditionally;
+        boolean allowShrinking    = keepSpecification.allowShrinking;
+        boolean allowOptimization = keepSpecification.allowOptimization;
+        boolean allowObfuscation  = keepSpecification.allowObfuscation;
 
         // Figure out the proper keep radio button and set it.
         JRadioButton keepOptionRadioButton =
             markConditionally ? keepClassesWithMembersRadioButton :
-            markClassFiles    ? keepClassesAndMembersRadioButton  :
+            markClasses       ? keepClassesAndMembersRadioButton  :
                                 keepClassMembersRadioButton;
 
         keepOptionRadioButton.setSelected(true);
+
+        // Set the allow radio buttons.
+        allowShrinkingRadioButton   .setSelected(allowShrinking);
+        allowOptimizationRadioButton.setSelected(allowOptimization);
+        allowObfuscationRadioButton .setSelected(allowObfuscation);
+
+        setClassSpecification(keepSpecification);
+    }
+
+
+    /**
+     * Sets the ClassSpecification to be represented in this dialog.
+     */
+    public void setClassSpecification(ClassSpecification classSpecification)
+    {
+        String comments              = classSpecification.comments;
+        String annotationType        = classSpecification.annotationType;
+        String className             = classSpecification.className;
+        String extendsAnnotationType = classSpecification.extendsAnnotationType;
+        String extendsClassName      = classSpecification.extendsClassName;
+        List   keepFieldOptions      = classSpecification.fieldSpecifications;
+        List   keepMethodOptions     = classSpecification.methodSpecifications;
+
+        // Set the comments text area.
+        commentsTextArea.setText(comments == null ? "" : comments);
 
         // Set the access radio buttons.
         setClassSpecificationRadioButtons(classSpecification, ClassConstants.INTERNAL_ACC_PUBLIC,    publicRadioButtons);
@@ -315,12 +391,34 @@ class ClassSpecificationDialog extends JDialog
         setClassSpecificationRadioButtons(classSpecification, ClassConstants.INTERNAL_ACC_INTERFACE, interfaceRadioButtons);
         setClassSpecificationRadioButtons(classSpecification, ClassConstants.INTERNAL_ACC_ABSTRACT,  abstractRadioButtons);
 
-        // Set the class name text fields.
-        classNameTextField       .setText(className        == null ? "*" : ClassUtil.externalClassName(className));
-        extendsClassNameTextField.setText(extendsClassName == null ? ""  : ClassUtil.externalClassName(extendsClassName));
+        // Set the class and annotation text fields.
+        annotationTypeTextField       .setText(annotationType        == null ? ""  : ClassUtil.externalType(annotationType));
+        classNameTextField            .setText(className             == null ? "*" : ClassUtil.externalClassName(className));
+        extendsAnnotationTypeTextField.setText(extendsAnnotationType == null ? ""  : ClassUtil.externalType(extendsAnnotationType));
+        extendsClassNameTextField     .setText(extendsClassName      == null ? ""  : ClassUtil.externalClassName(extendsClassName));
 
         // Set the keep class member option list.
-        classMembersPanel.setClassMemberSpecifications(keepFieldOptions, keepMethodOptions);
+        memberSpecificationsPanel.setMemberSpecifications(keepFieldOptions, keepMethodOptions);
+    }
+
+
+    /**
+     * Returns the KeepSpecification currently represented in this dialog.
+     */
+    public KeepSpecification getKeepSpecification()
+    {
+        boolean markClasses       = !keepClassMembersRadioButton     .isSelected();
+        boolean markConditionally = keepClassesWithMembersRadioButton.isSelected();
+        boolean allowShrinking    = allowShrinkingRadioButton        .isSelected();
+        boolean allowOptimization = allowOptimizationRadioButton     .isSelected();
+        boolean allowObfuscation  = allowObfuscationRadioButton      .isSelected();
+
+        return new KeepSpecification(markClasses,
+                                     markConditionally,
+                                     allowShrinking,
+                                     allowOptimization,
+                                     allowObfuscation,
+                                     getClassSpecification());
     }
 
 
@@ -329,21 +427,21 @@ class ClassSpecificationDialog extends JDialog
      */
     public ClassSpecification getClassSpecification()
     {
-        String  comments          = commentsTextArea.getText();
-        String  className         = classNameTextField.getText();
-        String  extendsClassName  = extendsClassNameTextField.getText();
-        boolean markClassFiles    = !keepClassMembersRadioButton.isSelected();
-        boolean markConditionally = keepClassesWithMembersRadioButton.isSelected();
+        String comments              = commentsTextArea.getText();
+        String annotationType        = annotationTypeTextField.getText();
+        String className             = classNameTextField.getText();
+        String extendsAnnotationType = extendsAnnotationTypeTextField.getText();
+        String extendsClassName      = extendsClassNameTextField.getText();
 
         ClassSpecification classSpecification =
-            new ClassSpecification(0,
-                                    0,
-                                    className.equals("") ||
-                                    className.equals("*")       ? null : ClassUtil.internalClassName(className),
-                                    extendsClassName.equals("") ? null : ClassUtil.internalClassName(extendsClassName),
-                                    markClassFiles,
-                                    markConditionally,
-                                    comments.equals("")         ? null : comments);
+            new ClassSpecification(comments.equals("")              ? null : comments,
+                                   0,
+                                   0,
+                                   annotationType.equals("")        ? null : ClassUtil.internalType(annotationType),
+                                   className.equals("") ||
+                                   className.equals("*")            ? null : ClassUtil.internalClassName(className),
+                                   extendsAnnotationType.equals("") ? null : ClassUtil.internalType(extendsAnnotationType),
+                                   extendsClassName.equals("")      ? null : ClassUtil.internalClassName(extendsClassName));
 
         // Also get the access radio button settings.
         getClassSpecificationRadioButtons(classSpecification, ClassConstants.INTERNAL_ACC_PUBLIC,    publicRadioButtons);
@@ -352,8 +450,8 @@ class ClassSpecificationDialog extends JDialog
         getClassSpecificationRadioButtons(classSpecification, ClassConstants.INTERNAL_ACC_ABSTRACT,  abstractRadioButtons);
 
         // Get the keep class member option lists.
-        classSpecification.fieldSpecifications  = classMembersPanel.getClassMemberSpecifications(true);
-        classSpecification.methodSpecifications = classMembersPanel.getClassMemberSpecifications(false);
+        classSpecification.fieldSpecifications  = memberSpecificationsPanel.getMemberSpecifications(true);
+        classSpecification.methodSpecifications = memberSpecificationsPanel.getMemberSpecifications(false);
 
         return classSpecification;
     }
@@ -410,5 +508,27 @@ class ClassSpecificationDialog extends JDialog
         {
             classSpecification.requiredUnsetAccessFlags |= flag;
         }
+    }
+
+
+    /**
+     * Attaches the tool tip from the GUI resources that corresponds to the
+     * given key, to the given component.
+     */
+    private static JComponent tip(JComponent component, String messageKey)
+    {
+        component.setToolTipText(msg(messageKey));
+
+        return component;
+    }
+
+
+    /**
+     * Returns the message from the GUI resources that corresponds to the given
+     * key.
+     */
+    private static String msg(String messageKey)
+    {
+         return GUIResources.getMessage(messageKey);
     }
 }

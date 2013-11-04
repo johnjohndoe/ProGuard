@@ -1,45 +1,48 @@
-/* $Id: InstructionWriter.java,v 1.1.2.3 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
- * This program is free software; you can redistribute it and/or modify it
+ * This library is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
  * Software Foundation; either version 2 of the License, or (at your option)
  * any later version.
  *
- * This program is distributed in the hope that it will be useful, but WITHOUT
+ * This library is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
- * more details.
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+ * for more details.
  *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this library; if not, write to the Free Software Foundation,
+ * Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 package proguard.classfile.editor;
 
-import proguard.classfile.attribute.*;
-import proguard.classfile.attribute.annotation.*;
-import proguard.classfile.instruction.*;
 import proguard.classfile.*;
+import proguard.classfile.attribute.CodeAttribute;
+import proguard.classfile.attribute.visitor.AttributeVisitor;
+import proguard.classfile.instruction.*;
+import proguard.classfile.instruction.visitor.InstructionVisitor;
+import proguard.classfile.util.SimplifiedVisitor;
 
 /**
  * This InstructionVisitor writes out the instructions that it visits,
- * collecting instructions that have to be widened. As an AttrInfoVisitor,
+ * collecting instructions that have to be widened. As an AttributeVisitor,
  * it then applies the collected changes. The process will be repeated
  * recursively, if necessary.
  *
  * @author Eric Lafortune
  */
 public class InstructionWriter
-  implements InstructionVisitor,
-             AttrInfoVisitor
+extends      SimplifiedVisitor
+implements   InstructionVisitor,
+             AttributeVisitor
 {
     private int codeLength;
 
-    private CodeAttrInfoEditor codeAttrInfoEditor;
+    private CodeAttributeEditor codeAttributeEditor;
 
 
     /**
@@ -51,52 +54,54 @@ public class InstructionWriter
         this.codeLength = codeLength;
 
         // The code attribute editor has to be created lazily.
-        if (codeAttrInfoEditor != null)
+        if (codeAttributeEditor != null)
         {
-            codeAttrInfoEditor.reset(codeLength);
+            codeAttributeEditor.reset(codeLength);
         }
     }
 
 
     // Implementations for InstructionVisitor.
 
-    public void visitSimpleInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, SimpleInstruction simpleInstruction)
+    public void visitSimpleInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, SimpleInstruction simpleInstruction)
     {
         // Try to write out the instruction.
         // Simple instructions should always fit.
-        simpleInstruction.write(codeAttrInfo, offset);
+        simpleInstruction.write(codeAttribute, offset);
     }
 
 
-    public void visitCpInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, CpInstruction cpInstruction)
+    public void visitConstantInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, ConstantInstruction constantInstruction)
     {
         try
         {
             // Try to write out the instruction.
-            cpInstruction.write(codeAttrInfo, offset);
+            constantInstruction.write(codeAttribute, offset);
         }
         catch (IllegalArgumentException exception)
         {
             // Create a new constant instruction that will fit.
             Instruction replacementInstruction =
-                new CpInstruction().copy(cpInstruction).shrink();
+                new ConstantInstruction(constantInstruction.opcode,
+                                        constantInstruction.constantIndex,
+                                        constantInstruction.constant).shrink();
 
             replaceInstruction(offset, replacementInstruction);
 
             // Write out a dummy constant instruction for now.
-            cpInstruction.cpIndex  = 0;
-            cpInstruction.constant = 0;
-            cpInstruction.write(codeAttrInfo, offset);
+            constantInstruction.constantIndex = 0;
+            constantInstruction.constant      = 0;
+            constantInstruction.write(codeAttribute, offset);
         }
     }
 
 
-    public void visitVariableInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, VariableInstruction variableInstruction)
+    public void visitVariableInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, VariableInstruction variableInstruction)
     {
         try
         {
             // Try to write out the instruction.
-            variableInstruction.write(codeAttrInfo, offset);
+            variableInstruction.write(codeAttribute, offset);
         }
         catch (IllegalArgumentException exception)
         {
@@ -104,24 +109,24 @@ public class InstructionWriter
             Instruction replacementInstruction =
                 new VariableInstruction(variableInstruction.opcode,
                                         variableInstruction.variableIndex,
-                                        variableInstruction.constant);
+                                        variableInstruction.constant).shrink();
 
             replaceInstruction(offset, replacementInstruction);
 
             // Write out a dummy variable instruction for now.
             variableInstruction.variableIndex = 0;
             variableInstruction.constant      = 0;
-            variableInstruction.write(codeAttrInfo, offset);
+            variableInstruction.write(codeAttribute, offset);
         }
     }
 
 
-    public void visitBranchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, BranchInstruction branchInstruction)
+    public void visitBranchInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, BranchInstruction branchInstruction)
     {
         try
         {
             // Try to write out the instruction.
-            branchInstruction.write(codeAttrInfo, offset);
+            branchInstruction.write(codeAttribute, offset);
         }
         catch (IllegalArgumentException exception)
         {
@@ -137,7 +142,8 @@ public class InstructionWriter
                 {
                     // Create a new branch instruction that will fit.
                     replacementInstruction =
-                        new BranchInstruction().copy(branchInstruction).shrink();
+                        new BranchInstruction(branchInstruction.opcode,
+                                              branchInstruction.branchOffset).shrink();
 
                     break;
                 }
@@ -188,59 +194,31 @@ public class InstructionWriter
 
             // Write out a dummy branch instruction for now.
             branchInstruction.branchOffset = 0;
-            branchInstruction.write(codeAttrInfo, offset);
+            branchInstruction.write(codeAttribute, offset);
         }
     }
 
 
-    public void visitTableSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, TableSwitchInstruction tableSwitchInstruction)
+    public void visitAnySwitchInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, SwitchInstruction switchInstruction)
     {
         // Try to write out the instruction.
-        // Table switch instructions should always fit.
-        tableSwitchInstruction.write(codeAttrInfo, offset);
+        // Switch instructions should always fit.
+        switchInstruction.write(codeAttribute, offset);
     }
 
 
-    public void visitLookUpSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, LookUpSwitchInstruction lookUpSwitchInstruction)
-    {
-        // Try to write out the instruction.
-        // Table switch instructions should always fit.
-        lookUpSwitchInstruction.write(codeAttrInfo, offset);
-    }
+    // Implementations for AttributeVisitor.
 
-
-    // Implementations for AttrInfoVisitor.
-
-    public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo) {}
-    public void visitInnerClassesAttrInfo(ClassFile classFile, InnerClassesAttrInfo innerClassesAttrInfo) {}
-    public void visitEnclosingMethodAttrInfo(ClassFile classFile, EnclosingMethodAttrInfo enclosingMethodAttrInfo) {}
-    public void visitConstantValueAttrInfo(ClassFile classFile, FieldInfo fieldInfo, ConstantValueAttrInfo constantValueAttrInfo) {}
-    public void visitExceptionsAttrInfo(ClassFile classFile, MethodInfo methodInfo, ExceptionsAttrInfo exceptionsAttrInfo) {}
-    public void visitLineNumberTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LineNumberTableAttrInfo lineNumberTableAttrInfo) {}
-    public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo) {}
-    public void visitLocalVariableTypeTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeTableAttrInfo localVariableTypeTableAttrInfo) {}
-    public void visitSourceFileAttrInfo(ClassFile classFile, SourceFileAttrInfo sourceFileAttrInfo) {}
-    public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo) {}
-    public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo) {}
-    public void visitSyntheticAttrInfo(ClassFile classFile, SyntheticAttrInfo syntheticAttrInfo) {}
-    public void visitSignatureAttrInfo(ClassFile classFile, SignatureAttrInfo signatureAttrInfo) {}
-    public void visitRuntimeVisibleAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleAnnotationsAttrInfo runtimeVisibleAnnotationsAttrInfo) {}
-    public void visitRuntimeInvisibleAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleAnnotationsAttrInfo runtimeInvisibleAnnotationsAttrInfo) {}
-    public void visitRuntimeVisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleParameterAnnotationsAttrInfo runtimeVisibleParameterAnnotationsAttrInfo) {}
-    public void visitRuntimeInvisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleParameterAnnotationsAttrInfo runtimeInvisibleParameterAnnotationsAttrInfo) {}
-    public void visitAnnotationDefaultAttrInfo(ClassFile classFile, AnnotationDefaultAttrInfo annotationDefaultAttrInfo) {}
-
-
-    public void visitCodeAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo)
+    public void visitCodeAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute)
     {
         // Avoid doing any work if nothing is changing anyway.
-        if (codeAttrInfoEditor != null)
+        if (codeAttributeEditor != null)
         {
             // Apply the collected expansions.
-            codeAttrInfoEditor.visitCodeAttrInfo(classFile, methodInfo, codeAttrInfo);
+            codeAttributeEditor.visitCodeAttribute(clazz, method, codeAttribute);
 
             // Clear the modifications for the next run.
-            codeAttrInfoEditor = null;
+            codeAttributeEditor = null;
         }
     }
 
@@ -253,10 +231,10 @@ public class InstructionWriter
      */
     private void insertBeforeInstruction(int instructionOffset, Instruction instruction)
     {
-        ensureCodeAttrInfoEditor();
+        ensureCodeAttributeEditor();
 
         // Replace the instruction.
-        codeAttrInfoEditor.insertBeforeInstruction(instructionOffset, instruction);
+        codeAttributeEditor.insertBeforeInstruction(instructionOffset, instruction);
     }
 
 
@@ -266,10 +244,10 @@ public class InstructionWriter
      */
     private void replaceInstruction(int instructionOffset, Instruction instruction)
     {
-        ensureCodeAttrInfoEditor();
+        ensureCodeAttributeEditor();
 
         // Replace the instruction.
-        codeAttrInfoEditor.replaceInstruction(instructionOffset, instruction);
+        codeAttributeEditor.replaceInstruction(instructionOffset, instruction);
     }
 
 
@@ -279,21 +257,22 @@ public class InstructionWriter
      */
     private void insertAfterInstruction(int instructionOffset, Instruction instruction)
     {
-        ensureCodeAttrInfoEditor();
+        ensureCodeAttributeEditor();
 
         // Replace the instruction.
-        codeAttrInfoEditor.insertAfterInstruction(instructionOffset, instruction);
+        codeAttributeEditor.insertAfterInstruction(instructionOffset, instruction);
     }
 
 
     /**
      * Makes sure there is a code attribute editor for the given code attribute.
      */
-    private void ensureCodeAttrInfoEditor()
+    private void ensureCodeAttributeEditor()
     {
-        if (codeAttrInfoEditor == null)
+        if (codeAttributeEditor == null)
         {
-            codeAttrInfoEditor = new CodeAttrInfoEditor(codeLength);
+            codeAttributeEditor = new CodeAttributeEditor();
+            codeAttributeEditor.reset(codeLength);
         }
     }
 }

@@ -1,6 +1,6 @@
-/* $Id: ClipSprite.java,v 1.7.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -29,10 +29,10 @@ import java.awt.*;
  */
 public class ClipSprite implements Sprite
 {
-    private VariableColor insideClipColor;
-    private VariableColor outsideClipColor;
-    private Sprite        clipSprite;
-    private Sprite        sprite;
+    private final VariableColor insideClipColor;
+    private final VariableColor outsideClipColor;
+    private final Sprite        clipSprite;
+    private final Sprite        sprite;
 
 
     /**

@@ -1,6 +1,6 @@
-/* $Id: LinearInt.java,v 1.7.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -27,9 +27,9 @@ package proguard.gui.splash;
  */
 public class LinearInt implements VariableInt
 {
-    private int    fromValue;
-    private int    toValue;
-    private Timing timing;
+    private final int    fromValue;
+    private final int    toValue;
+    private final Timing timing;
 
 
     /**

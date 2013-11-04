@@ -1,6 +1,6 @@
-/* $Id: ConstantPoolSorter.java,v 1.6.2.2 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,54 +20,43 @@
  */
 package proguard.classfile.editor;
 
+import proguard.classfile.*;
+import proguard.classfile.constant.Constant;
+import proguard.classfile.visitor.ClassVisitor;
+
 import java.util.Arrays;
 
-import proguard.classfile.*;
-import proguard.classfile.instruction.*;
-import proguard.classfile.visitor.*;
-
-
 /**
- * This ClassFileVisitor sorts the constant pool entries of the classes that
- * it visits. The sorting is based on the types of the constant pool entries
- * in the first place, and on their contents in the second place.
+ * This ClassVisitor sorts the constant pool entries of the classes that
+ * it visits. The sorting order is based on the types of the constant pool
+ * entries in the first place, and on their contents in the second place.
  *
  * @author Eric Lafortune
  */
-public class ConstantPoolSorter implements ClassFileVisitor
+public class ConstantPoolSorter implements ClassVisitor
 {
-    private int[]                cpIndexMap;
-    private ComparableCpInfo[]   comparableConstantPool;
-    private ConstantPoolRemapper constantPoolRemapper;
+    private int[]                constantIndexMap       = new int[ClassConstants.TYPICAL_CONSTANT_POOL_SIZE];
+    private ComparableConstant[] comparableConstantPool = new ComparableConstant[ClassConstants.TYPICAL_CONSTANT_POOL_SIZE];
+
+    private final ConstantPoolRemapper constantPoolRemapper = new ConstantPoolRemapper();
 
 
-    /**
-     * Creates a new ConstantPoolSorter.
-     * @param codeLength an estimate of the maximum length of all the code that
-     *                   will be edited.
-     */
-    public ConstantPoolSorter(int codeLength)
-    {
-        constantPoolRemapper = new ConstantPoolRemapper(codeLength);
-    }
+    // Implementations for ClassVisitor.
 
-
-    // Implementations for ClassFileVisitor.
-
-    public void visitProgramClassFile(ProgramClassFile programClassFile)
+    public void visitProgramClass(ProgramClass programClass)
     {
         // Sort the constant pool and set up an index map.
-        sortConstantPool(programClassFile,
-                         programClassFile.constantPool,
-                         programClassFile.u2constantPoolCount);
+        sortConstantPool(programClass,
+                         programClass.constantPool,
+                         programClass.u2constantPoolCount);
 
         // Remap all constant pool references.
-        constantPoolRemapper.setCpIndexMap(cpIndexMap);
-        constantPoolRemapper.visitProgramClassFile(programClassFile);
+        constantPoolRemapper.setConstantIndexMap(constantIndexMap);
+        constantPoolRemapper.visitProgramClass(programClass);
     }
 
 
-    public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
+    public void visitLibraryClass(LibraryClass libraryClass)
     {
     }
 
@@ -77,52 +66,51 @@ public class ConstantPoolSorter implements ClassFileVisitor
     /**
      * Sorts the given constant pool.
      */
-    private void sortConstantPool(ClassFile classFile, CpInfo[] constantPool, int length)
+    private void sortConstantPool(Clazz clazz, Constant[] constantPool, int length)
     {
-        if (cpIndexMap == null ||
-            cpIndexMap.length < length)
+        if (constantIndexMap.length < length)
         {
-            cpIndexMap             = new int[length];
-            comparableConstantPool = new ComparableCpInfo[length];
+            constantIndexMap       = new int[length];
+            comparableConstantPool = new ComparableConstant[length];
         }
 
         // Initialize an array whose elements can be compared.
         for (int oldIndex = 1; oldIndex < length; oldIndex++)
         {
-            CpInfo cpInfo = constantPool[oldIndex];
+            Constant constant = constantPool[oldIndex];
 
             // Long entries take up two entries, the second of which is null.
-            if (cpInfo == null)
+            if (constant == null)
             {
-                cpInfo = constantPool[oldIndex-1];
+                constant = constantPool[oldIndex-1];
             }
 
-            comparableConstantPool[oldIndex] = new ComparableCpInfo(classFile,
-                                                                    oldIndex,
-                                                                    cpInfo);
+            comparableConstantPool[oldIndex] = new ComparableConstant(clazz,
+                                                                      oldIndex,
+                                                                      constant);
         }
 
         // Sort the array.
         Arrays.sort(comparableConstantPool, 1, length);
 
         // Save the sorted elements.
-        CpInfo previousCpInfo = null;
+        Constant previousConstant = null;
         for (int newIndex = 1; newIndex < length; newIndex++)
         {
-            ComparableCpInfo comparableCpInfo = comparableConstantPool[newIndex];
+            ComparableConstant comparableConstant = comparableConstantPool[newIndex];
 
             // Fill out the map array.
-            int oldIndex = comparableCpInfo.getIndex();
-            cpIndexMap[oldIndex] = newIndex;
+            int oldIndex = comparableConstant.getIndex();
+            constantIndexMap[oldIndex] = newIndex;
 
             // Copy the sorted constant pool entry over to the constant pool.
             // Long entries take up two entries, the second of which is null.
-            CpInfo cpInfo = comparableCpInfo.getCpInfo();
-            constantPool[newIndex] = cpInfo != previousCpInfo ?
-                cpInfo :
+            Constant constant = comparableConstant.getConstant();
+            constantPool[newIndex] = constant != previousConstant ?
+                constant :
                 null;
 
-            previousCpInfo = cpInfo;
+            previousConstant = constant;
         }
     }
 }

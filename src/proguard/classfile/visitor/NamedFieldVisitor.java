@@ -1,6 +1,6 @@
-/* $Id: NamedFieldVisitor.java,v 1.12.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -24,36 +24,36 @@ import proguard.classfile.*;
 
 
 /**
- * This class visits ProgramMemberInfo objects referring to fields, identified by
+ * This class visits ProgramMember objects referring to fields, identified by
  * a name and descriptor pair.
  *
  * @author Eric Lafortune
  */
-public class NamedFieldVisitor implements ClassFileVisitor
+public class NamedFieldVisitor implements ClassVisitor
 {
-    private String            name;
-    private String            descriptor;
-    private MemberInfoVisitor memberInfoVisitor;
+    private final String        name;
+    private final String        descriptor;
+    private final MemberVisitor memberVisitor;
 
 
-    public NamedFieldVisitor(String            name,
-                             String            descriptor,
-                             MemberInfoVisitor memberInfoVisitor)
+    public NamedFieldVisitor(String        name,
+                             String        descriptor,
+                             MemberVisitor memberVisitor)
     {
-        this.name              = name;
-        this.descriptor        = descriptor;
-        this.memberInfoVisitor = memberInfoVisitor;
+        this.name          = name;
+        this.descriptor    = descriptor;
+        this.memberVisitor = memberVisitor;
     }
 
 
-    public void visitProgramClassFile(ProgramClassFile programClassFile)
+    public void visitProgramClass(ProgramClass programClass)
     {
-        programClassFile.fieldAccept(name, descriptor, memberInfoVisitor);
+        programClass.fieldAccept(name, descriptor, memberVisitor);
     }
 
 
-    public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
+    public void visitLibraryClass(LibraryClass libraryClass)
     {
-        libraryClassFile.fieldAccept(name, descriptor, memberInfoVisitor);
+        libraryClass.fieldAccept(name, descriptor, memberVisitor);
     }
 }

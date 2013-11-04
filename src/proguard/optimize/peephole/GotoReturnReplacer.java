@@ -1,6 +1,6 @@
-/* $Id: GotoReturnReplacer.java,v 1.8.2.3 2007/01/18 21:31:53 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -21,9 +21,11 @@
 package proguard.optimize.peephole;
 
 import proguard.classfile.*;
-import proguard.classfile.attribute.*;
-import proguard.classfile.editor.*;
+import proguard.classfile.attribute.CodeAttribute;
+import proguard.classfile.editor.CodeAttributeEditor;
 import proguard.classfile.instruction.*;
+import proguard.classfile.instruction.visitor.InstructionVisitor;
+import proguard.classfile.util.SimplifiedVisitor;
 
 /**
  * This InstructionVisitor replaces unconditional branches to return instructions
@@ -31,48 +33,46 @@ import proguard.classfile.instruction.*;
  *
  * @author Eric Lafortune
  */
-public class GotoReturnReplacer implements InstructionVisitor
+public class GotoReturnReplacer
+extends      SimplifiedVisitor
+implements   InstructionVisitor
 {
-    private CodeAttrInfoEditor codeAttrInfoEditor;
-    private InstructionVisitor extraInstructionVisitor;
+    private final CodeAttributeEditor codeAttributeEditor;
+    private final InstructionVisitor  extraInstructionVisitor;
 
 
     /**
      * Creates a new GotoReturnReplacer.
-     * @param codeAttrInfoEditor      a code editor that can be used for
+     * @param codeAttributeEditor     a code editor that can be used for
      *                                accumulating changes to the code.
      */
-    public GotoReturnReplacer(CodeAttrInfoEditor codeAttrInfoEditor)
+    public GotoReturnReplacer(CodeAttributeEditor codeAttributeEditor)
     {
-        this(codeAttrInfoEditor, null);
+        this(codeAttributeEditor, null);
     }
 
 
     /**
      * Creates a new GotoReturnReplacer.
-     * @param codeAttrInfoEditor      a code editor that can be used for
+     * @param codeAttributeEditor     a code editor that can be used for
      *                                accumulating changes to the code.
      * @param extraInstructionVisitor an optional extra visitor for all replaced
      *                                goto instructions.
      */
-    public GotoReturnReplacer(CodeAttrInfoEditor codeAttrInfoEditor,
-                              InstructionVisitor extraInstructionVisitor)
+    public GotoReturnReplacer(CodeAttributeEditor codeAttributeEditor,
+                              InstructionVisitor  extraInstructionVisitor)
     {
-        this.codeAttrInfoEditor      = codeAttrInfoEditor;
+        this.codeAttributeEditor     = codeAttributeEditor;
         this.extraInstructionVisitor = extraInstructionVisitor;
     }
 
 
     // Implementations for InstructionVisitor.
 
-    public void visitSimpleInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, SimpleInstruction simpleInstruction) {}
-    public void visitCpInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, CpInstruction cpInstruction) {}
-    public void visitVariableInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, VariableInstruction variableInstruction) {}
-    public void visitTableSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, TableSwitchInstruction tableSwitchInstruction) {}
-    public void visitLookUpSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, LookUpSwitchInstruction lookUpSwitchInstruction) {}
+    public void visitAnyInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, Instruction instruction) {}
 
 
-    public void visitBranchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, BranchInstruction branchInstruction)
+    public void visitBranchInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, BranchInstruction branchInstruction)
     {
         // Check if the instruction is an unconditional goto instruction.
         byte opcode = branchInstruction.opcode;
@@ -82,10 +82,10 @@ public class GotoReturnReplacer implements InstructionVisitor
             // Check if the goto instruction points to a return instruction.
             int targetOffset = offset + branchInstruction.branchOffset;
 
-            if (!codeAttrInfoEditor.isModified(offset) &&
-                !codeAttrInfoEditor.isModified(targetOffset))
+            if (!codeAttributeEditor.isModified(offset) &&
+                !codeAttributeEditor.isModified(targetOffset))
             {
-                Instruction targetInstruction = InstructionFactory.create(codeAttrInfo.code,
+                Instruction targetInstruction = InstructionFactory.create(codeAttribute.code,
                                                                           targetOffset);
                 switch (targetInstruction.opcode)
                 {
@@ -98,13 +98,13 @@ public class GotoReturnReplacer implements InstructionVisitor
                         // Replace the goto instruction by the return instruction.
                         Instruction returnInstruction =
                              new SimpleInstruction(targetInstruction.opcode);
-                        codeAttrInfoEditor.replaceInstruction(offset,
-                                                              returnInstruction);
+                        codeAttributeEditor.replaceInstruction(offset,
+                                                               returnInstruction);
 
                         // Visit the instruction, if required.
                         if (extraInstructionVisitor != null)
                         {
-                            extraInstructionVisitor.visitBranchInstruction(classFile, methodInfo, codeAttrInfo, offset, branchInstruction);
+                            extraInstructionVisitor.visitBranchInstruction(clazz, method, codeAttribute, offset, branchInstruction);
                         }
 
                         break;

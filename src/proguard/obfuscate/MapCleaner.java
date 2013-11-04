@@ -1,6 +1,6 @@
-/* $Id: MapCleaner.java,v 1.3.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -21,18 +21,18 @@
 package proguard.obfuscate;
 
 import proguard.classfile.*;
-import proguard.classfile.visitor.ClassFileVisitor;
+import proguard.classfile.visitor.ClassVisitor;
 
 import java.util.Map;
 
 /**
- * This ClassFileVisitor clears a given map whenever it visits a class file.
+ * This ClassVisitor clears a given map whenever it visits a class.
  *
  * @author Eric Lafortune
  */
-public class MapCleaner implements ClassFileVisitor
+public class MapCleaner implements ClassVisitor
 {
-    private Map map;
+    private final Map map;
 
 
     /**
@@ -45,15 +45,15 @@ public class MapCleaner implements ClassFileVisitor
     }
 
 
-    // Implementations for ClassFileVisitor.
+    // Implementations for ClassVisitor.
 
-    public void visitProgramClassFile(ProgramClassFile programClassFile)
+    public void visitProgramClass(ProgramClass programClass)
     {
         map.clear();
     }
 
 
-    public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
+    public void visitLibraryClass(LibraryClass libraryClass)
     {
         map.clear();
     }

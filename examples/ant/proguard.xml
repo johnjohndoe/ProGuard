@@ -11,7 +11,7 @@
 
   <proguard printmapping="proguard.map"
             overloadaggressively="on"
-            defaultpackage=""
+            repackageclasses=""
             allowaccessmodification="on">
 
     <!-- Specify the input jars, output jars, and library jars. -->
@@ -20,7 +20,7 @@
     <outjar file="examples/ant/proguard_out.jar" />
 
     <libraryjar file="${java.home}/lib/rt.jar" />
-    <libraryjar file="/usr/local/java/ant1.6.2/lib/ant.jar" />
+    <libraryjar file="/usr/local/java/ant1.6.5/lib/ant.jar" />
     <libraryjar file="/usr/local/java/wtk2.1/wtklib/kenv.zip" />
 
     <!-- The main seeds: ProGuard and its companion tool ReTrace. -->
@@ -47,9 +47,8 @@
     <!-- If we have ant.jar, we can properly process the Ant task. -->
 
     <keep access="public" name="proguard.ant.*">
-      <method access="public" type="void" name="set*" parameters="%"  />
-      <method access="public" type="void" name="set*" parameters="**" />
-      <method access="public" type="void" name="add*" parameters="**" />
+      <method access="public" type="void" name="set*" parameters="***" />
+      <method access="public" type="void" name="add*" parameters="***" />
     </keep>
 
     <!-- If we have kenv.zip, we can process the J2ME WTK plugin. -->

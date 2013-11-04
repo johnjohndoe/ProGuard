@@ -1,6 +1,6 @@
-/* $Id: RenamedDataEntry.java,v 1.3.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -30,8 +30,8 @@ import java.io.*;
  */
 public class RenamedDataEntry implements DataEntry
 {
-    private DataEntry dataEntry;
-    private String    name;
+    private final DataEntry dataEntry;
+    private final String    name;
 
 
     public RenamedDataEntry(DataEntry dataEntry,

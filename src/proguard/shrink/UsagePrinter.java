@@ -1,6 +1,6 @@
-/* $Id: UsagePrinter.java,v 1.19.2.2 2007/01/18 21:31:53 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -24,11 +24,11 @@ import proguard.classfile.*;
 import proguard.classfile.util.*;
 import proguard.classfile.visitor.*;
 
-import java.io.*;
+import java.io.PrintStream;
 
 
 /**
- * This ClassFileVisitor prints out the class files and class members that have been
+ * This ClassVisitor prints out the classes and class members that have been
  * marked as being used (or not used).
  *
  * @see UsageMarker
@@ -36,12 +36,13 @@ import java.io.*;
  * @author Eric Lafortune
  */
 public class UsagePrinter
-  implements ClassFileVisitor,
-             MemberInfoVisitor
+extends      SimplifiedVisitor
+implements   ClassVisitor,
+             MemberVisitor
 {
-    private UsageMarker usageMarker;
-    private boolean     printUnusedItems;
-    private PrintStream ps;
+    private final UsageMarker usageMarker;
+    private final boolean     printUnusedItems;
+    private final PrintStream ps;
 
     // A field to remember the class name, if a header is needed for class members.
     private String      className;
@@ -49,10 +50,11 @@ public class UsagePrinter
 
     /**
      * Creates a new UsagePrinter that prints to <code>System.out</code>.
-     * @param usageMarker    the usage marker that was used to mark the classes
-     *                       and class members.
-     * @param printUsedItems a flag that indicates whether only unused items
-     *                       should be printed, or alternatively, only used items.
+     * @param usageMarker      the usage marker that was used to mark the
+     *                         classes and class members.
+     * @param printUnusedItems a flag that indicates whether only unused items
+     *                         should be printed, or alternatively, only used
+     *                         items.
      */
     public UsagePrinter(UsageMarker usageMarker,
                         boolean     printUnusedItems)
@@ -63,11 +65,12 @@ public class UsagePrinter
 
     /**
      * Creates a new UsagePrinter that prints to the given stream.
-     * @param usageMarker    the usage marker that was used to mark the classes
-     *                       and class members.
-     * @param printUsedItems a flag that indicates whether only unused items
-     *                       should be printed, or alternatively, only used items.
-     * @param printStream the stream to which to print
+     * @param usageMarker      the usage marker that was used to mark the
+     *                         classes and class members.
+     * @param printUnusedItems a flag that indicates whether only unused items
+     *                         should be printed, or alternatively, only used
+     *                         items.
+     * @param printStream      the stream to which to print.
      */
     public UsagePrinter(UsageMarker usageMarker,
                         boolean     printUnusedItems,
@@ -79,78 +82,69 @@ public class UsagePrinter
     }
 
 
-    // Implementations for ClassFileVisitor.
+    // Implementations for ClassVisitor.
 
-    public void visitProgramClassFile(ProgramClassFile programClassFile)
+    public void visitProgramClass(ProgramClass programClass)
     {
-        if (usageMarker.isUsed(programClassFile))
+        if (usageMarker.isUsed(programClass))
         {
             if (printUnusedItems)
             {
-                className = programClassFile.getName();
+                className = programClass.getName();
 
-                programClassFile.fieldsAccept(this);
-                programClassFile.methodsAccept(this);
+                programClass.fieldsAccept(this);
+                programClass.methodsAccept(this);
 
                 className = null;
             }
             else
             {
-                ps.println(ClassUtil.externalClassName(programClassFile.getName()));
+                ps.println(ClassUtil.externalClassName(programClass.getName()));
             }
         }
         else
         {
             if (printUnusedItems)
             {
-                ps.println(ClassUtil.externalClassName(programClassFile.getName()));
+                ps.println(ClassUtil.externalClassName(programClass.getName()));
             }
         }
     }
 
 
-    public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
+    // Implementations for MemberVisitor.
+
+    public void visitProgramField(ProgramClass programClass, ProgramField programField)
     {
-    }
-
-
-    // Implementations for MemberInfoVisitor.
-
-    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
-    {
-        if (usageMarker.isUsed(programFieldInfo) ^ printUnusedItems)
+        if (usageMarker.isUsed(programField) ^ printUnusedItems)
         {
             printClassNameHeader();
 
             ps.println("    " +
-                       lineNumberRange(programClassFile, programFieldInfo) +
+                       lineNumberRange(programClass, programField) +
                        ClassUtil.externalFullFieldDescription(
-                           programFieldInfo.getAccessFlags(),
-                           programFieldInfo.getName(programClassFile),
-                           programFieldInfo.getDescriptor(programClassFile)));
+                           programField.getAccessFlags(),
+                           programField.getName(programClass),
+                           programField.getDescriptor(programClass)));
         }
     }
 
 
-    public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
+    public void visitProgramMethod(ProgramClass programClass, ProgramMethod programMethod)
     {
-        if (usageMarker.isUsed(programMethodInfo) ^ printUnusedItems)
+        if (usageMarker.isUsed(programMethod) ^ printUnusedItems)
         {
             printClassNameHeader();
 
             ps.println("    " +
-                       lineNumberRange(programClassFile, programMethodInfo) +
+                       lineNumberRange(programClass, programMethod) +
                        ClassUtil.externalFullMethodDescription(
-                           programClassFile.getName(),
-                           programMethodInfo.getAccessFlags(),
-                           programMethodInfo.getName(programClassFile),
-                           programMethodInfo.getDescriptor(programClassFile)));
+                           programClass.getName(),
+                           programMethod.getAccessFlags(),
+                           programMethod.getName(programClass),
+                           programMethod.getDescriptor(programClass)));
         }
     }
-
-
-    public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo) {}
-    public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo) {}
 
 
     // Small utility methods.
@@ -173,9 +167,9 @@ public class UsagePrinter
      * Returns the line number range of the given class member, followed by a
      * colon, or just an empty String if no range is available.
      */
-    private static String lineNumberRange(ProgramClassFile programClassFile, ProgramMemberInfo programMemberInfo)
+    private static String lineNumberRange(ProgramClass programClass, ProgramMember programMember)
     {
-        String range = programMemberInfo.getLineNumberRange(programClassFile);
+        String range = programMember.getLineNumberRange(programClass);
         return range != null ?
             (range + ":") :
             "";

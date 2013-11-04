@@ -1,6 +1,6 @@
-/* $Id: Initializer.java,v 1.2.2.12 2007/12/09 12:50:59 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java bytecode.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,12 +20,12 @@
  */
 package proguard;
 
-import proguard.classfile.*;
-import proguard.classfile.attribute.AllAttrInfoVisitor;
-import proguard.classfile.instruction.AllInstructionVisitor;
+import proguard.classfile.ClassPool;
+import proguard.classfile.attribute.visitor.AllAttributeVisitor;
+import proguard.classfile.instruction.visitor.AllInstructionVisitor;
 import proguard.classfile.util.*;
 import proguard.classfile.visitor.*;
-import proguard.util.ClassNameListMatcher;
+import proguard.util.*;
 
 import java.io.IOException;
 import java.util.*;
@@ -37,7 +37,7 @@ import java.util.*;
  */
 public class Initializer
 {
-    private Configuration configuration;
+    private final Configuration configuration;
 
 
     /**
@@ -59,104 +59,195 @@ public class Initializer
     {
         int originalLibraryClassPoolSize = libraryClassPool.size();
 
-        // Initialize the class hierarchy for program classes.
+        // Initialize the superclass hierarchy for program classes.
         WarningPrinter hierarchyWarningPrinter = configuration.warn ?
             new WarningPrinter(System.err) :
             null;
 
-        programClassPool.classFilesAccept(
-            new ClassFileHierarchyInitializer(programClassPool,
-                                              libraryClassPool,
-                                              hierarchyWarningPrinter));
+        programClassPool.classesAccept(
+            new ClassSuperHierarchyInitializer(programClassPool,
+                                               libraryClassPool,
+                                               hierarchyWarningPrinter));
 
-        // Initialize the class hierarchy for library classes.
-        libraryClassPool.classFilesAccept(
-            new ClassFileHierarchyInitializer(programClassPool,
-                                              libraryClassPool,
-                                              null));
+        // Initialize the superclass hierarchy for library classes.
+        libraryClassPool.classesAccept(
+            new ClassSuperHierarchyInitializer(programClassPool,
+                                               libraryClassPool,
+                                               null));
 
         // Initialize the Class.forName and .class references.
         WarningPrinter classForNameNotePrinter = configuration.note ?
             new WarningPrinter(System.out) :
             null;
 
-        programClassPool.classFilesAccept(
+        programClassPool.classesAccept(
             new AllMethodVisitor(
-            new AllAttrInfoVisitor(
+            new AllAttributeVisitor(
             new AllInstructionVisitor(
-            new ClassFileClassForNameReferenceInitializer(programClassPool,
-                                                          libraryClassPool,
-                                                          classForNameNotePrinter,
-                                                          createNoteExceptionMatcher(configuration.keep))))));
+            new DynamicClassReferenceInitializer(programClassPool,
+                                                 libraryClassPool,
+                                                 classForNameNotePrinter,
+                                                 createClassNoteExceptionMatcher(configuration.keep))))));
 
-        // Initialize the class references from program class members and
-        // attributes.
+        // Initialize the class references of program class members and attributes.
         WarningPrinter referenceWarningPrinter = configuration.warn ?
             new WarningPrinter(System.err) :
             null;
 
-        programClassPool.classFilesAccept(
-            new ClassFileReferenceInitializer(programClassPool,
-                                              libraryClassPool,
-                                              referenceWarningPrinter));
+        programClassPool.classesAccept(
+            new ClassReferenceInitializer(programClassPool,
+                                          libraryClassPool,
+                                          referenceWarningPrinter));
 
-        if (configuration.applyMapping == null &&
-            !configuration.useUniqueClassMemberNames)
+        // Initialize the Class.get[Declared]{Field,Method} references.
+        WarningPrinter getMemberNotePrinter = configuration.note ?
+            new WarningPrinter(System.out) :
+            null;
+
+        programClassPool.classesAccept(
+            new AllMethodVisitor(
+            new AllAttributeVisitor(
+            new AllInstructionVisitor(
+            new DynamicMemberReferenceInitializer(programClassPool,
+                                                  libraryClassPool,
+                                                  getMemberNotePrinter,
+                                                  createClassMemberNoteExceptionMatcher(configuration.keep, true),
+                                                  createClassMemberNoteExceptionMatcher(configuration.keep, false))))));
+
+        // Print various notes, if specified.
+        WarningPrinter fullyQualifiedClassNameNotePrinter = configuration.note ?
+            new WarningPrinter(System.out) :
+            null;
+
+        WarningPrinter descriptorKeepNotePrinter = configuration.note ?
+            new WarningPrinter(System.out) :
+            null;
+
+        if (fullyQualifiedClassNameNotePrinter != null)
         {
-            // Reconstruct a library class pool with only those library classes
-            // whose hierarchies are referenced by the program classes.
-            libraryClassPool.clear();
-            programClassPool.classFilesAccept(
-                new ReferencedClassFileVisitor(
-                new LibraryClassFileFilter(
-                new ClassFileHierarchyTraveler(true, true, true, false,
-                new LibraryClassFileFilter(
-                new ClassPoolFiller(libraryClassPool))))));
+            new FullyQualifiedClassNameChecker(programClassPool,
+                                               libraryClassPool,
+                                               fullyQualifiedClassNameNotePrinter).checkClassSpecifications(configuration.keep);
         }
 
-        // Initialize the class references from library class members.
-        libraryClassPool.classFilesAccept(
-            new ClassFileReferenceInitializer(programClassPool,
+        if (descriptorKeepNotePrinter != null)
+        {
+            new DescriptorKeepChecker(programClassPool,
+                                      libraryClassPool,
+                                      descriptorKeepNotePrinter).checkClassSpecifications(configuration.keep);
+        }
+
+        // Reconstruct a library class pool with only those library classes
+        // whose hierarchies are referenced by the program classes. We can't do
+        // this if we later have to come up with the obfuscated class member
+        // names that are globally unique.
+        if (configuration.useUniqueClassMemberNames)
+        {
+            // Initialize the class references of library class members.
+            libraryClassPool.classesAccept(
+                new ClassReferenceInitializer(programClassPool,
+                                              libraryClassPool,
+                                              null));
+        }
+        else
+        {
+            ClassPool referencedLibraryClassPool = new ClassPool();
+
+            // Collect the library classes that are referenced by program
+            // classes.
+            programClassPool.classesAccept(
+                new ReferencedClassVisitor(
+                new LibraryClassFilter(
+                new ClassHierarchyTraveler(true, true, true, false,
+                new LibraryClassFilter(
+                new ClassPoolFiller(referencedLibraryClassPool))))));
+
+            // Initialize the class references of library class members.
+            referencedLibraryClassPool.classesAccept(
+                new ClassReferenceInitializer(programClassPool,
                                               libraryClassPool,
                                               null));
 
+            // Reset the library class pool.
+            libraryClassPool.clear();
+
+            // Copy the library classes that are referenced directly by program
+            // classes and the library classes that are referenced by referenced
+            // library classes.
+            referencedLibraryClassPool.classesAccept(
+                new MultiClassVisitor(new ClassVisitor[]
+                {
+                    new ClassHierarchyTraveler(true, true, true, false,
+                    new LibraryClassFilter(
+                    new ClassPoolFiller(libraryClassPool))),
+
+                    new ReferencedClassVisitor(
+                    new LibraryClassFilter(
+                    new ClassHierarchyTraveler(true, true, true, false,
+                    new LibraryClassFilter(
+                    new ClassPoolFiller(libraryClassPool)))))
+                }));
+        }
+
+        // Initialize the subclass hierarchies.
+        programClassPool.classesAccept(new ClassSubHierarchyInitializer());
+        libraryClassPool.classesAccept(new ClassSubHierarchyInitializer());
+
+        // Share strings between the classes, to reduce heap memory usage.
+        programClassPool.classesAccept(new StringSharer());
+        libraryClassPool.classesAccept(new StringSharer());
+
         // Print out a summary of the notes, if necessary.
-        if (configuration.note)
+        if (fullyQualifiedClassNameNotePrinter != null)
+        {
+            int fullyQualifiedNoteCount = fullyQualifiedClassNameNotePrinter.getWarningCount();
+            if (fullyQualifiedNoteCount > 0)
+            {
+                System.out.println("Note: there were " + fullyQualifiedNoteCount +
+                                   " references to unknown classes.");
+                System.out.println("      You should check your configuration for typos.");
+            }
+        }
+
+        if (descriptorKeepNotePrinter != null)
+        {
+            int descriptorNoteCount = descriptorKeepNotePrinter.getWarningCount();
+            if (descriptorNoteCount > 0)
+            {
+                System.out.println("Note: there were " + descriptorNoteCount +
+                                   " unkept descriptor classes in kept class members.");
+                System.out.println("      You should consider explicitly keeping the mentioned classes");
+                System.out.println("      (using '-keep').");
+            }
+        }
+
+        if (classForNameNotePrinter != null)
         {
             int classForNameNoteCount = classForNameNotePrinter.getWarningCount();
             if (classForNameNoteCount > 0)
             {
-                System.err.println("Note: there were " + classForNameNoteCount +
+                System.out.println("Note: there were " + classForNameNoteCount +
                                    " class casts of dynamically created class instances.");
-                System.err.println("      You might consider explicitly keeping the mentioned classes and/or");
-                System.err.println("      their implementations (using '-keep').");
+                System.out.println("      You might consider explicitly keeping the mentioned classes and/or");
+                System.out.println("      their implementations (using '-keep').");
             }
+        }
 
-            if (configuration.optimize ||
-                configuration.obfuscate)
+        if (getMemberNotePrinter != null)
+        {
+            int getmemberNoteCount = getMemberNotePrinter.getWarningCount();
+            if (getmemberNoteCount > 0)
             {
-                // Check for Java 6 files.
-                ClassFileVersionCounter classFileVersionCounter =
-                    new ClassFileVersionCounter(ClassConstants.MAJOR_VERSION_MAX,
-                                                ClassConstants.MINOR_VERSION_MAX);
-
-                programClassPool.classFilesAccept(classFileVersionCounter);
-
-                int java6count = classFileVersionCounter.getCount();
-                if (java6count > 0)
-                {
-                    System.err.println("Note: there were " + java6count +
-                                       " Java 6 program classes.");
-                    System.err.println("      In order to obtain all of the improved start-up performance of Java 6,");
-                    System.err.println("      they should be preverified after having been optimized or obfuscated.");
-                    System.err.println("      You should consider ProGuard version 4.0 for preverification support,");
-                    System.err.println("      at http://proguard.sourceforge.net/");
-                }
+                System.out.println("Note: there were " + getmemberNoteCount +
+                                   " accesses to class members by means of introspection.");
+                System.out.println("      You should consider explicitly keeping the mentioned class members");
+                System.out.println("      (using '-keep' or '-keepclassmembers').");
             }
         }
 
         // Print out a summary of the warnings, if necessary.
-        if (configuration.warn)
+        if (hierarchyWarningPrinter != null &&
+            referenceWarningPrinter != null)
         {
             int hierarchyWarningCount = hierarchyWarningPrinter.getWarningCount();
             if (hierarchyWarningCount > 0)
@@ -183,8 +274,6 @@ public class Initializer
                  referenceWarningCount > 0) &&
                 !configuration.ignoreWarnings)
             {
-                System.err.println("         If you are sure the mentioned classes are not used anyway,");
-                System.err.println("         you could try your luck using the '-ignorewarnings' option.");
                 throw new IOException("Please correct the above warnings first.");
             }
         }
@@ -200,28 +289,28 @@ public class Initializer
 
 
     /**
-     * Extracts a list of exceptions for which not to print notes, from the
-     * keep configuration.
+     * Extracts a list of exceptions of classes for which not to print notes,
+     * from the keep configuration.
      */
-    private ClassNameListMatcher createNoteExceptionMatcher(List noteExceptions)
+    private StringMatcher createClassNoteExceptionMatcher(List noteExceptions)
     {
         if (noteExceptions != null)
         {
             List noteExceptionNames = new ArrayList(noteExceptions.size());
             for (int index = 0; index < noteExceptions.size(); index++)
             {
-                ClassSpecification classSpecification = (ClassSpecification)noteExceptions.get(index);
-                if (classSpecification.markClassFiles)
+                KeepSpecification keepSpecification = (KeepSpecification)noteExceptions.get(index);
+                if (keepSpecification.markClasses)
                 {
                     // If the class itself is being kept, it's ok.
-                    String className = classSpecification.className;
+                    String className = keepSpecification.className;
                     if (className != null)
                     {
                         noteExceptionNames.add(className);
                     }
 
                     // If all of its extensions are being kept, it's ok too.
-                    String extendsClassName = classSpecification.extendsClassName;
+                    String extendsClassName = keepSpecification.extendsClassName;
                     if (extendsClassName != null)
                     {
                         noteExceptionNames.add(extendsClassName);
@@ -231,7 +320,50 @@ public class Initializer
 
             if (noteExceptionNames.size() > 0)
             {
-                return new ClassNameListMatcher(noteExceptionNames);
+                return new ListParser(new ClassNameParser()).parse(noteExceptionNames);
+            }
+        }
+
+        return null;
+    }
+
+
+    /**
+     * Extracts a list of exceptions of field or method names for which not to
+     * print notes, from the keep configuration.
+     */
+    private StringMatcher createClassMemberNoteExceptionMatcher(List    noteExceptions,
+                                                                boolean isField)
+    {
+        if (noteExceptions != null)
+        {
+            List noteExceptionNames = new ArrayList();
+            for (int index = 0; index < noteExceptions.size(); index++)
+            {
+                KeepSpecification keepSpecification = (KeepSpecification)noteExceptions.get(index);
+                List memberSpecifications = isField ?
+                    keepSpecification.fieldSpecifications :
+                    keepSpecification.methodSpecifications;
+
+                if (memberSpecifications != null)
+                {
+                    for (int index2 = 0; index2 < memberSpecifications.size(); index2++)
+                    {
+                        MemberSpecification memberSpecification =
+                            (MemberSpecification)memberSpecifications.get(index2);
+
+                        String memberName = memberSpecification.name;
+                        if (memberName != null)
+                        {
+                            noteExceptionNames.add(memberName);
+                        }
+                    }
+                }
+            }
+
+            if (noteExceptionNames.size() > 0)
+            {
+                return new ListParser(new ClassNameParser()).parse(noteExceptionNames);
             }
         }
 

@@ -1,14 +1,13 @@
-/* $Id: InnerClassesInfo.java,v 1.2.2.2 2007/01/18 21:31:51 eric Exp $
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
- *
- * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This library is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or (at your
- * option) any later version.
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 2 of the License, or (at your option)
+ * any later version.
  *
  * This library is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -21,23 +20,17 @@
  */
 package proguard.classfile.attribute;
 
-import proguard.classfile.*;
-
-import java.io.*;
+import proguard.classfile.VisitorAccepter;
 
 /**
  * Representation of an Inner Classes table entry.
  *
- * @author Mark Welsh
  * @author Eric Lafortune
  */
 public class InnerClassesInfo implements VisitorAccepter
 {
-    public static final int CONSTANT_FIELD_SIZE = 8;
-
-
-    public int u2innerClassInfoIndex;
-    public int u2outerClassInfoIndex;
+    public int u2innerClassIndex;
+    public int u2outerClassIndex;
     public int u2innerNameIndex;
     public int u2innerClassAccessFlags;
 
@@ -47,19 +40,12 @@ public class InnerClassesInfo implements VisitorAccepter
     public Object visitorInfo;
 
 
-    public static InnerClassesInfo create(DataInput din) throws IOException
-    {
-        InnerClassesInfo ici = new InnerClassesInfo();
-        ici.read(din);
-        return ici;
-    }
-
     /**
      * Returns the inner class index.
      */
     protected int getInnerClassIndex()
     {
-        return u2innerClassInfoIndex;
+        return u2innerClassIndex;
     }
 
     /**
@@ -76,25 +62,6 @@ public class InnerClassesInfo implements VisitorAccepter
     protected void setInnerNameIndex(int index)
     {
         u2innerNameIndex = index;
-    }
-
-    private void read(DataInput din) throws IOException
-    {
-        u2innerClassInfoIndex   = din.readUnsignedShort();
-        u2outerClassInfoIndex   = din.readUnsignedShort();
-        u2innerNameIndex        = din.readUnsignedShort();
-        u2innerClassAccessFlags = din.readUnsignedShort();
-    }
-
-    /**
-     * Exports the representation to a DataOutput stream.
-     */
-    public void write(DataOutput dout) throws IOException
-    {
-        dout.writeShort(u2innerClassInfoIndex);
-        dout.writeShort(u2outerClassInfoIndex);
-        dout.writeShort(u2innerNameIndex);
-        dout.writeShort(u2innerClassAccessFlags);
     }
 
 

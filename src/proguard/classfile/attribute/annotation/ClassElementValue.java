@@ -1,14 +1,13 @@
-/* $Id: ClassElementValue.java,v 1.3.2.3 2007/01/18 21:31:51 eric Exp $
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
- *
- * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This library is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or (at your
- * option) any later version.
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 2 of the License, or (at your option)
+ * any later version.
  *
  * This library is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -22,32 +21,31 @@
 package proguard.classfile.attribute.annotation;
 
 import proguard.classfile.*;
-import proguard.classfile.visitor.ClassFileVisitor;
-
-import java.io.*;
+import proguard.classfile.attribute.annotation.visitor.ElementValueVisitor;
+import proguard.classfile.visitor.ClassVisitor;
 
 /**
- * Representation of a class element value.
+ * This ElementValue represents a class element value.
  *
  * @author Eric Lafortune
  */
 public class ClassElementValue extends ElementValue
 {
-    protected static final int CONSTANT_FIELD_SIZE = ElementValue.CONSTANT_FIELD_SIZE + 2;
-
-
     public int u2classInfoIndex;
 
     /**
-     * An extra field pointing to the ClassFile objects referenced in the
+     * An extra field pointing to the Clazz objects referenced in the
      * type name string. This field is filled out by the <code>{@link
-     * proguard.classfile.util.ClassFileReferenceInitializer ClassFileReferenceInitializer}</code>.
+     * proguard.classfile.util.ClassReferenceInitializer ClassReferenceInitializer}</code>.
      * References to primitive types are ignored.
      */
-    public ClassFile[] referencedClassFiles;
+    public Clazz[] referencedClasses;
 
 
-    protected ClassElementValue()
+    /**
+     * Creates an uninitialized ClassElementValue.
+     */
+    public ClassElementValue()
     {
     }
 
@@ -55,16 +53,16 @@ public class ClassElementValue extends ElementValue
     /**
      * Applies the given visitor to all referenced classes.
      */
-    public void referencedClassesAccept(ClassFileVisitor classFileVisitor)
+    public void referencedClassesAccept(ClassVisitor classVisitor)
     {
-        if (referencedClassFiles != null)
+        if (referencedClasses != null)
         {
-            for (int index = 0; index < referencedClassFiles.length; index++)
+            for (int index = 0; index < referencedClasses.length; index++)
             {
-                ClassFile referencedClassFile = referencedClassFiles[index];
-                if (referencedClassFile != null)
+                Clazz referencedClass = referencedClasses[index];
+                if (referencedClass != null)
                 {
-                    referencedClassFile.accept(classFileVisitor);
+                    referencedClass.accept(classVisitor);
                 }
             }
         }
@@ -73,23 +71,13 @@ public class ClassElementValue extends ElementValue
 
     // Implementations for ElementValue.
 
-    protected int getLength()
+    public int getTag()
     {
-        return CONSTANT_FIELD_SIZE;
+        return ClassConstants.ELEMENT_VALUE_CLASS;
     }
 
-    protected void readInfo(DataInput din) throws IOException
+    public void accept(Clazz clazz, Annotation annotation, ElementValueVisitor elementValueVisitor)
     {
-        u2classInfoIndex = din.readUnsignedShort();
-    }
-
-    protected void writeInfo(DataOutput dout) throws IOException
-    {
-        dout.writeShort(u2classInfoIndex);
-    }
-
-    public void accept(ClassFile classFile, Annotation annotation, ElementValueVisitor elementValueVisitor)
-    {
-        elementValueVisitor.visitClassElementValue(classFile, annotation, this);
+        elementValueVisitor.visitClassElementValue(clazz, annotation, this);
     }
 }

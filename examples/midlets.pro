@@ -13,6 +13,10 @@
 -libraryjars /usr/local/java/wtk2.1/lib/midpapi20.jar
 -libraryjars /usr/local/java/wtk2.1/lib/cldcapi11.jar
 
+# Preverify the code suitably for Java Micro Edition.
+
+-microedition
+
 # Allow methods with the same signature, except for the return type,
 # to get the same obfuscation name.
 
@@ -20,7 +24,7 @@
 
 # Put all obfuscated classes into the nameless root package.
 
--defaultpackage ''
+-repackageclasses ''
 
 # Allow classes and class members to be made public.
 

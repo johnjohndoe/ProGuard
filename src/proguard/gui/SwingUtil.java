@@ -1,6 +1,6 @@
-/* $Id: SwingUtil.java,v 1.5.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -36,7 +36,7 @@ class SwingUtil
      * Invokes the given Runnable in the AWT event dispatching thread,
      * and waits for it to finish. This method may be called from any thread,
      * including the event dispatching thread itself.
-     * @see SwingUtilities#invokeAndWait(java.lang.Runnable)
+     * @see SwingUtilities#invokeAndWait(Runnable)
      * @param runnable the Runnable to be executed.
      */
     public static void invokeAndWait(Runnable runnable)
@@ -63,7 +63,7 @@ class SwingUtil
      * Invokes the given Runnable in the AWT event dispatching thread, not
      * necessarily right away. This method may be called from any thread,
      * including the event dispatching thread itself.
-     * @see SwingUtilities#invokeLater(java.lang.Runnable)
+     * @see SwingUtilities#invokeLater(Runnable)
      * @param runnable the Runnable to be executed.
      */
     public static void invokeLater(Runnable runnable)

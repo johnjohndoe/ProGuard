@@ -1,6 +1,6 @@
-/* $Id: ProGuardTask.java,v 1.32.2.3 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,9 +20,9 @@
  */
 package proguard.ant;
 
-import org.apache.tools.ant.*;
+import org.apache.tools.ant.BuildException;
 import proguard.*;
-import proguard.classfile.util.*;
+import proguard.classfile.util.ClassUtil;
 
 import java.io.*;
 
@@ -82,6 +82,22 @@ public class ProGuardTask extends ConfigurationTask
     }
 
 
+    public void setTarget(String target)
+    {
+        configuration.targetClassVersion = ClassUtil.internalClassVersion(target);
+        if (configuration.targetClassVersion == 0)
+        {
+            throw new BuildException("Unsupported target '"+target+"'");
+        }
+    }
+
+
+    public void setForceprocessing(boolean forceProcessing)
+    {
+        configuration.lastModified = forceProcessing ? Long.MAX_VALUE : 0;
+    }
+
+
     public void setPrintseeds(File printSeeds)
     {
         configuration.printSeeds = optionalFile(printSeeds);
@@ -103,6 +119,12 @@ public class ProGuardTask extends ConfigurationTask
     public void setOptimize(boolean optimize)
     {
         configuration.optimize = optimize;
+    }
+
+
+    public void setOptimizationpasses(int optimizationPasses)
+    {
+        configuration.optimizationPasses = optimizationPasses;
     }
 
 
@@ -148,21 +170,47 @@ public class ProGuardTask extends ConfigurationTask
     }
 
 
-    public void setDefaultpackage(String defaultPackage)
-    {
-        configuration.defaultPackage = ClassUtil.internalClassName(defaultPackage);
-    }
-
-
     public void setUsemixedcaseclassnames(boolean useMixedCaseClassNames)
     {
         configuration.useMixedCaseClassNames = useMixedCaseClassNames;
     }
 
 
+    public void setFlattenpackagehierarchy(String flattenPackageHierarchy)
+    {
+        configuration.flattenPackageHierarchy = ClassUtil.internalClassName(flattenPackageHierarchy);
+    }
+
+
+    public void setRepackageclasses(String repackageClasses)
+    {
+        configuration.repackageClasses = ClassUtil.internalClassName(repackageClasses);
+    }
+
+    /**
+     * @deprecated Use the repackageclasses attribute instead.
+     */
+    public void setDefaultpackage(String defaultPackage)
+    {
+        configuration.repackageClasses = ClassUtil.internalClassName(defaultPackage);
+    }
+
+
     public void setRenamesourcefileattribute(String newSourceFileAttribute)
     {
         configuration.newSourceFileAttribute = newSourceFileAttribute;
+    }
+
+
+    public void setPreverify(boolean preverify)
+    {
+        configuration.preverify = preverify;
+    }
+
+
+    public void setMicroedition(boolean microEdition)
+    {
+        configuration.microEdition = microEdition;
     }
 
 
@@ -187,6 +235,12 @@ public class ProGuardTask extends ConfigurationTask
     public void setIgnorewarnings(boolean ignoreWarnings)
     {
         configuration.ignoreWarnings = ignoreWarnings;
+    }
+
+
+    public void setPrintconfiguration(File printConfiguration)
+    {
+        configuration.printConfiguration = optionalFile(printConfiguration);
     }
 
 

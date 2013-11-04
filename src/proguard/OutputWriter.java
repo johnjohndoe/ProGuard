@@ -1,6 +1,6 @@
-/* $Id: OutputWriter.java,v 1.1.2.2 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java bytecode.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -22,6 +22,7 @@ package proguard;
 
 import proguard.classfile.ClassPool;
 import proguard.io.*;
+import proguard.util.*;
 
 import java.io.IOException;
 
@@ -32,7 +33,7 @@ import java.io.IOException;
  */
 public class OutputWriter
 {
-    private Configuration configuration;
+    private final Configuration configuration;
 
 
     /**
@@ -148,12 +149,48 @@ public class OutputWriter
                                                              fromOutputIndex,
                                                              toOutputIndex);
 
-            // Create the reader that can write classes and copy resource
+            // The writer will be used to write possibly obfuscated class files.
+            DataEntryReader classRewriter =
+                new ClassRewriter(programClassPool, writer);
+
+            // The writer will also be used to write resource files.
+            DataEntryReader resourceRewriter =
+                new DataEntryCopier(writer);
+
+            // Wrap the resource writer with a filter and a data entry rewriter,
+            // if required.
+            if (configuration.adaptResourceFileContents != null)
+            {
+                DataEntryReader adaptedResourceRewriter =
+                    new DataEntryRewriter(programClassPool, writer);
+
+                resourceRewriter = configuration.adaptResourceFileContents.size() > 0 ?
+                    new FilteredDataEntryReader(
+                    new DataEntryNameFilter(
+                    new ListParser(new FileNameParser()).parse(configuration.adaptResourceFileContents)),
+                        adaptedResourceRewriter, resourceRewriter) :
+                    adaptedResourceRewriter;
+            }
+
+            // Wrap the resource writer with a filter and a data entry renamer,
+            // if required.
+            if (configuration.adaptResourceFileNames != null)
+            {
+                DataEntryReader adaptedResourceRewriter =
+                    new DataEntryRenamer(programClassPool, resourceRewriter);
+
+                resourceRewriter = configuration.adaptResourceFileNames.size() > 0 ?
+                    new FilteredDataEntryReader(
+                    new DataEntryNameFilter(
+                    new ListParser(new FileNameParser()).parse(configuration.adaptResourceFileNames)),
+                        adaptedResourceRewriter, resourceRewriter) :
+                    adaptedResourceRewriter;
+            }
+
+            // Create the reader that can write class files and copy resource
             // files to the above writer.
             DataEntryReader reader =
-                new ClassFileFilter(new ClassFileRewriter(programClassPool,
-                                                          writer),
-                                    new DataEntryCopier(writer));
+                new ClassFilter(classRewriter, resourceRewriter);
 
             // Go over the specified input entries and write their processed
             // versions.

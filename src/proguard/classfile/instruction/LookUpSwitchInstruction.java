@@ -1,6 +1,6 @@
-/* $Id: LookUpSwitchInstruction.java,v 1.7.2.2 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -21,7 +21,8 @@
 package proguard.classfile.instruction;
 
 import proguard.classfile.*;
-import proguard.classfile.attribute.*;
+import proguard.classfile.attribute.CodeAttribute;
+import proguard.classfile.instruction.visitor.InstructionVisitor;
 
 /**
  * This Instruction represents a simple instruction without variable arguments
@@ -29,12 +30,9 @@ import proguard.classfile.attribute.*;
  *
  * @author Eric Lafortune
  */
-public class LookUpSwitchInstruction extends Instruction
+public class LookUpSwitchInstruction extends SwitchInstruction
 {
-    public int   defaultOffset;
-    public int   jumpOffsetCount;
     public int[] cases;
-    public int[] jumpOffsets;
 
 
     /**
@@ -44,17 +42,31 @@ public class LookUpSwitchInstruction extends Instruction
 
 
     /**
+     * Creates a new LookUpSwitchInstruction with the given arguments.
+     */
+    public LookUpSwitchInstruction(byte  opcode,
+                                   int   defaultOffset,
+                                   int[] cases,
+                                   int[] jumpOffsets)
+    {
+        this.opcode        = opcode;
+        this.defaultOffset = defaultOffset;
+        this.cases         = cases;
+        this.jumpOffsets   = jumpOffsets;
+    }
+
+
+    /**
      * Copies the given instruction into this instruction.
      * @param lookUpSwitchInstruction the instruction to be copied.
      * @return this instruction.
      */
     public LookUpSwitchInstruction copy(LookUpSwitchInstruction lookUpSwitchInstruction)
     {
-        this.opcode          = lookUpSwitchInstruction.opcode;
-        this.defaultOffset   = lookUpSwitchInstruction.defaultOffset;
-        this.jumpOffsetCount = lookUpSwitchInstruction.jumpOffsetCount;
-        this.cases           = lookUpSwitchInstruction.cases;
-        this.jumpOffsets     = lookUpSwitchInstruction.jumpOffsets;
+        this.opcode        = lookUpSwitchInstruction.opcode;
+        this.defaultOffset = lookUpSwitchInstruction.defaultOffset;
+        this.cases         = lookUpSwitchInstruction.cases;
+        this.jumpOffsets   = lookUpSwitchInstruction.jumpOffsets;
 
         return this;
     }
@@ -74,18 +86,13 @@ public class LookUpSwitchInstruction extends Instruction
         offset += -offset & 3;
 
         // Read the two 32-bit arguments.
-        defaultOffset   = readInt(code, offset); offset += 4;
-        jumpOffsetCount = readInt(code, offset); offset += 4;
-
-        // Make sure there are sufficiently large match-offset tables.
-        if (jumpOffsets == null ||
-            jumpOffsets.length < jumpOffsetCount)
-        {
-            cases       = new int[jumpOffsetCount];
-            jumpOffsets = new int[jumpOffsetCount];
-        }
+        defaultOffset       = readInt(code, offset); offset += 4;
+        int jumpOffsetCount = readInt(code, offset); offset += 4;
 
         // Read the matches-offset pairs.
+        cases       = new int[jumpOffsetCount];
+        jumpOffsets = new int[jumpOffsetCount];
+
         for (int index = 0; index < jumpOffsetCount; index++)
         {
             cases[index]       = readInt(code, offset); offset += 4;
@@ -103,11 +110,11 @@ public class LookUpSwitchInstruction extends Instruction
         }
 
         // Write the two 32-bit arguments.
-        writeInt(code, offset, defaultOffset);   offset += 4;
-        writeInt(code, offset, jumpOffsetCount); offset += 4;
+        writeInt(code, offset, defaultOffset); offset += 4;
+        writeInt(code, offset, cases.length);  offset += 4;
 
         // Write the matches-offset pairs.
-        for (int index = 0; index < jumpOffsetCount; index++)
+        for (int index = 0; index < cases.length; index++)
         {
             writeInt(code, offset, cases[index]);       offset += 4;
             writeInt(code, offset, jumpOffsets[index]); offset += 4;
@@ -117,26 +124,12 @@ public class LookUpSwitchInstruction extends Instruction
 
     public int length(int offset)
     {
-        return 1 + (-(offset+1) & 3) + 8 + jumpOffsetCount * 8;
+        return 1 + (-(offset+1) & 3) + 8 + cases.length * 8;
     }
 
 
-    public void accept(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, InstructionVisitor instructionVisitor)
+    public void accept(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, InstructionVisitor instructionVisitor)
     {
-        instructionVisitor.visitLookUpSwitchInstruction(classFile, methodInfo, codeAttrInfo, offset, this);
-    }
-
-
-    public String toString(int offset)
-    {
-        return "["+offset+"] "+getName()+" (switchCaseCount="+jumpOffsetCount+")";
-    }
-
-
-    // Implementations for Object.
-
-    public String toString()
-    {
-        return getName()+" (switchCaseCount="+jumpOffsetCount+")";
+        instructionVisitor.visitLookUpSwitchInstruction(clazz, method, codeAttribute, offset, this);
     }
 }

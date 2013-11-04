@@ -1,6 +1,6 @@
-/* $Id: VariableRemapper.java,v 1.4.2.2 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -22,35 +22,27 @@ package proguard.classfile.editor;
 
 import proguard.classfile.*;
 import proguard.classfile.attribute.*;
-import proguard.classfile.attribute.annotation.*;
+import proguard.classfile.attribute.visitor.*;
 import proguard.classfile.instruction.*;
+import proguard.classfile.instruction.visitor.InstructionVisitor;
+import proguard.classfile.util.SimplifiedVisitor;
 
 /**
- * This AttrInfoVisitor remaps variable indexes in all attributes that it
+ * This AttributeVisitor remaps variable indexes in all attributes that it
  * visits, based on a given index map.
  *
  * @author Eric Lafortune
  */
 public class VariableRemapper
-  implements AttrInfoVisitor,
+extends      SimplifiedVisitor
+implements   AttributeVisitor,
              InstructionVisitor,
              LocalVariableInfoVisitor,
              LocalVariableTypeInfoVisitor
 {
-    private CodeAttrInfoEditor codeAttrInfoEditor;
+    private final CodeAttributeEditor codeAttributeEditor = new CodeAttributeEditor();
 
     private int[] variableMap;
-
-
-    /**
-     * Creates a new VariableRemapper.
-     * @param codeLength an estimate of the maximum length of all the code that
-     *                   will be edited.
-     */
-    public VariableRemapper(int codeLength)
-    {
-        codeAttrInfoEditor = new CodeAttrInfoEditor(codeLength);
-    }
 
 
     /**
@@ -63,69 +55,54 @@ public class VariableRemapper
     }
 
 
-    // Implementations for AttrInfoVisitor.
+    // Implementations for AttributeVisitor.
 
-    public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo) {}
-    public void visitInnerClassesAttrInfo(ClassFile classFile, InnerClassesAttrInfo innerClassesAttrInfo) {}
-    public void visitEnclosingMethodAttrInfo(ClassFile classFile, EnclosingMethodAttrInfo enclosingMethodAttrInfo) {}
-    public void visitConstantValueAttrInfo(ClassFile classFile, FieldInfo fieldInfo, ConstantValueAttrInfo constantValueAttrInfo) {}
-    public void visitExceptionsAttrInfo(ClassFile classFile, MethodInfo methodInfo, ExceptionsAttrInfo exceptionsAttrInfo) {}
-    public void visitLineNumberTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LineNumberTableAttrInfo lineNumberTableAttrInfo) {}
-    public void visitSourceFileAttrInfo(ClassFile classFile, SourceFileAttrInfo sourceFileAttrInfo) {}
-    public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo) {}
-    public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo) {}
-    public void visitSyntheticAttrInfo(ClassFile classFile, SyntheticAttrInfo syntheticAttrInfo) {}
-    public void visitSignatureAttrInfo(ClassFile classFile, SignatureAttrInfo signatureAttrInfo) {}
-    public void visitRuntimeVisibleAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleAnnotationsAttrInfo runtimeVisibleAnnotationsAttrInfo) {}
-    public void visitRuntimeInvisibleAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleAnnotationsAttrInfo runtimeInvisibleAnnotationsAttrInfo) {}
-    public void visitRuntimeVisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleParameterAnnotationsAttrInfo runtimeVisibleParameterAnnotationsAttrInfo) {}
-    public void visitRuntimeInvisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleParameterAnnotationsAttrInfo runtimeInvisibleParameterAnnotationsAttrInfo) {}
-    public void visitAnnotationDefaultAttrInfo(ClassFile classFile, AnnotationDefaultAttrInfo annotationDefaultAttrInfo) {}
+    public void visitAnyAttribute(Clazz clazz, Attribute attribute) {}
 
 
-    public void visitCodeAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo)
+    public void visitCodeAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute)
     {
         // Initially, the code attribute editor doesn't contain any changes.
-        codeAttrInfoEditor.reset(codeAttrInfo.u4codeLength);
+        codeAttributeEditor.reset(codeAttribute.u4codeLength);
 
         // Remap the variables of the instructions.
-        codeAttrInfo.instructionsAccept(classFile, methodInfo, this);
+        codeAttribute.instructionsAccept(clazz, method, this);
 
         // Apply the code atribute editor.
-        codeAttrInfoEditor.visitCodeAttrInfo(classFile, methodInfo, codeAttrInfo);
+        codeAttributeEditor.visitCodeAttribute(clazz, method, codeAttribute);
 
         // Remap the variables of the attributes.
-        codeAttrInfo.attributesAccept(classFile, methodInfo, this);
+        codeAttribute.attributesAccept(clazz, method, this);
     }
 
 
-    public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo)
+    public void visitLocalVariableTableAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableTableAttribute localVariableTableAttribute)
     {
         // Remap the variable references of the local variables.
-        localVariableTableAttrInfo.localVariablesAccept(classFile, methodInfo, codeAttrInfo, this);
+        localVariableTableAttribute.localVariablesAccept(clazz, method, codeAttribute, this);
 
         // Remove local variables that haven't been mapped.
-        localVariableTableAttrInfo.u2localVariableTableLength =
-            removeEmptyLocalVariables(localVariableTableAttrInfo.localVariableTable,
-                                      localVariableTableAttrInfo.u2localVariableTableLength);
+        localVariableTableAttribute.u2localVariableTableLength =
+            removeEmptyLocalVariables(localVariableTableAttribute.localVariableTable,
+                                      localVariableTableAttribute.u2localVariableTableLength);
     }
 
 
-    public void visitLocalVariableTypeTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeTableAttrInfo localVariableTypeTableAttrInfo)
+    public void visitLocalVariableTypeTableAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableTypeTableAttribute localVariableTypeTableAttribute)
     {
         // Remap the variable references of the local variables.
-        localVariableTypeTableAttrInfo.localVariablesAccept(classFile, methodInfo, codeAttrInfo, this);
+        localVariableTypeTableAttribute.localVariablesAccept(clazz, method, codeAttribute, this);
 
         // Remove local variables that haven't been mapped.
-        localVariableTypeTableAttrInfo.u2localVariableTypeTableLength =
-            removeEmptyLocalVariableTypes(localVariableTypeTableAttrInfo.localVariableTypeTable,
-                                          localVariableTypeTableAttrInfo.u2localVariableTypeTableLength);
+        localVariableTypeTableAttribute.u2localVariableTypeTableLength =
+            removeEmptyLocalVariableTypes(localVariableTypeTableAttribute.localVariableTypeTable,
+                                          localVariableTypeTableAttribute.u2localVariableTypeTableLength);
     }
 
 
     // Implementations for LocalVariableInfoVisitor.
 
-    public void visitLocalVariableInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableInfo localVariableInfo)
+    public void visitLocalVariableInfo(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableInfo localVariableInfo)
     {
         localVariableInfo.u2index =
             remapVariable(localVariableInfo.u2index);
@@ -134,7 +111,7 @@ public class VariableRemapper
 
     // Implementations for LocalVariableTypeInfoVisitor.
 
-    public void visitLocalVariableTypeInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeInfo localVariableTypeInfo)
+    public void visitLocalVariableTypeInfo(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableTypeInfo localVariableTypeInfo)
     {
         localVariableTypeInfo.u2index =
             remapVariable(localVariableTypeInfo.u2index);
@@ -143,14 +120,10 @@ public class VariableRemapper
 
     // Implementations for InstructionVisitor.
 
-    public void visitSimpleInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, SimpleInstruction simpleInstruction) {}
-    public void visitCpInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, CpInstruction cpInstruction) {}
-    public void visitBranchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, BranchInstruction branchInstruction) {}
-    public void visitTableSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, TableSwitchInstruction tableSwitchInstruction) {}
-    public void visitLookUpSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, LookUpSwitchInstruction lookUpSwitchInstruction) {}
+    public void visitAnyInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, Instruction instruction) {}
 
 
-    public void visitVariableInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, VariableInstruction variableInstruction)
+    public void visitVariableInstruction(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, VariableInstruction variableInstruction)
     {
         // Is the new variable index different from the original one?
         int oldVariableIndex = variableInstruction.variableIndex;
@@ -158,11 +131,12 @@ public class VariableRemapper
         if (newVariableIndex != oldVariableIndex)
         {
             // Replace the instruction.
-            variableInstruction = new VariableInstruction().copy(variableInstruction);
-            variableInstruction.variableIndex = newVariableIndex;
-            variableInstruction.shrink();
+            Instruction replacementInstruction =
+                new VariableInstruction(variableInstruction.opcode,
+                                        newVariableIndex,
+                                        variableInstruction.constant).shrink();
 
-            codeAttrInfoEditor.replaceInstruction(offset, variableInstruction);
+            codeAttributeEditor.replaceInstruction(offset, replacementInstruction);
         }
     }
 

@@ -1,6 +1,7 @@
 -dontnote
+-microedition
 -overloadaggressively
--defaultpackage ''
+-repackageclasses ''
 -allowaccessmodification
 
 # Keep all extensions of javax.microedition.midlet.MIDlet.

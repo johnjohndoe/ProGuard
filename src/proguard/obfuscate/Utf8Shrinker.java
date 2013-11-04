@@ -1,6 +1,6 @@
-/* $Id: Utf8Shrinker.java,v 1.27.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -21,52 +21,42 @@
 package proguard.obfuscate;
 
 import proguard.classfile.*;
+import proguard.classfile.constant.Constant;
 import proguard.classfile.editor.ConstantPoolRemapper;
-import proguard.classfile.visitor.ClassFileVisitor;
+import proguard.classfile.visitor.ClassVisitor;
 
 
 /**
- * This ClassFileVisitor removes UTF-8 constant pool entries that are not marked
+ * This ClassVisitor removes UTF-8 constant pool entries that are not marked
  * as being used.
  *
  * @see Utf8UsageMarker
  *
  * @author Eric Lafortune
  */
-public class Utf8Shrinker implements ClassFileVisitor
+public class Utf8Shrinker implements ClassVisitor
 {
-    private int[]                cpIndexMap;
-    private ConstantPoolRemapper constantPoolRemapper;
+    private int[]                constantIndexMap     = new int[ClassConstants.TYPICAL_CONSTANT_POOL_SIZE];
+    private final ConstantPoolRemapper constantPoolRemapper = new ConstantPoolRemapper();
 
 
-    /**
-     * Creates a new Utf8Shrinker.
-     * @param codeLength an estimate of the maximum length of all the code that
-     *                   will be edited.
-     */
-    public Utf8Shrinker(int codeLength)
-    {
-        constantPoolRemapper = new ConstantPoolRemapper(codeLength);
-    }
+    // Implementations for ClassVisitor.
 
-
-    // Implementations for ClassFileVisitor.
-
-    public void visitProgramClassFile(ProgramClassFile programClassFile)
+    public void visitProgramClass(ProgramClass programClass)
     {
         // Shift the used constant pool entries together, filling out the
         // index map.
-        programClassFile.u2constantPoolCount =
-            shrinkConstantPool(programClassFile.constantPool,
-                               programClassFile.u2constantPoolCount);
+        programClass.u2constantPoolCount =
+            shrinkConstantPool(programClass.constantPool,
+                               programClass.u2constantPoolCount);
 
         // Remap all constant pool references.
-        constantPoolRemapper.setCpIndexMap(cpIndexMap);
-        constantPoolRemapper.visitProgramClassFile(programClassFile);
+        constantPoolRemapper.setConstantIndexMap(constantIndexMap);
+        constantPoolRemapper.visitProgramClass(programClass);
     }
 
 
-    public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
+    public void visitLibraryClass(LibraryClass libraryClass)
     {
     }
 
@@ -78,13 +68,12 @@ public class Utf8Shrinker implements ClassFileVisitor
      * from the given constant pool.
      * @return the new number of entries.
      */
-    private int shrinkConstantPool(CpInfo[] constantPool, int length)
+    private int shrinkConstantPool(Constant[] constantPool, int length)
     {
         // Create a new index map, if necessary.
-        if (cpIndexMap == null ||
-            cpIndexMap.length < length)
+        if (constantIndexMap.length < length)
         {
-            cpIndexMap = new int[length];
+            constantIndexMap = new int[length];
         }
 
         int     counter = 1;
@@ -93,20 +82,20 @@ public class Utf8Shrinker implements ClassFileVisitor
         // Shift the used constant pool entries together.
         for (int index = 1; index < length; index++)
         {
-            cpIndexMap[index] = counter;
+            constantIndexMap[index] = counter;
 
-            CpInfo cpInfo = constantPool[index];
+            Constant constant = constantPool[index];
 
             // Don't update the flag if this is the second half of a long entry.
-            if (cpInfo != null)
+            if (constant != null)
             {
-                isUsed = cpInfo.getTag() != ClassConstants.CONSTANT_Utf8 ||
-                         Utf8UsageMarker.isUsed(cpInfo);
+                isUsed = constant.getTag() != ClassConstants.CONSTANT_Utf8 ||
+                         Utf8UsageMarker.isUsed(constant);
             }
 
             if (isUsed)
             {
-                constantPool[counter++] = cpInfo;
+                constantPool[counter++] = constant;
             }
         }
 

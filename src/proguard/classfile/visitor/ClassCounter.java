@@ -1,6 +1,6 @@
-/* $Id: ClassCounter.java,v 1.1.2.4 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -21,14 +21,13 @@
 package proguard.classfile.visitor;
 
 import proguard.classfile.*;
-import proguard.classfile.visitor.*;
 
 /**
- * This ClassFileVisitor counts the number of classes that has been visited.
+ * This ClassVisitor counts the number of classes that has been visited.
  *
  * @author Eric Lafortune
  */
-public class ClassCounter implements ClassFileVisitor
+public class ClassCounter implements ClassVisitor
 {
     private int count;
 
@@ -42,15 +41,15 @@ public class ClassCounter implements ClassFileVisitor
     }
 
 
-    // Implementations for ClassFileVisitor.
+    // Implementations for ClassVisitor.
 
-    public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
+    public void visitLibraryClass(LibraryClass libraryClass)
     {
         count++;
     }
 
 
-    public void visitProgramClassFile(ProgramClassFile programClassFile)
+    public void visitProgramClass(ProgramClass programClass)
     {
         count++;
     }

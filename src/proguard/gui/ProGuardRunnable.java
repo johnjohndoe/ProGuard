@@ -1,6 +1,6 @@
-/* $Id: ProGuardRunnable.java,v 1.7.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,12 +20,11 @@
  */
 package proguard.gui;
 
-import java.awt.*;
-import java.io.*;
+import proguard.*;
 
 import javax.swing.*;
-
-import proguard.*;
+import java.awt.*;
+import java.io.PrintStream;
 
 
 /**
@@ -35,11 +34,11 @@ import proguard.*;
  * @see ProGuard
  * @author Eric Lafortune
  */
-class ProGuardRunnable implements Runnable
+final class ProGuardRunnable implements Runnable
 {
-    private JTextArea     consoleTextArea;
-    private Configuration configuration;
-    private String        configurationFileName;
+    private final JTextArea     consoleTextArea;
+    private final Configuration configuration;
+    private final String        configurationFileName;
 
 
     /**
@@ -114,13 +113,15 @@ class ProGuardRunnable implements Runnable
                                                     msg("errorProcessing"),
                                                     JOptionPane.ERROR_MESSAGE);
         }
+        finally
+        {
+            // Make sure all output has been sent to the console text area.
+            printStream.close();
 
-        // Make sure all output has been sent to the console text area.
-        printStream.flush();
-
-        // Restore the old System's out and err streams.
-        System.setOut(oldOut);
-        System.setErr(oldErr);
+            // Restore the old System's out and err streams.
+            System.setOut(oldOut);
+            System.setErr(oldErr);
+        }
 
         consoleTextArea.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 

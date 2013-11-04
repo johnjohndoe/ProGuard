@@ -1,14 +1,13 @@
-/* $Id: ConstantElementValue.java,v 1.3.2.2 2007/01/18 21:31:51 eric Exp $
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
- *
- * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This library is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or (at your
- * option) any later version.
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 2 of the License, or (at your option)
+ * any later version.
  *
  * This library is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -21,47 +20,38 @@
  */
 package proguard.classfile.attribute.annotation;
 
-import proguard.classfile.*;
-
-import java.io.*;
+import proguard.classfile.Clazz;
+import proguard.classfile.attribute.annotation.visitor.ElementValueVisitor;
 
 /**
- * Representation of a constant element value.
+ * This ElementValue represents a constant element value.
  *
  * @author Eric Lafortune
  */
 public class ConstantElementValue extends ElementValue
 {
-    protected static final int CONSTANT_FIELD_SIZE = ElementValue.CONSTANT_FIELD_SIZE + 2;
-
-
+    public final int u1tag;
     public int u2constantValueIndex;
 
 
-    protected ConstantElementValue()
+    /**
+     * Creates an uninitialized ConstantElementValue.
+     */
+    public ConstantElementValue(int u1tag)
     {
+        this.u1tag = u1tag;
     }
 
 
     // Implementations for ElementValue.
 
-    protected int getLength()
+    public int getTag()
     {
-        return CONSTANT_FIELD_SIZE;
+        return u1tag;
     }
 
-    protected void readInfo(DataInput din) throws IOException
+    public void accept(Clazz clazz, Annotation annotation, ElementValueVisitor elementValueVisitor)
     {
-        u2constantValueIndex = din.readUnsignedShort();
-    }
-
-    protected void writeInfo(DataOutput dout) throws IOException
-    {
-        dout.writeShort(u2constantValueIndex);
-    }
-
-    public void accept(ClassFile classFile, Annotation annotation, ElementValueVisitor elementValueVisitor)
-    {
-        elementValueVisitor.visitConstantElementValue(classFile, annotation, this);
+        elementValueVisitor.visitConstantElementValue(clazz, annotation, this);
     }
 }

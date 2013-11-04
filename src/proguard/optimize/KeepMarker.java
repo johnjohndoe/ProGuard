@@ -1,6 +1,6 @@
-/* $Id: KeepMarker.java,v 1.7.2.3 2006/06/07 22:36:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -21,68 +21,68 @@
 package proguard.optimize;
 
 import proguard.classfile.*;
-import proguard.classfile.util.MethodInfoLinker;
+import proguard.classfile.util.MethodLinker;
 import proguard.classfile.visitor.*;
 
 
 /**
- * This <code>ClassFileVisitor</code> and <code>MemberInfoVisitor</code>
- * marks class files and class members it visits. The marked elements
+ * This <code>ClassVisitor</code> and <code>MemberVisitor</code>
+ * marks classes and class members it visits. The marked elements
  * will remain unchanged as necessary in the optimization step.
  *
  * @author Eric Lafortune
  */
 public class KeepMarker
-  implements ClassFileVisitor,
-             MemberInfoVisitor
+implements   ClassVisitor,
+             MemberVisitor
 {
     // A visitor info flag to indicate the visitor accepter is being kept.
     private static final Object KEPT = new Object();
 
 
-    // Implementations for ClassFileVisitor.
+    // Implementations for ClassVisitor.
 
-    public void visitProgramClassFile(ProgramClassFile programClassFile)
+    public void visitProgramClass(ProgramClass programClass)
     {
-        markAsKept(programClassFile);
+        markAsKept(programClass);
     }
 
 
-    public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
+    public void visitLibraryClass(LibraryClass libraryClass)
     {
-        markAsKept(libraryClassFile);
+        markAsKept(libraryClass);
     }
 
 
-    // Implementations for MemberInfoVisitor.
+    // Implementations for MemberVisitor.
 
-    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
+    public void visitProgramField(ProgramClass programClass, ProgramField programField)
     {
-        markAsKept(programFieldInfo);
+        markAsKept(programField);
     }
 
 
-    public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
+    public void visitProgramMethod(ProgramClass programClass, ProgramMethod programMethod)
     {
-        markAsKept(MethodInfoLinker.lastMemberInfo(programMethodInfo));
+        markAsKept(MethodLinker.lastMember(programMethod));
     }
 
 
-    public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo)
+    public void visitLibraryField(LibraryClass libraryClass, LibraryField libraryField)
     {
-        markAsKept(libraryFieldInfo);
+        markAsKept(libraryField);
     }
 
 
-    public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo)
+    public void visitLibraryMethod(LibraryClass libraryClass, LibraryMethod libraryMethod)
     {
-        markAsKept(MethodInfoLinker.lastMemberInfo(libraryMethodInfo));
+        markAsKept(MethodLinker.lastMember(libraryMethod));
     }
 
 
     // Small utility methods.
 
-    public static void markAsKept(VisitorAccepter visitorAccepter)
+    private static void markAsKept(VisitorAccepter visitorAccepter)
     {
         visitorAccepter.setVisitorInfo(KEPT);
     }
@@ -90,6 +90,6 @@ public class KeepMarker
 
     public static boolean isKept(VisitorAccepter visitorAccepter)
     {
-        return MethodInfoLinker.lastVisitorAccepter(visitorAccepter).getVisitorInfo() == KEPT;
+        return MethodLinker.lastVisitorAccepter(visitorAccepter).getVisitorInfo() == KEPT;
     }
 }

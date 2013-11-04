@@ -1,6 +1,6 @@
-/* $Id: StackTraceItem.java,v 1.9.2.2 2007/01/18 21:31:53 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,10 +20,10 @@
  */
 package proguard.retrace;
 
-import java.io.*;
-import java.util.*;
-
 import proguard.obfuscate.MappingProcessor;
+
+import java.io.IOException;
+import java.util.*;
 
 
 /**
@@ -32,10 +32,10 @@ import proguard.obfuscate.MappingProcessor;
  *
  * @author Eric Lafortune
  */
-class StackTraceItem implements MappingProcessor
+final class StackTraceItem implements MappingProcessor
 {
     // The stack trace settings.
-    private boolean verbose;
+    private final boolean verbose;
 
     public String prefix;
     public String obfuscatedClassName;
@@ -177,36 +177,33 @@ class StackTraceItem implements MappingProcessor
             sourceFile + ":" + lineNumber :
             sourceFile;
 
-        // Print out the resolved stack trace
-        if (prefix != null)
-        {
-            System.out.print(prefix);
-        }
+        // Print out the resolved stack trace.
+        System.out.print(prefix);
 
         if (className != null)
         {
             System.out.print(className);
-        }
 
-        if (methodName != null)
-        {
-            System.out.print("." + methodName + "(" + source + ")");
-
-            // Print out alternatives, if any.
-            if (originalMethodNames != null)
+            if (methodName != null)
             {
-                for (int otherMethodNameIndex = 1; otherMethodNameIndex < originalMethodNames.size(); otherMethodNameIndex++) {
-                    String otherMethodName = (String)originalMethodNames.get(otherMethodNameIndex);
-                    System.out.println();
-                    printSpaces(className.length()+12);
-                    System.out.print(otherMethodName);
+                System.out.print("." + methodName + "(" + source + ")");
+
+                // Print out alternatives, if any.
+                if (originalMethodNames != null)
+                {
+                    for (int otherMethodNameIndex = 1; otherMethodNameIndex < originalMethodNames.size(); otherMethodNameIndex++) {
+                        String otherMethodName = (String)originalMethodNames.get(otherMethodNameIndex);
+                        System.out.println();
+                        printSpaces(className.length()+12);
+                        System.out.print(otherMethodName);
+                    }
                 }
             }
-        }
 
-        if (suffix != null)
-        {
-            System.out.print(suffix);
+            if (suffix != null)
+            {
+                System.out.print(suffix);
+            }
         }
 
         System.out.println();
@@ -225,8 +222,8 @@ class StackTraceItem implements MappingProcessor
 
     // Implementations for MappingProcessor.
 
-    public boolean processClassFileMapping(String className,
-                                           String newClassName)
+    public boolean processClassMapping(String className,
+                                       String newClassName)
     {
         boolean present = false;
 

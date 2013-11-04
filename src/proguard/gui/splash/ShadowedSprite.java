@@ -1,6 +1,6 @@
-/* $Id: ShadowedSprite.java,v 1.7.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -29,11 +29,11 @@ import java.awt.*;
  */
 public class ShadowedSprite implements Sprite
 {
-    private VariableInt    xOffset;
-    private VariableInt    yOffset;
-    private VariableDouble alpha;
-    private VariableInt    blur;
-    private Sprite         sprite;
+    private final VariableInt    xOffset;
+    private final VariableInt    yOffset;
+    private final VariableDouble alpha;
+    private final VariableInt    blur;
+    private final Sprite         sprite;
 
     private float cachedAlpha = -1.0f;
     private Color cachedColor;
@@ -69,32 +69,39 @@ public class ShadowedSprite implements Sprite
         double l = alpha.getDouble(time);
         int    b = blur.getInt(time) + 1;
 
-        // Set up the shadow graphics.
-        OverrideGraphics2D g = new OverrideGraphics2D((Graphics2D)graphics);
-
         float a = 1.0f - (float)Math.pow(1.0 - l, 1.0/(b*b));
         if (a != cachedAlpha)
         {
             cachedAlpha = a;
             cachedColor = new Color(0f, 0f, 0f, a);
         }
-        g.setOverrideColor(cachedColor);
+
+        // Set up the shadow graphics.
+        //OverrideGraphics2D g = new OverrideGraphics2D((Graphics2D)graphics);
+        //g.setOverrideColor(cachedColor);
+
+        // Set the shadow color.
+        Color actualColor = graphics.getColor();
+        graphics.setColor(cachedColor);
 
         int xo = xOffset.getInt(time) - b/2;
         int yo = yOffset.getInt(time) - b/2;
 
-        // Draw the sprite's shadow in the shadow graphics.
+        // Draw the sprite's shadow.
         for (int x = 0; x < b; x++)
         {
             for (int y = 0; y < b; y++)
             {
                 int xt = xo + x;
                 int yt = yo + y;
-                g.translate(xt, yt);
-                sprite.paint(g, time);
-                g.translate(-xt, -yt);
+                graphics.translate(xt, yt);
+                sprite.paint(graphics, time);
+                graphics.translate(-xt, -yt);
             }
         }
+
+        // Restore the actual sprite color.
+        graphics.setColor(actualColor);
 
         // Draw the sprite itself in the ordinary graphics.
         sprite.paint(graphics, time);

@@ -1,6 +1,6 @@
-/* $Id: Obfuscator.java,v 1.2.2.6 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -23,9 +23,12 @@ package proguard.obfuscate;
 
 import proguard.*;
 import proguard.classfile.*;
+import proguard.classfile.attribute.visitor.*;
+import proguard.classfile.constant.visitor.AllConstantVisitor;
 import proguard.classfile.editor.*;
 import proguard.classfile.util.*;
 import proguard.classfile.visitor.*;
+import proguard.util.*;
 
 import java.io.*;
 import java.util.*;
@@ -38,7 +41,7 @@ import java.util.*;
  */
 public class Obfuscator
 {
-    private Configuration configuration;
+    private final Configuration configuration;
 
 
     /**
@@ -58,7 +61,6 @@ public class Obfuscator
     {
         // Check if we have at least some keep commands.
         if (configuration.keep         == null &&
-            configuration.keepNames    == null &&
             configuration.applyMapping == null &&
             configuration.printMapping == null)
         {
@@ -66,40 +68,36 @@ public class Obfuscator
         }
 
         // Clean up any old visitor info.
-        programClassPool.classFilesAccept(new ClassFileCleaner());
-        libraryClassPool.classFilesAccept(new ClassFileCleaner());
+        programClassPool.classesAccept(new ClassCleaner());
+        libraryClassPool.classesAccept(new ClassCleaner());
 
         // If the class member names have to correspond globally,
         // link all class members in all classes, otherwise
         // link all non-private methods in all class hierarchies.
-        ClassFileVisitor memberInfoLinker =
+        ClassVisitor memberInfoLinker =
             configuration.useUniqueClassMemberNames ?
-                (ClassFileVisitor)new AllMemberInfoVisitor(new MethodInfoLinker()) :
-                (ClassFileVisitor)new BottomClassFileFilter(new MethodInfoLinker());
+                (ClassVisitor)new AllMemberVisitor(new MethodLinker()) :
+                (ClassVisitor)new BottomClassFilter(new MethodLinker());
 
-        programClassPool.classFilesAccept(memberInfoLinker);
-        libraryClassPool.classFilesAccept(memberInfoLinker);
+        programClassPool.classesAccept(memberInfoLinker);
+        libraryClassPool.classesAccept(memberInfoLinker);
 
         // Create a visitor for marking the seeds.
         NameMarker nameMarker = new NameMarker();
         ClassPoolVisitor classPoolvisitor =
-            new MultiClassPoolVisitor(new ClassPoolVisitor[]
-            {
-                ClassSpecificationVisitorFactory.createClassPoolVisitor(configuration.keep,
-                                                                        nameMarker,
-                                                                        nameMarker),
-                ClassSpecificationVisitorFactory.createClassPoolVisitor(configuration.keepNames,
-                                                                        nameMarker,
-                                                                        nameMarker)
-            });
-
+            ClassSpecificationVisitorFactory.createClassPoolVisitor(configuration.keep,
+                                                                    nameMarker,
+                                                                    nameMarker,
+                                                                    false,
+                                                                    false,
+                                                                    true);
         // Mark the seeds.
         programClassPool.accept(classPoolvisitor);
         libraryClassPool.accept(classPoolvisitor);
 
         // All library classes and library class members keep their names.
-        libraryClassPool.classFilesAccept(nameMarker);
-        libraryClassPool.classFilesAccept(new AllMemberInfoVisitor(nameMarker));
+        libraryClassPool.classesAccept(nameMarker);
+        libraryClassPool.classesAccept(new AllMemberVisitor(nameMarker));
 
         // Apply the mapping, if one has been specified. The mapping can
         // override the names of library classes and of library class members.
@@ -120,7 +118,7 @@ public class Obfuscator
 
             reader.pump(keeper);
 
-            if (configuration.warn)
+            if (warningPrinter != null)
             {
                 // Print out a summary of the warnings if necessary.
                 int mappingWarningCount = warningPrinter.getWarningCount();
@@ -141,28 +139,31 @@ public class Obfuscator
         }
 
         // Mark attributes that have to be kept.
-        AttributeUsageMarker attributeUsageMarker = new AttributeUsageMarker();
-        if (configuration.keepAttributes != null)
-        {
-            if (!configuration.keepAttributes.isEmpty())
-            {
-                attributeUsageMarker.setKeepAttributes(configuration.keepAttributes);
-            }
-            else
-            {
-                attributeUsageMarker.setKeepAllAttributes();
-            }
-        }
-        programClassPool.classFilesAccept(attributeUsageMarker);
+        AttributeUsageMarker requiredAttributeUsageMarker =
+            new AttributeUsageMarker();
+
+        AttributeVisitor optionalAttributeUsageMarker =
+            configuration.keepAttributes == null     ? null :
+            configuration.keepAttributes.size() == 0 ?
+                (AttributeVisitor)requiredAttributeUsageMarker :
+                (AttributeVisitor)new AttributeNameFilter(new ListParser(new NameParser()).parse(configuration.keepAttributes),
+                                                          requiredAttributeUsageMarker);
+
+        programClassPool.classesAccept(
+            new AllAttributeVisitor(true,
+            new RequiredAttributeFilter(requiredAttributeUsageMarker,
+                                        optionalAttributeUsageMarker)));
 
         // Remove the attributes that can be discarded.
-        programClassPool.classFilesAccept(new AttributeShrinker());
+        programClassPool.classesAccept(new AttributeShrinker());
 
         // Come up with new names for all classes.
-        programClassPool.classFilesAccept(
-            new ClassFileObfuscator(programClassPool,
-                                    configuration.defaultPackage,
-                                    configuration.useMixedCaseClassNames));
+        programClassPool.classesAccept(
+            new ClassObfuscator(programClassPool,
+                                configuration.useMixedCaseClassNames,
+                                configuration.flattenPackageHierarchy,
+                                configuration.repackageClasses,
+                                configuration.allowAccessModification));
 
         // Come up with new names for all class members.
         NameFactory nameFactory = new SimpleNameFactory();
@@ -184,72 +185,72 @@ public class Obfuscator
         if (configuration.useUniqueClassMemberNames)
         {
             // Collect all member names in all classes.
-            programClassPool.classFilesAccept(
-                new AllMemberInfoVisitor(
-                new MemberInfoNameCollector(configuration.overloadAggressively,
-                                            descriptorMap)));
+            programClassPool.classesAccept(
+                new AllMemberVisitor(
+                new MemberNameCollector(configuration.overloadAggressively,
+                                        descriptorMap)));
 
             // Assign new names to all members in all classes.
-            programClassPool.classFilesAccept(
-                new AllMemberInfoVisitor(
-                new MemberInfoObfuscator(configuration.overloadAggressively,
-                                         nameFactory,
-                                         descriptorMap)));
+            programClassPool.classesAccept(
+                new AllMemberVisitor(
+                new MemberObfuscator(configuration.overloadAggressively,
+                                     nameFactory,
+                                     descriptorMap)));
         }
         else
         {
             // Come up with new names for all non-private class members.
-            programClassPool.classFilesAccept(
-                new MultiClassFileVisitor(new ClassFileVisitor[]
+            programClassPool.classesAccept(
+                new MultiClassVisitor(new ClassVisitor[]
                 {
                     // Collect all private member names in this class and down
                     // the hierarchy.
-                    new ClassFileHierarchyTraveler(true, false, false, true,
-                    new AllMemberInfoVisitor(
-                    new MemberInfoAccessFilter(ClassConstants.INTERNAL_ACC_PRIVATE, 0,
-                    new MemberInfoNameCollector(configuration.overloadAggressively,
-                                                descriptorMap)))),
+                    new ClassHierarchyTraveler(true, false, false, true,
+                    new AllMemberVisitor(
+                    new MemberAccessFilter(ClassConstants.INTERNAL_ACC_PRIVATE, 0,
+                    new MemberNameCollector(configuration.overloadAggressively,
+                                            descriptorMap)))),
 
                     // Collect all non-private member names anywhere in the hierarchy.
-                    new ClassFileHierarchyTraveler(true, true, true, true,
-                    new AllMemberInfoVisitor(
-                    new MemberInfoAccessFilter(0, ClassConstants.INTERNAL_ACC_PRIVATE,
-                    new MemberInfoNameCollector(configuration.overloadAggressively,
+                    new ClassHierarchyTraveler(true, true, true, true,
+                    new AllMemberVisitor(
+                    new MemberAccessFilter(0, ClassConstants.INTERNAL_ACC_PRIVATE,
+                    new MemberNameCollector(configuration.overloadAggressively,
                                                 descriptorMap)))),
 
                     // Assign new names to all non-private members in this class.
-                    new AllMemberInfoVisitor(
-                    new MemberInfoAccessFilter(0, ClassConstants.INTERNAL_ACC_PRIVATE,
-                    new MemberInfoObfuscator(configuration.overloadAggressively,
-                                             nameFactory,
-                                             descriptorMap))),
+                    new AllMemberVisitor(
+                    new MemberAccessFilter(0, ClassConstants.INTERNAL_ACC_PRIVATE,
+                    new MemberObfuscator(configuration.overloadAggressively,
+                                         nameFactory,
+                                         descriptorMap))),
 
                     // Clear the collected names.
                     new MapCleaner(descriptorMap)
                 }));
 
             // Come up with new names for all private class members.
-            programClassPool.classFilesAccept(
-                new MultiClassFileVisitor(new ClassFileVisitor[]
+            programClassPool.classesAccept(
+                new MultiClassVisitor(new ClassVisitor[]
                 {
                     // Collect all member names in this class.
-                    new AllMemberInfoVisitor(
-                    new MemberInfoNameCollector(configuration.overloadAggressively,
-                                                descriptorMap)),
+                    new AllMemberVisitor(
+                    new MemberNameCollector(configuration.overloadAggressively,
+                                            descriptorMap)),
 
                     // Collect all non-private member names higher up the hierarchy.
-                    new ClassFileHierarchyTraveler(false, true, true, false,
-                    new AllMemberInfoVisitor(
-                    new MemberInfoAccessFilter(0, ClassConstants.INTERNAL_ACC_PRIVATE,
-                    new MemberInfoNameCollector(configuration.overloadAggressively,
-                                                descriptorMap)))),
+                    new ClassHierarchyTraveler(false, true, true, false,
+                    new AllMemberVisitor(
+                    new MemberAccessFilter(0, ClassConstants.INTERNAL_ACC_PRIVATE,
+                    new MemberNameCollector(configuration.overloadAggressively,
+                                            descriptorMap)))),
 
                     // Assign new names to all private members in this class.
-                    new AllMemberInfoVisitor(
-                    new MemberInfoAccessFilter(ClassConstants.INTERNAL_ACC_PRIVATE, 0,
-                    new MemberInfoObfuscator(configuration.overloadAggressively,
-                                             nameFactory,
-                                             descriptorMap))),
+                    new AllMemberVisitor(
+                    new MemberAccessFilter(ClassConstants.INTERNAL_ACC_PRIVATE, 0,
+                    new MemberObfuscator(configuration.overloadAggressively,
+                                         nameFactory,
+                                         descriptorMap))),
 
                     // Clear the collected names.
                     new MapCleaner(descriptorMap)
@@ -265,47 +266,47 @@ public class Obfuscator
         // [descriptor - new name - old name].
         Map specialDescriptorMap = new HashMap();
 
-        programClassPool.classFilesAccept(
-            new AllMemberInfoVisitor(
-            new MemberInfoSpecialNameFilter(
-            new MemberInfoNameCollector(configuration.overloadAggressively,
-                                        specialDescriptorMap))));
+        programClassPool.classesAccept(
+            new AllMemberVisitor(
+            new MemberSpecialNameFilter(
+            new MemberNameCollector(configuration.overloadAggressively,
+                                    specialDescriptorMap))));
 
-        libraryClassPool.classFilesAccept(
-            new AllMemberInfoVisitor(
-            new MemberInfoSpecialNameFilter(
-            new MemberInfoNameCollector(configuration.overloadAggressively,
-                                        specialDescriptorMap))));
+        libraryClassPool.classesAccept(
+            new AllMemberVisitor(
+            new MemberSpecialNameFilter(
+            new MemberNameCollector(configuration.overloadAggressively,
+                                    specialDescriptorMap))));
 
         // Replace conflicting non-private member names with special names.
-        programClassPool.classFilesAccept(
-            new MultiClassFileVisitor(new ClassFileVisitor[]
+        programClassPool.classesAccept(
+            new MultiClassVisitor(new ClassVisitor[]
             {
                 // Collect all private member names in this class and down
                 // the hierarchy.
-                new ClassFileHierarchyTraveler(true, false, false, true,
-                new AllMemberInfoVisitor(
-                new MemberInfoAccessFilter(ClassConstants.INTERNAL_ACC_PRIVATE, 0,
-                new MemberInfoNameCollector(configuration.overloadAggressively,
-                                            descriptorMap)))),
+                new ClassHierarchyTraveler(true, false, false, true,
+                new AllMemberVisitor(
+                new MemberAccessFilter(ClassConstants.INTERNAL_ACC_PRIVATE, 0,
+                new MemberNameCollector(configuration.overloadAggressively,
+                                        descriptorMap)))),
 
                 // Collect all non-private member names anywhere in the hierarchy.
-                new ClassFileHierarchyTraveler(true, true, true, true,
-                new AllMemberInfoVisitor(
-                new MemberInfoAccessFilter(0, ClassConstants.INTERNAL_ACC_PRIVATE,
-                new MemberInfoNameCollector(configuration.overloadAggressively,
-                                            descriptorMap)))),
+                new ClassHierarchyTraveler(true, true, true, true,
+                new AllMemberVisitor(
+                new MemberAccessFilter(0, ClassConstants.INTERNAL_ACC_PRIVATE,
+                new MemberNameCollector(configuration.overloadAggressively,
+                                        descriptorMap)))),
 
                 // Assign new names to all conflicting non-private members in
                 // this class.
-                new AllMemberInfoVisitor(
-                new MemberInfoAccessFilter(0, ClassConstants.INTERNAL_ACC_PRIVATE,
-                new MemberInfoNameConflictFixer(configuration.overloadAggressively,
-                                                descriptorMap,
-                                                warningPrinter,
-                new MemberInfoObfuscator(configuration.overloadAggressively,
-                                         specialNameFactory,
-                                         specialDescriptorMap)))),
+                new AllMemberVisitor(
+                new MemberAccessFilter(0, ClassConstants.INTERNAL_ACC_PRIVATE,
+                new MemberNameConflictFixer(configuration.overloadAggressively,
+                                            descriptorMap,
+                                            warningPrinter,
+                new MemberObfuscator(configuration.overloadAggressively,
+                                     specialNameFactory,
+                                     specialDescriptorMap)))),
 
                 // Clear the collected names.
                 new MapCleaner(descriptorMap)
@@ -313,38 +314,38 @@ public class Obfuscator
 
         // Replace conflicting private member names with special names.
         // This is only possible if those names were kept or mapped.
-        programClassPool.classFilesAccept(
-            new MultiClassFileVisitor(new ClassFileVisitor[]
+        programClassPool.classesAccept(
+            new MultiClassVisitor(new ClassVisitor[]
             {
                 // Collect all member names in this class.
-                new AllMemberInfoVisitor(
-                new MemberInfoNameCollector(configuration.overloadAggressively,
-                                            descriptorMap)),
+                new AllMemberVisitor(
+                new MemberNameCollector(configuration.overloadAggressively,
+                                        descriptorMap)),
 
                 // Collect all non-private member names higher up the hierarchy.
-                new ClassFileHierarchyTraveler(false, true, true, false,
-                new AllMemberInfoVisitor(
-                new MemberInfoAccessFilter(0, ClassConstants.INTERNAL_ACC_PRIVATE,
-                new MemberInfoNameCollector(configuration.overloadAggressively,
-                                            descriptorMap)))),
+                new ClassHierarchyTraveler(false, true, true, false,
+                new AllMemberVisitor(
+                new MemberAccessFilter(0, ClassConstants.INTERNAL_ACC_PRIVATE,
+                new MemberNameCollector(configuration.overloadAggressively,
+                                        descriptorMap)))),
 
                 // Assign new names to all conflicting private members in this
                 // class.
-                new AllMemberInfoVisitor(
-                new MemberInfoAccessFilter(ClassConstants.INTERNAL_ACC_PRIVATE, 0,
-                new MemberInfoNameConflictFixer(configuration.overloadAggressively,
-                                                descriptorMap,
-                                                warningPrinter,
-                new MemberInfoObfuscator(configuration.overloadAggressively,
-                                         specialNameFactory,
-                                         specialDescriptorMap)))),
+                new AllMemberVisitor(
+                new MemberAccessFilter(ClassConstants.INTERNAL_ACC_PRIVATE, 0,
+                new MemberNameConflictFixer(configuration.overloadAggressively,
+                                            descriptorMap,
+                                            warningPrinter,
+                new MemberObfuscator(configuration.overloadAggressively,
+                                     specialNameFactory,
+                                     specialDescriptorMap)))),
 
                 // Clear the collected names.
                 new MapCleaner(descriptorMap)
             }));
 
         // Print out any warnings about member name conflicts.
-        if (configuration.warn)
+        if (warningPrinter != null)
         {
             int warningCount = warningPrinter.getWarningCount();
             if (warningCount > 0)
@@ -370,7 +371,7 @@ public class Obfuscator
                 System.out;
 
             // Print out items that will be removed.
-            programClassPool.classFilesAcceptAlphabetically(new MappingPrinter(ps));
+            programClassPool.classesAcceptAlphabetically(new MappingPrinter(ps));
 
             if (ps != System.out)
             {
@@ -379,35 +380,39 @@ public class Obfuscator
         }
 
         // Actually apply the new names.
-        programClassPool.classFilesAccept(new ClassFileRenamer());
-        libraryClassPool.classFilesAccept(new ClassFileRenamer());
+        programClassPool.classesAccept(new ClassRenamer());
+        libraryClassPool.classesAccept(new ClassRenamer());
 
         // Update all references to these new names.
-        programClassPool.classFilesAccept(new ClassFileReferenceFixer(false));
-        libraryClassPool.classFilesAccept(new ClassFileReferenceFixer(false));
-        programClassPool.classFilesAccept(new MemberReferenceFixer(1024));
+        programClassPool.classesAccept(new ClassReferenceFixer(false));
+        libraryClassPool.classesAccept(new ClassReferenceFixer(false));
+        programClassPool.classesAccept(new MemberReferenceFixer());
 
-        // Make package visible elements public, if necessary.
-        if (configuration.defaultPackage != null)
+        // Make package visible elements public or protected, if obfuscated
+        // classes are being repackaged aggressively.
+        if (configuration.repackageClasses != null &&
+            configuration.allowAccessModification)
         {
-            programClassPool.classFilesAccept(new ClassFileOpener());
+            programClassPool.classesAccept(
+                new AllConstantVisitor(
+                new ClassOpener()));
         }
 
         // Rename the source file attributes, if requested.
         if (configuration.newSourceFileAttribute != null)
         {
-            programClassPool.classFilesAccept(new SourceFileRenamer(configuration.newSourceFileAttribute));
+            programClassPool.classesAccept(new SourceFileRenamer(configuration.newSourceFileAttribute));
         }
 
         // Mark NameAndType constant pool entries that have to be kept
         // and remove the other ones.
-        programClassPool.classFilesAccept(new NameAndTypeUsageMarker());
-        programClassPool.classFilesAccept(new NameAndTypeShrinker(1024));
+        programClassPool.classesAccept(new NameAndTypeUsageMarker());
+        programClassPool.classesAccept(new NameAndTypeShrinker());
 
         // Mark Utf8 constant pool entries that have to be kept
         // and remove the other ones.
-        programClassPool.classFilesAccept(new Utf8UsageMarker());
-        programClassPool.classFilesAccept(new Utf8Shrinker(1024));
+        programClassPool.classesAccept(new Utf8UsageMarker());
+        programClassPool.classesAccept(new Utf8Shrinker());
     }
 
 

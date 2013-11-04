@@ -1,6 +1,6 @@
-/* $Id: ClassPoolFiller.java,v 1.9.2.4 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -21,18 +21,20 @@
 package proguard.classfile.visitor;
 
 import proguard.classfile.*;
-import proguard.classfile.util.*;
+import proguard.classfile.util.SimplifiedVisitor;
 
 
 /**
- * This ClassFileVisitor collects all the class files it visits in a given
+ * This ClassVisitor collects all the classes it visits in a given
  * class pool.
  *
  * @author Eric Lafortune
  */
-public class ClassPoolFiller implements ClassFileVisitor
+public class ClassPoolFiller
+extends      SimplifiedVisitor
+implements   ClassVisitor
 {
-    private ClassPool classPool;
+    private final ClassPool classPool;
 
 
     /**
@@ -44,16 +46,10 @@ public class ClassPoolFiller implements ClassFileVisitor
     }
 
 
-    // Implementations for ClassFileVisitor.
+    // Implementations for ClassVisitor.
 
-    public void visitProgramClassFile(ProgramClassFile programClassFile)
+    public void visitAnyClass(Clazz clazz)
     {
-        classPool.addClass(programClassFile);
-    }
-
-
-    public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
-    {
-        classPool.addClass(libraryClassFile);
+        classPool.addClass(clazz);
     }
 }

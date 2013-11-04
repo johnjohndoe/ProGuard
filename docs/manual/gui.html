@@ -48,9 +48,13 @@ In addition, there is a tab to execute ReTrace interactively:
 </table>
 <p>
 
-You can freely toggle between the tabs by means of the buttons on the left-hand
-side of the window, or by means of the <b>Previous</b> and <b>Next</b> buttons
-at the bottom of the tabs.
+You can freely toggle between the tabs by means of the buttons on the
+left-hand side of the window, or by means of the <b>Previous</b> and
+<b>Next</b> buttons at the bottom of the tabs. Tool tips briefly explain the
+purpose of the numerous options and text fields, although a basic
+understanding of the shrinking/optimization/obfuscation/preverification
+process is assumed. Please refer to the <a
+href="introduction.html">Introduction</a> of this manual.
 <p>
 
 <a name="proguard">&nbsp;</a>
@@ -167,8 +171,8 @@ corresponding type are considered.
 <p>
 
 For example, checking the <b>Applications</b> entry and filling in
-"myapplications.**" after it would mean: keep all classes that have a main
-method in the "myapplications" package and any of its subpackages.
+"myapplications.**" after it would mean: keep all classes that have main
+methods in the "myapplications" package and all of its subpackages.
 <p>
 
 The variable list at the bottom allows to define additional entries
@@ -213,7 +217,9 @@ overview of the three dialogs provided by the GUI.
 
 The <i>keep class</i> dialog appears when adding or editing new special keep
 entries. It has text fields and selections for specifying and constraining
-classes and class members to keep.
+classes and class members to keep. The <b>Advanced options</b> / <b>Basic
+options</b> button at the bottom of the dialog allows to toggle showing the
+advanced options.
 
 <ul>
 <li>The <b>Comments</b> text field allows to add optional comments to this
@@ -227,11 +233,25 @@ classes and class members to keep.
     Note that class members will only be protected if they are explicitly
     specified, even if only by means of a wildcard.
 
+<li>The <b>Allow</b> selection allows to specify whether you want to allow the
+    the specified classes and their specified class members to be shrunk,
+    optimized and/or obfuscated.
+
 <li>The <b>Access</b> selections allows to specify constraints on the class or
     classes, based on their access modifiers.
 
+<li>The <b>Annotation</b> text field takes the fully-qualified name of an
+    annotation that is required for matching classes. The annotation name can
+    contain wildcards. This is an advanced option for defining <i>keep</i>
+    annotations.
+
 <li>The <b>Class</b> text field takes the fully-qualified name of the class or
     classes. The class name can contain wildcards.
+
+<li>The <b>Annotation</b> text field takes the fully-qualified name of an
+    annotation that is required for the class or interface that the above
+    class must extend. The annotation name can contain wildcards. This is an
+    advanced option for defining <i>keep</i> annotations.
 
 <li>The <b>Extends/implements class</b> text field takes the fully-qualified
     name of the class or interface that the above classes must extend.
@@ -243,12 +263,19 @@ classes and class members to keep.
 <p>
 
 The <i>keep field</i> dialog appears when adding or editing fields within the
-above dialog. It has text fields and selections for specifying and constraining
-fields to keep.
+above dialog. It has text fields and selections for specifying and
+constraining fields to keep. Again, the <b>Advanced options</b> / <b>Basic
+options</b> button at the bottom of the dialog allows to toggle showing the
+advanced options.
 
 <ul>
 <li>The <b>Access</b> selections allows to specify constraints on the field or
     fields, based on their access modifiers.
+
+<li>The <b>Annotation</b> text field takes the fully-qualified name of an
+    annotation that is required for matching fields. The annotation name can
+    contain wildcards. This is an advanced option for defining <i>keep</i>
+    annotations.
 
 <li>The <b>Return type</b> text field takes the fully-qualified type of the
     field or fields. The type can contain wildcards.
@@ -258,13 +285,20 @@ fields to keep.
 </ul>
 <p>
 
-Similarly, the <i>keep method</i> dialog appears when adding or editing methods
-within the keep class dialog. It has text fields and selections for specifying
-and constraining methods to keep.
+Similarly, the <i>keep method</i> dialog appears when adding or editing
+methods within the keep class dialog. It has text fields and selections for
+specifying and constraining methods to keep. Again, the <b>Advanced
+options</b> / <b>Basic options</b> button at the bottom of the dialog allows
+to toggle showing the advanced options.
 
 <ul>
 <li>The <b>Access</b> selections allows to specify constraints on the method or
     methods, based on their access modifiers.
+
+<li>The <b>Annotation</b> text field takes the fully-qualified name of an
+    annotation that is required for matching methods. The annotation name can
+    contain wildcards. This is an advanced option for defining <i>keep</i>
+    annotations.
 
 <li>The <b>Return type</b> text field takes the fully-qualified type of the         method or methods. The type can contain wildcards.
 
@@ -308,10 +342,13 @@ Corresponding configuration options:
 <li>-<a href="usage.html#obfuscationdictionary">obfuscationdictionary</a>
 <li>-<a href="usage.html#overloadaggressively">overloadaggressively</a>
 <li>-<a href="usage.html#useuniqueclassmembernames">useuniqueclassmembernames</a>
-<li>-<a href="usage.html#defaultpackage">defaultpackage</a>
 <li>-<a href="usage.html#dontusemixedcaseclassnames">dontusemixedcaseclassnames</a>
+<li>-<a href="usage.html#flattenpackagehierarchy">flattenpackagehierarchy</a>
+<li>-<a href="usage.html#repackageclasses">repackageclasses</a>
 <li>-<a href="usage.html#keepattributes">keepattributes</a>
 <li>-<a href="usage.html#renamesourcefileattribute">renamesourcefileattribute</a>
+<li>-<a href="usage.html#adaptresourcefilenames">adaptresourcefilenames</a>
+<li>-<a href="usage.html#adaptresourcefilecontents">adaptresourcefilecontents</a>
 <li>-<a href="usage.html#keepnames">keepnames</a>
 <li>-<a href="usage.html#keepclassmembernames">keepclassmembernames</a>
 <li>-<a href="usage.html#keepclasseswithmembernames">keepclasseswithmembernames</a>
@@ -335,6 +372,7 @@ href="#shrinking">Shrinking Tab</a>.
 Corresponding configuration options:
 <ul type="none">
 <li>-<a href="usage.html#dontoptimize">dontoptimize</a>
+<li>-<a href="usage.html#optimizationpasses">optimizationpasses</a>
 <li>-<a href="usage.html#allowaccessmodification">allowaccessmodification</a>
 <li>-<a href="usage.html#assumenosideeffects">assumenosideeffects</a>
 <li><a href="usage.html#classspecification"><i>class_specification</i></a>
@@ -344,21 +382,27 @@ Corresponding configuration options:
 <a name="information">&nbsp;</a>
 <h2>The Information Tab</h2>
 
-The <i>Information</i> tab presents a number of options that affect the
-information that ProGuard returns when processing your code. The bottom list
-allows you to query ProGuard about why given classes and class members are
-being kept in the shrinking step.
+The <i>Information</i> tab presents a number of options for preverification
+and targeting, and for the information that ProGuard returns when processing
+your code. The bottom list allows you to query ProGuard about why given
+classes and class members are being kept in the shrinking step.
 <p>
 
 Corresponding configuration options:
 <ul type="none">
-<li>-<a href="usage.html#printseeds">printseeds</a>
+<li>-<a href="usage.html#dontpreverify">dontpreverify</a>
+<li>-<a href="usage.html#microedition">microedition</a>
+<li>-<a href="usage.html#target">target</a>
 <li>-<a href="usage.html#verbose">verbose</a>
 <li>-<a href="usage.html#dontnote">dontnote</a>
 <li>-<a href="usage.html#dontwarn">dontwarn</a>
 <li>-<a href="usage.html#ignorewarnings">ignorewarnings</a>
 <li>-<a href="usage.html#dontskipnonpubliclibraryclasses">dontskipnonpubliclibraryclasses</a>
 <li>-<a href="usage.html#dontskipnonpubliclibraryclassmembers">dontskipnonpubliclibraryclassmembers</a>
+<li>-<a href="usage.html#forceprocessing">forceprocessing</a>
+<li>-<a href="usage.html#printseeds">printseeds</a>
+<li>-<a href="usage.html#printconfiguration">printconfiguration</a>
+<li>-<a href="usage.html#dump">dump</a>
 <li>-<a href="usage.html#whyareyoukeeping">whyareyoukeeping</a>
 </ul>
 <p>
@@ -390,13 +434,13 @@ the obfuscated stack trace, and an output console to view the de-obfuscated
 stack trace:
 
 <ul>
+<li>The <b>Verbose</b> check box in the settings panel allows to toggle between
+    normal mode and verbose mode.
+
 <li>The <b>Mapping file</b> text field takes the name of the required mapping
     file that ProGuard wrote while processing the original code. The file name
     can be entered manually or by means of the <b>Browse...</b> button that
     opens a file chooser.
-
-<li>The <b>Verbose</b> check box in the settings panel allows to toggle between
-    normal mode and verbose mode.
 
 <li>The <b>Obfuscated stack trace</b> text area allows to enter the stack
     trace, typically by copying and pasting it from elsewhere. Alternatively,

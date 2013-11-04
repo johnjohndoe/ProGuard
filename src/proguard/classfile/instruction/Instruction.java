@@ -1,6 +1,6 @@
-/* $Id: Instruction.java,v 1.24.2.3 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -21,7 +21,8 @@
 package proguard.classfile.instruction;
 
 import proguard.classfile.*;
-import proguard.classfile.attribute.*;
+import proguard.classfile.attribute.CodeAttribute;
+import proguard.classfile.instruction.visitor.InstructionVisitor;
 
 /**
  * Base class for representing instructions.
@@ -660,25 +661,37 @@ public abstract class Instruction
 
 
     /**
+     * Returns the canonical opcode of this instruction, i.e. typically the
+     * opcode whose extension has been removed.
+     */
+    public byte canonicalOpcode()
+    {
+        return opcode;
+    }
+
+
+    /**
      * Shrinks this instruction to its shortest possible form.
      * @return this instruction.
-     * @throws IllegalArgumentException if the instruction can't be expanded
-     *                                  to the necessary size, e.g. if it
-     *                                  contains an offset that is too large.
      */
     public abstract Instruction shrink();
 
 
+
     /**
      * Writes the Instruction at the given offset in the given code attribute.
-     * @throws IllegalArgumentException if the instruction can't be written out
-     *                                  in its current state, e.g. if it
-     *                                  contains an offset that is too large.
      */
-    public final void write(CodeAttrInfo codeAttrInfo, int offset)
+    public final void write(CodeAttribute codeAttribute, int offset)
     {
-        byte[] code  = codeAttrInfo.code;
+        write(codeAttribute.code, offset);
+    }
 
+
+    /**
+     * Writes the Instruction at the given offset in the given code array.
+     */
+    public final void write(byte[] code, int offset)
+    {
         // Write the wide opcode, if necessary.
         if (isWide())
         {
@@ -694,7 +707,7 @@ public abstract class Instruction
 
 
     /**
-     * Returns whether the instruction is wide, i.e. preceded by a wide opcode.
+     * Returns whether the instruction is wide, index.e. preceded by a wide opcode.
      * With the current specifications, only variable instructions can be wide.
      */
     protected boolean isWide()
@@ -724,13 +737,16 @@ public abstract class Instruction
     /**
      * Accepts the given visitor.
      */
-    public abstract void accept(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, InstructionVisitor instructionVisitor);
+    public abstract void accept(Clazz clazz, Method method, CodeAttribute codeAttribute, int offset, InstructionVisitor instructionVisitor);
 
 
     /**
      * Returns a description of the instruction, at the given offset.
      */
-    public abstract String toString(int offset);
+    public String toString(int offset)
+    {
+        return "["+offset+"] "+ this.toString();
+    }
 
 
     /**
@@ -756,7 +772,7 @@ public abstract class Instruction
      * Returns the number of entries popped from the stack during the execution
      * of the instruction.
      */
-    public int stackPopCount(ClassFile classFile)
+    public int stackPopCount(Clazz clazz)
     {
         return STACK_POP_COUNTS[opcode & 0xff];
     }
@@ -766,7 +782,7 @@ public abstract class Instruction
      * Returns the number of entries pushed onto the stack during the execution
      * of the instruction.
      */
-    public int stackPushCount(ClassFile classFile)
+    public int stackPushCount(Clazz clazz)
     {
         return STACK_PUSH_COUNTS[opcode & 0xff];
     }
@@ -832,7 +848,7 @@ public abstract class Instruction
     {
         if (value > 0xff)
         {
-            throw new IllegalArgumentException("Byte value larger than 0xff ["+value+"]");
+            throw new IllegalArgumentException("Unsigned byte value larger than 0xff ["+value+"]");
         }
 
         code[offset] = (byte)value;
@@ -842,7 +858,7 @@ public abstract class Instruction
     {
         if (value > 0xffff)
         {
-            throw new IllegalArgumentException("Short value larger than 0xffff ["+value+"]");
+            throw new IllegalArgumentException("Unsigned short value larger than 0xffff ["+value+"]");
         }
 
         code[offset++] = (byte)(value >> 8);
@@ -865,6 +881,39 @@ public abstract class Instruction
             case 1: writeByte( code, offset, value); break;
             case 2: writeShort(code, offset, value); break;
             case 4: writeInt(  code, offset, value); break;
+            default: throw new IllegalArgumentException("Unsupported value size ["+valueSize+"]");
+        }
+    }
+
+    protected static void writeSignedByte(byte[] code, int offset, int value)
+    {
+        if (value << 24 >> 24 != value)
+        {
+            throw new IllegalArgumentException("Signed byte value out of range ["+value+"]");
+        }
+
+        code[offset] = (byte)value;
+    }
+
+    protected static void writeSignedShort(byte[] code, int offset, int value)
+    {
+        if (value << 16 >> 16 != value)
+        {
+            throw new IllegalArgumentException("Signed short value out of range ["+value+"]");
+        }
+
+        code[offset++] = (byte)(value >> 8);
+        code[offset  ] = (byte)(value     );
+    }
+
+    protected static void writeSignedValue(byte[] code, int offset, int value, int valueSize)
+    {
+        switch (valueSize)
+        {
+            case 0:                                        break;
+            case 1: writeSignedByte( code, offset, value); break;
+            case 2: writeSignedShort(code, offset, value); break;
+            case 4: writeInt(        code, offset, value); break;
             default: throw new IllegalArgumentException("Unsupported value size ["+valueSize+"]");
         }
     }

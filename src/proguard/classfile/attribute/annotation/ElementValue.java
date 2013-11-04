@@ -1,13 +1,13 @@
-/* $Id: ElementValue.java,v 1.6.2.3 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This library is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or (at your
- * option) any later version.
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 2 of the License, or (at your option)
+ * any later version.
  *
  * This library is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -21,41 +21,37 @@
 package proguard.classfile.attribute.annotation;
 
 import proguard.classfile.*;
-import proguard.classfile.visitor.MemberInfoVisitor;
-
-import java.io.*;
+import proguard.classfile.attribute.annotation.visitor.ElementValueVisitor;
+import proguard.classfile.visitor.MemberVisitor;
 
 /**
- * Representation of an element value.
+ * This abstract class represents an element value that is attached to an
+ * annotation or an annotation default. Specific types of element values are
+ * subclassed from it.
  *
  * @author Eric Lafortune
  */
 public abstract class ElementValue implements VisitorAccepter
 {
-    protected static final int CONSTANT_FIELD_SIZE = 1;
-
-
-    public int u1tag;
-
     /**
      * An extra field for the optional element name. It is used in element value
      * pairs of annotations. Otherwise, it is 0.
      */
-    public int u2elementName;
+    public int u2elementNameIndex;
 
     /**
-     * An extra field pointing to the referenced ClassFile object.
-     * This field is typically filled out by the <code>{@link
-     * proguard.classfile.util.ClassReferenceInitializer}</code>.
-     */
-    public ClassFile referencedClassFile;
-
-    /**
-     * An extra field pointing to the referenced <code>MethodInfo</code>
+     * An extra field pointing to the referenced <code>Clazz</code>
      * object, if applicable. This field is typically filled out by the
-     * <code>{@link proguard.classfile.util.ClassFileReferenceInitializer}</code>.
+     * <code>{@link proguard.classfile.util.ClassReferenceInitializer}</code>.
      */
-    public MethodInfo referencedMethodInfo;
+    public Clazz referencedClass;
+
+    /**
+     * An extra field pointing to the referenced <code>Method</code>
+     * object, if applicable. This field is typically filled out by the
+     * <code>{@link proguard.classfile.util.ClassReferenceInitializer}</code>.
+     */
+    public Method referencedMethod;
 
     /**
      * An extra field in which visitors can store information.
@@ -63,100 +59,38 @@ public abstract class ElementValue implements VisitorAccepter
     public Object visitorInfo;
 
 
-    public static ElementValue create(DataInput din) throws IOException
-    {
-        int u1tag = din.readUnsignedByte();
-        ElementValue elementValue = createElementValue(u1tag);
-
-        elementValue.u1tag = u1tag;
-        elementValue.readInfo(din);
-
-        return elementValue;
-    }
-
-
-    private static ElementValue createElementValue(int u1tag)
-    {
-        switch (u1tag)
-        {
-            case ClassConstants.INTERNAL_TYPE_BOOLEAN:
-            case ClassConstants.INTERNAL_TYPE_BYTE:
-            case ClassConstants.INTERNAL_TYPE_CHAR:
-            case ClassConstants.INTERNAL_TYPE_SHORT:
-            case ClassConstants.INTERNAL_TYPE_INT:
-            case ClassConstants.INTERNAL_TYPE_FLOAT:
-            case ClassConstants.INTERNAL_TYPE_LONG:
-            case ClassConstants.INTERNAL_TYPE_DOUBLE:
-            case ClassConstants.ELEMENT_VALUE_STRING_CONSTANT: return new ConstantElementValue();
-
-            case ClassConstants.ELEMENT_VALUE_ENUM_CONSTANT:   return new EnumConstantElementValue();
-            case ClassConstants.ELEMENT_VALUE_CLASS:           return new ClassElementValue();
-            case ClassConstants.ELEMENT_VALUE_ANNOTATION:      return new AnnotationElementValue();
-            case ClassConstants.ELEMENT_VALUE_ARRAY:           return new ArrayElementValue();
-        }
-
-        throw new IllegalArgumentException("Unknown element value tag ["+u1tag+"]");
-    }
-
-
-    protected ElementValue()
-    {
-    }
-
-
-    /**
-     * Exports the representation to a DataOutput stream.
-     */
-    public final void write(DataOutput dout) throws IOException
-    {
-        dout.writeByte(u1tag);
-        writeInfo(dout);
-    }
-
-
     /**
      * Returns the element name.
      */
-    public String getMethodName(ClassFile classFile)
+    public String getMethodName(Clazz clazz)
     {
-        return classFile.getCpString(u2elementName);
+        return clazz.getString(u2elementNameIndex);
     }
 
 
     // Abstract methods to be implemented by extensions.
 
     /**
-     * Returns the length of this element value, expressed in bytes.
+     * Returns the tag of this element value.
      */
-    protected abstract int getLength();
-
-
-    /**
-     * Reads the data following the header.
-     */
-    protected abstract void readInfo(DataInput din) throws IOException;
-
-
-    /**
-     * Exports data following the header to a DataOutput stream.
-     */
-    protected abstract void writeInfo(DataOutput dout) throws IOException;
+    public abstract int getTag();
 
 
     /**
      * Accepts the given visitor.
      */
-    public abstract void accept(ClassFile classFile, Annotation annotation, ElementValueVisitor elementValueVisitor);
+    public abstract void accept(Clazz clazz, Annotation annotation, ElementValueVisitor elementValueVisitor);
+
 
 
     /**
      * Applies the given visitor to the referenced method.
      */
-    public void referencedMethodInfoAccept(MemberInfoVisitor memberInfoVisitor)
+    public void referencedMethodAccept(MemberVisitor memberVisitor)
     {
-        if (referencedMethodInfo != null)
+        if (referencedMethod != null)
         {
-            referencedMethodInfo.accept(referencedClassFile, memberInfoVisitor);
+            referencedMethod.accept(referencedClass, memberVisitor);
         }
     }
 

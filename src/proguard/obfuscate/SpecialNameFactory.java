@@ -1,6 +1,6 @@
-/* $Id: SpecialNameFactory.java,v 1.3.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -19,9 +19,6 @@
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 package proguard.obfuscate;
-
-import java.io.*;
-import java.util.*;
 
 /**
  * This <code>NameFactory</code> generates names that are special, by appending

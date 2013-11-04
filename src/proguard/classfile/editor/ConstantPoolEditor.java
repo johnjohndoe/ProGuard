@@ -1,6 +1,6 @@
-/* $Id: ConstantPoolEditor.java,v 1.10.2.2 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -21,9 +21,10 @@
 package proguard.classfile.editor;
 
 import proguard.classfile.*;
+import proguard.classfile.constant.*;
 
 /**
- * This class can add constant pool entries to given class files.
+ * This class can add constant pool entries to given classes.
  *
  * @author Eric Lafortune
  */
@@ -33,560 +34,695 @@ public class ConstantPoolEditor
 
 
     /**
-     * Finds or creates a StringCpInfo constant pool entry with the given value,
-     * in the given class file.
-     * @return the constant pool index of the ClassCpInfo.
+     * Finds or creates a IntegerConstant constant pool entry with the given value,
+     * in the given class.
+     * @return the constant pool index of the   Utf8Constant.
      */
-    public int addStringCpInfo(ProgramClassFile programClassFile,
-                              String            string,
-                              ClassFile         referencedClassFile)
+    public int addIntegerConstant(ProgramClass programClass,
+                                  int          value)
     {
-        CpInfo[] constantPool      = programClassFile.constantPool;
-        int      constantPoolCount = programClassFile.u2constantPoolCount;
+        int        constantPoolCount = programClass.u2constantPoolCount;
+        Constant[] constantPool      = programClass.constantPool;
 
         // Check if the entry already exists.
         for (int index = 1; index < constantPoolCount; index++)
         {
-            CpInfo cpInfo = constantPool[index];
+            Constant constant = constantPool[index];
 
-            if (cpInfo != null &&
-                cpInfo.getTag() == ClassConstants.CONSTANT_String)
+            if (constant != null &&
+                constant.getTag() == ClassConstants.CONSTANT_Integer)
             {
-                StringCpInfo classCpInfo = (StringCpInfo)cpInfo;
-                if (classCpInfo.getString(programClassFile).equals(string))
+                IntegerConstant integerConstant = (IntegerConstant)constant;
+                if (integerConstant.getValue() == value)
                 {
                     return index;
                 }
             }
         }
 
-        int nameIndex = addUtf8CpInfo(programClassFile, string);
-
-        return addCpInfo(programClassFile,
-                         new StringCpInfo(nameIndex,
-                                          referencedClassFile));
+        return addConstant(programClass, new IntegerConstant(value));
     }
 
 
     /**
-     * Finds or creates a FieldrefCpInfo constant pool entry for the given
-     * class and field, in the given class file.
-     * @return the constant pool index of the FieldrefCpInfo.
+     * Finds or creates a LongConstant constant pool entry with the given value,
+     * in the given class.
+     * @return the constant pool index of the   Utf8Constant.
      */
-    public int addFieldrefCpInfo(ProgramClassFile programClassFile,
-                                 ClassFile        referencedClassFile,
-                                 MemberInfo       referencedMemberInfo)
+    public int addLongConstant(ProgramClass programClass,
+                               long         value)
     {
-        return addFieldrefCpInfo(programClassFile,
-                                 referencedClassFile.getName(),
-                                 referencedMemberInfo.getName(referencedClassFile),
-                                 referencedMemberInfo.getDescriptor(referencedClassFile),
-                                 referencedClassFile,
-                                 referencedMemberInfo);
+        int        constantPoolCount = programClass.u2constantPoolCount;
+        Constant[] constantPool      = programClass.constantPool;
+
+        // Check if the entry already exists.
+        for (int index = 1; index < constantPoolCount; index++)
+        {
+            Constant constant = constantPool[index];
+
+            if (constant != null &&
+                constant.getTag() == ClassConstants.CONSTANT_Long)
+            {
+                LongConstant longConstant = (LongConstant)constant;
+                if (longConstant.getValue() == value)
+                {
+                    return index;
+                }
+            }
+        }
+
+        return addConstant(programClass, new LongConstant(value));
     }
 
 
     /**
-     * Finds or creates a FieldrefCpInfo constant pool entry with the given
-     * class name, field name, and descriptor, in the given class file.
-     * @return the constant pool index of the FieldrefCpInfo.
+     * Finds or creates a FloatConstant constant pool entry with the given value,
+     * in the given class.
+     * @return the constant pool index of the   Utf8Constant.
      */
-    public int addFieldrefCpInfo(ProgramClassFile programClassFile,
-                                 String           className,
-                                 String           name,
-                                 String           descriptor,
-                                 ClassFile        referencedClassFile,
-                                 MemberInfo       referencedMemberInfo)
+    public int addFloatConstant(ProgramClass programClass,
+                                float        value)
     {
-        return addFieldrefCpInfo(programClassFile,
-                                 className,
-                                 addNameAndTypeCpInfo(programClassFile,
-                                                      name,
-                                                      descriptor),
-                                 referencedClassFile,
-                                 referencedMemberInfo);
+        int        constantPoolCount = programClass.u2constantPoolCount;
+        Constant[] constantPool      = programClass.constantPool;
+
+        // Check if the entry already exists.
+        for (int index = 1; index < constantPoolCount; index++)
+        {
+            Constant constant = constantPool[index];
+
+            if (constant != null &&
+                constant.getTag() == ClassConstants.CONSTANT_Float)
+            {
+                FloatConstant floatConstant = (FloatConstant)constant;
+                if (floatConstant.getValue() == value)
+                {
+                    return index;
+                }
+            }
+        }
+
+        return addConstant(programClass, new FloatConstant(value));
     }
 
 
     /**
-     * Finds or creates a FieldrefCpInfo constant pool entry with the given
-     * class name, field name, and descriptor, in the given class file.
-     * @return the constant pool index of the FieldrefCpInfo.
+     * Finds or creates a DoubleConstant constant pool entry with the given value,
+     * in the given class.
+     * @return the constant pool index of the   Utf8Constant.
      */
-    public int addFieldrefCpInfo(ProgramClassFile programClassFile,
-                                 String           className,
-                                 int              nameAndTypeIndex,
-                                 ClassFile        referencedClassFile,
-                                 MemberInfo       referencedMemberInfo)
+    public int addDoubleConstant(ProgramClass programClass,
+                                  double      value)
     {
-        return addFieldrefCpInfo(programClassFile,
-                                 addClassCpInfo(programClassFile,
-                                                className,
-                                                referencedClassFile),
-                                 nameAndTypeIndex,
-                                 referencedClassFile,
-                                 referencedMemberInfo);
+        int        constantPoolCount = programClass.u2constantPoolCount;
+        Constant[] constantPool      = programClass.constantPool;
+
+        // Check if the entry already exists.
+        for (int index = 1; index < constantPoolCount; index++)
+        {
+            Constant constant = constantPool[index];
+
+            if (constant != null &&
+                constant.getTag() == ClassConstants.CONSTANT_Double)
+            {
+                DoubleConstant doubleConstant = (DoubleConstant)constant;
+                if (doubleConstant.getValue() == value)
+                {
+                    return index;
+                }
+            }
+        }
+
+        return addConstant(programClass, new DoubleConstant(value));
     }
 
 
     /**
-     * Finds or creates a FieldrefCpInfo constant pool entry with the given
+     * Finds or creates a StringConstant constant pool entry with the given value,
+     * in the given class.
+     * @return the constant pool index of the ClassConstant.
+     */
+    public int addStringConstant(ProgramClass programClass,
+                                 String       string,
+                                 Clazz        referencedClass,
+                                 Member       referencedMember)
+    {
+        int        constantPoolCount = programClass.u2constantPoolCount;
+        Constant[] constantPool      = programClass.constantPool;
+
+        // Check if the entry already exists.
+        for (int index = 1; index < constantPoolCount; index++)
+        {
+            Constant constant = constantPool[index];
+
+            if (constant != null &&
+                constant.getTag() == ClassConstants.CONSTANT_String)
+            {
+                StringConstant classConstant = (StringConstant)constant;
+                if (classConstant.getString(programClass).equals(string))
+                {
+                    return index;
+                }
+            }
+        }
+
+        int nameIndex = addUtf8Constant(programClass, string);
+
+        return addConstant(programClass,
+                           new StringConstant(nameIndex,
+                                              referencedClass,
+                                              referencedMember));
+    }
+
+
+    /**
+     * Finds or creates a FieldrefConstant constant pool entry for the given
+     * class and field, in the given class.
+     * @return the constant pool index of the FieldrefConstant.
+     */
+    public int addFieldrefConstant(ProgramClass programClass,
+                                   Clazz        referencedClass,
+                                   Member       referencedMember)
+    {
+        return addFieldrefConstant(programClass,
+                                   referencedClass.getName(),
+                                   referencedMember.getName(referencedClass),
+                                   referencedMember.getDescriptor(referencedClass),
+                                   referencedClass,
+                                   referencedMember);
+    }
+
+
+    /**
+     * Finds or creates a FieldrefConstant constant pool entry with the given
+     * class name, field name, and descriptor, in the given class.
+     * @return the constant pool index of the FieldrefConstant.
+     */
+    public int addFieldrefConstant(ProgramClass programClass,
+                                   String       className,
+                                   String       name,
+                                   String       descriptor,
+                                   Clazz        referencedClass,
+                                   Member       referencedMember)
+    {
+        return addFieldrefConstant(programClass,
+                                   className,
+                                   addNameAndTypeConstant(programClass,
+                                                          name,
+                                                          descriptor),
+                                   referencedClass,
+                                   referencedMember);
+    }
+
+
+    /**
+     * Finds or creates a FieldrefConstant constant pool entry with the given
+     * class name, field name, and descriptor, in the given class.
+     * @return the constant pool index of the FieldrefConstant.
+     */
+    public int addFieldrefConstant(ProgramClass programClass,
+                                   String       className,
+                                   int          nameAndTypeIndex,
+                                   Clazz        referencedClass,
+                                   Member       referencedMember)
+    {
+        return addFieldrefConstant(programClass,
+                                   addClassConstant(programClass,
+                                                    className,
+                                                    referencedClass),
+                                   nameAndTypeIndex,
+                                   referencedClass,
+                                   referencedMember);
+    }
+
+
+    /**
+     * Finds or creates a FieldrefConstant constant pool entry with the given
      * class constant pool entry index, field name, and descriptor, in the
-     * given class file.
-     * @return the constant pool index of the FieldrefCpInfo.
+     * given class.
+     * @return the constant pool index of the   FieldrefConstant.
      */
-    public int addFieldrefCpInfo(ProgramClassFile programClassFile,
-                                 int              classIndex,
-                                 String           name,
-                                 String           descriptor,
-                                 ClassFile        referencedClassFile,
-                                 MemberInfo       referencedMemberInfo)
+    public int addFieldrefConstant(ProgramClass programClass,
+                                   int          classIndex,
+                                   String       name,
+                                   String       descriptor,
+                                   Clazz        referencedClass,
+                                   Member       referencedMember)
     {
-        return addFieldrefCpInfo(programClassFile,
-                                 classIndex,
-                                 addNameAndTypeCpInfo(programClassFile,
-                                                      name,
-                                                      descriptor),
-                                 referencedClassFile,
-                                 referencedMemberInfo);
+        return addFieldrefConstant(programClass,
+                                   classIndex,
+                                   addNameAndTypeConstant(programClass,
+                                                          name,
+                                                          descriptor),
+                                   referencedClass,
+                                   referencedMember);
     }
 
 
     /**
-     * Finds or creates a FieldrefCpInfo constant pool entry with the given
+     * Finds or creates a FieldrefConstant constant pool entry with the given
      * class constant pool entry index and name and type constant pool entry index
-     * the given class file.
-     * @return the constant pool index of the FieldrefCpInfo.
+     * the given class.
+     * @return the constant pool index of the FieldrefConstant.
      */
-    public int addFieldrefCpInfo(ProgramClassFile programClassFile,
-                                 int              classIndex,
-                                 int              nameAndTypeIndex,
-                                 ClassFile        referencedClassFile,
-                                 MemberInfo       referencedMemberInfo)
+    public int addFieldrefConstant(ProgramClass programClass,
+                                   int          classIndex,
+                                   int          nameAndTypeIndex,
+                                   Clazz        referencedClass,
+                                   Member       referencedMember)
     {
-        CpInfo[] constantPool      = programClassFile.constantPool;
-        int      constantPoolCount = programClassFile.u2constantPoolCount;
+        int        constantPoolCount = programClass.u2constantPoolCount;
+        Constant[] constantPool      = programClass.constantPool;
 
         // Check if the entry already exists.
         for (int index = 1; index < constantPoolCount; index++)
         {
-            CpInfo cpInfo = constantPool[index];
+            Constant constant = constantPool[index];
 
-            if (cpInfo != null &&
-                cpInfo.getTag() == ClassConstants.CONSTANT_Fieldref)
+            if (constant != null &&
+                constant.getTag() == ClassConstants.CONSTANT_Fieldref)
             {
-                FieldrefCpInfo fieldrefCpInfo = (FieldrefCpInfo)cpInfo;
-                if (fieldrefCpInfo.u2classIndex       == classIndex &&
-                    fieldrefCpInfo.u2nameAndTypeIndex == nameAndTypeIndex)
+                FieldrefConstant fieldrefConstant = (FieldrefConstant)constant;
+                if (fieldrefConstant.u2classIndex         == classIndex &&
+                    fieldrefConstant.u2nameAndTypeIndex   == nameAndTypeIndex)
                 {
                     return index;
                 }
             }
         }
 
-        return addCpInfo(programClassFile,
-                         new FieldrefCpInfo(classIndex,
-                                            nameAndTypeIndex,
-                                            referencedClassFile,
-                                            referencedMemberInfo));
+        return addConstant(programClass,
+                           new FieldrefConstant(classIndex,
+                                                nameAndTypeIndex,
+                                                referencedClass,
+                                                referencedMember));
     }
 
 
     /**
-     * Finds or creates a InterfaceMethodrefCpInfo constant pool entry with the
-     * given class name, method name, and descriptor, in the given class file.
-     * @return the constant pool index of the InterfaceMethodrefCpInfo.
+     * Finds or creates a InterfaceMethodrefConstant constant pool entry with the
+     * given class name, method name, and descriptor, in the given class.
+     * @return the constant pool index of the InterfaceMethodrefConstant.
      */
-    public int addInterfaceMethodrefCpInfo(ProgramClassFile programClassFile,
-                                           String           className,
-                                           String           name,
-                                           String           descriptor,
-                                           ClassFile        referencedClassFile,
-                                           MemberInfo       referencedMemberInfo)
+    public int addInterfaceMethodrefConstant(ProgramClass programClass,
+                                             String       className,
+                                             String       name,
+                                             String       descriptor,
+                                             Clazz        referencedClass,
+                                             Member       referencedMember)
     {
-        return addInterfaceMethodrefCpInfo(programClassFile,
-                                           className,
-                                           addNameAndTypeCpInfo(programClassFile,
-                                                                name,
-                                                                descriptor),
-                                                                referencedClassFile,
-                                                                referencedMemberInfo);
+        return addInterfaceMethodrefConstant(programClass,
+                                             className,
+                                             addNameAndTypeConstant(programClass,
+                                                                    name,
+                                                                    descriptor),
+                                                                    referencedClass,
+                                                                    referencedMember);
     }
 
 
     /**
-     * Finds or creates a InterfaceMethodrefCpInfo constant pool entry with the
-     * given class name, method name, and descriptor, in the given class file.
-     * @return the constant pool index of the InterfaceMethodrefCpInfo.
+     * Finds or creates a InterfaceMethodrefConstant constant pool entry with the
+     * given class name, method name, and descriptor, in the given class.
+     * @return the constant pool index of the InterfaceMethodrefConstant.
      */
-    public int addInterfaceMethodrefCpInfo(ProgramClassFile programClassFile,
-                                           String           className,
-                                           int              nameAndTypeIndex,
-                                           ClassFile        referencedClassFile,
-                                           MemberInfo       referencedMemberInfo)
+    public int addInterfaceMethodrefConstant(ProgramClass programClass,
+                                             String       className,
+                                             int          nameAndTypeIndex,
+                                             Clazz        referencedClass,
+                                             Member       referencedMember)
     {
-        return addInterfaceMethodrefCpInfo(programClassFile,
-                                           addClassCpInfo(programClassFile,
-                                                          className,
-                                                          referencedClassFile),
-                                                          nameAndTypeIndex,
-                                                          referencedClassFile,
-                                                          referencedMemberInfo);
+        return addInterfaceMethodrefConstant(programClass,
+                                             addClassConstant(programClass,
+                                                              className,
+                                                              referencedClass),
+                                                              nameAndTypeIndex,
+                                                              referencedClass,
+                                                              referencedMember);
     }
 
 
     /**
-     * Finds or creates a InterfaceMethodrefCpInfo constant pool entry for the
-     * given class and method, in the given class file.
-     * @return the constant pool index of the InterfaceMethodrefCpInfo.
+     * Finds or creates a InterfaceMethodrefConstant constant pool entry for the
+     * given class and method, in the given class.
+     * @return the constant pool index of the InterfaceMethodrefConstant.
      */
-    public int addInterfaceMethodrefCpInfo(ProgramClassFile programClassFile,
-                                           ClassFile        referencedClassFile,
-                                           MemberInfo       referencedMemberInfo)
+    public int addInterfaceMethodrefConstant(ProgramClass programClass,
+                                             Clazz        referencedClass,
+                                             Member       referencedMember)
     {
-        return addInterfaceMethodrefCpInfo(programClassFile,
-                                           referencedClassFile.getName(),
-                                           referencedMemberInfo.getName(referencedClassFile),
-                                           referencedMemberInfo.getDescriptor(referencedClassFile),
-                                           referencedClassFile,
-                                           referencedMemberInfo);
+        return addInterfaceMethodrefConstant(programClass,
+                                             referencedClass.getName(),
+                                             referencedMember.getName(referencedClass),
+                                             referencedMember.getDescriptor(referencedClass),
+                                             referencedClass,
+                                             referencedMember);
     }
 
 
     /**
-     * Finds or creates a InterfaceMethodrefCpInfo constant pool entry with the
+     * Finds or creates a InterfaceMethodrefConstant constant pool entry with the
      * given class constant pool entry index, method name, and descriptor, in
-     * the given class file.
-     * @return the constant pool index of the InterfaceMethodrefCpInfo.
+     * the given class.
+     * @return the constant pool index of the InterfaceMethodrefConstant.
      */
-    public int addInterfaceMethodrefCpInfo(ProgramClassFile programClassFile,
-                                           int              classIndex,
-                                           String           name,
-                                           String           descriptor,
-                                           ClassFile        referencedClassFile,
-                                           MemberInfo       referencedMemberInfo)
+    public int addInterfaceMethodrefConstant(ProgramClass programClass,
+                                             int          classIndex,
+                                             String       name,
+                                             String       descriptor,
+                                             Clazz        referencedClass,
+                                             Member       referencedMember)
     {
-        return addInterfaceMethodrefCpInfo(programClassFile,
-                                           classIndex,
-                                           addNameAndTypeCpInfo(programClassFile,
-                                                                name,
-                                                                descriptor),
-                                           referencedClassFile,
-                                           referencedMemberInfo);
+        return addInterfaceMethodrefConstant(programClass,
+                                             classIndex,
+                                             addNameAndTypeConstant(programClass,
+                                                                    name,
+                                                                    descriptor),
+                                             referencedClass,
+                                             referencedMember);
     }
 
 
     /**
-     * Finds or creates a InterfaceMethodrefCpInfo constant pool entry with the
+     * Finds or creates a InterfaceMethodrefConstant constant pool entry with the
      * given class constant pool entry index and name and type constant pool
-     * entry index the given class file.
-     * @return the constant pool index of the InterfaceMethodrefCpInfo.
+     * entry index the given class.
+     * @return the constant pool index of the InterfaceMethodrefConstant.
      */
-    public int addInterfaceMethodrefCpInfo(ProgramClassFile programClassFile,
-                                           int              classIndex,
-                                           int              nameAndTypeIndex,
-                                           ClassFile        referencedClassFile,
-                                           MemberInfo       referencedMemberInfo)
+    public int addInterfaceMethodrefConstant(ProgramClass programClass,
+                                             int          classIndex,
+                                             int          nameAndTypeIndex,
+                                             Clazz        referencedClass,
+                                             Member       referencedMember)
     {
-        CpInfo[] constantPool      = programClassFile.constantPool;
-        int      constantPoolCount = programClassFile.u2constantPoolCount;
+        int        constantPoolCount = programClass.u2constantPoolCount;
+        Constant[] constantPool      = programClass.constantPool;
 
         // Check if the entry already exists.
         for (int index = 1; index < constantPoolCount; index++)
         {
-            CpInfo cpInfo = constantPool[index];
+            Constant constant = constantPool[index];
 
-            if (cpInfo != null &&
-                            cpInfo.getTag() == ClassConstants.CONSTANT_InterfaceMethodref)
+            if (constant != null &&
+                            constant.getTag() == ClassConstants.CONSTANT_InterfaceMethodref)
             {
-                InterfaceMethodrefCpInfo methodrefCpInfo = (InterfaceMethodrefCpInfo)cpInfo;
-                if (methodrefCpInfo.u2classIndex       == classIndex &&
-                                methodrefCpInfo.u2nameAndTypeIndex == nameAndTypeIndex)
+                InterfaceMethodrefConstant methodrefConstant = (InterfaceMethodrefConstant)constant;
+                if (methodrefConstant.u2classIndex       == classIndex &&
+                                methodrefConstant.u2nameAndTypeIndex ==   nameAndTypeIndex)
                 {
                     return index;
                 }
             }
         }
 
-        return addCpInfo(programClassFile,
-                         new InterfaceMethodrefCpInfo(classIndex,
-                                                      nameAndTypeIndex,
-                                                      referencedClassFile,
-                                                      referencedMemberInfo));
+        return addConstant(programClass,
+                           new InterfaceMethodrefConstant(classIndex,
+                                                          nameAndTypeIndex,
+                                                          referencedClass,
+                                                          referencedMember));
     }
 
 
     /**
-     * Finds or creates a MethodrefCpInfo constant pool entry for the given
-     * class and method, in the given class file.
-     * @return the constant pool index of the MethodrefCpInfo.
+     * Finds or creates a MethodrefConstant constant pool entry for the given
+     * class and method, in the given class.
+     * @return the constant pool index of   the MethodrefConstant.
      */
-    public int addMethodrefCpInfo(ProgramClassFile programClassFile,
-                                  ClassFile        referencedClassFile,
-                                  MemberInfo       referencedMemberInfo)
+    public int addMethodrefConstant(ProgramClass programClass,
+                                    Clazz        referencedClass,
+                                    Member       referencedMember)
     {
-        return addMethodrefCpInfo(programClassFile,
-                                  referencedClassFile.getName(),
-                                  referencedMemberInfo.getName(referencedClassFile),
-                                  referencedMemberInfo.getDescriptor(referencedClassFile),
-                                  referencedClassFile,
-                                  referencedMemberInfo);
+        return addMethodrefConstant(programClass,
+                                    referencedClass.getName(),
+                                    referencedMember.getName(referencedClass),
+                                    referencedMember.getDescriptor(referencedClass),
+                                    referencedClass,
+                                    referencedMember);
     }
 
 
     /**
-     * Finds or creates a MethodrefCpInfo constant pool entry with the given
-     * class name, method name, and descriptor, in the given class file.
-     * @return the constant pool index of the MethodrefCpInfo.
+     * Finds or creates a MethodrefConstant constant pool entry with the given
+     * class name, method name, and descriptor, in the given class.
+     * @return the constant pool index of   the MethodrefConstant.
      */
-    public int addMethodrefCpInfo(ProgramClassFile programClassFile,
-                                  String           className,
-                                  String           name,
-                                  String           descriptor,
-                                  ClassFile        referencedClassFile,
-                                  MemberInfo       referencedMemberInfo)
+    public int addMethodrefConstant(ProgramClass programClass,
+                                    String       className,
+                                    String       name,
+                                    String       descriptor,
+                                    Clazz        referencedClass,
+                                    Member       referencedMember)
     {
-        return addMethodrefCpInfo(programClassFile,
-                                  className,
-                                  addNameAndTypeCpInfo(programClassFile,
-                                                       name,
-                                                       descriptor),
-                                  referencedClassFile,
-                                  referencedMemberInfo);
+        return addMethodrefConstant(programClass,
+                                    className,
+                                    addNameAndTypeConstant(programClass,
+                                                           name,
+                                                           descriptor),
+                                    referencedClass,
+                                    referencedMember);
     }
 
 
     /**
-     * Finds or creates a MethodrefCpInfo constant pool entry with the given
-     * class name, method name, and descriptor, in the given class file.
-     * @return the constant pool index of the MethodrefCpInfo.
+     * Finds or creates a MethodrefConstant constant pool entry with the given
+     * class name, method name, and descriptor, in the given class.
+     * @return the constant pool index of   the MethodrefConstant.
      */
-    public int addMethodrefCpInfo(ProgramClassFile programClassFile,
-                                  String           className,
-                                  int              nameAndTypeIndex,
-                                  ClassFile        referencedClassFile,
-                                  MemberInfo       referencedMemberInfo)
+    public int addMethodrefConstant(ProgramClass programClass,
+                                    String       className,
+                                    int          nameAndTypeIndex,
+                                    Clazz        referencedClass,
+                                    Member       referencedMember)
     {
-        return addMethodrefCpInfo(programClassFile,
-                                  addClassCpInfo(programClassFile,
-                                                 className,
-                                                 referencedClassFile),
-                                  nameAndTypeIndex,
-                                  referencedClassFile,
-                                  referencedMemberInfo);
+        return addMethodrefConstant(programClass,
+                                    addClassConstant(programClass,
+                                                     className,
+                                                     referencedClass),
+                                    nameAndTypeIndex,
+                                    referencedClass,
+                                    referencedMember);
     }
 
 
     /**
-     * Finds or creates a MethodrefCpInfo constant pool entry with the given
+     * Finds or creates a MethodrefConstant constant pool entry with the given
      * class constant pool entry index, method name, and descriptor, in the
-     * given class file.
-     * @return the constant pool index of the MethodrefCpInfo.
+     * given class.
+     * @return the constant pool index of   the MethodrefConstant.
      */
-    public int addMethodrefCpInfo(ProgramClassFile programClassFile,
-                                  int              classIndex,
-                                  String           name,
-                                  String           descriptor,
-                                  ClassFile        referencedClassFile,
-                                  MemberInfo       referencedMemberInfo)
+    public int addMethodrefConstant(ProgramClass programClass,
+                                    int          classIndex,
+                                    String       name,
+                                    String       descriptor,
+                                    Clazz        referencedClass,
+                                    Member       referencedMember)
     {
-        return addMethodrefCpInfo(programClassFile,
-                                  classIndex,
-                                  addNameAndTypeCpInfo(programClassFile,
-                                                       name,
-                                                       descriptor),
-                                  referencedClassFile,
-                                  referencedMemberInfo);
+        return addMethodrefConstant(programClass,
+                                    classIndex,
+                                    addNameAndTypeConstant(programClass,
+                                                           name,
+                                                           descriptor),
+                                    referencedClass,
+                                    referencedMember);
     }
 
 
     /**
-     * Finds or creates a MethodrefCpInfo constant pool entry with the given
+     * Finds or creates a MethodrefConstant constant pool entry with the given
      * class constant pool entry index and name and type constant pool entry index
-     * the given class file.
-     * @return the constant pool index of the MethodrefCpInfo.
+     * the given class.
+     * @return the constant pool index of the MethodrefConstant.
      */
-    public int addMethodrefCpInfo(ProgramClassFile programClassFile,
-                                  int              classIndex,
-                                  int              nameAndTypeIndex,
-                                  ClassFile        referencedClassFile,
-                                  MemberInfo       referencedMemberInfo)
+    public int addMethodrefConstant(ProgramClass programClass,
+                                    int          classIndex,
+                                    int          nameAndTypeIndex,
+                                    Clazz        referencedClass,
+                                    Member       referencedMember)
     {
-        CpInfo[] constantPool      = programClassFile.constantPool;
-        int      constantPoolCount = programClassFile.u2constantPoolCount;
+        int        constantPoolCount = programClass.u2constantPoolCount;
+        Constant[] constantPool      = programClass.constantPool;
 
         // Check if the entry already exists.
         for (int index = 1; index < constantPoolCount; index++)
         {
-            CpInfo cpInfo = constantPool[index];
+            Constant constant = constantPool[index];
 
-            if (cpInfo != null &&
-                cpInfo.getTag() == ClassConstants.CONSTANT_Methodref)
+            if (constant != null &&
+                constant.getTag() == ClassConstants.CONSTANT_Methodref)
             {
-                MethodrefCpInfo methodrefCpInfo = (MethodrefCpInfo)cpInfo;
-                if (methodrefCpInfo.u2classIndex       == classIndex &&
-                    methodrefCpInfo.u2nameAndTypeIndex == nameAndTypeIndex)
+                MethodrefConstant methodrefConstant = (MethodrefConstant)constant;
+                if (methodrefConstant.u2classIndex         == classIndex &&
+                    methodrefConstant.u2nameAndTypeIndex   == nameAndTypeIndex)
                 {
                     return index;
                 }
             }
         }
 
-        return addCpInfo(programClassFile,
-                         new MethodrefCpInfo(classIndex,
-                                             nameAndTypeIndex,
-                                             referencedClassFile,
-                                             referencedMemberInfo));
+        return addConstant(programClass,
+                           new MethodrefConstant(classIndex,
+                                                 nameAndTypeIndex,
+                                                 referencedClass,
+                                                 referencedMember));
     }
 
 
     /**
-     * Finds or creates a ClassCpInfo constant pool entry for the given class,
-     * in the given class file.
-     * @return the constant pool index of the ClassCpInfo.
+     * Finds or creates a ClassConstant constant pool entry for the given class,
+     * in the given class.
+     * @return the constant pool index of the ClassConstant.
      */
-    public int addClassCpInfo(ProgramClassFile programClassFile,
-                              ClassFile        referencedClassFile)
+    public int addClassConstant(ProgramClass programClass,
+                                Clazz        referencedClass)
     {
-        return addClassCpInfo(programClassFile,
-                              referencedClassFile.getName(),
-                              referencedClassFile);
+        return addClassConstant(programClass,
+                                referencedClass.getName(),
+                                referencedClass);
     }
 
 
     /**
-     * Finds or creates a ClassCpInfo constant pool entry with the given name,
-     * in the given class file.
-     * @return the constant pool index of the ClassCpInfo.
+     * Finds or creates a ClassConstant constant pool entry with the given name,
+     * in the given class.
+     * @return the constant pool index of the ClassConstant.
      */
-    public int addClassCpInfo(ProgramClassFile programClassFile,
-                              String           name,
-                              ClassFile        referencedClassFile)
+    public int addClassConstant(ProgramClass programClass,
+                                String       name,
+                                Clazz        referencedClass)
     {
-        CpInfo[] constantPool      = programClassFile.constantPool;
-        int      constantPoolCount = programClassFile.u2constantPoolCount;
+        int        constantPoolCount = programClass.u2constantPoolCount;
+        Constant[] constantPool      = programClass.constantPool;
 
         // Check if the entry already exists.
         for (int index = 1; index < constantPoolCount; index++)
         {
-            CpInfo cpInfo = constantPool[index];
+            Constant constant = constantPool[index];
 
-            if (cpInfo != null &&
-                cpInfo.getTag() == ClassConstants.CONSTANT_Class)
+            if (constant != null &&
+                constant.getTag() == ClassConstants.CONSTANT_Class)
             {
-                ClassCpInfo classCpInfo = (ClassCpInfo)cpInfo;
-                if (classCpInfo.getName(programClassFile).equals(name))
+                ClassConstant classConstant = (ClassConstant)constant;
+                if (classConstant.getName(programClass).equals(name))
                 {
                     return index;
                 }
             }
         }
 
-        int nameIndex = addUtf8CpInfo(programClassFile, name);
+        int nameIndex = addUtf8Constant(programClass, name);
 
-        return addCpInfo(programClassFile,
-                         new ClassCpInfo(nameIndex,
-                                         referencedClassFile));
+        return addConstant(programClass,
+                           new ClassConstant(nameIndex,
+                                             referencedClass));
     }
 
 
     /**
-     * Finds or creates a NameAndTypeCpInfo constant pool entry with the given
-     * name and type, in the given class file.
-     * @return the constant pool index of the NameAndTypeCpInfo.
+     * Finds or creates a NameAndTypeConstant constant pool entry with the given
+     * name and type, in the given class.
+     * @return the constant pool index of the NameAndTypeConstant.
      */
-    public int addNameAndTypeCpInfo(ProgramClassFile programClassFile,
-                                    String           name,
-                                    String           type)
+    public int addNameAndTypeConstant(ProgramClass programClass,
+                                      String       name,
+                                      String       type)
     {
-        CpInfo[] constantPool      = programClassFile.constantPool;
-        int      constantPoolCount = programClassFile.u2constantPoolCount;
+        int        constantPoolCount = programClass.u2constantPoolCount;
+        Constant[] constantPool      = programClass.constantPool;
 
         // Check if the entry already exists.
         for (int index = 1; index < constantPoolCount; index++)
         {
-            CpInfo cpInfo = constantPool[index];
+            Constant constant = constantPool[index];
 
-            if (cpInfo != null &&
-                cpInfo.getTag() == ClassConstants.CONSTANT_NameAndType)
+            if (constant != null &&
+                constant.getTag() == ClassConstants.CONSTANT_NameAndType)
             {
-                NameAndTypeCpInfo nameAndTypeCpInfo = (NameAndTypeCpInfo)cpInfo;
-                if (nameAndTypeCpInfo.getName(programClassFile).equals(name) &&
-                    nameAndTypeCpInfo.getType(programClassFile).equals(type))
+                NameAndTypeConstant nameAndTypeConstant = (NameAndTypeConstant)constant;
+                if (nameAndTypeConstant.getName(programClass).equals(name) &&
+                    nameAndTypeConstant.getType(programClass).equals(type))
                 {
                     return index;
                 }
             }
         }
 
-        int nameIndex       = addUtf8CpInfo(programClassFile, name);
-        int descriptorIndex = addUtf8CpInfo(programClassFile, type);
+        int nameIndex       = addUtf8Constant(programClass, name);
+        int descriptorIndex = addUtf8Constant(programClass, type);
 
-        return addCpInfo(programClassFile,
-                         new NameAndTypeCpInfo(nameIndex,
-                                               descriptorIndex));
+        return addConstant(programClass,
+                           new NameAndTypeConstant(nameIndex,
+                                                   descriptorIndex));
     }
 
 
     /**
-     * Finds or creates a Utf8CpInfo constant pool entry for the given string,
-     * in the given class file.
-     * @return the constant pool index of the Utf8CpInfo.
+     * Finds or creates a Utf8Constant constant pool entry for the given string,
+     * in the given class.
+     * @return the constant pool index of the   Utf8Constant.
      */
-    public int addUtf8CpInfo(ProgramClassFile programClassFile,
-                             String           string)
+    public int addUtf8Constant(ProgramClass programClass,
+                               String       string)
     {
-        CpInfo[] constantPool      = programClassFile.constantPool;
-        int      constantPoolCount = programClassFile.u2constantPoolCount;
+        int        constantPoolCount = programClass.u2constantPoolCount;
+        Constant[] constantPool      = programClass.constantPool;
 
         // Check if the entry already exists.
         for (int index = 1; index < constantPoolCount; index++)
         {
-            CpInfo cpInfo = constantPool[index];
+            Constant constant = constantPool[index];
 
-            if (cpInfo != null &&
-                cpInfo.getTag() == ClassConstants.CONSTANT_Utf8)
+            if (constant != null &&
+                constant.getTag() == ClassConstants.CONSTANT_Utf8)
             {
-                Utf8CpInfo utf8CpInfo = (Utf8CpInfo)cpInfo;
-                if (utf8CpInfo.getString().equals(string))
+                Utf8Constant utf8Constant = (Utf8Constant)constant;
+                if (utf8Constant.getString().equals(string))
                 {
                     return index;
                 }
             }
         }
 
-        return addCpInfo(programClassFile, new Utf8CpInfo(string));
+        return addConstant(programClass, new Utf8Constant(string));
     }
 
 
     /**
      * Adds a given constant pool entry to the end of the constant pool
-     * in the given class file.
+     * in the given class.
      * @return the constant pool index for the added entry.
      */
-    public int addCpInfo(ProgramClassFile programClassFile,
-                         CpInfo           cpInfo)
+    public int addConstant(ProgramClass programClass,
+                           Constant     constant)
     {
-        CpInfo[] constantPool      = programClassFile.constantPool;
-        int      constantPoolCount = programClassFile.u2constantPoolCount;
+        int        constantPoolCount = programClass.u2constantPoolCount;
+        Constant[] constantPool      = programClass.constantPool;
 
         // Make sure there is enough space for another constant pool entry.
-        if (constantPoolCount == constantPool.length)
+        if (constantPool.length < constantPoolCount+2)
         {
-            programClassFile.constantPool = new CpInfo[constantPoolCount+1];
+            programClass.constantPool = new Constant[constantPoolCount+2];
             System.arraycopy(constantPool, 0,
-                             programClassFile.constantPool, 0,
+                             programClass.constantPool, 0,
                              constantPoolCount);
-            constantPool = programClassFile.constantPool;
+            constantPool = programClass.constantPool;
         }
 
         if (DEBUG)
         {
-            System.out.println(programClassFile.getName()+": adding ["+cpInfo.getClass().getName()+"] at index "+programClassFile.u2constantPoolCount);
+            System.out.println(programClass.getName()+": adding ["+constant.getClass().getName()+"] at index "+programClass.u2constantPoolCount);
         }
 
-        // Create a new Utf8CpInfo for the given string.
-        constantPool[programClassFile.u2constantPoolCount++] = cpInfo;
+        // Create a new Utf8Constant for the given string.
+        constantPool[programClass.u2constantPoolCount++] = constant;
+
+        // Long constants and double constants take up two entries in the
+        // constant pool.
+        int tag = constant.getTag();
+        if (tag == ClassConstants.CONSTANT_Long ||
+            tag == ClassConstants.CONSTANT_Double)
+        {
+            constantPool[programClass.u2constantPoolCount++] = null;
+        }
 
         return constantPoolCount;
     }

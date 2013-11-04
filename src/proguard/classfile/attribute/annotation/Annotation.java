@@ -1,13 +1,13 @@
-/* $Id: Annotation.java,v 1.4.2.3 2007/01/18 21:31:51 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This library is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or (at your
- * option) any later version.
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 2 of the License, or (at your option)
+ * any later version.
  *
  * This library is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -21,32 +21,28 @@
 package proguard.classfile.attribute.annotation;
 
 import proguard.classfile.*;
-import proguard.classfile.visitor.ClassFileVisitor;
-
-import java.io.*;
+import proguard.classfile.attribute.annotation.visitor.ElementValueVisitor;
+import proguard.classfile.visitor.ClassVisitor;
 
 /**
- * Representation of a runtime annotation.
+ * Representation of an annotation.
  *
  * @author Eric Lafortune
  */
 public class Annotation implements VisitorAccepter
 {
-    private static final int CONSTANT_FIELD_SIZE  = 4;
-    private static final int CONSTANT_FIELD_SIZE2 = 2;
-
-
     public int            u2typeIndex;
-    public int            u2numberOfElementValuePairs;
+    public int            u2elementValuesCount;
     public ElementValue[] elementValues;
 
     /**
-     * An extra field pointing to the ClassFile objects referenced in the
-     * type string. This field is filled out by the <code>{@link
-     * proguard.classfile.util.ClassFileReferenceInitializer ClassFileReferenceInitializer}</code>.
+     * An extra field pointing to the Clazz objects referenced in the
+     * type string. This field is typically filled out by the <code>{@link
+     * proguard.classfile.util.ClassReferenceInitializer
+     * ClassReferenceInitializer}</code>.
      * References to primitive types are ignored.
      */
-    public ClassFile[] referencedClassFiles;
+    public Clazz[] referencedClasses;
 
     /**
      * An extra field in which visitors can store information.
@@ -54,73 +50,28 @@ public class Annotation implements VisitorAccepter
     public Object visitorInfo;
 
 
-    public static Annotation create(DataInput din) throws IOException
-    {
-        Annotation annotation = new Annotation();
-        annotation.read(din);
-        return annotation;
-    }
-
-    private void read(DataInput din) throws IOException
-    {
-        u2typeIndex                 = din.readUnsignedShort();
-        u2numberOfElementValuePairs = din.readUnsignedShort();
-
-        elementValues = new ElementValue[u2numberOfElementValuePairs];
-
-        for (int i = 0; i < u2numberOfElementValuePairs; i++)
-        {
-            int u2elementName = din.readUnsignedShort();
-
-            elementValues[i] = ElementValue.create(din);
-
-            elementValues[i].u2elementName = u2elementName;
-        }
-    }
-
     /**
-     * Exports the representation to a DataOutput stream.
+     * Returns the type.
      */
-    public void write(DataOutput dout) throws IOException
+    public String getType(Clazz clazz)
     {
-        dout.writeShort(u2typeIndex);
-        dout.writeShort(u2numberOfElementValuePairs);
-        for (int i = 0; i < u2numberOfElementValuePairs; i++)
-        {
-            dout.writeShort(elementValues[i].u2elementName);
-
-            elementValues[i].write(dout);
-        }
+        return clazz.getString(u2typeIndex);
     }
 
-
-    /**
-     * Returns the length of this annotation, expressed in bytes.
-     */
-    protected int getLength()
-    {
-        int length = CONSTANT_FIELD_SIZE;
-        for (int i = 0; i < u2numberOfElementValuePairs; i++)
-        {
-            length += CONSTANT_FIELD_SIZE2 + elementValues[i].getLength();
-        }
-
-        return length;
-    }
 
 
     /**
      * Applies the given visitor to the first referenced class. This is the
      * main annotation class.
      */
-    public void referencedClassFileAccept(ClassFileVisitor classFileVisitor)
+    public void referencedClassAccept(ClassVisitor classVisitor)
     {
-        if (referencedClassFiles != null)
+        if (referencedClasses != null)
         {
-            ClassFile referencedClassFile = referencedClassFiles[0];
-            if (referencedClassFile != null)
+            Clazz referencedClass = referencedClasses[0];
+            if (referencedClass != null)
             {
-                referencedClassFile.accept(classFileVisitor);
+                referencedClass.accept(classVisitor);
             }
         }
     }
@@ -129,16 +80,16 @@ public class Annotation implements VisitorAccepter
     /**
      * Applies the given visitor to all referenced classes.
      */
-    public void referencedClassFilesAccept(ClassFileVisitor classFileVisitor)
+    public void referencedClassesAccept(ClassVisitor classVisitor)
     {
-        if (referencedClassFiles != null)
+        if (referencedClasses != null)
         {
-            for (int index = 0; index < referencedClassFiles.length; index++)
+            for (int index = 0; index < referencedClasses.length; index++)
             {
-                ClassFile referencedClassFile = referencedClassFiles[index];
-                if (referencedClassFile != null)
+                Clazz referencedClass = referencedClasses[index];
+                if (referencedClass != null)
                 {
-                    referencedClassFile.accept(classFileVisitor);
+                    referencedClass.accept(classVisitor);
                 }
             }
         }
@@ -148,11 +99,11 @@ public class Annotation implements VisitorAccepter
     /**
      * Applies the given visitor to all element value pairs.
      */
-    public void elementValuesAccept(ClassFile classFile, ElementValueVisitor elementValueVisitor)
+    public void elementValuesAccept(Clazz clazz, ElementValueVisitor elementValueVisitor)
     {
-        for (int i = 0; i < u2numberOfElementValuePairs; i++)
+        for (int index = 0; index < u2elementValuesCount; index++)
         {
-            elementValues[i].accept(classFile, this, elementValueVisitor);
+            elementValues[index].accept(clazz, this, elementValueVisitor);
         }
     }
 

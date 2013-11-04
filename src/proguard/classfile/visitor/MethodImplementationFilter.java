@@ -1,6 +1,6 @@
-/* $Id: MethodImplementationFilter.java,v 1.3.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -21,55 +21,50 @@
 package proguard.classfile.visitor;
 
 import proguard.classfile.*;
-
+import proguard.classfile.util.SimplifiedVisitor;
 
 /**
- * This <code>MemberInfoVisitor</code> delegates its visits to methods to
- * another given <code>MemberInfoVisitor</code>, but only when the visited
+ * This <code>MemberVisitor</code> delegates its visits to methods to
+ * another given <code>MemberVisitor</code>, but only when the visited
  * method may have implementations.
  *
- * @see ClassFile#mayHaveImplementations(MethodInfo)
+ * @see Clazz#mayHaveImplementations(Method)
  * @author Eric Lafortune
  */
 public class MethodImplementationFilter
-  implements MemberInfoVisitor
+extends      SimplifiedVisitor
+implements   MemberVisitor
 {
-    private MemberInfoVisitor memberInfoVisitor;
+    private final MemberVisitor memberVisitor;
 
 
     /**
      * Creates a new MethodImplementationFilter.
-     * @param memberInfoVisitor the <code>MemberInfoVisitor</code> to which
+     * @param memberVisitor     the <code>MemberVisitor</code> to which
      *                          visits will be delegated.
      */
-    public MethodImplementationFilter(MemberInfoVisitor memberInfoVisitor)
+    public MethodImplementationFilter(MemberVisitor memberVisitor)
     {
-        this.memberInfoVisitor = memberInfoVisitor;
+        this.memberVisitor = memberVisitor;
     }
 
 
-    // Implementations for MemberInfoVisitor.
+    // Implementations for MemberVisitor.
 
-    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo) {}
-
-
-    public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
+    public void visitProgramMethod(ProgramClass programClass, ProgramMethod programMethod)
     {
-        if (programClassFile.mayHaveImplementations(programMethodInfo))
+        if (programClass.mayHaveImplementations(programMethod))
         {
-            memberInfoVisitor.visitProgramMethodInfo(programClassFile, programMethodInfo);
+            memberVisitor.visitProgramMethod(programClass, programMethod);
         }
     }
 
 
-    public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo) {}
-
-
-    public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo)
+    public void visitLibraryMethod(LibraryClass libraryClass, LibraryMethod libraryMethod)
     {
-        if (libraryClassFile.mayHaveImplementations(libraryMethodInfo))
+        if (libraryClass.mayHaveImplementations(libraryMethod))
         {
-            memberInfoVisitor.visitLibraryMethodInfo(libraryClassFile, libraryMethodInfo);
+            memberVisitor.visitLibraryMethod(libraryClass, libraryMethod);
         }
     }
 }

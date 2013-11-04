@@ -1,6 +1,6 @@
-/* $Id: DataEntryPump.java,v 1.3.2.2 2007/01/18 21:31:52 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,14 +20,14 @@
  */
 package proguard.io;
 
-import java.io.*;
+import java.io.IOException;
 
 
 /**
  * This interface provides a method to pump data entries. The implementation
  * determines the source and the type of the data entries. Typical examples
  * are zip entries coming from a zip file of file entries coming from a
- * directory structure. The reader can for instance collect the class files,
+ * directory structure. The reader can for instance collect the classes,
  * or copy the resource files that are presented.
  *
  * @author Eric Lafortune

@@ -1,6 +1,6 @@
-/* $Id: ClassSpecificationVisitorFactory.java,v 1.7.2.1 2006/05/06 13:19:00 eric Exp $
- *
- * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
+/*
+ * ProGuard -- shrinking, optimization, obfuscation, and preverification
+ *             of Java bytecode.
  *
  * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,10 +20,11 @@
  */
 package proguard;
 
+import proguard.classfile.attribute.annotation.visitor.*;
+import proguard.classfile.attribute.visitor.AllAttributeVisitor;
 import proguard.classfile.visitor.*;
 
-import java.util.*;
-
+import java.util.List;
 
 /**
  * This factory creates visitors to efficiently travel to specified classes and
@@ -34,28 +35,43 @@ import java.util.*;
 public class ClassSpecificationVisitorFactory
 {
     /**
-     * Creates a new ClassPoolVisitor to efficiently travel to the specified
+     * Constructs a ClassPoolVisitor to efficiently travel to the specified
      * classes and class members.
      *
-     * @param classSpecifications the specifications of the classes and class
-     *                            members to visit.
-     * @param classFileVisitor    the ClassFileVisitor to be applied to matching
-     *                            classes.
-     * @param memberInfoVisitor   the MemberInfoVisitor to be applied to matching
-     *                            class members.
+     * @param keepSpecifications the list of KeepSpecification instances,
+     *                           defining of the classes and class members to
+     *                           visit.
+     * @param classVisitor       the ClassVisitor to be applied to matching
+     *                           classes.
+     * @param memberVisitor      the MemberVisitor to be applied to matching
+     *                           class members.
      */
-    public static ClassPoolVisitor createClassPoolVisitor(List              classSpecifications,
-                                                          ClassFileVisitor  classFileVisitor,
-                                                          MemberInfoVisitor memberInfoVisitor)
+    public static ClassPoolVisitor createClassPoolVisitor(List          keepSpecifications,
+                                                          ClassVisitor  classVisitor,
+                                                          MemberVisitor memberVisitor,
+                                                          boolean       shrinking,
+                                                          boolean       optimizing,
+                                                          boolean       obfuscating)
     {
         MultiClassPoolVisitor multiClassPoolVisitor = new MultiClassPoolVisitor();
 
-        if (classSpecifications != null)
+        if (keepSpecifications != null)
         {
-            addClassPoolVisitors(classSpecifications,
-                                 classFileVisitor,
-                                 memberInfoVisitor,
-                                 multiClassPoolVisitor);
+            for (int index = 0; index < keepSpecifications.size(); index++)
+            {
+                KeepSpecification keepSpecification =
+                    (KeepSpecification)keepSpecifications.get(index);
+
+                if ((shrinking   && !keepSpecification.allowShrinking)    ||
+                    (optimizing  && !keepSpecification.allowOptimization) ||
+                    (obfuscating && !keepSpecification.allowObfuscation))
+                {
+                    multiClassPoolVisitor.addClassPoolVisitor(
+                        createClassPoolVisitor(keepSpecification,
+                                               classVisitor,
+                                               memberVisitor));
+                }
+            }
         }
 
         return multiClassPoolVisitor;
@@ -63,244 +79,359 @@ public class ClassSpecificationVisitorFactory
 
 
     /**
-     * Adds new ClassPoolVisitor instances to the given MultiClassPoolVisitor,
-     * to efficiently travel to the specified classes and class members.
-
-     * @param classSpecifications   the specifications of the classes and class
-     *                              members to visit.
-     * @param classFileVisitor      the ClassFileVisitor to be applied to matching
-     *                              classes.
-     * @param memberInfoVisitor     the MemberInfoVisitor to be applied to matching
-     *                              class members.
-     * @param multiClassPoolVisitor the MultiClassPoolVisitor to which the new
-     *                              visitors will be added.
+     * Constructs a ClassPoolVisitor to efficiently travel to the specified
+     * classes and class members.
+     *
+     * @param classSpecifications the list of ClassSpecification instances,
+     *                            defining of the classes and class members to
+     *                            visit.
+     * @param classVisitor        the ClassVisitor to be applied to matching
+     *                            classes.
+     * @param memberVisitor       the MemberVisitor to be applied to matching
+     *                            class members.
      */
-    private static void addClassPoolVisitors(List                  classSpecifications,
-                                             ClassFileVisitor      classFileVisitor,
-                                             MemberInfoVisitor     memberInfoVisitor,
-                                             MultiClassPoolVisitor multiClassPoolVisitor)
+    public static ClassPoolVisitor createClassPoolVisitor(List          classSpecifications,
+                                                          ClassVisitor  classVisitor,
+                                                          MemberVisitor memberVisitor)
     {
-        for (int index = 0; index < classSpecifications.size(); index++)
+        MultiClassPoolVisitor multiClassPoolVisitor = new MultiClassPoolVisitor();
+
+        if (classSpecifications != null)
         {
-            multiClassPoolVisitor.addClassPoolVisitor(
-                createClassPoolVisitor((ClassSpecification)classSpecifications.get(index),
-                                       classFileVisitor,
-                                       memberInfoVisitor));
+            for (int index = 0; index < classSpecifications.size(); index++)
+            {
+                ClassSpecification classSpecification =
+                    (ClassSpecification)classSpecifications.get(index);
+
+                multiClassPoolVisitor.addClassPoolVisitor(
+                    createClassPoolVisitor(classSpecification,
+                                           classVisitor,
+                                           memberVisitor));
+            }
         }
+
+        return multiClassPoolVisitor;
     }
 
 
     /**
-     * Creates a new ClassPoolVisitor to efficiently travel to the specified
+     * Constructs a ClassPoolVisitor to efficiently travel to the specified
+     * classes and class members.
+     *
+     * @param keepSpecification the specifications of the class(es) and class
+     *                          members to visit.
+     * @param classVisitor      the ClassVisitor to be applied to matching
+     *                          classes.
+     * @param memberVisitor     the MemberVisitor to be applied to matching
+     *                          class members.
+     */
+    private static ClassPoolVisitor createClassPoolVisitor(KeepSpecification keepSpecification,
+                                                           ClassVisitor      classVisitor,
+                                                           MemberVisitor     memberVisitor)
+    {
+        // Don't  visit the classes if not specified.
+        if (!keepSpecification.markClasses &&
+            !keepSpecification.markConditionally)
+        {
+            classVisitor = null;
+        }
+
+        // If specified, let the marker visit the class and its class
+        // members conditionally.
+        if (keepSpecification.markConditionally)
+        {
+            // Combine both visitors.
+            ClassVisitor composedClassVisitor =
+                createCombinedClassVisitor(keepSpecification,
+                                           classVisitor,
+                                           memberVisitor);
+
+            // Replace the class visitor.
+            classVisitor =
+                createClassMemberTester(keepSpecification,
+                                        composedClassVisitor);
+
+            // Discard the member visitor, because it has already been included.
+            memberVisitor = null;
+        }
+
+        return createClassPoolVisitor((ClassSpecification)keepSpecification,
+                                      classVisitor,
+                                      memberVisitor);
+    }
+
+
+    /**
+     * Constructs a ClassPoolVisitor to efficiently travel to the specified
      * classes and class members.
      *
      * @param classSpecification the specifications of the class(es) and class
      *                           members to visit.
-     * @param classFileVisitor   the ClassFileVisitor to be applied to matching
+     * @param classVisitor       the ClassVisitor to be applied to matching
      *                           classes.
-     * @param memberInfoVisitor  the MemberInfoVisitor to be applied to matching
+     * @param memberVisitor      the MemberVisitor to be applied to matching
      *                           class members.
      */
     private static ClassPoolVisitor createClassPoolVisitor(ClassSpecification classSpecification,
-                                                           ClassFileVisitor   classFileVisitor,
-                                                           MemberInfoVisitor  memberInfoVisitor)
+                                                           ClassVisitor       classVisitor,
+                                                           MemberVisitor      memberVisitor)
     {
-        // The class file visitor for class files and their members.
-        MultiClassFileVisitor multiClassFileVisitor = new MultiClassFileVisitor();
+        // Combine both visitors.
+        ClassVisitor composedClassVisitor =
+            createCombinedClassVisitor(classSpecification,
+                                       classVisitor,
+                                       memberVisitor);
 
-        // If specified, let the class file visitor visit the class file itself.
-        if ((classSpecification.markClassFiles ||
-             classSpecification.markConditionally) &&
-            classFileVisitor != null)
-        {
-            multiClassFileVisitor.addClassFileVisitor(classFileVisitor);
-        }
-
-        // If specified, let the member info visitor visit the class members.
-        if ((classSpecification.fieldSpecifications  != null ||
-             classSpecification.methodSpecifications != null) &&
-            memberInfoVisitor != null)
-        {
-            multiClassFileVisitor.addClassFileVisitor(
-                createClassFileVisitor(classSpecification, memberInfoVisitor));
-        }
-
-        // This visitor is the starting point.
-        ClassFileVisitor composedClassFileVisitor = multiClassFileVisitor;
-
-        // If specified, let the marker visit the class file and its class
-        // members conditionally.
-        if (classSpecification.markConditionally)
-        {
-            composedClassFileVisitor =
-                createClassFileMemberInfoTester(classSpecification,
-                                                composedClassFileVisitor);
-        }
-
-        // By default, start visiting from the class name, if it's specified.
+        // By default, start visiting from the named class name, if specified.
         String className = classSpecification.className;
 
-        // If wildcarded, only visit class files with matching names.
+        // Although we may have to start from the extended class.
+        String extendsAnnotationType = classSpecification.extendsAnnotationType;
+        String extendsClassName      = classSpecification.extendsClassName;
+
+        // If wildcarded, only visit classes with matching names.
         if (className != null &&
-            containsWildCards(className))
+            (extendsAnnotationType != null ||
+             extendsClassName           != null ||
+             containsWildCards(className)))
         {
-            composedClassFileVisitor =
-                new ClassFileNameFilter(composedClassFileVisitor,
-                                        className);
+            composedClassVisitor =
+                new ClassNameFilter(className, composedClassVisitor);
 
             // We'll have to visit all classes now.
             className = null;
         }
 
-        // If specified, only visit class files with the right access flags.
+        // If specified, only visit classes with the right annotation.
+        String annotationType = classSpecification.annotationType;
+
+        if (annotationType != null)
+        {
+            composedClassVisitor =
+                new AllAttributeVisitor(
+                new AllAnnotationVisitor(
+                new AnnotationTypeFilter(annotationType,
+                new AnnotatedClassVisitor(composedClassVisitor))));
+        }
+
+        // If specified, only visit classes with the right access flags.
         if (classSpecification.requiredSetAccessFlags   != 0 ||
             classSpecification.requiredUnsetAccessFlags != 0)
         {
-            composedClassFileVisitor =
-                new ClassFileAccessFilter(classSpecification.requiredSetAccessFlags,
-                                          classSpecification.requiredUnsetAccessFlags,
-                                          composedClassFileVisitor);
+            composedClassVisitor =
+                new ClassAccessFilter(classSpecification.requiredSetAccessFlags,
+                                      classSpecification.requiredUnsetAccessFlags,
+                                      composedClassVisitor);
         }
 
         // If it's specified, start visiting from the extended class.
-        String extendsClassName = classSpecification.extendsClassName;
-
-        if (className        == null &&
-            extendsClassName != null)
+        if (extendsAnnotationType != null ||
+            extendsClassName      != null)
         {
-            composedClassFileVisitor =
-                new ClassFileHierarchyTraveler(false, false, false, true,
-                                               composedClassFileVisitor);
+            // Start visiting from the extended class.
+            composedClassVisitor =
+                new ClassHierarchyTraveler(false, false, false, true,
+                                           composedClassVisitor);
 
-            // If wildcarded, only visit class files with matching names.
-            if (containsWildCards(extendsClassName))
+            // If specified, only visit extended classes with the right annotation.
+            if (extendsAnnotationType != null)
             {
-                composedClassFileVisitor =
-                    new ClassFileNameFilter(composedClassFileVisitor,
-                                            extendsClassName);
+                composedClassVisitor =
+                    new AllAttributeVisitor(
+                    new AllAnnotationVisitor(
+                    new AnnotationTypeFilter(extendsAnnotationType,
+                    new AnnotatedClassVisitor(composedClassVisitor))));
             }
-            else
+
+            // If specified, only visit extended classes with matching names.
+            if (extendsClassName != null)
             {
-                // Start visiting from the extended class name.
-                className = extendsClassName;
+                // If wildcarded, only visit extended classes with matching names.
+                if (containsWildCards(extendsClassName))
+                {
+                    composedClassVisitor =
+                        new ClassNameFilter(extendsClassName,
+                                            composedClassVisitor);
+                }
+                else
+                {
+                    // Start visiting from the named extended class.
+                    className = extendsClassName;
+                }
             }
         }
 
         // If specified, visit a single named class, otherwise visit all classes.
         return className != null ?
-            (ClassPoolVisitor)new NamedClassFileVisitor(composedClassFileVisitor, className) :
-            (ClassPoolVisitor)new AllClassFileVisitor(composedClassFileVisitor);
+            (ClassPoolVisitor)new NamedClassVisitor(composedClassVisitor, className) :
+            (ClassPoolVisitor)new AllClassVisitor(composedClassVisitor);
     }
 
 
     /**
-     * Creates a new ClassPoolVisitor to efficiently travel to the specified class
+     * Constructs a ClassVisitor to efficiently travel to the specified
+     * classes and class members.
+     *
+     * @param classSpecification the specifications of the class(es) and class
+     *                           members to visit.
+     * @param classVisitor       the ClassVisitor to be applied to matching
+     *                           classes.
+     * @param memberVisitor      the MemberVisitor to be applied to matching
+     *                           class members.
+     */
+    private static ClassVisitor createCombinedClassVisitor(ClassSpecification classSpecification,
+                                                           ClassVisitor       classVisitor,
+                                                           MemberVisitor      memberVisitor)
+    {
+        // Don't visit any members if there aren't any member specifications.
+        if (classSpecification.fieldSpecifications  == null &&
+            classSpecification.methodSpecifications == null)
+        {
+            memberVisitor = null;
+        }
+
+        // The class visitor for classes and their members.
+        MultiClassVisitor multiClassVisitor = new MultiClassVisitor();
+
+        // If specified, let the class visitor visit the class itself.
+        if (classVisitor != null)
+        {
+            // This class visitor may be the only one.
+            if (memberVisitor == null)
+            {
+                return classVisitor;
+            }
+
+            multiClassVisitor.addClassVisitor(classVisitor);
+        }
+
+        // If specified, let the member info visitor visit the class members.
+        if (memberVisitor != null)
+        {
+            ClassVisitor memberClassVisitor =
+                createClassVisitor(classSpecification, memberVisitor);
+
+            // This class visitor may be the only one.
+            if (classVisitor == null)
+            {
+                return memberClassVisitor;
+            }
+
+            multiClassVisitor.addClassVisitor(memberClassVisitor);
+        }
+
+        return multiClassVisitor;
+    }
+
+
+    /**
+     * Constructs a ClassVisitor to efficiently travel to the specified class
      * members.
      *
      * @param classSpecification the specifications of the class members to visit.
-     * @param memberInfoVisitor   the MemberInfoVisitor to be applied to matching
-     *                            class members.
+     * @param memberVisitor      the MemberVisitor to be applied to matching
+     *                           class members.
      */
-    private static ClassFileVisitor createClassFileVisitor(ClassSpecification classSpecification,
-                                                           MemberInfoVisitor  memberInfoVisitor)
+    private static ClassVisitor createClassVisitor(ClassSpecification classSpecification,
+                                                   MemberVisitor      memberVisitor)
     {
-        MultiClassFileVisitor multiClassFileVisitor = new MultiClassFileVisitor();
+        MultiClassVisitor multiClassVisitor = new MultiClassVisitor();
 
-        addMemberInfoVisitors(classSpecification.fieldSpecifications,  true,  multiClassFileVisitor, memberInfoVisitor);
-        addMemberInfoVisitors(classSpecification.methodSpecifications, false, multiClassFileVisitor, memberInfoVisitor);
+        addMemberVisitors(classSpecification.fieldSpecifications,  true,  multiClassVisitor, memberVisitor);
+        addMemberVisitors(classSpecification.methodSpecifications, false, multiClassVisitor, memberVisitor);
 
         // Mark the class member in this class and in super classes.
-        return new ClassFileHierarchyTraveler(true, true, false, false,
-                                              multiClassFileVisitor);
+        return new ClassHierarchyTraveler(true, true, false, false,
+                                          multiClassVisitor);
     }
 
 
     /**
-     * Adds elements to the given MultiClassFileVisitor, to apply the given
-     * MemberInfoVisitor to all class members that match the given List
+     * Adds elements to the given MultiClassVisitor, to apply the given
+     * MemberVisitor to all class members that match the given List
      * of options (of the given type).
      */
-    private static void addMemberInfoVisitors(List                  classMemberSpecifications,
-                                              boolean               isField,
-                                              MultiClassFileVisitor multiClassFileVisitor,
-                                              MemberInfoVisitor     memberInfoVisitor)
+    private static void addMemberVisitors(List              memberSpecifications,
+                                          boolean           isField,
+                                          MultiClassVisitor multiClassVisitor,
+                                          MemberVisitor     memberVisitor)
     {
-        if (classMemberSpecifications != null)
+        if (memberSpecifications != null)
         {
-            for (int index = 0; index < classMemberSpecifications.size(); index++)
+            for (int index = 0; index < memberSpecifications.size(); index++)
             {
-                ClassMemberSpecification classMemberSpecification =
-                    (ClassMemberSpecification)classMemberSpecifications.get(index);
+                MemberSpecification memberSpecification =
+                    (MemberSpecification)memberSpecifications.get(index);
 
-                multiClassFileVisitor.addClassFileVisitor(
-                    createClassFileVisitor(classMemberSpecification,
-                                           isField,
-                                           memberInfoVisitor));
+                multiClassVisitor.addClassVisitor(
+                    createClassVisitor(memberSpecification,
+                                       isField,
+                                       memberVisitor));
             }
         }
     }
 
 
     /**
-     * Constructs a ClassFileVisitor that conditionally applies the given
-     * ClassFileVisitor to all classes that contain the given class members.
+     * Constructs a ClassVisitor that conditionally applies the given
+     * ClassVisitor to all classes that contain the given class members.
      */
-    private static ClassFileVisitor createClassFileMemberInfoTester(ClassSpecification classSpecification,
-                                                                    ClassFileVisitor   classFileVisitor)
+    private static ClassVisitor createClassMemberTester(ClassSpecification classSpecification,
+                                                        ClassVisitor       classVisitor)
     {
         // Create a linked list of conditional visitors, for fields and for
         // methods.
-        return createClassFileMemberInfoTester(classSpecification.fieldSpecifications,
-                                               true,
-               createClassFileMemberInfoTester(classSpecification.methodSpecifications,
-                                               false,
-                                               classFileVisitor));
+        return createClassMemberTester(classSpecification.fieldSpecifications,
+                                       true,
+               createClassMemberTester(classSpecification.methodSpecifications,
+                                       false,
+                                       classVisitor));
     }
 
 
     /**
-     * Constructs a ClassFileVisitor that conditionally applies the given
-     * ClassFileVisitor to all classes that contain the given List of class
+     * Constructs a ClassVisitor that conditionally applies the given
+     * ClassVisitor to all classes that contain the given List of class
      * members (of the given type).
      */
-    private static ClassFileVisitor createClassFileMemberInfoTester(List             classMemberSpecifications,
-                                                                    boolean          isField,
-                                                                    ClassFileVisitor classFileVisitor)
+    private static ClassVisitor createClassMemberTester(List         memberSpecifications,
+                                                        boolean      isField,
+                                                        ClassVisitor classVisitor)
     {
         // Create a linked list of conditional visitors.
-        if (classMemberSpecifications != null)
+        if (memberSpecifications != null)
         {
-            for (int index = 0; index < classMemberSpecifications.size(); index++)
+            for (int index = 0; index < memberSpecifications.size(); index++)
             {
-                ClassMemberSpecification classMemberSpecification =
-                    (ClassMemberSpecification)classMemberSpecifications.get(index);
+                MemberSpecification memberSpecification =
+                    (MemberSpecification)memberSpecifications.get(index);
 
-                classFileVisitor =
-                    createClassFileVisitor(classMemberSpecification,
-                                           isField,
-                                           new ClassFileMemberInfoVisitor(classFileVisitor));
+                classVisitor =
+                    createClassVisitor(memberSpecification,
+                                       isField,
+                                       new MemberToClassVisitor(classVisitor));
             }
         }
 
-        return classFileVisitor;
+        return classVisitor;
     }
 
 
     /**
-     * Creates a new ClassFileVisitor to efficiently travel to the specified class
+     * Creates a new ClassVisitor to efficiently travel to the specified class
      * members.
      *
-     * @param classMemberSpecification the specification of the class member(s)
-     *                                 to visit.
-     * @param memberInfoVisitor        the MemberInfoVisitor to be applied to
-     *                                 matching class member(s).
+     * @param memberSpecification the specification of the class member(s) to
+     *                            visit.
+     * @param memberVisitor       the MemberVisitor to be applied to matching
+     *                            class member(s).
      */
-    private static ClassFileVisitor createClassFileVisitor(ClassMemberSpecification classMemberSpecification,
-                                                           boolean                  isField,
-                                                           MemberInfoVisitor        memberInfoVisitor)
+    private static ClassVisitor createClassVisitor(MemberSpecification memberSpecification,
+                                                   boolean             isField,
+                                                   MemberVisitor       memberVisitor)
     {
-        String name       = classMemberSpecification.name;
-        String descriptor = classMemberSpecification.descriptor;
+        String name       = memberSpecification.name;
+        String descriptor = memberSpecification.descriptor;
 
         // If name or descriptor are not fully specified, only visit matching
         // class members.
@@ -314,36 +445,46 @@ public class ClassSpecificationVisitorFactory
         {
             if (descriptor != null)
             {
-                memberInfoVisitor =
-                    new MemberInfoDescriptorFilter(descriptor, memberInfoVisitor);
+                memberVisitor =
+                    new MemberDescriptorFilter(descriptor, memberVisitor);
             }
 
             if (name != null)
             {
-                memberInfoVisitor =
-                    new MemberInfoNameFilter(name, memberInfoVisitor);
+                memberVisitor =
+                    new MemberNameFilter(name, memberVisitor);
             }
         }
 
-        // If any access flags are specified, only visit matching class members.
-        if (classMemberSpecification.requiredSetAccessFlags   != 0 ||
-            classMemberSpecification.requiredUnsetAccessFlags != 0)
+        // If specified, only visit class members with the right annotation.
+        if (memberSpecification.annotationType != null)
         {
-            memberInfoVisitor =
-                new MemberInfoAccessFilter(classMemberSpecification.requiredSetAccessFlags,
-                                           classMemberSpecification.requiredUnsetAccessFlags,
-                                           memberInfoVisitor);
+            memberVisitor =
+                new AllAttributeVisitor(
+                new AllAnnotationVisitor(
+                new AnnotationTypeFilter(memberSpecification.annotationType,
+                new AnnotationToMemberVisitor(memberVisitor))));
+        }
+
+        // If any access flags are specified, only visit matching class members.
+        if (memberSpecification.requiredSetAccessFlags   != 0 ||
+            memberSpecification.requiredUnsetAccessFlags != 0)
+        {
+            memberVisitor =
+                new MemberAccessFilter(memberSpecification.requiredSetAccessFlags,
+                                       memberSpecification.requiredUnsetAccessFlags,
+                                       memberVisitor);
         }
 
         // Depending on what's specified, visit a single named class member,
         // or all class members, filtering the matching ones.
         return isField ?
             fullySpecified ?
-                (ClassFileVisitor)new NamedFieldVisitor(name, descriptor, memberInfoVisitor) :
-                (ClassFileVisitor)new AllFieldVisitor(memberInfoVisitor) :
+                (ClassVisitor)new NamedFieldVisitor(name, descriptor, memberVisitor) :
+                (ClassVisitor)new AllFieldVisitor(memberVisitor) :
             fullySpecified ?
-                (ClassFileVisitor)new NamedMethodVisitor(name, descriptor, memberInfoVisitor) :
-                (ClassFileVisitor)new AllMethodVisitor(memberInfoVisitor);
+                (ClassVisitor)new NamedMethodVisitor(name, descriptor, memberVisitor) :
+                (ClassVisitor)new AllMethodVisitor(memberVisitor);
     }
 
 
@@ -352,9 +493,10 @@ public class ClassSpecificationVisitorFactory
     private static boolean containsWildCards(String string)
     {
         return string != null &&
-            (string.indexOf('*') >= 0 ||
-             string.indexOf('?') >= 0 ||
-             string.indexOf('%') >= 0 ||
-             string.indexOf(',') >= 0);
+            (string.indexOf('*')   >= 0 ||
+             string.indexOf('?')   >= 0 ||
+             string.indexOf('%')   >= 0 ||
+             string.indexOf(',')   >= 0 ||
+             string.indexOf("///") >= 0);
     }
 }
