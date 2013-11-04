@@ -35,11 +35,12 @@ public interface AttributeVisitor
 {
     // Attributes that are attached to classes.
 
-    public void visitUnknownAttribute(               Clazz clazz,                UnknownAttribute         unknownAttribute);
-    public void visitSourceFileAttribute(            Clazz clazz,                SourceFileAttribute      sourceFileAttribute);
-    public void visitSourceDirAttribute(             Clazz clazz,                SourceDirAttribute       sourceDirAttribute);
-    public void visitInnerClassesAttribute(          Clazz clazz,                InnerClassesAttribute    innerClassesAttribute);
-    public void visitEnclosingMethodAttribute(       Clazz clazz,                EnclosingMethodAttribute enclosingMethodAttribute);
+    public void visitUnknownAttribute(               Clazz clazz,                UnknownAttribute          unknownAttribute);
+    public void visitBootstrapMethodsAttribute(      Clazz clazz,                BootstrapMethodsAttribute bootstrapMethodsAttribute);
+    public void visitSourceFileAttribute(            Clazz clazz,                SourceFileAttribute       sourceFileAttribute);
+    public void visitSourceDirAttribute(             Clazz clazz,                SourceDirAttribute        sourceDirAttribute);
+    public void visitInnerClassesAttribute(          Clazz clazz,                InnerClassesAttribute     innerClassesAttribute);
+    public void visitEnclosingMethodAttribute(       Clazz clazz,                EnclosingMethodAttribute  enclosingMethodAttribute);
 
     // Attributes that are attached to classes, fields, and methods.
 

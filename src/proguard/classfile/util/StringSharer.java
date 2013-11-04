@@ -90,7 +90,7 @@ implements   ClassVisitor,
     public void visitAnyConstant(Clazz clazz, Constant constant) {}
 
 
-    public void visitAnyStringConstant(Clazz clazz, StringConstant stringConstant)
+    public void visitStringConstant(Clazz clazz, StringConstant stringConstant)
     {
         Member referencedMember = stringConstant.referencedMember;
         if (referencedMember != null)

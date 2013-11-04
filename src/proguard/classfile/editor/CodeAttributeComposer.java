@@ -29,6 +29,8 @@ import proguard.classfile.instruction.*;
 import proguard.classfile.instruction.visitor.InstructionVisitor;
 import proguard.classfile.util.SimplifiedVisitor;
 
+import java.util.Arrays;
+
 /**
  * This AttributeVisitor accumulates instructions and exceptions, and then
  * copies them into code attributes that it visits.
@@ -49,7 +51,7 @@ implements   AttributeVisitor,
     //*
     private static final boolean DEBUG = false;
     /*/
-    public  static       boolean DEBUG = true;
+    public  static       boolean DEBUG = false;
     //*/
 
 
@@ -313,7 +315,7 @@ implements   AttributeVisitor,
                 int handlerPC = -exceptionInfo.u2handlerPC;
                 if (handlerPC > 0)
                 {
-                    if (remappableInstructionOffset(handlerPC))
+                    if (remappableExceptionHandler(handlerPC))
                     {
                         exceptionInfo.u2handlerPC = remapInstructionOffset(handlerPC);
                     }
@@ -490,7 +492,7 @@ implements   AttributeVisitor,
         int handlerPC = exceptionInfo.u2handlerPC;
         exceptionInfo.u2handlerPC =
             !allowExternalExceptionHandlers ||
-            remappableInstructionOffset(handlerPC) ?
+            remappableExceptionHandler(handlerPC) ?
                 remapInstructionOffset(handlerPC) :
                 -handlerPC;
     }
@@ -674,13 +676,21 @@ implements   AttributeVisitor,
 
 
     /**
-     * Returns whether the given old instruction offset can be remapped at the
+     * Returns whether the given old exception handler can be remapped in the
+     * current code fragment.
      */
-    private boolean remappableInstructionOffset(int oldInstructionOffset)
+    private boolean remappableExceptionHandler(int oldInstructionOffset)
     {
-        return
-            oldInstructionOffset <= codeFragmentLengths[level] &&
-            instructionOffsetMap[level][oldInstructionOffset] > INVALID;
+        if (oldInstructionOffset > codeFragmentLengths[level])
+        {
+            return false;
+        }
+
+        int newInstructionOffset =
+            instructionOffsetMap[level][oldInstructionOffset];
+
+        return newInstructionOffset > INVALID &&
+               newInstructionOffset < codeLength;
     }
 
 
@@ -703,10 +713,7 @@ implements   AttributeVisitor,
         }
 
         // Clear the unused array entries.
-        for (int index = newIndex; index < exceptionInfoCount; index++)
-        {
-            exceptionInfos[index] = null;
-        }
+        Arrays.fill(exceptionInfos, newIndex, exceptionInfoCount, null);
 
         return newIndex;
     }
@@ -734,10 +741,7 @@ implements   AttributeVisitor,
         }
 
         // Clear the unused array entries.
-        for (int index = newIndex; index < lineNumberInfoCount; index++)
-        {
-            lineNumberInfos[index] = null;
-        }
+        Arrays.fill(lineNumberInfos, newIndex, lineNumberInfoCount, null);
 
         return newIndex;
     }
@@ -764,10 +768,7 @@ implements   AttributeVisitor,
         }
 
         // Clear the unused array entries.
-        for (int index = newIndex; index < localVariableInfoCount; index++)
-        {
-            localVariableInfos[index] = null;
-        }
+        Arrays.fill(localVariableInfos, newIndex, localVariableInfoCount, null);
 
         return newIndex;
     }
@@ -794,10 +795,7 @@ implements   AttributeVisitor,
         }
 
         // Clear the unused array entries.
-        for (int index = newIndex; index < localVariableTypeInfoCount; index++)
-        {
-            localVariableTypeInfos[index] = null;
-        }
+        Arrays.fill(localVariableTypeInfos, newIndex, localVariableTypeInfoCount, null);
 
         return newIndex;
     }

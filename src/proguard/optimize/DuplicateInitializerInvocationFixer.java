@@ -48,8 +48,8 @@ implements   AttributeVisitor,
 
     private final CodeAttributeEditor codeAttributeEditor = new CodeAttributeEditor();
 
-    private String  descriptor;
-    private boolean hasBeenFixed;
+    private String descriptor;
+    private int    descriptorLengthDelta;
 
 
     /**
@@ -102,13 +102,15 @@ implements   AttributeVisitor,
     {
         if (constantInstruction.opcode == InstructionConstants.OP_INVOKESPECIAL)
         {
-            hasBeenFixed = false;
+            descriptorLengthDelta = 0;
             clazz.constantPoolEntryAccept(constantInstruction.constantIndex, this);
 
-            if (hasBeenFixed)
+            if (descriptorLengthDelta > 0)
             {
                 Instruction extraInstruction =
-                    new SimpleInstruction(InstructionConstants.OP_ICONST_0);
+                    new SimpleInstruction(descriptorLengthDelta == 1 ?
+                                              InstructionConstants.OP_ICONST_0 :
+                                              InstructionConstants.OP_ACONST_NULL);
 
                 codeAttributeEditor.insertBeforeInstruction(offset,
                                                             extraInstruction);
@@ -144,11 +146,12 @@ implements   AttributeVisitor,
 
     public void visitProgramMethod(ProgramClass programClass, ProgramMethod programMethod)
     {
-        hasBeenFixed = !descriptor.equals(programMethod.getDescriptor(programClass));
+        descriptorLengthDelta =
+            programMethod.getDescriptor(programClass).length() - descriptor.length();
 
         if (DEBUG)
         {
-            if (hasBeenFixed)
+            if (descriptorLengthDelta > 0)
             {
                 System.out.println("DuplicateInitializerInvocationFixer:");
                 System.out.println("  ["+programClass.getName()+"."+programMethod.getName(programClass)+programMethod.getDescriptor(programClass)+"] ("+ClassUtil.externalClassAccessFlags(programMethod.getAccessFlags())+") referenced by:");

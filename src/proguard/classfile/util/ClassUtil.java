@@ -100,6 +100,8 @@ public class ClassUtil
             classVersion.equals(ClassConstants.EXTERNAL_CLASS_VERSION_1_5) ? ClassConstants.INTERNAL_CLASS_VERSION_1_5 :
             classVersion.equals(ClassConstants.EXTERNAL_CLASS_VERSION_1_6_ALIAS) ||
             classVersion.equals(ClassConstants.EXTERNAL_CLASS_VERSION_1_6) ? ClassConstants.INTERNAL_CLASS_VERSION_1_6 :
+            classVersion.equals(ClassConstants.EXTERNAL_CLASS_VERSION_1_7_ALIAS) ||
+            classVersion.equals(ClassConstants.EXTERNAL_CLASS_VERSION_1_7) ? ClassConstants.INTERNAL_CLASS_VERSION_1_7 :
                                                                              0;
     }
 
@@ -119,6 +121,7 @@ public class ClassUtil
             case ClassConstants.INTERNAL_CLASS_VERSION_1_4: return ClassConstants.EXTERNAL_CLASS_VERSION_1_4;
             case ClassConstants.INTERNAL_CLASS_VERSION_1_5: return ClassConstants.EXTERNAL_CLASS_VERSION_1_5;
             case ClassConstants.INTERNAL_CLASS_VERSION_1_6: return ClassConstants.EXTERNAL_CLASS_VERSION_1_6;
+            case ClassConstants.INTERNAL_CLASS_VERSION_1_7: return ClassConstants.EXTERNAL_CLASS_VERSION_1_7;
             default:                                        return null;
         }
     }
@@ -132,11 +135,14 @@ public class ClassUtil
     public static void checkVersionNumbers(int classVersion) throws UnsupportedOperationException
     {
         if (classVersion < ClassConstants.INTERNAL_CLASS_VERSION_1_0 ||
-            classVersion > ClassConstants.INTERNAL_CLASS_VERSION_1_6)
+            classVersion > ClassConstants.INTERNAL_CLASS_VERSION_1_7)
         {
-            throw new UnsupportedOperationException("Unsupported version number ["+
+            throw new UnsupportedOperationException("Unsupported class version number ["+
                                                     internalMajorClassVersion(classVersion)+"."+
-                                                    internalMinorClassVersion(classVersion)+"] for class format");
+                                                    internalMinorClassVersion(classVersion)+"] (maximum "+
+                                                    ClassConstants.INTERNAL_CLASS_VERSION_1_7_MAJOR+"."+
+                                                    ClassConstants.INTERNAL_CLASS_VERSION_1_7_MINOR+", Java "+
+                                                    ClassConstants.EXTERNAL_CLASS_VERSION_1_7+")");
         }
     }
 
@@ -423,6 +429,21 @@ public class ClassUtil
         }
 
         return internalClassNameFromClassType(internalClassType);
+    }
+
+
+    /**
+     * Returns whether the given method name refers to a class initializer or
+     * an instance initializer.
+     * @param internalMethodName the internal method name,
+     *                           e.g. "<code><clinit></code>".
+     * @return whether the method name refers to an initializer,
+     *                           e.g. <code>true</code>.
+     */
+    public static boolean isInitializer(String internalMethodName)
+    {
+        return internalMethodName.equals(ClassConstants.INTERNAL_METHOD_NAME_CLINIT) ||
+               internalMethodName.equals(ClassConstants.INTERNAL_METHOD_NAME_INIT);
     }
 
 

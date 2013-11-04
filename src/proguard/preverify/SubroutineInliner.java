@@ -65,7 +65,6 @@ public class SubroutineInliner
         {
             inliner =
                 new ClassVersionFilter(ClassConstants.INTERNAL_CLASS_VERSION_1_6,
-                                       Integer.MAX_VALUE,
                                        inliner);
         }
 

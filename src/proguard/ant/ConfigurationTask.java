@@ -293,7 +293,8 @@ public class ConfigurationTask extends Task
         {
             String arg = getProject().replaceProperties(text);
 
-            ConfigurationParser parser = new ConfigurationParser(new String[] { arg },
+            ConfigurationParser parser = new ConfigurationParser(arg,
+                                                                 "embedded configuration",
                                                                  getProject().getBaseDir());
 
             try

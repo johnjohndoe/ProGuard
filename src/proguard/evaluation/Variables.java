@@ -22,6 +22,8 @@ package proguard.evaluation;
 
 import proguard.evaluation.value.*;
 
+import java.util.Arrays;
+
 /**
  * This class represents a local variable frame that contains <code>Value</code>
  * objects. Values are generalizations of all values that have been stored in
@@ -75,10 +77,7 @@ public class Variables
         else
         {
             // Clear the variables.
-            for (int index = 0; index < values.length; index++)
-            {
-                values[index] = null;
-            }
+            Arrays.fill(values, null);
         }
 
         this.size = size;

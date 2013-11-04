@@ -27,6 +27,8 @@ import proguard.classfile.instruction.*;
 import proguard.classfile.instruction.visitor.InstructionVisitor;
 import proguard.classfile.util.SimplifiedVisitor;
 
+import java.util.Arrays;
+
 /**
  * This AttributeVisitor finds all instruction offsets, branch targets, and
  * exception targets in the CodeAttribute objects that it visits.
@@ -91,10 +93,7 @@ implements   AttributeVisitor,
         else
         {
             // Reset the array.
-            for (int index = 0; index < codeLength; index++)
-            {
-                isReachable[index] = false;
-            }
+            Arrays.fill(isReachable, 0, codeLength, false);
         }
 
         // Mark the code, starting at the entry point.

@@ -12,8 +12,10 @@
 <!--
 if (window.self==window.top)
   window.top.location.replace("index.html#"+window.location.pathname+window.location.hash);
-//else if (window.top.location.hash!="#"+window.location.pathname)
-//  window.top.location.hash="#"+window.location.pathname;
+else {
+  if (window.top.location.hash!="")
+    window.top.location.hash="";
+}
 //-->
 </script>
 </head>
@@ -46,12 +48,8 @@ Some uses of <b>ProGuard</b> are:
 <p>
 <b>ProGuard</b>'s main advantage compared to other Java obfuscators is
 probably its compact template-based configuration. A few intuitive command
-line options or a simple configuration file are usually sufficient. For
-instance, the following configuration option preserves all applets in a jar:
-<pre>
-    -keep public class * extends java.applet.Applet
-</pre>
-The user manual explains all available options and shows more examples of this
+line options or a simple configuration file are usually sufficient.
+The user manual explains all available options and shows examples of this
 powerful configuration style.
 <p>
 <b>ProGuard</b> is fast. It only takes seconds to process programs and
@@ -63,8 +61,11 @@ interface. It also comes with plugins for Ant and for the JME Wireless
 Toolkit.
 <p>
 <p class="intro">
-Version 4.0 introduced preverification and more bytecode optimizations. Please
-report any problems, so they can be fixed soon.
+<b>ProGuard</b> is being used in various development contexts, ranging from
+small Android apps to large Java applications and libraries. Its user base is
+continuing to grow at a fast pace. In order to better manage the many
+questions and requests, we are now providing professional support at
+<a target="_top" href="http://www.saikoa.com/proguard/support">Saikoa</a>.
 </p>
 The following sections provide more detailed information:
 <ul>

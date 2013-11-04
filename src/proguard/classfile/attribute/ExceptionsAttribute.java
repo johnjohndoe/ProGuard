@@ -69,12 +69,12 @@ public class ExceptionsAttribute extends Attribute
      * Applies the given constant pool visitor to all exception class pool info
      * entries.
      */
-    public void exceptionEntriesAccept(ProgramClass programClass, ConstantVisitor constantVisitor)
+    public void exceptionEntriesAccept(Clazz clazz, ConstantVisitor constantVisitor)
     {
         for (int index = 0; index < u2exceptionIndexTableLength; index++)
         {
-            programClass.constantPoolEntryAccept(u2exceptionIndexTable[index],
-                                                 constantVisitor);
+            clazz.constantPoolEntryAccept(u2exceptionIndexTable[index],
+                                          constantVisitor);
         }
     }
 }

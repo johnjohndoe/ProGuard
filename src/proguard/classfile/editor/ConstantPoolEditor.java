@@ -199,6 +199,93 @@ public class ConstantPoolEditor
 
 
     /**
+     * Finds or creates a InvokeDynamicConstant constant pool entry with the
+     * given bootstrap method constant pool entry index, method name, and
+     * descriptor.
+     * @return the constant pool index of the InvokeDynamicConstant.
+     */
+    public int addInvokeDynamicConstant(int     bootstrapMethodIndex,
+                                        String  name,
+                                        String  descriptor,
+                                        Clazz[] referencedClasses)
+    {
+        return addInvokeDynamicConstant(bootstrapMethodIndex,
+                                        addNameAndTypeConstant(name, descriptor),
+                                        referencedClasses);
+    }
+
+
+    /**
+     * Finds or creates a InvokeDynamicConstant constant pool entry with the given
+     * class constant pool entry index and name and type constant pool entry
+     * index.
+     * @return the constant pool index of the InvokeDynamicConstant.
+     */
+    public int addInvokeDynamicConstant(int     bootstrapMethodIndex,
+                                        int     nameAndTypeIndex,
+                                        Clazz[] referencedClasses)
+    {
+        int        constantPoolCount = targetClass.u2constantPoolCount;
+        Constant[] constantPool      = targetClass.constantPool;
+
+        // Check if the entry already exists.
+        for (int index = 1; index < constantPoolCount; index++)
+        {
+            Constant constant = constantPool[index];
+
+            if (constant != null &&
+                constant.getTag() == ClassConstants.CONSTANT_InvokeDynamic)
+            {
+                InvokeDynamicConstant invokeDynamicConstant = (InvokeDynamicConstant)constant;
+                if (invokeDynamicConstant.u2bootstrapMethodAttributeIndex == bootstrapMethodIndex &&
+                    invokeDynamicConstant.u2nameAndTypeIndex     == nameAndTypeIndex)
+                {
+                    return index;
+                }
+            }
+        }
+
+        return addConstant(new InvokeDynamicConstant(bootstrapMethodIndex,
+                                                     nameAndTypeIndex,
+                                                     referencedClasses));
+    }
+
+
+    /**
+     * Finds or creates a MethodHandleConstant constant pool entry of the
+     * specified kind and with the given field ref, interface method ref,
+     * or method ref constant pool entry index.
+     * @return the constant pool index of the MethodHandleConstant.
+     */
+    public int addMethodHandleConstant(int referenceKind,
+                                       int referenceIndex)
+    {
+        int        constantPoolCount = targetClass.u2constantPoolCount;
+        Constant[] constantPool      = targetClass.constantPool;
+
+        // Check if the entry already exists.
+        for (int index = 1; index < constantPoolCount; index++)
+        {
+            Constant constant = constantPool[index];
+
+            if (constant != null &&
+                constant.getTag() == ClassConstants.CONSTANT_MethodHandle)
+            {
+                MethodHandleConstant methodHandleConstant = (MethodHandleConstant)constant;
+                if (methodHandleConstant.u1referenceKind  == referenceKind &&
+                    methodHandleConstant.u2referenceIndex == referenceIndex)
+                {
+                    return index;
+                }
+            }
+        }
+
+        return addConstant(new MethodHandleConstant(referenceKind,
+                                                    referenceIndex));
+    }
+
+
+    /**
      * Finds or creates a FieldrefConstant constant pool entry for the given
      * class and field.
      * @return the constant pool index of the FieldrefConstant.
@@ -559,6 +646,36 @@ public class ConstantPoolEditor
         int nameIndex = addUtf8Constant(name);
 
         return addConstant(new ClassConstant(nameIndex, referencedClass));
+    }
+
+
+    /**
+     * Finds or creates a MethodTypeConstant constant pool entry with the given
+     * type.
+     * @return the constant pool index of the MethodTypeConstant.
+     */
+    public int addMethodTypeConstant(String type)
+    {
+        int        constantPoolCount = targetClass.u2constantPoolCount;
+        Constant[] constantPool      = targetClass.constantPool;
+
+        // Check if the entry already exists.
+        for (int index = 1; index < constantPoolCount; index++)
+        {
+            Constant constant = constantPool[index];
+
+            if (constant != null &&
+                constant.getTag() == ClassConstants.CONSTANT_MethodType)
+            {
+                MethodTypeConstant methodTypeConstant = (MethodTypeConstant)constant;
+                if (methodTypeConstant.getType(targetClass).equals(type))
+                {
+                    return index;
+                }
+            }
+        }
+
+        return addConstant(new MethodTypeConstant(addUtf8Constant(type)));
     }
 
 

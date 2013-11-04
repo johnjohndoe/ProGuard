@@ -21,7 +21,8 @@
 package proguard.optimize.info;
 
 import proguard.classfile.*;
-import proguard.classfile.attribute.CodeAttribute;
+import proguard.classfile.attribute.*;
+import proguard.classfile.attribute.visitor.*;
 import proguard.classfile.constant.*;
 import proguard.classfile.constant.visitor.ConstantVisitor;
 import proguard.classfile.instruction.*;
@@ -68,6 +69,20 @@ implements   InstructionVisitor,
         // Check the referenced class or class member, if any.
        stringConstant.referencedClassAccept(this);
        stringConstant.referencedMemberAccept(this);
+    }
+
+
+    public void visitInvokeDynamicConstant(Clazz clazz, InvokeDynamicConstant invokeDynamicConstant)
+    {
+        // Check the bootstrap method.
+        invokeDynamicConstant.bootstrapMethodHandleAccept(clazz, this);
+    }
+
+
+    public void visitMethodHandleConstant(Clazz clazz, MethodHandleConstant methodHandleConstant)
+    {
+        // Check the method reference.
+        clazz.constantPoolEntryAccept(methodHandleConstant.u2referenceIndex, this);
     }
 
 

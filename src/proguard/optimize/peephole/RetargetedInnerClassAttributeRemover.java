@@ -28,6 +28,8 @@ import proguard.classfile.constant.visitor.ConstantVisitor;
 import proguard.classfile.util.SimplifiedVisitor;
 import proguard.classfile.visitor.ClassVisitor;
 
+import java.util.Arrays;
+
 /**
  * This ClassVisitor removes InnerClasses and EnclosingMethod attributes in
  * classes that are retargeted or that refer to classes that are retargeted.
@@ -70,10 +72,7 @@ implements   ClassVisitor,
         }
 
         // Clean up any remaining array elements.
-        for (int index = newAtributesCount; index < attributesCount; index++)
-        {
-            attributes[index] = null;
-        }
+        Arrays.fill(attributes, newAtributesCount, attributesCount, null);
 
         // Update the number of attribuets.
         programClass.u2attributesCount = newAtributesCount;
@@ -115,10 +114,7 @@ implements   ClassVisitor,
             }
 
             // Clean up any remaining array elements.
-            for (int index = newClassesCount; index < classesCount; index++)
-            {
-                classes[index] = null;
-            }
+            Arrays.fill(classes, newClassesCount, classesCount, null);
 
             // Update the number of classes.
             innerClassesAttribute.u2classesCount = newClassesCount;

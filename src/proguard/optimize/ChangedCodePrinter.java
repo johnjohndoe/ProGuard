@@ -54,6 +54,12 @@ implements   AttributeVisitor
     }
 
 
+    public void visitBootstrapMethodsAttribute(Clazz clazz, BootstrapMethodsAttribute bootstrapMethodsAttribute)
+    {
+        attributeVisitor.visitBootstrapMethodsAttribute(clazz, bootstrapMethodsAttribute);
+    }
+
+
     public void visitSourceFileAttribute(Clazz clazz, SourceFileAttribute sourceFileAttribute)
     {
         attributeVisitor.visitSourceFileAttribute(clazz, sourceFileAttribute);

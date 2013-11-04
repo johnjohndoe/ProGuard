@@ -27,6 +27,8 @@ import proguard.classfile.constant.visitor.ConstantVisitor;
 import proguard.classfile.instruction.*;
 import proguard.classfile.instruction.visitor.InstructionVisitor;
 
+import java.util.Arrays;
+
 /**
  * This InstructionVisitor checks whether a given pattern instruction sequence
  * occurs in the instructions that are visited. The arguments of the
@@ -40,8 +42,8 @@ implements   InstructionVisitor,
              ConstantVisitor
 {
     /*
-    public  static       boolean DEBUG      = false;
-    public  static       boolean DEBUG_MORE = false;
+    public  static       boolean DEBUG      = true;
+    public  static       boolean DEBUG_MORE = true;
     /*/
     private static final boolean DEBUG      = false;
     private static final boolean DEBUG_MORE = false;
@@ -60,14 +62,15 @@ implements   InstructionVisitor,
     private final Constant[]    patternConstants;
     private final Instruction[] patternInstructions;
 
-    private boolean     matching;
-    private boolean     matchingAnyWildCards;
-    private int         patternInstructionIndex;
-    private final int[] matchedInstructionOffsets;
-    private int         matchedArgumentFlags;
-    private final int[] matchedArguments = new int[7];
-    private long        matchedConstantFlags;
-    private final int[] matchedConstantIndices;
+    private boolean      matching;
+    private int          patternInstructionIndex;
+    private final int[]  matchedInstructionOffsets;
+    private int          matchedArgumentFlags;
+    private final int[]  matchedArguments = new int[7];
+    private final long[] matchedConstantFlags;
+    private final int[]  matchedConstantIndices;
+    private int          constantFlags;
+    private int          previousConstantFlags;
 
     // Fields acting as a parameter and a return value for visitor methods.
     private Constant patternConstant;
@@ -87,6 +90,7 @@ implements   InstructionVisitor,
         this.patternInstructions = patternInstructions;
 
         matchedInstructionOffsets = new int[patternInstructions.length];
+        matchedConstantFlags      = new long[(patternConstants.length + 63) / 64];
         matchedConstantIndices    = new int[patternConstants.length];
     }
 
@@ -98,34 +102,55 @@ implements   InstructionVisitor,
     {
         patternInstructionIndex = 0;
         matchedArgumentFlags    = 0;
-        matchedConstantFlags    = 0L;
+
+        Arrays.fill(matchedConstantFlags, 0L);
+
+        previousConstantFlags = constantFlags;
+        constantFlags         = 0;
     }
 
 
+    /**
+     * Returns whether the complete pattern sequence has been matched.
+     */
     public boolean isMatching()
     {
         return matching;
     }
 
 
-    public boolean isMatchingAnyWildcards()
-    {
-        return matchingAnyWildCards;
-    }
-
-
+    /**
+     * Returns the number of instructions in the pattern sequence.
+     */
     public int instructionCount()
     {
         return patternInstructions.length;
     }
 
 
+    /**
+     * Returns the matched instruction offset of the specified pattern
+     * instruction.
+     */
     public int matchedInstructionOffset(int index)
     {
         return matchedInstructionOffsets[index];
     }
 
 
+    /**
+     * Returns whether the specified wildcard argument was a constant from
+     * the constant pool in the most recent match.
+     */
+    public boolean wasConstant(int argument)
+    {
+        return (previousConstantFlags & (1 << (argument - X))) != 0;
+    }
+
+
+    /**
+     * Returns the value of the specified matched argument (wildcard or not).
+     */
     public int matchedArgument(int argument)
     {
         int argumentIndex = argument - X;
@@ -135,6 +160,9 @@ implements   InstructionVisitor,
     }
 
 
+    /**
+     * Returns the values of the specified matched arguments (wildcard or not).
+     */
     public int[] matchedArguments(int[] arguments)
     {
         int[] matchedArguments = new int[arguments.length];
@@ -148,6 +176,9 @@ implements   InstructionVisitor,
     }
 
 
+    /**
+     * Returns the index of the specified matched constant (wildcard or not).
+     */
     public int matchedConstantIndex(int constantIndex)
     {
         int argumentIndex = constantIndex - X;
@@ -157,6 +188,10 @@ implements   InstructionVisitor,
     }
 
 
+    /**
+     * Returns the value of the specified matched branch offset (wildcard or
+     * not).
+     */
     public int matchedBranchOffset(int offset, int branchOffset)
     {
         int argumentIndex = branchOffset - X;
@@ -166,6 +201,10 @@ implements   InstructionVisitor,
     }
 
 
+    /**
+     * Returns the values of the specified matched jump offsets (wildcard or
+     * not).
+     */
     public int[] matchedJumpOffsets(int offset, int[] jumpOffsets)
     {
         int[] matchedJumpOffsets = new int[jumpOffsets.length];
@@ -387,6 +426,35 @@ implements   InstructionVisitor,
     }
 
 
+    public void visitInvokeDynamicConstant(Clazz clazz, InvokeDynamicConstant invokeDynamicConstant)
+    {
+        InvokeDynamicConstant invokeDynamicPatternConstant = (InvokeDynamicConstant)patternConstant;
+
+        // Check the bootstrap method and the name and type.
+        matchingConstant =
+            matchingConstantIndices(clazz,
+                                    invokeDynamicConstant.getBootstrapMethodAttributeIndex(),
+                                    invokeDynamicPatternConstant.getBootstrapMethodAttributeIndex()) &&
+            matchingConstantIndices(clazz,
+                                    invokeDynamicConstant.getNameAndTypeIndex(),
+                                    invokeDynamicPatternConstant.getNameAndTypeIndex());
+    }
+
+
+    public void visitMethodHandleConstant(Clazz clazz, MethodHandleConstant methodHandleConstant)
+    {
+        MethodHandleConstant methodHandlePatternConstant = (MethodHandleConstant)patternConstant;
+
+        // Check the handle type and the name and type.
+        matchingConstant =
+            matchingArguments(methodHandleConstant.getReferenceKind(),
+                              methodHandlePatternConstant.getReferenceKind()) &&
+            matchingConstantIndices(clazz,
+                                    methodHandleConstant.getReferenceIndex(),
+                                    methodHandlePatternConstant.getReferenceIndex());
+    }
+
+
     public void visitAnyRefConstant(Clazz clazz, RefConstant refConstant)
     {
         RefConstant refPatternConstant = (RefConstant)patternConstant;
@@ -411,6 +479,18 @@ implements   InstructionVisitor,
             matchingConstantIndices(clazz,
                                     classConstant.u2nameIndex,
                                     classPatternConstant.u2nameIndex);
+    }
+
+
+    public void visitMethodTypeConstant(Clazz clazz, MethodTypeConstant methodTypeConstant)
+    {
+        MethodTypeConstant typePatternConstant = (MethodTypeConstant)patternConstant;
+
+        // Check the descriptor.
+        matchingConstant =
+            matchingConstantIndices(clazz,
+                                    methodTypeConstant.u2descriptorIndex,
+                                    typePatternConstant.u2descriptorIndex);
     }
 
 
@@ -449,11 +529,10 @@ implements   InstructionVisitor,
             // Check the literal argument.
             return argument1 == argument2;
         }
-        else if ((matchedArgumentFlags & (1 << argumentIndex)) == 0)
+        else if (!isMatchingArgumentIndex(argumentIndex))
         {
-            // Store a wildcard argument.
-            matchedArguments[argumentIndex] = argument1;
-            matchedArgumentFlags |= 1 << argumentIndex;
+            // Store the wildcard argument.
+            setMatchingArgument(argumentIndex, argument1);
 
             return true;
         }
@@ -462,6 +541,28 @@ implements   InstructionVisitor,
             // Check the previously stored wildcard argument.
             return matchedArguments[argumentIndex] == argument1;
         }
+    }
+
+
+    /**
+     * Marks the specified argument (by index) as matching the specified
+     * argument value.
+     */
+    private void setMatchingArgument(int argumentIndex,
+                                     int argument)
+    {
+        matchedArguments[argumentIndex] = argument;
+        matchedArgumentFlags |= 1 << argumentIndex;
+    }
+
+
+    /**
+     * Returns whether the specified wildcard argument (by index) has been
+     * matched.
+     */
+    private boolean isMatchingArgumentIndex(int argumentIndex)
+    {
+        return (matchedArgumentFlags & (1 << argumentIndex)) != 0;
     }
 
 
@@ -491,10 +592,13 @@ implements   InstructionVisitor,
     {
         if (constantIndex2 >= X)
         {
+            // Remember that we are trying to match a constant.
+            constantFlags |= 1 << (constantIndex2 - X);
+
             // Check the constant index.
             return matchingArguments(constantIndex1, constantIndex2);
         }
-        else if ((matchedConstantFlags & (1L << constantIndex2)) == 0)
+        else if (!isMatchingConstantIndex(constantIndex2))
         {
             // Check the actual constant.
             matchingConstant = false;
@@ -507,8 +611,7 @@ implements   InstructionVisitor,
                 if (matchingConstant)
                 {
                     // Store the constant index.
-                    matchedConstantIndices[constantIndex2] = constantIndex1;
-                    matchedConstantFlags |= 1L << constantIndex2;
+                    setMatchingConstant(constantIndex2, constantIndex1);
                 }
             }
 
@@ -522,6 +625,27 @@ implements   InstructionVisitor,
     }
 
 
+    /**
+     * Marks the specified constant (by index) as matching the specified
+     * constant index value.
+     */
+    private void setMatchingConstant(int constantIndex,
+                                     int constantIndex1)
+    {
+        matchedConstantIndices[constantIndex] = constantIndex1;
+        matchedConstantFlags[constantIndex / 64] |= 1L << constantIndex;
+    }
+
+
+    /**
+     * Returns whether the specified wildcard constant has been matched.
+     */
+    private boolean isMatchingConstantIndex(int constantIndex)
+    {
+        return (matchedConstantFlags[constantIndex / 64] & (1L << constantIndex)) != 0;
+    }
+
+
     private boolean matchingBranchOffsets(int offset,
                                           int branchOffset1,
                                           int branchOffset2)
@@ -532,11 +656,10 @@ implements   InstructionVisitor,
             // Check the literal argument.
             return branchOffset1 == branchOffset2;
         }
-        else if ((matchedArgumentFlags & (1 << argumentIndex)) == 0)
+        else if (!isMatchingArgumentIndex(argumentIndex))
         {
             // Store a wildcard argument.
-            matchedArguments[argumentIndex] = offset + branchOffset1;
-            matchedArgumentFlags |= 1 << argumentIndex;
+            setMatchingArgument(argumentIndex, offset + branchOffset1);
 
             return true;
         }
@@ -594,9 +717,6 @@ implements   InstructionVisitor,
 
             // Did we match all instructions in the sequence?
             matching = patternInstructionIndex == patternInstructions.length;
-
-            // Did we match any wildcards along the way?
-            matchingAnyWildCards = matchedArgumentFlags != 0;
 
             if (matching)
             {

@@ -39,7 +39,7 @@ class      ComparableConstant
 extends    SimplifiedVisitor
 implements Comparable, ConstantVisitor
 {
-    private static final int[] PRIORITIES = new int[13];
+    private static final int[] PRIORITIES = new int[19];
     static
     {
         PRIORITIES[ClassConstants.CONSTANT_Integer]            = 0; // Possibly byte index (ldc).
@@ -47,12 +47,15 @@ implements Comparable, ConstantVisitor
         PRIORITIES[ClassConstants.CONSTANT_String]             = 2;
         PRIORITIES[ClassConstants.CONSTANT_Class]              = 3;
         PRIORITIES[ClassConstants.CONSTANT_Long]               = 4; // Always wide index (ldc2_w).
-        PRIORITIES[ClassConstants.CONSTANT_Double]             = 5;
-        PRIORITIES[ClassConstants.CONSTANT_Fieldref]           = 6; // Always wide index.
-        PRIORITIES[ClassConstants.CONSTANT_Methodref]          = 7;
-        PRIORITIES[ClassConstants.CONSTANT_InterfaceMethodref] = 8;
-        PRIORITIES[ClassConstants.CONSTANT_NameAndType]        = 9;
-        PRIORITIES[ClassConstants.CONSTANT_Utf8]               = 10;
+        PRIORITIES[ClassConstants.CONSTANT_Double]             = 5; // Always wide index (ldc2_w).
+        PRIORITIES[ClassConstants.CONSTANT_Fieldref]           = 6; // Always wide index (getfield,...).
+        PRIORITIES[ClassConstants.CONSTANT_Methodref]          = 7; // Always wide index (invokespecial,...).
+        PRIORITIES[ClassConstants.CONSTANT_InterfaceMethodref] = 8; // Always wide index (invokeinterface).
+        PRIORITIES[ClassConstants.CONSTANT_InvokeDynamic]      = 9; // Always wide index (invokedynamic).
+        PRIORITIES[ClassConstants.CONSTANT_MethodHandle]       = 10;
+        PRIORITIES[ClassConstants.CONSTANT_NameAndType]        = 11;
+        PRIORITIES[ClassConstants.CONSTANT_MethodType]         = 12;
+        PRIORITIES[ClassConstants.CONSTANT_Utf8]               = 13;
     }
 
     private final Clazz    clazz;
@@ -122,26 +125,32 @@ implements Comparable, ConstantVisitor
 
     public void visitIntegerConstant(Clazz clazz, IntegerConstant integerConstant)
     {
-        // In JDK 1.4, we can use Integer.compare(a,b).
-        result = new Integer(integerConstant.getValue()).compareTo(new Integer(((IntegerConstant)otherConstant).getValue()));
+        int value      = integerConstant.getValue();
+        int otherValue = ((IntegerConstant)otherConstant).getValue();
+        result = value <  otherValue ? -1 :
+                 value == otherValue ?  0 :
+                                        1;
     }
 
     public void visitLongConstant(Clazz clazz, LongConstant longConstant)
     {
-        // In JDK 1.4, we can use Long.compare(a,b).
-        result = new Long(longConstant.getValue()).compareTo(new Long(((LongConstant)otherConstant).getValue()));
+        long value      = longConstant.getValue();
+        long otherValue = ((LongConstant)otherConstant).getValue();
+        result = value <  otherValue ? -1 :
+                 value == otherValue ?  0 :
+                                        1;
     }
 
     public void visitFloatConstant(Clazz clazz, FloatConstant floatConstant)
     {
-        // In JDK 1.4, we can use Float.compare(a,b).
-        result = new Float(floatConstant.getValue()).compareTo(new Float(((FloatConstant)otherConstant).getValue()));
+        result = Float.compare(floatConstant.getValue(),
+                               ((FloatConstant)otherConstant).getValue());
     }
 
     public void visitDoubleConstant(Clazz clazz, DoubleConstant doubleConstant)
-    {
-        // In JDK 1.4, we can use Double.compare(a,b).
-        result = new Double(doubleConstant.getValue()).compareTo(new Double(((DoubleConstant)otherConstant).getValue()));
+    {                    
+        result = Double.compare(doubleConstant.getValue(),
+                                ((DoubleConstant)otherConstant).getValue());
     }
 
     public void visitStringConstant(Clazz clazz, StringConstant stringConstant)
@@ -152,6 +161,38 @@ implements Comparable, ConstantVisitor
     public void visitUtf8Constant(Clazz clazz, Utf8Constant utf8Constant)
     {
         result = utf8Constant.getString().compareTo(((Utf8Constant)otherConstant).getString());
+    }
+
+    public void visitInvokeDynamicConstant(Clazz clazz, InvokeDynamicConstant invokeDynamicConstant)
+    {
+        InvokeDynamicConstant otherInvokeDynamicConstant = (InvokeDynamicConstant)otherConstant;
+
+        int index      = invokeDynamicConstant.getBootstrapMethodAttributeIndex();
+        int otherIndex = otherInvokeDynamicConstant.getBootstrapMethodAttributeIndex();
+
+        result = index < otherIndex ? -1 :
+                 index > otherIndex ?  1 :
+                 (invokeDynamicConstant.getName(clazz) + ' ' +
+                  invokeDynamicConstant.getType(clazz))
+                 .compareTo
+                 (otherInvokeDynamicConstant.getName(clazz) + ' ' +
+                  otherInvokeDynamicConstant.getType(clazz)); 
+    }
+
+    public void visitMethodHandleConstant(Clazz clazz, MethodHandleConstant methodHandleConstant)
+    {
+        MethodHandleConstant otherMethodHandleConstant = (MethodHandleConstant)otherConstant;
+
+        int kind      = methodHandleConstant.getReferenceKind();
+        int otherKind = methodHandleConstant.getReferenceKind();
+
+        result = kind < otherKind ? -1 :
+                 kind > otherKind ?  1 :
+                 (methodHandleConstant.getName(clazz) + ' ' +
+                  methodHandleConstant.getType(clazz))
+                 .compareTo
+                 (otherMethodHandleConstant.getName(clazz) + ' ' +
+                  otherMethodHandleConstant.getType(clazz));
     }
 
     public void visitAnyRefConstant(Clazz clazz, RefConstant refConstant)
@@ -169,6 +210,14 @@ implements Comparable, ConstantVisitor
     public void visitClassConstant(Clazz clazz, ClassConstant classConstant)
     {
         result = classConstant.getName(clazz).compareTo(((ClassConstant)otherConstant).getName(clazz));
+    }
+
+    public void visitMethodTypeConstant(Clazz clazz, MethodTypeConstant MethodTypeConstant)
+    {
+        MethodTypeConstant otherMethodTypeConstant = (MethodTypeConstant)otherConstant;
+        result = MethodTypeConstant.getType(clazz)
+                 .compareTo
+                 (otherMethodTypeConstant.getType(clazz));
     }
 
     public void visitNameAndTypeConstant(Clazz clazz, NameAndTypeConstant nameAndTypeConstant)

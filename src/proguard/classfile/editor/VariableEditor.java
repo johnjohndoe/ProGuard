@@ -25,6 +25,8 @@ import proguard.classfile.attribute.*;
 import proguard.classfile.attribute.visitor.AttributeVisitor;
 import proguard.classfile.util.SimplifiedVisitor;
 
+import java.util.Arrays;
+
 /**
  * This AttributeVisitor accumulates specified changes to local variables, and
  * then applies these accumulated changes to the code attributes that it visits.
@@ -53,14 +55,13 @@ implements   AttributeVisitor
         // Try to reuse the previous array.
         if (deleted.length < maxLocals)
         {
+            // Create a new array.
             deleted = new boolean[maxLocals];
         }
         else
         {
-            for (int index = 0; index < maxLocals; index++)
-            {
-                deleted[index] = false;
-            }
+            // Reset the array.
+            Arrays.fill(deleted, 0, maxLocals, false);
         }
 
         modified = false;

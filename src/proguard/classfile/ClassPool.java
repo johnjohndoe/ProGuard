@@ -26,7 +26,7 @@ import proguard.classfile.visitor.*;
 import java.util.*;
 
 /**
- * This is a set of representations of classes. They      can be enumerated or
+ * This is a set of representations of classes. They can be enumerated or
  * retrieved by name. They can also be accessed by means of class visitors.
  *
  * @author Eric Lafortune

@@ -9,8 +9,11 @@
 <!--
 if (window.self==window.top)
   window.top.location.replace("../index.html#"+window.location.pathname+window.location.hash);
-//else if (window.top.location.hash!="#"+window.location.pathname)
-//  window.top.location.hash="#"+window.location.pathname;
+else {
+  var hash="#"+window.location.pathname.replace(window.top.location.pathname.replace("index.html", ""), "");
+  if (window.top.location.hash!=hash)
+    window.top.location.hash=hash;
+}
 //-->
 </script>
 </head>
@@ -32,15 +35,19 @@ few problems. The following sections discuss some common issues and solutions:
 <li><a href="#duplicatezipentry">Warning: can't write resource ... Duplicate zip entry</a></li>
 <li><a href="#unresolvedclass">Warning: can't find superclass or interface</a></li>
 <li><a href="#unresolvedclass">Warning: can't find referenced class</a></li>
+<li><a href="#superclass">Error: Can't find any super classes of ... (not even immediate super class ...)</a></li>
+<li><a href="#superclass">Error: Can't find common super class of ... and ...</a></li>
 <li><a href="#unresolvedclassmember">Warning: can't find referenced field/method</a></li>
 <li><a href="#unresolvedenclosingmethod">Warning: can't find enclosing class/method</a></li>
 <li><a href="#dependency">Warning: library class ... depends on program class ...</a></li>
 <li><a href="#unexpectedclass">Warning: class file ... unexpectedly contains class ...</a></li>
 <li><a href="#mappingconflict1">Warning: ... is not being kept as ..., but remapped to ...</a></li>
 <li><a href="#mappingconflict2">Warning: field/method ... can't be mapped to ...</a></li>
+<li><a href="#unsupportedclassversion">Error: Unsupported class version number</a></li>
 <li><a href="#keep">Error: You have to specify '-keep' options</a></li>
 <li><a href="#filename">Error: Expecting class path separator ';' before 'Files\Java\...' (in Windows)</a></li>
 <li><a href="#macosx">Error: Can't read [.../lib/rt.jar] (No such file or directory) (in MacOS X)</a></li>
+<li><a href="#startinggui">Internal problem starting the ProGuard GUI (Cannot write XdndAware property) (in Linux)</a></li>
 <li><a href="#outofmemoryerror">OutOfMemoryError</a></li>
 <li><a href="#stackoverflowerror">StackOverflowError</a></li>
 <li><a href="#unexpectederror">Unexpected error</a></li>
@@ -52,6 +59,13 @@ few problems. The following sections discuss some common issues and solutions:
 <li><a href="#disappearingclasses">Disappearing classes</a></li>
 <li><a href="#notkept">Classes or class members not being kept</a></li>
 <li><a href="#notobfuscated">Variable names not being obfuscated</a></li>
+</ul>
+
+<h3><a href="#dalvik">Problems while converting to Android Dalvik bytecode</a></h3>
+
+<ul>
+<li><a href="#simexception">SimException: local variable type mismatch</a></li>
+<li><a href="#conversionerror">Conversion to Dalvik format failed with error 1</a></li>
 </ul>
 
 <h3><a href="#preverifying">Problems while preverifying for Java Micro Edition</a></h3>
@@ -69,6 +83,7 @@ few problems. The following sections discuss some common issues and solutions:
 <li><a href="#missingresourceexception">MissingResourceException or NullPointerException</a></li>
 <li><a href="#disappearingannotations">Disappearing annotations</a></li>
 <li><a href="#invalidjarfile">Invalid or corrupt jarfile</a></li>
+<li><a href="#invalidjarindexexception">InvalidJarIndexException: Invalid index</a></li>
 <li><a href="#invalidclassexception2">InvalidClassException, class loading error, or verification error (in Java Micro Edition)</a></li>
 <li><a href="#nosuchfieldormethod">Error: No Such Field or Method, Error verifying method (in a Java Micro Edition emulator)</a></li>
 <li><a href="#failingmidlets">Failing midlets (on a Java Micro Edition device)</a></li>
@@ -182,7 +197,34 @@ some more serious warnings:
     href="usage.html#ignorewarnings"><code>-ignorewarnings</code></a> option,
     or even the <a href="usage.html#dontwarn"><code>-dontwarn</code></a>
     option. Only use these options if you really know what you're doing
-    though.</dd>
+    though.
+    <p>
+    For example, if you're developing for Android, and ProGuard complains that
+    it can't find a <code>java.awt</code> class, then some library that you
+    are using is referring to <code>java.awt</code>. This is a bit shady, since
+    Android doesn't have this package at all, but if your application works
+    anyway, you can let ProGuard accept it with "<code>-dontwarn
+    java.awt.**</code>".</dd>
+
+<dt><a name="superclass"><b>Error: Can't find any super classes of ... (not even immediate super class ...)</b><br/><b>Error: Can't find common super class of ... and ...</b></a></dt>
+
+<dd>It seems like you tried to avoid the warnings from the previous paragraph
+    by specifying
+    <a href="usage.html#ignorewarnings"><code>-ignorewarnings</code></a>
+    or <a href="usage.html#dontwarn"><code>-dontwarn</code></a>, but it didn't
+    work out. ProGuard's optimization step and preverification step really
+    need the missing classes to make sense of the code. Preferably, you would
+    solve the problem by adding the missing library, as discussed. If you're
+    sure the class that references the missing class isn't used either, you
+    could also try filtering it out from the input, by adding a filter to the
+    corresponding <a href="usage.html#injars"><code>-injars</code></a> option:
+    "<code>-injars
+    myapplication.jar(!somepackage/SomeUnusedClass.class)</code>". Hopefully,
+    you can access the configuration of your build process for such a
+    modification. As a final solution, you could switch off optimization
+    (<a href="usage.html#dontoptimize"><code>-dontoptimize</code></a>) and
+    preverification
+    (<a href="usage.html#dontpreverify"><code>-dontpreverify</code></a>).</dd>
 
 <dt><a name="unresolvedclassmember"><b>Warning: can't find referenced field/method</b></a></dt>
 
@@ -216,7 +258,11 @@ some more serious warnings:
     classes always remain unchanged. It is therefore impossible to adapt
     references from library classes to program classes, for instance if the
     program classes are renamed. You should define a clean separation between
-    program code and library code, and try again.</dd>
+    program code (specified with <a
+    href="usage.html#injars"><code>-injars</code></a>) and library code
+    (specified with <a
+    href="usage.html#libraryjars"><code>-libraryjars</code></a>), and try
+    again.</dd>
 
 <dt><a name="unexpectedclass"><b>Warning: class file ... unexpectedly contains class ...</b></a></dt>
 
@@ -263,6 +309,13 @@ some more serious warnings:
     option in the initial obfuscation step, in order to reduce the risk of
     conflicts.</dd>
 
+<dt><a name="unsupportedclassversion"><b>Error: Unsupported class version number</b></a></dt>
+
+<dd>You are trying to process class files compiled for a recent version of
+    Java that your copy of ProGuard doesn't support yet. You should check if
+    there is a more recent release
+    <a href="http://proguard.sourceforge.net/downloads.html">on-line</a>.</dd>
+
 <dt><a name="keep"><b>Error: You have to specify '-keep' options</b></a></dt>
 
 <dd>You either forgot to specify <a
@@ -271,7 +324,6 @@ some more serious warnings:
     application, an applet, a servlet, a midlet,..., or any combination of
     these. Without the proper seed specifications, ProGuard would shrink,
     optimize, or obfuscate all class files away.</dd>
-
 
 <dt><a name="filename"><b>Error: Expecting class path separator ';' before 'Files\Java\</b>...<b>'</b> (in Windows)</a></dt>
 
@@ -287,6 +339,16 @@ some more serious warnings:
     other platforms. You'll then have to adapt your configuration, replacing
     the path <code>&lt;java.home&gt;/lib/rt.jar</code> by
     <code>&lt;java.home&gt;/../Classes/classes.jar</code>.</dd>
+
+<dt><a name="startinggui"><b>Internal problem starting the ProGuard GUI (Cannot write XdndAware property)</b> (in Linux)</a></dt>
+
+<dd>In Linux, at least with Java 6, the GUI may not start properly, due to
+    <a href="http://bugs.sun.com/view_bug.do?bug_id=7027598">Sun
+    Bug #7027598</a>. The work-around at this time is to specify the JVM
+   option <code>-DsuppressSwingDropSupport=true</code> when running the
+   GUI.</dd>
+
+<dd>
 
 </dl>
 <p>
@@ -368,7 +430,13 @@ there might be a couple of reasons:
     <p>
     If you are using marker interfaces to keep other classes, the marker
     interfaces themselves are probably being removed in the shrinking step.
-    You should therefore always explicitly keep any marker interfaces.</dd>
+    You should therefore always explicitly keep any marker interfaces, with
+    an option like "<code>-keep interface MyMarkerInterface</code>".
+    <p>
+    Similarly, if you are keeping classes based on annotations, you may have to
+    avoid that the annotation classes themselves are removed in the shrinking
+    step. You can explicitly keep all annotation classes in your program code
+    with an option like "<code>-keep @interface *</code>".<dd>
 
 <dt><a name="notobfuscated"><b>Variable names not being obfuscated</b></a></dt>
 
@@ -379,6 +447,36 @@ there might be a couple of reasons:
     original names entirely, unless you explicitly keep the
     <code>LocalVariableTable</code> or <code>LocalVariableTypeTable</code>
     attributes.</dd>
+
+</dl>
+
+<h2><a name="dalvik">Problems while converting to Android Dalvik bytecode</a></h2>
+
+If ProGuard seems to run fine, but the dx tool in the Android SDK subsequently
+fails with an error:
+
+<dl>
+<dt><a name="simexception"><b>SimException: local variable type mismatch</b></a></dt>
+
+<dd>This error indicates that ProGuard's optimization step has not been able
+    to maintain the correct debug information about local variables. This can
+    happen if some code is optimized radically. Possible work-arounds: let the
+    java compiler not produce debug information (<code>-g:none</code>), or let
+    ProGuard's obfuscation step remove the debug information again
+    (by <i>not</i> keeping the attributes <code>LocalVariableTable</code>
+    and <code>LocalVariableTypeTable</code>
+    with <a href="usage.html#keepattributes"><code>-keepattributes</code></a>),
+    or otherwise just disable optimization
+    (<a href="usage.html#dontoptimize"><code>-dontoptimize</code></a>).</dd>
+
+<dt><a name="conversionerror"><b>Conversion to Dalvik format failed with error 1</b></a></dt>
+
+<dd>This error may have various causes, but if dx is tripping over some code
+    processed by ProGuard, you should make sure that you are using the latest
+    version of ProGuard. You can just copy the ProGuard jars
+    to <code>android-sdk/tools/proguard/lib</code>. If that doesn't help,
+    please report the problem, preferably with the simplest example that still
+    brings out the error.</dd>
 
 </dl>
 
@@ -492,6 +590,17 @@ might be several reasons:
     that the input jar contains a valid manifest file to start with, that this
     manifest file is the one that is copied (the first manifest file that is
     encountered), and that the main class is kept in your configuration,</dd>
+
+<dt><a name="invalidjarindexexception"><b>InvalidJarIndexException: Invalid index</b></a></dt>
+
+<dd>At least one of your processed jar files contains an index file
+    <code>META-INF/INDEX.LIST</code>, listing all class files in the jar.
+    ProGuard by default copies files like these unchanged. ProGuard may however
+    remove or rename classes, thus invalidating the file. You should filter the
+    index file out of the input
+    (<code>-injars in.jar(!META-INF/INDEX.LIST)</code>) or update the file
+    after having applied ProGuard (<code>jar -i out.jar</code>).
+    </dd>
 
 <dt><a name="invalidclassexception2"><b>InvalidClassException</b>, <b>class loading error</b>, or <b>verification error</b> (in Java Micro Edition)</a></dt>
 

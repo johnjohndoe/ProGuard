@@ -20,81 +20,179 @@
  */
 package proguard.optimize.peephole;
 
+import proguard.classfile.*;
 import proguard.classfile.constant.*;
 import proguard.classfile.instruction.*;
-import proguard.classfile.util.InstructionSequenceMatcher;
+import proguard.classfile.visitor.ClassPrinter;
 
 /**
  * This class contains a set of instruction sequences and their suggested
  * replacements.
  *
  * @see InstructionSequencesReplacer
+ * @see InstructionSequenceReplacer
  * @author Eric Lafortune
  */
 public class InstructionSequenceConstants
 {
-    public static final int X = InstructionSequenceMatcher.X;
-    public static final int Y = InstructionSequenceMatcher.Y;
-    public static final int Z = InstructionSequenceMatcher.Z;
+    private static final int X = InstructionSequenceReplacer.X;
+    private static final int Y = InstructionSequenceReplacer.Y;
+    private static final int Z = InstructionSequenceReplacer.Z;
 
-    public static final int A = InstructionSequenceMatcher.A;
-    public static final int B = InstructionSequenceMatcher.B;
-    public static final int C = InstructionSequenceMatcher.C;
-    public static final int D = InstructionSequenceMatcher.D;
+    private static final int A = InstructionSequenceReplacer.A;
+    private static final int B = InstructionSequenceReplacer.B;
+    private static final int C = InstructionSequenceReplacer.C;
+    private static final int D = InstructionSequenceReplacer.D;
 
+    private static final int STRING_A_LENGTH  = InstructionSequenceReplacer.STRING_A_LENGTH;
+    private static final int BOOLEAN_A_STRING = InstructionSequenceReplacer.BOOLEAN_A_STRING;
+    private static final int CHAR_A_STRING    = InstructionSequenceReplacer.CHAR_A_STRING;
+    private static final int INT_A_STRING     = InstructionSequenceReplacer.INT_A_STRING;
+    private static final int LONG_A_STRING    = InstructionSequenceReplacer.LONG_A_STRING;
+    private static final int FLOAT_A_STRING   = InstructionSequenceReplacer.FLOAT_A_STRING;
+    private static final int DOUBLE_A_STRING  = InstructionSequenceReplacer.DOUBLE_A_STRING;
+    private static final int STRING_A_STRING  = InstructionSequenceReplacer.STRING_A_STRING;
+    private static final int BOOLEAN_B_STRING = InstructionSequenceReplacer.BOOLEAN_B_STRING;
+    private static final int CHAR_B_STRING    = InstructionSequenceReplacer.CHAR_B_STRING;
+    private static final int INT_B_STRING     = InstructionSequenceReplacer.INT_B_STRING;
+    private static final int LONG_B_STRING    = InstructionSequenceReplacer.LONG_B_STRING;
+    private static final int FLOAT_B_STRING   = InstructionSequenceReplacer.FLOAT_B_STRING;
+    private static final int DOUBLE_B_STRING  = InstructionSequenceReplacer.DOUBLE_B_STRING;
+    private static final int STRING_B_STRING  = InstructionSequenceReplacer.STRING_B_STRING;
 
-    private static final int I_32768              =  0;
-    private static final int I_65536              =  1;
-    private static final int I_16777216           =  2;
+    private static final int I_32768                                   =   0;
+    private static final int I_65536                                   =   1;
+    private static final int I_16777216                                =   2;
 
 //  private static final int I_0x000000ff
-    private static final int I_0x0000ff00         =  3;
-    private static final int I_0x00ff0000         =  4;
-    private static final int I_0xff000000         =  5;
-    private static final int I_0x0000ffff         =  6;
-    private static final int I_0xffff0000         =  7;
+    private static final int I_0x0000ff00                              =   3;
+    private static final int I_0x00ff0000                              =   4;
+    private static final int I_0xff000000                              =   5;
+    private static final int I_0x0000ffff                              =   6;
+    private static final int I_0xffff0000                              =   7;
 
-    private static final int L_M1                 =  8;
-    private static final int L_2                  =  9;
-    private static final int L_4                  = 10;
-    private static final int L_8                  = 11;
-    private static final int L_16                 = 12;
-    private static final int L_32                 = 13;
-    private static final int L_64                 = 14;
-    private static final int L_128                = 15;
-    private static final int L_256                = 16;
-    private static final int L_512                = 17;
-    private static final int L_1024               = 18;
-    private static final int L_2048               = 19;
-    private static final int L_4096               = 20;
-    private static final int L_8192               = 21;
-    private static final int L_16384              = 22;
-    private static final int L_32768              = 23;
-    private static final int L_65536              = 24;
-    private static final int L_16777216           = 25;
-    private static final int L_4294967296         = 26;
+    private static final int L_M1                                      =   8;
+    private static final int L_2                                       =   9;
+    private static final int L_4                                       =  10;
+    private static final int L_8                                       =  11;
+    private static final int L_16                                      =  12;
+    private static final int L_32                                      =  13;
+    private static final int L_64                                      =  14;
+    private static final int L_128                                     =  15;
+    private static final int L_256                                     =  16;
+    private static final int L_512                                     =  17;
+    private static final int L_1024                                    =  18;
+    private static final int L_2048                                    =  19;
+    private static final int L_4096                                    =  20;
+    private static final int L_8192                                    =  21;
+    private static final int L_16384                                   =  22;
+    private static final int L_32768                                   =  23;
+    private static final int L_65536                                   =  24;
+    private static final int L_16777216                                =  25;
+    private static final int L_4294967296                              =  26;
 
-    private static final int L_0x00000000ffffffff = 27;
-    private static final int L_0xffffffff00000000 = 28;
+    private static final int L_0x00000000ffffffff                      =  27;
+    private static final int L_0xffffffff00000000                      =  28;
 
-    private static final int F_M1                 = 29;
+    private static final int F_M1                                      =  29;
 
-    private static final int D_M1                 = 30;
+    private static final int D_M1                                      =  30;
 
-    private static final int FIELD_I              = 31;
-    private static final int FIELD_L              = 32;
-    private static final int FIELD_F              = 33;
-    private static final int FIELD_D              = 34;
+    private static final int STRING_EMPTY                              =  31;
 
-    private static final int NAME_AND_TYPE_I      = 35;
-    private static final int NAME_AND_TYPE_L      = 36;
-    private static final int NAME_AND_TYPE_F      = 37;
-    private static final int NAME_AND_TYPE_D      = 38;
+    private static final int FIELD_I                                   =  32;
+    private static final int FIELD_L                                   =  33;
+    private static final int FIELD_F                                   =  34;
+    private static final int FIELD_D                                   =  35;
 
-    private static final int TYPE_I               = 39;
-    private static final int TYPE_L               = 40;
-    private static final int TYPE_F               = 41;
-    private static final int TYPE_D               = 42;
+    private static final int METHOD_STRING_EQUALS                      =  36;
+    private static final int METHOD_STRING_LENGTH                      =  37;
+    private static final int METHOD_STRINGBUFFER_INIT                  =  38;
+    private static final int METHOD_STRINGBUFFER_INIT_STRING           =  39;
+    private static final int METHOD_STRINGBUFFER_APPEND_BOOLEAN        =  40;
+    private static final int METHOD_STRINGBUFFER_APPEND_CHAR           =  41;
+    private static final int METHOD_STRINGBUFFER_APPEND_INTEGER        =  42;
+    private static final int METHOD_STRINGBUFFER_APPEND_LONG           =  43;
+    private static final int METHOD_STRINGBUFFER_APPEND_FLOAT          =  44;
+    private static final int METHOD_STRINGBUFFER_APPEND_DOUBLE         =  45;
+    private static final int METHOD_STRINGBUFFER_APPEND_STRING         =  46;
+    private static final int METHOD_STRINGBUFFER_LENGTH                =  47;
+    private static final int METHOD_STRINGBUFFER_TOSTRING              =  48;
+    private static final int METHOD_STRINGBUILDER_INIT                 =  49;
+    private static final int METHOD_STRINGBUILDER_INIT_STRING          =  50;
+    private static final int METHOD_STRINGBUILDER_APPEND_BOOLEAN       =  51;
+    private static final int METHOD_STRINGBUILDER_APPEND_CHAR          =  52;
+    private static final int METHOD_STRINGBUILDER_APPEND_INTEGER       =  53;
+    private static final int METHOD_STRINGBUILDER_APPEND_LONG          =  54;
+    private static final int METHOD_STRINGBUILDER_APPEND_FLOAT         =  55;
+    private static final int METHOD_STRINGBUILDER_APPEND_DOUBLE        =  56;
+    private static final int METHOD_STRINGBUILDER_APPEND_STRING        =  57;
+    private static final int METHOD_STRINGBUILDER_LENGTH               =  58;
+    private static final int METHOD_STRINGBUILDER_TOSTRING             =  59;
+
+    private static final int CLASS_STRING                              =  60;
+    private static final int CLASS_STRINGBUFFER                        =  61;
+    private static final int CLASS_STRINGBUILDER                       =  62;
+
+    private static final int NAME_AND_TYPE_I                           =  63;
+    private static final int NAME_AND_TYPE_L                           =  64;
+    private static final int NAME_AND_TYPE_F                           =  65;
+    private static final int NAME_AND_TYPE_D                           =  66;
+
+    private static final int NAME_AND_TYPE_EQUALS                      =  67;
+    private static final int NAME_AND_TYPE_LENGTH                      =  68;
+    private static final int NAME_AND_TYPE_INIT                        =  69;
+    private static final int NAME_AND_TYPE_INIT_STRING                 =  70;
+    private static final int NAME_AND_TYPE_APPEND_Z_STRINGBUFFER       =  71;
+    private static final int NAME_AND_TYPE_APPEND_C_STRINGBUFFER       =  72;
+    private static final int NAME_AND_TYPE_APPEND_I_STRINGBUFFER       =  73;
+    private static final int NAME_AND_TYPE_APPEND_J_STRINGBUFFER       =  74;
+    private static final int NAME_AND_TYPE_APPEND_F_STRINGBUFFER       =  75;
+    private static final int NAME_AND_TYPE_APPEND_D_STRINGBUFFER       =  76;
+    private static final int NAME_AND_TYPE_APPEND_STRING_STRINGBUFFER  =  77;
+    private static final int NAME_AND_TYPE_APPEND_Z_STRINGBUILDER      =  78;
+    private static final int NAME_AND_TYPE_APPEND_C_STRINGBUILDER      =  79;
+    private static final int NAME_AND_TYPE_APPEND_I_STRINGBUILDER      =  80;
+    private static final int NAME_AND_TYPE_APPEND_J_STRINGBUILDER      =  81;
+    private static final int NAME_AND_TYPE_APPEND_F_STRINGBUILDER      =  82;
+    private static final int NAME_AND_TYPE_APPEND_D_STRINGBUILDER      =  83;
+    private static final int NAME_AND_TYPE_APPEND_STRING_STRINGBUILDER =  84;
+    private static final int NAME_AND_TYPE_TOSTRING                    =  85;
+
+    private static final int UTF8_EMPTY                                =  86;
+    private static final int UTF8_I                                    =  87;
+    private static final int UTF8_L                                    =  88;
+    private static final int UTF8_F                                    =  89;
+    private static final int UTF8_D                                    =  90;
+    private static final int UTF8_STRING                               =  91;
+    private static final int UTF8_STRINGBUFFER                         =  92;
+    private static final int UTF8_STRINGBUILDER                        =  93;
+    private static final int UTF8_EQUALS                               =  94;
+    private static final int UTF8_OBJECT_Z                             =  95;
+    private static final int UTF8_LENGTH                               =  96;
+    private static final int UTF8__I                                   =  97;
+    private static final int UTF8_INIT                                 =  98;
+    private static final int UTF8__VOID                                =  99;
+    private static final int UTF8_STRING_VOID                          = 100;
+    private static final int UTF8_TOSTRING                             = 101;
+    private static final int UTF8__STRING                              = 102;
+    private static final int UTF8_APPEND                               = 103;
+    private static final int UTF8_Z_STRINGBUFFER                       = 104;
+    private static final int UTF8_C_STRINGBUFFER                       = 105;
+    private static final int UTF8_I_STRINGBUFFER                       = 106;
+    private static final int UTF8_J_STRINGBUFFER                       = 107;
+    private static final int UTF8_F_STRINGBUFFER                       = 108;
+    private static final int UTF8_D_STRINGBUFFER                       = 109;
+    private static final int UTF8_STRING_STRINGBUFFER                  = 110;
+    private static final int UTF8_Z_STRINGBUILDER                      = 111;
+    private static final int UTF8_C_STRINGBUILDER                      = 112;
+    private static final int UTF8_I_STRINGBUILDER                      = 113;
+    private static final int UTF8_J_STRINGBUILDER                      = 114;
+    private static final int UTF8_F_STRINGBUILDER                      = 115;
+    private static final int UTF8_D_STRINGBUILDER                      = 116;
+    private static final int UTF8_STRING_STRINGBUILDER                 = 117;
+
+    private static final int SENTINEL                                  = 118;
 
 
     public static final Constant[] CONSTANTS = new Constant[]
@@ -136,22 +234,99 @@ public class InstructionSequenceConstants
 
         new DoubleConstant(-1d),
 
+        new StringConstant(UTF8_EMPTY, null, null),
+
         new FieldrefConstant(X, NAME_AND_TYPE_I, null, null),
         new FieldrefConstant(X, NAME_AND_TYPE_L, null, null),
         new FieldrefConstant(X, NAME_AND_TYPE_F, null, null),
         new FieldrefConstant(X, NAME_AND_TYPE_D, null, null),
 
-        new NameAndTypeConstant(Y, TYPE_I),
-        new NameAndTypeConstant(Y, TYPE_L),
-        new NameAndTypeConstant(Y, TYPE_F),
-        new NameAndTypeConstant(Y, TYPE_D),
+        new MethodrefConstant(CLASS_STRING,        NAME_AND_TYPE_EQUALS, null, null),
+        new MethodrefConstant(CLASS_STRING,        NAME_AND_TYPE_LENGTH, null, null),
+        new MethodrefConstant(CLASS_STRINGBUFFER,  NAME_AND_TYPE_INIT, null, null),
+        new MethodrefConstant(CLASS_STRINGBUFFER,  NAME_AND_TYPE_INIT_STRING, null, null),
+        new MethodrefConstant(CLASS_STRINGBUFFER,  NAME_AND_TYPE_APPEND_Z_STRINGBUFFER, null, null),
+        new MethodrefConstant(CLASS_STRINGBUFFER,  NAME_AND_TYPE_APPEND_C_STRINGBUFFER, null, null),
+        new MethodrefConstant(CLASS_STRINGBUFFER,  NAME_AND_TYPE_APPEND_I_STRINGBUFFER, null, null),
+        new MethodrefConstant(CLASS_STRINGBUFFER,  NAME_AND_TYPE_APPEND_J_STRINGBUFFER, null, null),
+        new MethodrefConstant(CLASS_STRINGBUFFER,  NAME_AND_TYPE_APPEND_F_STRINGBUFFER, null, null),
+        new MethodrefConstant(CLASS_STRINGBUFFER,  NAME_AND_TYPE_APPEND_D_STRINGBUFFER, null, null),
+        new MethodrefConstant(CLASS_STRINGBUFFER,  NAME_AND_TYPE_APPEND_STRING_STRINGBUFFER, null, null),
+        new MethodrefConstant(CLASS_STRINGBUFFER,  NAME_AND_TYPE_LENGTH, null, null),
+        new MethodrefConstant(CLASS_STRINGBUFFER,  NAME_AND_TYPE_TOSTRING, null, null),
+        new MethodrefConstant(CLASS_STRINGBUILDER, NAME_AND_TYPE_INIT, null, null),
+        new MethodrefConstant(CLASS_STRINGBUILDER, NAME_AND_TYPE_INIT_STRING, null, null),
+        new MethodrefConstant(CLASS_STRINGBUILDER, NAME_AND_TYPE_APPEND_Z_STRINGBUILDER, null, null),
+        new MethodrefConstant(CLASS_STRINGBUILDER, NAME_AND_TYPE_APPEND_C_STRINGBUILDER, null, null),
+        new MethodrefConstant(CLASS_STRINGBUILDER, NAME_AND_TYPE_APPEND_I_STRINGBUILDER, null, null),
+        new MethodrefConstant(CLASS_STRINGBUILDER, NAME_AND_TYPE_APPEND_J_STRINGBUILDER, null, null),
+        new MethodrefConstant(CLASS_STRINGBUILDER, NAME_AND_TYPE_APPEND_F_STRINGBUILDER, null, null),
+        new MethodrefConstant(CLASS_STRINGBUILDER, NAME_AND_TYPE_APPEND_D_STRINGBUILDER, null, null),
+        new MethodrefConstant(CLASS_STRINGBUILDER, NAME_AND_TYPE_APPEND_STRING_STRINGBUILDER, null, null),
+        new MethodrefConstant(CLASS_STRINGBUILDER, NAME_AND_TYPE_LENGTH, null, null),
+        new MethodrefConstant(CLASS_STRINGBUILDER, NAME_AND_TYPE_TOSTRING, null, null),
 
+        new ClassConstant(UTF8_STRING,  null),
+        new ClassConstant(UTF8_STRINGBUFFER,  null),
+        new ClassConstant(UTF8_STRINGBUILDER, null),
+
+        new NameAndTypeConstant(Y, UTF8_I),
+        new NameAndTypeConstant(Y, UTF8_L),
+        new NameAndTypeConstant(Y, UTF8_F),
+        new NameAndTypeConstant(Y, UTF8_D),
+        new NameAndTypeConstant(UTF8_EQUALS, UTF8_OBJECT_Z),
+        new NameAndTypeConstant(UTF8_LENGTH, UTF8__I),
+        new NameAndTypeConstant(UTF8_INIT, UTF8__VOID),
+        new NameAndTypeConstant(UTF8_INIT, UTF8_STRING_VOID),
+        new NameAndTypeConstant(UTF8_APPEND, UTF8_Z_STRINGBUFFER),
+        new NameAndTypeConstant(UTF8_APPEND, UTF8_C_STRINGBUFFER),
+        new NameAndTypeConstant(UTF8_APPEND, UTF8_I_STRINGBUFFER),
+        new NameAndTypeConstant(UTF8_APPEND, UTF8_J_STRINGBUFFER),
+        new NameAndTypeConstant(UTF8_APPEND, UTF8_F_STRINGBUFFER),
+        new NameAndTypeConstant(UTF8_APPEND, UTF8_D_STRINGBUFFER),
+        new NameAndTypeConstant(UTF8_APPEND, UTF8_STRING_STRINGBUFFER),
+        new NameAndTypeConstant(UTF8_APPEND, UTF8_Z_STRINGBUILDER),
+        new NameAndTypeConstant(UTF8_APPEND, UTF8_C_STRINGBUILDER),
+        new NameAndTypeConstant(UTF8_APPEND, UTF8_I_STRINGBUILDER),
+        new NameAndTypeConstant(UTF8_APPEND, UTF8_J_STRINGBUILDER),
+        new NameAndTypeConstant(UTF8_APPEND, UTF8_F_STRINGBUILDER),
+        new NameAndTypeConstant(UTF8_APPEND, UTF8_D_STRINGBUILDER),
+        new NameAndTypeConstant(UTF8_APPEND, UTF8_STRING_STRINGBUILDER),
+        new NameAndTypeConstant(UTF8_TOSTRING, UTF8__STRING),
+
+        new Utf8Constant(""),
         new Utf8Constant("I"),
         new Utf8Constant("J"),
         new Utf8Constant("F"),
         new Utf8Constant("D"),
+        new Utf8Constant(ClassConstants.INTERNAL_NAME_JAVA_LANG_STRING),
+        new Utf8Constant(ClassConstants.INTERNAL_NAME_JAVA_LANG_STRING_BUFFER),
+        new Utf8Constant(ClassConstants.INTERNAL_NAME_JAVA_LANG_STRING_BUILDER),
+        new Utf8Constant(ClassConstants.INTERNAL_METHOD_NAME_EQUALS),
+        new Utf8Constant(ClassConstants.INTERNAL_METHOD_TYPE_EQUALS),
+        new Utf8Constant(ClassConstants.INTERNAL_METHOD_NAME_LENGTH),
+        new Utf8Constant(ClassConstants.INTERNAL_METHOD_TYPE_LENGTH),
+        new Utf8Constant(ClassConstants.INTERNAL_METHOD_NAME_INIT),
+        new Utf8Constant(ClassConstants.INTERNAL_METHOD_TYPE_INIT),
+        new Utf8Constant(ClassConstants.INTERNAL_METHOD_TYPE_STRING_VOID),
+        new Utf8Constant(ClassConstants.INTERNAL_METHOD_NAME_TOSTRING),
+        new Utf8Constant(ClassConstants.INTERNAL_METHOD_TYPE_TOSTRING),
+        new Utf8Constant(ClassConstants.INTERNAL_METHOD_NAME_APPEND),
+        new Utf8Constant(ClassConstants.INTERNAL_METHOD_TYPE_BOOLEAN_STRING_BUFFER),
+        new Utf8Constant(ClassConstants.INTERNAL_METHOD_TYPE_CHAR_STRING_BUFFER),
+        new Utf8Constant(ClassConstants.INTERNAL_METHOD_TYPE_INT_STRING_BUFFER),
+        new Utf8Constant(ClassConstants.INTERNAL_METHOD_TYPE_LONG_STRING_BUFFER),
+        new Utf8Constant(ClassConstants.INTERNAL_METHOD_TYPE_FLOAT_STRING_BUFFER),
+        new Utf8Constant(ClassConstants.INTERNAL_METHOD_TYPE_DOUBLE_STRING_BUFFER),
+        new Utf8Constant(ClassConstants.INTERNAL_METHOD_TYPE_STRING_STRING_BUFFER),
+        new Utf8Constant(ClassConstants.INTERNAL_METHOD_TYPE_BOOLEAN_STRING_BUILDER),
+        new Utf8Constant(ClassConstants.INTERNAL_METHOD_TYPE_CHAR_STRING_BUILDER),
+        new Utf8Constant(ClassConstants.INTERNAL_METHOD_TYPE_INT_STRING_BUILDER),
+        new Utf8Constant(ClassConstants.INTERNAL_METHOD_TYPE_LONG_STRING_BUILDER),
+        new Utf8Constant(ClassConstants.INTERNAL_METHOD_TYPE_FLOAT_STRING_BUILDER),
+        new Utf8Constant(ClassConstants.INTERNAL_METHOD_TYPE_DOUBLE_STRING_BUILDER),
+        new Utf8Constant(ClassConstants.INTERNAL_METHOD_TYPE_STRING_STRING_BUILDER),
     };
-
 
     public static final Instruction[][][] VARIABLE = new Instruction[][][]
     {
@@ -382,12 +557,12 @@ public class InstructionSequenceConstants
         },
         {   // c * i = i * c
             {
-                new SimpleInstruction(InstructionConstants.OP_ICONST_0, A),
+                new SimpleInstruction(InstructionConstants.OP_SIPUSH, A),
                 new VariableInstruction(InstructionConstants.OP_ILOAD, X),
                 new SimpleInstruction(InstructionConstants.OP_IMUL),
             },{
                 new VariableInstruction(InstructionConstants.OP_ILOAD, X),
-                new SimpleInstruction(InstructionConstants.OP_ICONST_0, A),
+                new SimpleInstruction(InstructionConstants.OP_SIPUSH, A),
                 new SimpleInstruction(InstructionConstants.OP_IMUL),
             },
         },
@@ -548,7 +723,7 @@ public class InstructionSequenceConstants
         {   // i = i + c = i += c
             {
                 new VariableInstruction(InstructionConstants.OP_ILOAD, X),
-                new SimpleInstruction(InstructionConstants.OP_ICONST_0, A),
+                new SimpleInstruction(InstructionConstants.OP_SIPUSH, A),
                 new SimpleInstruction(InstructionConstants.OP_IADD),
                 new VariableInstruction(InstructionConstants.OP_ISTORE, X),
             },{
@@ -3352,4 +3527,898 @@ public class InstructionSequenceConstants
 //            },
 //        }
     };
+
+    public static final Instruction[][][] STRING = new Instruction[][][]
+    {
+        {   // "...".equals("...") = true
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRING_EQUALS),
+            },{
+                new SimpleInstruction(InstructionConstants.OP_ICONST_1),
+            },
+        },
+        {   // "...".length() = ...
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRING_LENGTH),
+            },{
+                new SimpleInstruction(InstructionConstants.OP_SIPUSH, STRING_A_LENGTH),
+            },
+        },
+
+        {   // new StringBuffer("...").toString() = "..." (ignoring identity)
+            {
+                new ConstantInstruction(InstructionConstants.OP_NEW, CLASS_STRINGBUFFER),
+                new SimpleInstruction(InstructionConstants.OP_DUP),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_TOSTRING),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+            },
+        },
+        {   // new StringBuffer("...").length() = length
+            {
+                new ConstantInstruction(InstructionConstants.OP_NEW, CLASS_STRINGBUFFER),
+                new SimpleInstruction(InstructionConstants.OP_DUP),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_LENGTH),
+            },{
+                new SimpleInstruction(InstructionConstants.OP_SIPUSH, STRING_A_LENGTH),
+            },
+        },
+        {   // StringBuffer#append("") = nothing
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_EMPTY),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_STRING),
+            },{
+                // Nothing.
+            },
+        },
+        {   // new StringBuffer().append(Z) = new StringBuffer("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT),
+                new SimpleInstruction(InstructionConstants.OP_ICONST_0, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_BOOLEAN),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, BOOLEAN_A_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+            },
+        },
+        {   // new StringBuffer().append(C) = new StringBuffer("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT),
+                new SimpleInstruction(InstructionConstants.OP_ICONST_0, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_CHAR),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, CHAR_A_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+            },
+        },
+        {   // new StringBuffer().append(Cc) = new StringBuffer("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_CHAR),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, CHAR_A_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+            },
+        },
+        {   // new StringBuffer().append(I) = new StringBuffer("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT),
+                new SimpleInstruction(InstructionConstants.OP_ICONST_0, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_INTEGER),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, INT_A_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+            },
+        },
+        {   // new StringBuffer().append(Ic) = new StringBuffer("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_INTEGER),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, INT_A_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+            },
+        },
+        {   // new StringBuffer().append(J) = new StringBuffer("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT),
+                new SimpleInstruction(InstructionConstants.OP_LCONST_0, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_LONG),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, LONG_A_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+            },
+        },
+        {   // new StringBuffer().append(Jc) = new StringBuffer("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT),
+                new ConstantInstruction(InstructionConstants.OP_LDC2_W, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_LONG),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, LONG_A_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+            },
+        },
+        {   // new StringBuffer().append(F) = new StringBuffer("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT),
+                new SimpleInstruction(InstructionConstants.OP_FCONST_0, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_FLOAT),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, FLOAT_A_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+            },
+        },
+        {   // new StringBuffer().append(Fc) = new StringBuffer("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_FLOAT),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, FLOAT_A_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+            },
+        },
+        {   // new StringBuffer().append(D) = new StringBuffer("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT),
+                new SimpleInstruction(InstructionConstants.OP_DCONST_0, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_DOUBLE),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, DOUBLE_A_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+            },
+        },
+        {   // new StringBuffer().append(Dc) = new StringBuffer("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT),
+                new ConstantInstruction(InstructionConstants.OP_LDC2_W, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_DOUBLE),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, DOUBLE_A_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+            },
+        },
+        {   // new StringBuffer().append("...") = new StringBuffer("......")
+            {
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_STRING),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+            },
+        },
+        {   // new StringBuffer("...").append(Z) = new StringBuffer("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+                new SimpleInstruction(InstructionConstants.OP_ICONST_0, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_BOOLEAN),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | BOOLEAN_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+            },
+        },
+        {   // new StringBuffer("...").append(C) = new StringBuffer("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+                new SimpleInstruction(InstructionConstants.OP_ICONST_0, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_CHAR),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | CHAR_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+            },
+        },
+        {   // new StringBuffer("...").append(Cc) = new StringBuffer("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+                new ConstantInstruction(InstructionConstants.OP_LDC, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_CHAR),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | CHAR_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+            },
+        },
+        {   // new StringBuffer("...").append(I) = new StringBuffer("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+                new SimpleInstruction(InstructionConstants.OP_ICONST_0, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_INTEGER),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | INT_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+            },
+        },
+        {   // new StringBuffer("...").append(Ic) = new StringBuffer("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+                new ConstantInstruction(InstructionConstants.OP_LDC, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_INTEGER),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | INT_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+            },
+        },
+        {   // new StringBuffer("...").append(J) = new StringBuffer("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+                new SimpleInstruction(InstructionConstants.OP_LCONST_0, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_LONG),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | LONG_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+            },
+        },
+        {   // new StringBuffer("...").append(Jc) = new StringBuffer("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+                new ConstantInstruction(InstructionConstants.OP_LDC2_W, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_LONG),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | LONG_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+            },
+        },
+        {   // new StringBuffer("...").append(F) = new StringBuffer("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+                new SimpleInstruction(InstructionConstants.OP_FCONST_0, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_FLOAT),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | FLOAT_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+            },
+        },
+        {   // new StringBuffer("...").append(Fc) = new StringBuffer("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+                new ConstantInstruction(InstructionConstants.OP_LDC, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_FLOAT),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | FLOAT_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+            },
+        },
+        {   // new StringBuffer("...").append(D) = new StringBuffer("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+                new SimpleInstruction(InstructionConstants.OP_DCONST_0, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_DOUBLE),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | DOUBLE_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+            },
+        },
+        {   // new StringBuffer("...").append(Dc) = new StringBuffer("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+                new ConstantInstruction(InstructionConstants.OP_LDC2_W, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_DOUBLE),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | DOUBLE_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+            },
+        },
+        {   // new StringBuffer("...").append("...") = new StringBuffer("......")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+                new ConstantInstruction(InstructionConstants.OP_LDC, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_STRING),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | STRING_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUFFER_INIT_STRING),
+            },
+        },
+        {   // StringBuffer#append("...").append(Z) = StringBuffer#append("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_STRING),
+                new SimpleInstruction(InstructionConstants.OP_ICONST_0, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_BOOLEAN),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | BOOLEAN_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_STRING),
+            },
+        },
+        {   // StringBuffer#append("...").append(C) = StringBuffer#append("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_STRING),
+                new SimpleInstruction(InstructionConstants.OP_ICONST_0, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_CHAR),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | CHAR_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_STRING),
+            },
+        },
+        {   // StringBuffer#append("...").append(Cc) = StringBuffer#append("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_STRING),
+                new ConstantInstruction(InstructionConstants.OP_LDC, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_CHAR),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | CHAR_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_STRING),
+            },
+        },
+        {   // StringBuffer#append("...").append(I) = StringBuffer#append("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_STRING),
+                new SimpleInstruction(InstructionConstants.OP_ICONST_0, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_INTEGER),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | INT_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_STRING),
+            },
+        },
+        {   // StringBuffer#append("...").append(Ic) = StringBuffer#append("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_STRING),
+                new ConstantInstruction(InstructionConstants.OP_LDC, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_INTEGER),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | INT_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_STRING),
+            },
+        },
+        {   // StringBuffer#append("...").append(J) = StringBuffer#append("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_STRING),
+                new SimpleInstruction(InstructionConstants.OP_LCONST_0, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_LONG),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | LONG_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_STRING),
+            },
+        },
+        {   // StringBuffer#append("...").append(Jc) = StringBuffer#append("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_STRING),
+                new ConstantInstruction(InstructionConstants.OP_LDC2_W, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_LONG),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | LONG_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_STRING),
+            },
+        },
+        {   // StringBuffer#append("...").append(F) = StringBuffer#append("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_STRING),
+                new SimpleInstruction(InstructionConstants.OP_FCONST_0, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_FLOAT),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | FLOAT_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_STRING),
+            },
+        },
+        {   // StringBuffer#append("...").append(Fc) = StringBuffer#append("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_STRING),
+                new ConstantInstruction(InstructionConstants.OP_LDC, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_FLOAT),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | FLOAT_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_STRING),
+            },
+        },
+        {   // StringBuffer#append("...").append(D) = StringBuffer#append("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_STRING),
+                new SimpleInstruction(InstructionConstants.OP_DCONST_0, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_DOUBLE),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | DOUBLE_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_STRING),
+            },
+        },
+        {   // StringBuffer#append("...").append(Dc) = StringBuffer#append("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_STRING),
+                new ConstantInstruction(InstructionConstants.OP_LDC2_W, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_DOUBLE),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | DOUBLE_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_STRING),
+            },
+        },
+        {   // StringBuffer#append("...").append("...") = StringBuffer#append("......")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_STRING),
+                new ConstantInstruction(InstructionConstants.OP_LDC, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_STRING),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | STRING_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUFFER_APPEND_STRING),
+            },
+        },
+
+        {   // new StringBuilder("...").toString() = "..." (ignoring identity)
+            {
+                new ConstantInstruction(InstructionConstants.OP_NEW, CLASS_STRINGBUILDER),
+                new SimpleInstruction(InstructionConstants.OP_DUP),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_TOSTRING),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+            },
+        },
+        {   // new StringBuilder("...").length() = length
+            {
+                new ConstantInstruction(InstructionConstants.OP_NEW, CLASS_STRINGBUILDER),
+                new SimpleInstruction(InstructionConstants.OP_DUP),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_LENGTH),
+            },{
+                new SimpleInstruction(InstructionConstants.OP_SIPUSH, STRING_A_LENGTH),
+            },
+        },
+        {   // StringBuilder#append("") = nothing
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_EMPTY),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_STRING),
+            },{
+                // Nothing.
+            },
+        },
+        {   // new StringBuilder().append(Z) = new StringBuilder("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT),
+                new SimpleInstruction(InstructionConstants.OP_ICONST_0, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_BOOLEAN),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, BOOLEAN_A_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+            },
+        },
+        {   // new StringBuilder().append(C) = new StringBuilder("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT),
+                new SimpleInstruction(InstructionConstants.OP_ICONST_0, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_CHAR),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, CHAR_A_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+            },
+        },
+        {   // new StringBuilder().append(Cc) = new StringBuilder("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_CHAR),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, CHAR_A_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+            },
+        },
+        {   // new StringBuilder().append(I) = new StringBuilder("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT),
+                new SimpleInstruction(InstructionConstants.OP_ICONST_0, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_INTEGER),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, INT_A_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+            },
+        },
+        {   // new StringBuilder().append(Ic) = new StringBuilder("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_INTEGER),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, INT_A_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+            },
+        },
+        {   // new StringBuilder().append(J) = new StringBuilder("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT),
+                new SimpleInstruction(InstructionConstants.OP_LCONST_0, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_LONG),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, LONG_A_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+            },
+        },
+        {   // new StringBuilder().append(Jc) = new StringBuilder("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT),
+                new ConstantInstruction(InstructionConstants.OP_LDC2_W, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_LONG),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, LONG_A_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+            },
+        },
+        {   // new StringBuilder().append(F) = new StringBuilder("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT),
+                new SimpleInstruction(InstructionConstants.OP_FCONST_0, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_FLOAT),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, FLOAT_A_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+            },
+        },
+        {   // new StringBuilder().append(Fc) = new StringBuilder("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_FLOAT),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, FLOAT_A_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+            },
+        },
+        {   // new StringBuilder().append(D) = new StringBuilder("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT),
+                new SimpleInstruction(InstructionConstants.OP_DCONST_0, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_DOUBLE),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, DOUBLE_A_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+            },
+        },
+        {   // new StringBuilder().append(Dc) = new StringBuilder("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT),
+                new ConstantInstruction(InstructionConstants.OP_LDC2_W, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_DOUBLE),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, DOUBLE_A_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+            },
+        },
+        {   // new StringBuilder().append("...") = new StringBuilder("......")
+            {
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT),
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_STRING),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+            },
+        },
+        {   // new StringBuilder("...").append(Z) = new StringBuilder("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+                new SimpleInstruction(InstructionConstants.OP_ICONST_0, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_BOOLEAN),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | BOOLEAN_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+            },
+        },
+        {   // new StringBuilder("...").append(C) = new StringBuilder("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+                new SimpleInstruction(InstructionConstants.OP_ICONST_0, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_CHAR),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | CHAR_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+            },
+        },
+        {   // new StringBuilder("...").append(Cc) = new StringBuilder("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+                new ConstantInstruction(InstructionConstants.OP_LDC, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_CHAR),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | CHAR_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+            },
+        },
+        {   // new StringBuilder("...").append(I) = new StringBuilder("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+                new SimpleInstruction(InstructionConstants.OP_ICONST_0, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_INTEGER),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | INT_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+            },
+        },
+        {   // new StringBuilder("...").append(Ic) = new StringBuilder("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+                new ConstantInstruction(InstructionConstants.OP_LDC, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_INTEGER),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | INT_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+            },
+        },
+        {   // new StringBuilder("...").append(J) = new StringBuilder("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+                new SimpleInstruction(InstructionConstants.OP_LCONST_0, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_LONG),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | LONG_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+            },
+        },
+        {   // new StringBuilder("...").append(Jc) = new StringBuilder("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+                new ConstantInstruction(InstructionConstants.OP_LDC2_W, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_LONG),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | LONG_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+            },
+        },
+        {   // new StringBuilder("...").append(F) = new StringBuilder("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+                new SimpleInstruction(InstructionConstants.OP_FCONST_0, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_FLOAT),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | FLOAT_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+            },
+        },
+        {   // new StringBuilder("...").append(Fc) = new StringBuilder("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+                new ConstantInstruction(InstructionConstants.OP_LDC, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_FLOAT),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | FLOAT_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+            },
+        },
+        {   // new StringBuilder("...").append(D) = new StringBuilder("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+                new SimpleInstruction(InstructionConstants.OP_DCONST_0, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_DOUBLE),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | DOUBLE_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+            },
+        },
+        {   // new StringBuilder("...").append(Dc) = new StringBuilder("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+                new ConstantInstruction(InstructionConstants.OP_LDC2_W, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_DOUBLE),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | DOUBLE_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+            },
+        },
+        {   // new StringBuilder("...").append("...") = new StringBuilder("......")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+                new ConstantInstruction(InstructionConstants.OP_LDC, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_STRING),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | STRING_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKESPECIAL, METHOD_STRINGBUILDER_INIT_STRING),
+            },
+        },
+        {   // StringBuilder#append("...").append(Z) = StringBuilder#append("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_STRING),
+                new SimpleInstruction(InstructionConstants.OP_ICONST_0, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_BOOLEAN),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | BOOLEAN_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_STRING),
+            },
+        },
+        {   // StringBuilder#append("...").append(C) = StringBuilder#append("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_STRING),
+                new SimpleInstruction(InstructionConstants.OP_ICONST_0, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_CHAR),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | CHAR_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_STRING),
+            },
+        },
+        {   // StringBuilder#append("...").append(Cc) = StringBuilder#append("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_STRING),
+                new ConstantInstruction(InstructionConstants.OP_LDC, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_CHAR),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | CHAR_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_STRING),
+            },
+        },
+        {   // StringBuilder#append("...").append(I) = StringBuilder#append("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_STRING),
+                new SimpleInstruction(InstructionConstants.OP_ICONST_0, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_INTEGER),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | INT_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_STRING),
+            },
+        },
+        {   // StringBuilder#append("...").append(Ic) = StringBuilder#append("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_STRING),
+                new ConstantInstruction(InstructionConstants.OP_LDC, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_INTEGER),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | INT_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_STRING),
+            },
+        },
+        {   // StringBuilder#append("...").append(J) = StringBuilder#append("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_STRING),
+                new SimpleInstruction(InstructionConstants.OP_LCONST_0, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_LONG),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | LONG_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_STRING),
+            },
+        },
+        {   // StringBuilder#append("...").append(Jc) = StringBuilder#append("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_STRING),
+                new ConstantInstruction(InstructionConstants.OP_LDC2_W, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_LONG),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | LONG_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_STRING),
+            },
+        },
+        {   // StringBuilder#append("...").append(F) = StringBuilder#append("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_STRING),
+                new SimpleInstruction(InstructionConstants.OP_FCONST_0, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_FLOAT),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | FLOAT_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_STRING),
+            },
+        },
+        {   // StringBuilder#append("...").append(Fc) = StringBuilder#append("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_STRING),
+                new ConstantInstruction(InstructionConstants.OP_LDC, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_FLOAT),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | FLOAT_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_STRING),
+            },
+        },
+        {   // StringBuilder#append("...").append(D) = StringBuilder#append("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_STRING),
+                new SimpleInstruction(InstructionConstants.OP_DCONST_0, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_DOUBLE),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | DOUBLE_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_STRING),
+            },
+        },
+        {   // StringBuilder#append("...").append(Dc) = StringBuilder#append("....")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_STRING),
+                new ConstantInstruction(InstructionConstants.OP_LDC2_W, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_DOUBLE),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | DOUBLE_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_STRING),
+            },
+        },
+        {   // StringBuilder#append("...").append("...") = StringBuilder#append("......")
+            {
+                new ConstantInstruction(InstructionConstants.OP_LDC, A),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_STRING),
+                new ConstantInstruction(InstructionConstants.OP_LDC, B),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_STRING),
+            },{
+                new ConstantInstruction(InstructionConstants.OP_LDC, STRING_A_STRING | STRING_B_STRING),
+                new ConstantInstruction(InstructionConstants.OP_INVOKEVIRTUAL, METHOD_STRINGBUILDER_APPEND_STRING),
+            },
+        },
+    };
+
+    /*
+    static
+    {
+        ProgramClass clazz = new ProgramClass();
+        clazz.constantPool = CONSTANTS;
+
+        ClassPrinter printer = new ClassPrinter();
+
+        for (int index = 0; index < CONSTANTS.length; index++)
+        {
+            System.out.print("["+index+"] ");
+            try
+            {
+                CONSTANTS[index].accept(clazz, printer);
+            }
+            catch (Exception e)
+            {
+                System.out.println("("+e.getClass().getName()+")");
+            }
+        }
+
+        if (CONSTANTS.length != SENTINEL)
+        {
+            throw new IllegalStateException("Constants length ["+CONSTANTS.length+"] different from number of constant names ["+SENTINEL+"]");
+        }
+
+        Instruction[] instructions = STRING[2][0];
+
+        for (int index = 0; index < instructions.length; index++)
+        {
+            Instruction instruction = instructions[index];
+            try
+            {
+                instruction.accept(clazz, null, null, index, new ClassPrinter());
+            }
+            catch (Exception e)
+            {
+                //System.out.println("  "+instruction.toString(offset));
+            }
+        }
+    }
+    //*/
 }

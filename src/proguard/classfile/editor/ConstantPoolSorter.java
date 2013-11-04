@@ -112,10 +112,7 @@ implements   ClassVisitor
         System.arraycopy(newConstantPool, 0, programClass.constantPool, 0, newLength);
 
         // Clear any remaining entries.
-        for (int index = newLength; index < constantPoolCount; index++)
-        {
-            programClass.constantPool[index] = null;
-        }
+        Arrays.fill(programClass.constantPool, newLength, constantPoolCount, null);
 
         programClass.u2constantPoolCount = newLength;
 

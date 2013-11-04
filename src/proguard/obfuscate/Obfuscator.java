@@ -428,15 +428,9 @@ public class Obfuscator
             programClassPool.classesAccept(new SourceFileRenamer(configuration.newSourceFileAttribute));
         }
 
-        // Mark NameAndType constant pool entries that have to be kept
-        // and remove the other ones.
-        programClassPool.classesAccept(new NameAndTypeUsageMarker());
-        programClassPool.classesAccept(new NameAndTypeShrinker());
-
-        // Mark Utf8 constant pool entries that have to be kept
-        // and remove the other ones.
-        programClassPool.classesAccept(new Utf8UsageMarker());
-        programClassPool.classesAccept(new Utf8Shrinker());
+        // Remove unused constants.
+        programClassPool.classesAccept(
+            new ConstantPoolShrinker());
     }
 
 

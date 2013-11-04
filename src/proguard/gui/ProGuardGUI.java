@@ -202,13 +202,13 @@ public class ProGuardGUI extends JFrame
         splashPanelConstraints.anchor    = GridBagConstraints.NORTHWEST;
         //splashPanelConstraints.insets    = constraints.insets;
 
-        GridBagConstraints welcomeTextAreaConstraints = new GridBagConstraints();
-        welcomeTextAreaConstraints.gridwidth = GridBagConstraints.REMAINDER;
-        welcomeTextAreaConstraints.fill      = GridBagConstraints.NONE;
-        welcomeTextAreaConstraints.weightx   = 1.0;
-        welcomeTextAreaConstraints.weighty   = 0.01;
-        welcomeTextAreaConstraints.anchor    = GridBagConstraints.CENTER;//NORTHWEST;
-        welcomeTextAreaConstraints.insets    = new Insets(20, 40, 20, 40);
+        GridBagConstraints welcomePaneConstraints = new GridBagConstraints();
+        welcomePaneConstraints.gridwidth = GridBagConstraints.REMAINDER;
+        welcomePaneConstraints.fill      = GridBagConstraints.NONE;
+        welcomePaneConstraints.weightx   = 1.0;
+        welcomePaneConstraints.weighty   = 0.01;
+        welcomePaneConstraints.anchor    = GridBagConstraints.CENTER;//NORTHWEST;
+        welcomePaneConstraints.insets    = new Insets(20, 40, 20, 40);
 
         GridBagConstraints panelConstraints = new GridBagConstraints();
         panelConstraints.gridwidth = GridBagConstraints.REMAINDER;
@@ -295,18 +295,19 @@ public class ProGuardGUI extends JFrame
         splashPanel = new SplashPanel(splash, 0.5, 5500L);
         splashPanel.setPreferredSize(new Dimension(0, 200));
 
-        JTextArea welcomeTextArea = new JTextArea(msg("proGuardInfo"), 18, 50);
-        welcomeTextArea.setOpaque(false);
-        welcomeTextArea.setEditable(false);
-        welcomeTextArea.setLineWrap(true);
-        welcomeTextArea.setWrapStyleWord(true);
-        welcomeTextArea.setPreferredSize(new Dimension(0, 0));
-        welcomeTextArea.setBorder(new EmptyBorder(20, 20, 20, 20));
-        addBorder(welcomeTextArea, "welcome");
+        JEditorPane welcomePane = new JEditorPane("text/html", msg("proGuardInfo"));
+        welcomePane.setPreferredSize(new Dimension(640, 350));
+        // The constant HONOR_DISPLAY_PROPERTIES isn't present yet in JDK 1.4.
+        //welcomePane.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
+        welcomePane.putClientProperty("JEditorPane.honorDisplayProperties", Boolean.TRUE);
+        welcomePane.setOpaque(false);
+        welcomePane.setEditable(false);
+        welcomePane.setBorder(new EmptyBorder(20, 20, 20, 20));
+        addBorder(welcomePane, "welcome");
 
         JPanel proGuardPanel = new JPanel(layout);
         proGuardPanel.add(splashPanel,      splashPanelConstraints);
-        proGuardPanel.add(welcomeTextArea,  welcomeTextAreaConstraints);
+        proGuardPanel.add(welcomePane,  welcomePaneConstraints);
 
         // Create the input panel.
         // TODO: properly clone the ClassPath objects.
@@ -1043,10 +1044,15 @@ public class ProGuardGUI extends JFrame
         dumpCheckBox                            .setSelected(configuration.dump               != null);
 
         printUsageTextField                     .setText(fileName(configuration.printUsage));
-        optimizationsTextField                  .setText(configuration.optimizations             == null ? OPTIMIZATIONS_DEFAULT                : ListUtil.commaSeparatedString(configuration.optimizations, true));
+        optimizationsTextField                  .setText(configuration.optimizations ==
+                                                         null ?
+                                                             OPTIMIZATIONS_DEFAULT :
+                                                             ListUtil.commaSeparatedString(configuration.optimizations, true));
         printMappingTextField                   .setText(fileName(configuration.printMapping));
         applyMappingTextField                   .setText(fileName(configuration.applyMapping));
         obfuscationDictionaryTextField          .setText(fileName(configuration.obfuscationDictionary));
+        classObfuscationDictionaryTextField     .setText(fileName(configuration.classObfuscationDictionary));
+        packageObfuscationDictionaryTextField   .setText(fileName(configuration.packageObfuscationDictionary));
         keepPackageNamesTextField               .setText(configuration.keepPackageNames          == null ? ""                                   : ClassUtil.externalClassName(ListUtil.commaSeparatedString(configuration.keepPackageNames, true)));
         flattenPackageHierarchyTextField        .setText(configuration.flattenPackageHierarchy);
         repackageClassesTextField               .setText(configuration.repackageClasses);
@@ -1720,45 +1726,52 @@ public class ProGuardGUI extends JFrame
             {
                 public void run()
                 {
-                    ProGuardGUI gui = new ProGuardGUI();
-                    gui.pack();
-
-                    Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-                    Dimension guiSize    = gui.getSize();
-                    gui.setLocation((screenSize.width - guiSize.width)   / 2,
-                                    (screenSize.height - guiSize.height) / 2);
-                    gui.show();
-
-                    // Start the splash animation, unless specified otherwise.
-                    int argIndex = 0;
-                    if (argIndex < args.length &&
-                        NO_SPLASH_OPTION.startsWith(args[argIndex]))
+                    try
                     {
-                        gui.skipSplash();
-                        argIndex++;
+                        ProGuardGUI gui = new ProGuardGUI();
+                        gui.pack();
+
+                        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+                        Dimension guiSize    = gui.getSize();
+                        gui.setLocation((screenSize.width - guiSize.width)   / 2,
+                                        (screenSize.height - guiSize.height) / 2);
+                        gui.show();
+
+                        // Start the splash animation, unless specified otherwise.
+                        int argIndex = 0;
+                        if (argIndex < args.length &&
+                            NO_SPLASH_OPTION.startsWith(args[argIndex]))
+                        {
+                            gui.skipSplash();
+                            argIndex++;
+                        }
+                        else
+                        {
+                            gui.startSplash();
+                        }
+
+                        // Load an initial configuration, if specified.
+                        if (argIndex < args.length)
+                        {
+                            gui.loadConfiguration(new File(args[argIndex]));
+                            argIndex++;
+                        }
+
+                        if (argIndex < args.length)
+                        {
+                            System.out.println(gui.getClass().getName() + ": ignoring extra arguments [" + args[argIndex] + "...]");
+                        }
                     }
-                    else
+                    catch (Exception e)
                     {
-                        gui.startSplash();
-                    }
-
-                    // Load an initial configuration, if specified.
-                    if (argIndex < args.length)
-                    {
-                        gui.loadConfiguration(new File(args[argIndex]));
-                        argIndex++;
-                    }
-
-                    if (argIndex < args.length)
-                    {
-                        System.out.println(gui.getClass().getName() + ": ignoring extra arguments [" + args[argIndex] + "...]");
+                        System.out.println("Internal problem starting the ProGuard GUI (" + e.getMessage() + ")");
                     }
                 }
             });
         }
         catch (Exception e)
         {
-            // Nothing.
+            System.out.println("Internal problem starting the ProGuard GUI (" + e.getMessage() + ")");
         }
     }
 }

@@ -21,6 +21,8 @@
 package proguard.classfile.editor;
 
 import proguard.classfile.*;
+import proguard.classfile.attribute.*;
+import proguard.classfile.attribute.visitor.*;
 import proguard.classfile.constant.*;
 import proguard.classfile.constant.visitor.ConstantVisitor;
 import proguard.classfile.util.*;
@@ -58,6 +60,20 @@ implements   ConstantVisitor,
         // if any, are acceptable.
         stringConstant.referencedClassAccept(this);
         stringConstant.referencedMemberAccept(this);
+    }
+
+
+    public void visitInvokeDynamicConstant(Clazz clazz, InvokeDynamicConstant invokeDynamicConstant)
+    {
+        // Check the bootstrap method.
+        invokeDynamicConstant.bootstrapMethodHandleAccept(clazz, this);
+    }
+
+
+    public void visitMethodHandleConstant(Clazz clazz, MethodHandleConstant methodHandleConstant)
+    {
+        // Check the method reference.
+        clazz.constantPoolEntryAccept(methodHandleConstant.u2referenceIndex, this);
     }
 
 

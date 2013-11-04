@@ -169,9 +169,11 @@ public class GPL
                packageName.startsWith("com.android")            ||
                packageName.startsWith("com.sun.kvem")           ||
                packageName.startsWith("net.certiv.proguarddt")  ||
+               packageName.startsWith("scala")                  ||
                packageName.startsWith("sbt")                    ||
                packageName.startsWith("xsbt")                   ||
                packageName.startsWith("eclipseme")              ||
+               packageName.startsWith("com.neomades")           ||
                packageName.startsWith("jg.j2me")                ||
                packageName.startsWith("jg.common")              ||
                packageName.startsWith("jg.buildengine");

@@ -58,6 +58,15 @@ implements   AttributeVisitor
     }
 
 
+    public void visitBootstrapMethodsAttribute(Clazz clazz, BootstrapMethodsAttribute bootstrapMethodsAttribute)
+    {
+        if (bootstrapMethodsAttribute.u2bootstrapMethodsCount > 0)
+        {
+            bootstrapMethodsAttribute.accept(clazz, attributeVisitor);
+        }
+    }
+
+
     public void visitSourceFileAttribute(Clazz clazz, SourceFileAttribute sourceFileAttribute)
     {
         sourceFileAttribute.accept(clazz, attributeVisitor);

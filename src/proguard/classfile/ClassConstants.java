@@ -43,6 +43,8 @@ public interface ClassConstants
     public static final int INTERNAL_CLASS_VERSION_1_5_MINOR = 0;
     public static final int INTERNAL_CLASS_VERSION_1_6_MAJOR = 50;
     public static final int INTERNAL_CLASS_VERSION_1_6_MINOR = 0;
+    public static final int INTERNAL_CLASS_VERSION_1_7_MAJOR = 51;
+    public static final int INTERNAL_CLASS_VERSION_1_7_MINOR = 0;
 
     public static final int INTERNAL_CLASS_VERSION_1_0 = (INTERNAL_CLASS_VERSION_1_0_MAJOR << 16) | INTERNAL_CLASS_VERSION_1_0_MINOR;
     public static final int INTERNAL_CLASS_VERSION_1_2 = (INTERNAL_CLASS_VERSION_1_2_MAJOR << 16) | INTERNAL_CLASS_VERSION_1_2_MINOR;
@@ -50,6 +52,7 @@ public interface ClassConstants
     public static final int INTERNAL_CLASS_VERSION_1_4 = (INTERNAL_CLASS_VERSION_1_4_MAJOR << 16) | INTERNAL_CLASS_VERSION_1_4_MINOR;
     public static final int INTERNAL_CLASS_VERSION_1_5 = (INTERNAL_CLASS_VERSION_1_5_MAJOR << 16) | INTERNAL_CLASS_VERSION_1_5_MINOR;
     public static final int INTERNAL_CLASS_VERSION_1_6 = (INTERNAL_CLASS_VERSION_1_6_MAJOR << 16) | INTERNAL_CLASS_VERSION_1_6_MINOR;
+    public static final int INTERNAL_CLASS_VERSION_1_7 = (INTERNAL_CLASS_VERSION_1_7_MAJOR << 16) | INTERNAL_CLASS_VERSION_1_7_MINOR;
 
     public static final String EXTERNAL_CLASS_VERSION_1_0       = "1.0";
     public static final String EXTERNAL_CLASS_VERSION_1_1       = "1.1";
@@ -58,8 +61,10 @@ public interface ClassConstants
     public static final String EXTERNAL_CLASS_VERSION_1_4       = "1.4";
     public static final String EXTERNAL_CLASS_VERSION_1_5       = "1.5";
     public static final String EXTERNAL_CLASS_VERSION_1_6       = "1.6";
+    public static final String EXTERNAL_CLASS_VERSION_1_7       = "1.7";
     public static final String EXTERNAL_CLASS_VERSION_1_5_ALIAS = "5";
     public static final String EXTERNAL_CLASS_VERSION_1_6_ALIAS = "6";
+    public static final String EXTERNAL_CLASS_VERSION_1_7_ALIAS = "7";
 
     public static final int INTERNAL_ACC_PUBLIC       = 0x0001;
     public static final int INTERNAL_ACC_PRIVATE      = 0x0002;
@@ -140,7 +145,21 @@ public interface ClassConstants
     public static final int CONSTANT_Methodref          = 10;
     public static final int CONSTANT_InterfaceMethodref = 11;
     public static final int CONSTANT_NameAndType        = 12;
+    public static final int CONSTANT_MethodHandle       = 15;
+    public static final int CONSTANT_MethodType         = 16;
+    public static final int CONSTANT_InvokeDynamic      = 18;
 
+    public static final int REF_getField         = 1;
+    public static final int REF_getStatic        = 2;
+    public static final int REF_putField         = 3;
+    public static final int REF_putStatic        = 4;
+    public static final int REF_invokeVirtual    = 5;
+    public static final int REF_invokeStatic     = 6;
+    public static final int REF_invokeSpecial    = 7;
+    public static final int REF_newInvokeSpecial = 8;
+    public static final int REF_invokeInterface  = 9;
+
+    public static final String ATTR_BootstrapMethods                     = "BootstrapMethods";
     public static final String ATTR_SourceFile                           = "SourceFile";
     public static final String ATTR_SourceDir                            = "SourceDir";
     public static final String ATTR_InnerClasses                         = "InnerClasses";
@@ -182,14 +201,18 @@ public interface ClassConstants
     public static final char INTERNAL_METHOD_ARGUMENTS_OPEN  = '(';
     public static final char INTERNAL_METHOD_ARGUMENTS_CLOSE = ')';
 
-    public static final String INTERNAL_PACKAGE_JAVA_LANG         = "java/lang/";
-    public static final String INTERNAL_NAME_JAVA_LANG_OBJECT     = "java/lang/Object";
-    public static final String INTERNAL_TYPE_JAVA_LANG_OBJECT     = "Ljava/lang/Object;";
-    public static final String INTERNAL_NAME_JAVA_LANG_CLONEABLE  = "java/lang/Cloneable";
-    public static final String INTERNAL_NAME_JAVA_LANG_THROWABLE  = "java/lang/Throwable";
-    public static final String INTERNAL_NAME_JAVA_LANG_CLASS      = "java/lang/Class";
-    public static final String INTERNAL_NAME_JAVA_LANG_STRING     = "java/lang/String";
-    public static final String INTERNAL_NAME_JAVA_IO_SERIALIZABLE = "java/io/Serializable";
+    public static final String INTERNAL_PACKAGE_JAVA_LANG                   = "java/lang/";
+    public static final String INTERNAL_NAME_JAVA_LANG_OBJECT               = "java/lang/Object";
+    public static final String INTERNAL_TYPE_JAVA_LANG_OBJECT               = "Ljava/lang/Object;";
+    public static final String INTERNAL_NAME_JAVA_LANG_CLONEABLE            = "java/lang/Cloneable";
+    public static final String INTERNAL_NAME_JAVA_LANG_THROWABLE            = "java/lang/Throwable";
+    public static final String INTERNAL_NAME_JAVA_LANG_CLASS                = "java/lang/Class";
+    public static final String INTERNAL_NAME_JAVA_LANG_STRING               = "java/lang/String";
+    public static final String INTERNAL_NAME_JAVA_LANG_STRING_BUFFER        = "java/lang/StringBuffer";
+    public static final String INTERNAL_NAME_JAVA_LANG_STRING_BUILDER       = "java/lang/StringBuilder";
+    public static final String INTERNAL_NAME_JAVA_LANG_INVOKE_METHOD_HANDLE = "java/lang/invoke/MethodHandle";
+    public static final String INTERNAL_NAME_JAVA_LANG_INVOKE_METHOD_TYPE   = "java/lang/invoke/MethodType";
+    public static final String INTERNAL_NAME_JAVA_IO_SERIALIZABLE           = "java/io/Serializable";
 
     public static final String INTERNAL_NAME_JAVA_UTIL_CONCURRENT_ATOMIC_ATOMIC_INTEGER_FIELD_UPDATER   = "java/util/concurrent/atomic/AtomicIntegerFieldUpdater";
     public static final String INTERNAL_NAME_JAVA_UTIL_CONCURRENT_ATOMIC_ATOMIC_LONG_FIELD_UPDATER      = "java/util/concurrent/atomic/AtomicLongFieldUpdater";
@@ -228,6 +251,29 @@ public interface ClassConstants
 
     public static final String INTERNAL_METHOD_NAME_NEW_INSTANCE = "newInstance";
     public static final String INTERNAL_METHOD_TYPE_NEW_INSTANCE = "()Ljava/lang/Object;";
+
+    public static final String INTERNAL_METHOD_NAME_EQUALS                 = "equals";
+    public static final String INTERNAL_METHOD_TYPE_EQUALS                 = "(Ljava/lang/Object;)Z";
+    public static final String INTERNAL_METHOD_NAME_LENGTH                 = "length";
+    public static final String INTERNAL_METHOD_TYPE_LENGTH                 = "()I";
+    public static final String INTERNAL_METHOD_NAME_APPEND                 = "append";
+    public static final String INTERNAL_METHOD_TYPE_STRING_VOID            = "(Ljava/lang/String;)V";
+    public static final String INTERNAL_METHOD_TYPE_BOOLEAN_STRING_BUFFER  = "(Z)Ljava/lang/StringBuffer;";
+    public static final String INTERNAL_METHOD_TYPE_CHAR_STRING_BUFFER     = "(C)Ljava/lang/StringBuffer;";
+    public static final String INTERNAL_METHOD_TYPE_INT_STRING_BUFFER      = "(I)Ljava/lang/StringBuffer;";
+    public static final String INTERNAL_METHOD_TYPE_LONG_STRING_BUFFER     = "(J)Ljava/lang/StringBuffer;";
+    public static final String INTERNAL_METHOD_TYPE_FLOAT_STRING_BUFFER    = "(F)Ljava/lang/StringBuffer;";
+    public static final String INTERNAL_METHOD_TYPE_DOUBLE_STRING_BUFFER   = "(D)Ljava/lang/StringBuffer;";
+    public static final String INTERNAL_METHOD_TYPE_STRING_STRING_BUFFER   = "(Ljava/lang/String;)Ljava/lang/StringBuffer;";
+    public static final String INTERNAL_METHOD_TYPE_BOOLEAN_STRING_BUILDER = "(Z)Ljava/lang/StringBuilder;";
+    public static final String INTERNAL_METHOD_TYPE_CHAR_STRING_BUILDER    = "(C)Ljava/lang/StringBuilder;";
+    public static final String INTERNAL_METHOD_TYPE_INT_STRING_BUILDER     = "(I)Ljava/lang/StringBuilder;";
+    public static final String INTERNAL_METHOD_TYPE_LONG_STRING_BUILDER    = "(J)Ljava/lang/StringBuilder;";
+    public static final String INTERNAL_METHOD_TYPE_FLOAT_STRING_BUILDER   = "(F)Ljava/lang/StringBuilder;";
+    public static final String INTERNAL_METHOD_TYPE_DOUBLE_STRING_BUILDER  = "(D)Ljava/lang/StringBuilder;";
+    public static final String INTERNAL_METHOD_TYPE_STRING_STRING_BUILDER  = "(Ljava/lang/String;)Ljava/lang/StringBuilder;";
+    public static final String INTERNAL_METHOD_NAME_TOSTRING               = "toString";
+    public static final String INTERNAL_METHOD_TYPE_TOSTRING               = "()Ljava/lang/String;";
 
     public static final char INTERNAL_TYPE_VOID                   = 'V';
     public static final char INTERNAL_TYPE_BOOLEAN                = 'Z';

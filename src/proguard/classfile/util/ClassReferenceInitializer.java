@@ -166,6 +166,14 @@ implements   ClassVisitor,
     }
 
 
+    public void visitMethodHandleConstant(Clazz clazz, MethodHandleConstant methodHandleConstant)
+    {
+        // Fill out the MethodHandle class.
+        methodHandleConstant.javaLangInvokeMethodHandleClass =
+            findClass(clazz.getName(), ClassConstants.INTERNAL_NAME_JAVA_LANG_INVOKE_METHOD_HANDLE);
+    }
+
+
     public void visitAnyRefConstant(Clazz clazz, RefConstant refConstant)
     {
         String className = refConstant.getClassName(clazz);
@@ -229,6 +237,14 @@ implements   ClassVisitor,
     }
 
 
+    public void visitMethodTypeConstant(Clazz clazz, MethodTypeConstant methodTypeConstant)
+    {
+        // Fill out the MethodType class.
+        methodTypeConstant.javaLangInvokeMethodTypeClass =
+            findClass(clazz.getName(), ClassConstants.INTERNAL_NAME_JAVA_LANG_INVOKE_METHOD_TYPE);
+    }
+
+
     // Implementations for AttributeVisitor.
 
     public void visitAnyAttribute(Clazz clazz, Attribute attribute) {}
@@ -240,49 +256,36 @@ implements   ClassVisitor,
         String enclosingClassName = enclosingMethodAttribute.getClassName(clazz);
 
         // See if we can find the referenced class.
-        Clazz referencedClass = findClass(className, enclosingClassName);
+        enclosingMethodAttribute.referencedClass =
+            findClass(className, enclosingClassName);
 
-        if (referencedClass == null)
+        if (enclosingMethodAttribute.referencedClass != null)
         {
-            // We couldn't find the enclosing class.
-            missingClassWarningPrinter.print(className,
-                                             enclosingClassName,
-                                             "Warning: " +
-                                             ClassUtil.externalClassName(className) +
-                                             ": can't find enclosing class " +
-                                             ClassUtil.externalClassName(enclosingClassName));
-            return;
+            // Is there an enclosing method? Otherwise it's just initialization
+            // code outside of the constructors.
+            if (enclosingMethodAttribute.u2nameAndTypeIndex != 0)
+            {
+                String name = enclosingMethodAttribute.getName(clazz);
+                String type = enclosingMethodAttribute.getType(clazz);
+
+                // See if we can find the method in the referenced class.
+                enclosingMethodAttribute.referencedMethod =
+                    enclosingMethodAttribute.referencedClass.findMethod(name, type);
+
+                if (enclosingMethodAttribute.referencedMethod == null)
+                {
+                    // We couldn't find the enclosing method.
+                    missingMemberWarningPrinter.print(className,
+                                                      enclosingClassName,
+                                                      "Warning: " +
+                                                      ClassUtil.externalClassName(className) +
+                                                      ": can't find enclosing method '" +
+                                                      ClassUtil.externalFullMethodDescription(enclosingClassName, 0, name, type) +
+                                                      "' in class " +
+                                                      ClassUtil.externalClassName(enclosingClassName));
+                }
+            }
         }
-
-        // Make sure there is actually an enclosed method.
-        if (enclosingMethodAttribute.u2nameAndTypeIndex == 0)
-        {
-            return;
-        }
-
-        String name = enclosingMethodAttribute.getName(clazz);
-        String type = enclosingMethodAttribute.getType(clazz);
-
-        // See if we can find the method in the referenced class.
-        Method referencedMethod = referencedClass.findMethod(name, type);
-
-        if (referencedMethod == null)
-        {
-            // We couldn't find the enclosing method.
-            missingMemberWarningPrinter.print(className,
-                                              enclosingClassName,
-                                              "Warning: " +
-                                              ClassUtil.externalClassName(className) +
-                                              ": can't find enclosing method '" +
-                                              ClassUtil.externalFullMethodDescription(enclosingClassName, 0, name, type) +
-                                              "' in class " +
-                                              ClassUtil.externalClassName(enclosingClassName));
-            return;
-        }
-
-        // Save the references.
-        enclosingMethodAttribute.referencedClass  = referencedClass;
-        enclosingMethodAttribute.referencedMethod = referencedMethod;
     }
 
 

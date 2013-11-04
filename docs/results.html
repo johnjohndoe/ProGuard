@@ -4,12 +4,16 @@
 <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
 <meta http-equiv="content-style-type" content="text/css">
 <link rel="stylesheet" type="text/css" href="style.css">
+<title>ProGuard Results</title>
 <script type="text/javascript" language="JavaScript">
 <!--
 if (window.self==window.top)
   window.top.location.replace("index.html#"+window.location.pathname+window.location.hash);
-//else if (window.top.location.hash!="#"+window.location.pathname)
-//  window.top.location.hash="#"+window.location.pathname;
+else {
+  var hash="#"+window.location.pathname.replace(window.top.location.pathname.replace("index.html", ""), "");
+  if (window.top.location.hash!=hash)
+    window.top.location.hash=hash;
+}
 //-->
 </script>
 <title>ProGuard Results</title>
@@ -39,7 +43,7 @@ presents some typical results:
 </tr>
 
 <tr>
-<td><a target="other" href="http://java.sun.com/j2me/">Worm</a>, a sample midlet from Sun's JME</td>
+<td><a target="other" href="http://www.oracle.com/technetwork/java/javame/">Worm</a>, a sample midlet from Oracle's JME</td>
 <td align="center">10.3 K</td>
 <td align="center">9.8 K</td>
 <td align="center">9.6 K</td>
@@ -83,7 +87,7 @@ presents some typical results:
 </tr>
 
 <tr>
-<td><a target="other" href="http://java.sun.com/javase/6/">the run-time classes</a> from Sun's Java 6</td>
+<td><a target="other" href="http://java.sun.com/javase/6/">the run-time classes</a> from Oracle's Java 6</td>
 <td align="center">53 M</td>
 <td align="center">23 M</td>
 <td align="center">22 M</td>
@@ -94,7 +98,7 @@ presents some typical results:
 </tr>
 
 <tr>
-<td><a target="other" href="http://jakarta.apache.org/tomcat/index.html">Tomcat</a>, the Apache servlet container</td>
+<td><a target="other" href="http://tomcat.apache.org/">Tomcat</a>, the Apache servlet container</td>
 <td align="center">1.1 M</td>
 <td align="center">466 K</td>
 <td align="center">426 K</td>
@@ -105,7 +109,7 @@ presents some typical results:
 </tr>
 
 <tr>
-<td><a target="other" href="http://www.kclee.com/clemens/java/javancss/">JavaNCSS</a>, a Java source metrics tool</td>
+<td><a target="other" href="http://javancss.codehaus.org/">JavaNCSS</a>, a Java source metrics tool</td>
 <td align="center">632 K</td>
 <td align="center">242 K</td>
 <td align="center">212 K</td>
@@ -129,7 +133,8 @@ presents some typical results:
 </table>
 <p>
 Results were measured with ProGuard 4.0 on a 2.6 GHz Pentium 4 with 512 MB
-of memory, using Sun JDK 1.5.0 in Fedora Core 3 Linux.
+of memory, using Sun JDK 1.5.0 in Fedora Core 3 Linux. All of this technology
+and software has evolved since, but the gist of the results remains the same.
 <p>
 The program sizes include companion libraries. The shrinking step produces the
 best results for programs that use only small parts of their libraries. The

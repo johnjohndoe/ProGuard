@@ -85,6 +85,15 @@ public class MultiAttributeVisitor implements AttributeVisitor
     }
 
 
+    public void visitBootstrapMethodsAttribute(Clazz clazz, BootstrapMethodsAttribute bootstrapMethodsAttribute)
+    {
+        for (int index = 0; index < attributeVisitors.length; index++)
+        {
+            attributeVisitors[index].visitBootstrapMethodsAttribute(clazz, bootstrapMethodsAttribute);
+        }
+    }
+
+
     public void visitSourceFileAttribute(Clazz clazz, SourceFileAttribute sourceFileAttribute)
     {
         for (int index = 0; index < attributeVisitors.length; index++)

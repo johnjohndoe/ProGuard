@@ -74,8 +74,7 @@ public class InnerClassesInfo implements VisitorAccepter
     {
         if (u2innerClassIndex != 0)
         {
-            clazz.constantPoolEntryAccept(u2innerClassIndex,
-                                                 constantVisitor);
+            clazz.constantPoolEntryAccept(u2innerClassIndex, constantVisitor);
         }
     }
 
@@ -88,8 +87,7 @@ public class InnerClassesInfo implements VisitorAccepter
     {
         if (u2outerClassIndex != 0)
         {
-            clazz.constantPoolEntryAccept(u2outerClassIndex,
-                                                 constantVisitor);
+            clazz.constantPoolEntryAccept(u2outerClassIndex, constantVisitor);
         }
     }
 
@@ -102,8 +100,7 @@ public class InnerClassesInfo implements VisitorAccepter
     {
         if (u2innerNameIndex != 0)
         {
-            clazz.constantPoolEntryAccept(u2innerNameIndex,
-                                                 constantVisitor);
+            clazz.constantPoolEntryAccept(u2innerNameIndex, constantVisitor);
         }
     }
 

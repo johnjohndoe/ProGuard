@@ -9,8 +9,11 @@
 <!--
 if (window.self==window.top)
   window.top.location.replace("../index.html#"+window.location.pathname+window.location.hash);
-//else if (window.top.location.hash!="#"+window.location.pathname)
-//  window.top.location.hash="#"+window.location.pathname;
+else {
+  var hash="#"+window.location.pathname.replace(window.top.location.pathname.replace("index.html", ""), "");
+  if (window.top.location.hash!=hash)
+    window.top.location.hash=hash;
+}
 //-->
 </script>
 </head>
@@ -64,33 +67,37 @@ directory of the ProGuard distribution.
 
 <h3><a name="application">A typical application</a></h3>
 
-To shrink, optimize, and obfuscate the ProGuard application itself, one would
-typically create a configuration file <code>proguard.pro</code> and then type:
+To shrink, optimize, and obfuscate a simple Java application, you typically
+create a configuration file like <code>myconfig.pro</code>, which can be used
+with
 <pre>
-java -jar proguard.jar @proguard.pro
+bin/proguard @myconfig.pro
 </pre>
 <p>
-The configuration file would contain the following options:
+The configuration file specifies the input, the output, and the entry points
+of the application:
 <pre>
--injars       proguard.jar
--outjars      proguard_out.jar
+-injars       myapplication.jar
+-outjars      myapplication_out.jar
 -libraryjars  &lt;java.home&gt;/lib/rt.jar
--printmapping proguard.map
+-printmapping myapplication.map
 
--keep public class proguard.ProGuard {
+-keep public class mypackage.MyMain {
     public static void main(java.lang.String[]);
 }
 </pre>
 <p>
-Note the use of the <code>&lt;java.home&gt;</code> system property; it is
-replaced automatically.
+Note the use of the <code>&lt;java.home&gt;</code> system property. ProGuard
+automatically replaces it when parsing the file.
 <p>
-Also note that all type names are fully specified:
-<code>proguard.ProGuard</code> and <code>java.lang.String[]</code>.
-<p>
+The <a href="usage.html#keep"><code>-keep</code></a> option specifies the
+entry point of the application that has to be preserved.
 The access modifiers <code>public</code> and <code>static</code> are not
 really required in this case, since we know a priori that the specified class
 and method have the proper access flags. It just looks more familiar this way.
+<p>
+Note that all type names are fully specified:
+<code>mypackage.MyMain</code> and <code>java.lang.String[]</code>.
 <p>
 We're writing out an obfuscation mapping file with <a
 href="usage.html#printmapping"><code>-printmapping</code></a>, for
@@ -113,8 +120,7 @@ href="#native">native methods</a>, <a href="#callback">callback methods</a>,
 <a href="#enumerations">enumerations</a>, <a href="#serializable">serializable
 classes</a>, <a href="#beans">bean classes</a>, <a
 href="#annotations">annotations</a>, and <a href="#resourcefiles">resource
-files</a>. For processing 'simple' applications like ProGuard, that is not
-required.
+files</a>.
 
 <h3><a name="applet">A typical applet</a></h3>
 
@@ -306,7 +312,9 @@ external libraries:
 </pre>
 <p>
 Most importantly, we're keeping all fundamental classes that may be referenced
-by the <code>AndroidManifest.xml</code> file of the application.
+by the <code>AndroidManifest.xml</code> file of the application. If your
+manifest file contains other classes and methods, you may have to specify
+those as well.
 <p>
 We're keeping annotations, since they might be used by custom
 <code>RemoteViews</code>.
@@ -336,6 +344,13 @@ its <code>ILicensingService</code> interface for the library to work:
 -keep public interface com.android.vending.licensing.ILicensingService
 </pre>
 <p>
+If you're using the Android Compatibility library, you should add the
+following line, to let ProGuard know it's ok that the library references some
+classes that are not available in all versions of the API:
+<pre>
+-dontwarn android.support.**
+</pre>
+<p>
 If applicable, you should add options for processing <a href="#native">native
 methods</a>, <a href="#callback">callback methods</a>,
 <a href="#enumerations">enumerations</a>,
@@ -344,20 +359,9 @@ options for producing <a href="#stacktrace">useful stack traces</a>. You can
 find a complete sample configuration in <code>examples/android.pro</code> in
 the ProGuard distribution.
 <p>
-You can integrate ProGuard in the build process of the <b>Android 2.2 SDK</b>
-(target <code>android-8</code>) by adapting your Ant <code>build.xml</code>
-file, as shown in in <code>examples/ant/android-8.xml</code> in the ProGuard
-distribution. Note the additional configuration after the line containing
-"<code>&lt;setup /&gt;</code>". Make sure that the path
-to <code>proguard.jar</code> is set correctly for your system. The other paths
-should work without changes. Note that we're sending the processed class files
-and libraries to a jar file, which avoids any case-insensitivity problems on
-Windows. We're redefining the dex helper macro so it converts this jar instead
-of the original code.
-<p>
-The build process of the <b>Android 2.3 SDK</b> (target <code>android-9</code>)
-already includes ProGuard by default. You only need to enable it by adding
-<code>proguard.config=proguard.cfg</code> to the file
+The build process of the Android SDK (version 2.3 and higher) already
+integrates ProGuard by default. You only need to enable it (for release
+builds) by adding <code>proguard.config=proguard.cfg</code> to the file
 <code>build.properties</code>. In case of problems, you may want to check if
 the automatically generated file <code>proguard.cfg</code> contains the
 settings discussed above. The generated Ant build file already sets the input
@@ -365,14 +369,7 @@ and output files for you.
 <p>
 For more information, you can consult the official <a target="other"
 href="http://developer.android.com/guide/developing/tools/proguard.html">Developer
-Guide</a> in the Android SDK. For slightly different approaches, you can read
-Dan Galpin's description "<a target="other"
-href="http://android-developers.blogspot.com/2010/09/proguard-android-and-licensing-server.html">Proguard,
-Android, and the Licensing Server</a>" at the official Android Developers
-blog, or Matt Quigley's more up to date article "<a target="other"
-href="http://www.androidengineer.com/2010/07/optimizing-obfuscating-and-shrinking.html">Optimizing,
-Obfuscating, and Shrinking your Android Applications with ProGuard</a>" at his
-Android Engineer site.
+Guide</a> in the Android SDK.
 
 <h3><a name="library">A typical library</a></h3>
 
@@ -641,13 +638,11 @@ These options shrink, optimize, and obfuscate all public Scala applications in
 <code>in.jar</code>:
 <pre>
 -injars      in.jar
--injars      /usr/local/java/scala-2.8.1/lib/scala-library.jar
+-injars      /usr/local/java/scala-2.9.1/lib/scala-library.jar
 -outjars     out.jar
 -libraryjars &lt;java.home&gt;/lib/rt.jar
 
--dontwarn **$$anonfun$*
--dontwarn scala.collection.immutable.RedBlack$Empty
--dontwarn scala.tools.**,plugintemplate.**
+-dontwarn scala.**
 
 -keepclasseswithmembers public class * {
     public static void main(java.lang.String[]);
@@ -692,9 +687,9 @@ smaller and a few times faster than the original code (for the Scala code
 examples, for instance).
 <p>
 The <a href="usage.html#dontwarn"><code>-dontwarn</code></a> option tells
-ProGuard not to complain about some compiler artefacts and dependencies on the
-Scala compiler library, under the assumption that it is not used. Note that
-this option should always be used with care.
+ProGuard not to complain about some artefacts in the Scala runtime, the way it
+is compiled by the <code>scalac</code> compiler (at least in Scala 2.9.1 and
+older). Note that this option should always be used with care.
 <p>
 The additional <a href="usage.html#keepoverview"><code>-keep</code></a>
 options make sure that some classes and some fields that are accessed by means

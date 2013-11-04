@@ -7,7 +7,9 @@
 #       you'll have to add escaped quotes around them, e.g.
 #       "\"/My Directory/My File.txt\""
 
-PROGUARD_HOME=`dirname "$0"`
-PROGUARD_HOME=`dirname "$PROGUARD_HOME"`
+PROGUARD_HOME=`dirname "$0"`/..
 
-java -jar $PROGUARD_HOME/lib/proguardgui.jar "$@"
+# On Linux, Java 1.6.0_24 and higher hang when starting the GUI:
+#   http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=7027598
+# We're using the -D option as a workaround.
+java -DsuppressSwingDropSupport=true -jar $PROGUARD_HOME/lib/proguardgui.jar "$@"

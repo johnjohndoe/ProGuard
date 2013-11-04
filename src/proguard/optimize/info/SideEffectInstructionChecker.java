@@ -123,14 +123,15 @@ implements   InstructionVisitor,
     {
         byte opcode = constantInstruction.opcode;
         // Check for instructions that might cause side effects.
-        if (opcode == InstructionConstants.OP_GETSTATIC     ||
-            opcode == InstructionConstants.OP_PUTSTATIC     ||
-            opcode == InstructionConstants.OP_GETFIELD      ||
-            opcode == InstructionConstants.OP_PUTFIELD      ||
-            opcode == InstructionConstants.OP_INVOKEVIRTUAL ||
-            opcode == InstructionConstants.OP_INVOKESPECIAL ||
-            opcode == InstructionConstants.OP_INVOKESTATIC  ||
-            opcode == InstructionConstants.OP_INVOKEINTERFACE)
+        if (opcode == InstructionConstants.OP_GETSTATIC       ||
+            opcode == InstructionConstants.OP_PUTSTATIC       ||
+            opcode == InstructionConstants.OP_GETFIELD        ||
+            opcode == InstructionConstants.OP_PUTFIELD        ||
+            opcode == InstructionConstants.OP_INVOKEVIRTUAL   ||
+            opcode == InstructionConstants.OP_INVOKESPECIAL   ||
+            opcode == InstructionConstants.OP_INVOKESTATIC    ||
+            opcode == InstructionConstants.OP_INVOKEINTERFACE ||
+            opcode == InstructionConstants.OP_INVOKEDYNAMIC)
         {
             // Check if the field is write-only or volatile, or if the invoked
             // method is causing any side effects.
@@ -154,6 +155,13 @@ implements   InstructionVisitor,
 
 
     // Implementations for ConstantVisitor.
+
+    public void visitInvokeDynamicConstant(Clazz clazz, InvokeDynamicConstant invokeDynamicConstant)
+    {
+        // We'll have to assume invoking an unknown method has side effects.
+        hasSideEffects = true;
+    }
+
 
     public void visitFieldrefConstant(Clazz clazz, FieldrefConstant fieldrefConstant)
     {

@@ -160,7 +160,7 @@ implements   AttributeVisitor,
         {
             // Check the referenced classes.
             classUsed = true;
-            enumConstantElementValue.referencedClassesAccept(usageMarker);
+            enumConstantElementValue.referencedClassesAccept(this);
 
             if (classUsed)
             {
@@ -181,7 +181,7 @@ implements   AttributeVisitor,
         {
             // Check the referenced classes.
             classUsed = true;
-            classElementValue.referencedClassesAccept(usageMarker);
+            classElementValue.referencedClassesAccept(this);
 
             if (classUsed)
             {

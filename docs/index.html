@@ -21,7 +21,7 @@ var sections="sections.html";
 if (main.search(/manual\//) >= 0)
   sections="manual/sections.html";
 
-document.write("<frameset rows=\"50,*\" framespacing=\"0\" frameborder=\"no\"><frame id=\"title\" name=\"title\" src=\"title.html\" scrolling=\"no\" marginwidth=\"0\" marginheight=\"0\" noresize><frameset cols=\"120,*\" framespacing=\"0\" frameborder=\"no\"><frame id=\"sections\" name=\"sections\" src=\""+sections+"\" scrolling=\"no\" marginwidth=\"0\" marginheight=\"0\" noresize><frame id=\"main\" name=\"main\" src=\""+main+"\" scrolling=\"auto\" marginwidth=\"10\" marginheight=\"10\" noresize></frameset></frameset>");
+document.write("<frameset rows=\"50,*\" framespacing=\"0\" frameborder=\"no\"><frame id=\"title\" name=\"title\" src=\"title.html\" scrolling=\"no\" marginwidth=\"0\" marginheight=\"0\" noresize /><frameset cols=\"120,*\" framespacing=\"0\" frameborder=\"no\"><frame id=\"sections\" name=\"sections\" src=\""+sections+"\" scrolling=\"no\" marginwidth=\"0\" marginheight=\"0\" noresize /><frame id=\"main\" name=\"main\" src=\""+main+"\" scrolling=\"auto\" marginwidth=\"10\" marginheight=\"10\" noresize /></frameset></frameset>");
 //-->
 </script>
 
@@ -38,7 +38,7 @@ document.write("<frameset rows=\"50,*\" framespacing=\"0\" frameborder=\"no\"><f
  scrolling="no"
  marginwidth="0"
  marginheight="0"
- noresize>
+ noresize />
 
 <frameset
  cols="120,*"
@@ -52,7 +52,7 @@ document.write("<frameset rows=\"50,*\" framespacing=\"0\" frameborder=\"no\"><f
  scrolling="no"
  marginwidth="0"
  marginheight="0"
- noresize>
+ noresize />
 
 <frame
  id="main"
@@ -61,7 +61,7 @@ document.write("<frameset rows=\"50,*\" framespacing=\"0\" frameborder=\"no\"><f
  scrolling="auto"
  marginwidth="10"
  marginheight="10"
- noresize>
+ noresize />
 
 </frameset>
 </frameset>

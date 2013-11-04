@@ -21,14 +21,14 @@
 package proguard.optimize.info;
 
 import proguard.classfile.*;
+import proguard.classfile.attribute.*;
+import proguard.classfile.attribute.visitor.AttributeVisitor;
 import proguard.classfile.instruction.*;
 import proguard.classfile.instruction.visitor.InstructionVisitor;
-import proguard.classfile.attribute.visitor.AttributeVisitor;
-import proguard.classfile.attribute.*;
 import proguard.classfile.util.*;
 import proguard.classfile.visitor.MemberVisitor;
+import proguard.evaluation.value.Value;
 import proguard.optimize.evaluation.PartialEvaluator;
-import proguard.evaluation.value.*;
 
 /**
  * This MemberVisitor counts the parameters and marks the used parameters

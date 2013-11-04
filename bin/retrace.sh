@@ -7,7 +7,6 @@
 #       you'll have to add escaped quotes around them, e.g.
 #       "\"/My Directory/My File.txt\""
 
-PROGUARD_HOME=`dirname "$0"`
-PROGUARD_HOME=`dirname "$PROGUARD_HOME"`
+PROGUARD_HOME=`dirname "$0"`/..
 
 java -jar $PROGUARD_HOME/lib/retrace.jar "$@"

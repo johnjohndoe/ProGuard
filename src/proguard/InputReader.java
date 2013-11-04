@@ -227,7 +227,7 @@ public class InputReader
         }
         catch (IOException ex)
         {
-            throw new IOException("Can't read [" + classPathEntry + "] (" + ex.getMessage() + ")");
+            throw (IOException)new IOException("Can't read [" + classPathEntry + "] (" + ex.getMessage() + ")").initCause(ex);
         }
     }
 }

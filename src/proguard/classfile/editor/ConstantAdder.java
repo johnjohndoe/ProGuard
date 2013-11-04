@@ -23,6 +23,7 @@ package proguard.classfile.editor;
 import proguard.classfile.*;
 import proguard.classfile.constant.*;
 import proguard.classfile.constant.visitor.ConstantVisitor;
+import proguard.util.ListUtil;
 
 /**
  * This ConstantVisitor adds all constants that it visits to the constant pool
@@ -128,6 +129,43 @@ implements   ConstantVisitor
     }
 
 
+    public void visitInvokeDynamicConstant(Clazz clazz, InvokeDynamicConstant invokeDynamicConstant)
+    {
+        // First add the name and type constant.
+        clazz.constantPoolEntryAccept(invokeDynamicConstant.u2nameAndTypeIndex, this);
+
+        // Copy the referenced classes.
+        Clazz[] referencedClasses     = invokeDynamicConstant.referencedClasses;
+        Clazz[] referencedClassesCopy = null;
+        if (referencedClasses != null)
+        {
+            referencedClassesCopy = new Clazz[referencedClasses.length];
+            System.arraycopy(referencedClasses, 0,
+                             referencedClassesCopy, 0,
+                             referencedClasses.length);
+        }
+
+        // Then add the actual invoke dynamic constant.
+        constantIndex =
+            constantPoolEditor.addInvokeDynamicConstant(invokeDynamicConstant.getBootstrapMethodAttributeIndex(),
+                                                        constantIndex,
+                                                        referencedClassesCopy);
+    }
+
+
+    public void visitMethodHandleConstant(Clazz clazz, MethodHandleConstant methodHandleConstant)
+    {
+        // First add the field ref, interface method ref, or method ref
+        // constant.
+        clazz.constantPoolEntryAccept(methodHandleConstant.u2referenceIndex, this);
+
+        // Then add the actual method handle constant.
+        constantIndex =
+            constantPoolEditor.addMethodHandleConstant(methodHandleConstant.getReferenceKind(),
+                                                       constantIndex);
+    }
+
+
     public void visitFieldrefConstant(Clazz clazz, FieldrefConstant fieldrefConstant)
     {
         // First add the referenced class constant, with its own referenced class.
@@ -182,6 +220,13 @@ implements   ConstantVisitor
         constantIndex =
             constantPoolEditor.addClassConstant(classConstant.getName(clazz),
                                                 classConstant.referencedClass);
+    }
+
+
+    public void visitMethodTypeConstant(Clazz clazz, MethodTypeConstant methodTypeConstant)
+    {
+        constantIndex =
+            constantPoolEditor.addMethodTypeConstant(methodTypeConstant.getType(clazz));
     }
 
 

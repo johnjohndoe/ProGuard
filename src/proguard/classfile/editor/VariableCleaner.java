@@ -148,10 +148,7 @@ implements   AttributeVisitor
         }
 
         // Clean up any remaining array elements.
-        for (int index = newIndex; index < localVariableInfoCount; index++)
-        {
-            localVariableInfos[index] = null;
-        }
+        Arrays.fill(localVariableInfos,  newIndex, localVariableInfoCount, null);
 
         return newIndex;
     }
@@ -180,10 +177,7 @@ implements   AttributeVisitor
         }
 
         // Clean up any remaining array elements.
-        for (int index = newIndex; index < localVariableTypeInfoCount; index++)
-        {
-            localVariableTypeInfos[index] = null;
-        }
+        Arrays.fill(localVariableTypeInfos,  newIndex, localVariableTypeInfoCount, null);
 
         return newIndex;
     }

@@ -105,9 +105,11 @@ public abstract class WordReader
      * Reads a word from this WordReader, or from one of its active included
      * WordReader objects.
      *
+     * @param isFileName return a complete line (or argument), if the word
+     *                      isn't an option (it doesn't start with '-').
      * @return the read word.
      */
-    public String nextWord() throws IOException
+    public String nextWord(boolean isFileName) throws IOException
     {
         currentWord = null;
 
@@ -115,7 +117,7 @@ public abstract class WordReader
         if (includeWordReader != null)
         {
             // Does the included word reader still produce a word?
-            currentWord = includeWordReader.nextWord();
+            currentWord = includeWordReader.nextWord(isFileName);
             if (currentWord != null)
             {
                 // Return it if so.
@@ -129,12 +131,22 @@ public abstract class WordReader
 
         // Get a word from this reader.
 
-        // Skip leading whitespace.
-        while (currentLine != null &&
-               currentIndex < currentLineLength &&
-               Character.isWhitespace(currentLine.charAt(currentIndex)))
+        // Skip any whitespace and comments left on the current line.
+        if (currentLine != null)
         {
-            currentIndex++;
+            // Skip any leading whitespace.
+            while (currentIndex < currentLineLength &&
+                   Character.isWhitespace(currentLine.charAt(currentIndex)))
+            {
+                currentIndex++;
+            }
+
+            // Skip any comments.
+            if (currentIndex < currentLineLength &&
+                isComment(currentLine.charAt(currentIndex)))
+            {
+                currentIndex = currentLineLength;
+            }
         }
 
         // Make sure we have a non-blank line.
@@ -146,29 +158,28 @@ public abstract class WordReader
                 return null;
             }
 
-            // Trim off any comments.
-            int comments_start = currentLine.indexOf(COMMENT_CHARACTER);
-            if (comments_start >= 0)
-            {
-                currentLineLength = comments_start;
+            currentLineLength = currentLine.length();
 
-                // Remember the comments.
-                String comment = currentLine.substring(comments_start + 1);
-                currentComments = currentComments == null ?
-                    comment :
-                    currentComments + '\n' + comment;
-            }
-            else
-            {
-                currentLineLength = currentLine.length();
-            }
-
-            // Skip leading whitespace.
+            // Skip any leading whitespace.
             currentIndex = 0;
             while (currentIndex < currentLineLength &&
                    Character.isWhitespace(currentLine.charAt(currentIndex)))
             {
                 currentIndex++;
+            }
+
+            // Remember any leading comments.
+            if (currentIndex < currentLineLength &&
+                isComment(currentLine.charAt(currentIndex)))
+            {
+                // Remember the comments.
+                String comment = currentLine.substring(currentIndex + 1);
+                currentComments = currentComments == null ?
+                    comment :
+                    currentComments + '\n' + comment;
+
+                // Skip the comments.
+                currentIndex = currentLineLength;
             }
         }
 
@@ -178,12 +189,7 @@ public abstract class WordReader
 
         char startChar = currentLine.charAt(startIndex);
 
-        if (isDelimiter(startChar))
-        {
-            // The next word is a single delimiting character.
-            endIndex = ++currentIndex;
-        }
-        else if (isQuote(startChar))
+        if (isQuote(startChar))
         {
             // The next word is starting with a quote character.
             // Skip the opening quote.
@@ -205,6 +211,39 @@ public abstract class WordReader
 
             endIndex = currentIndex++;
         }
+        else if (isFileName &&
+                 !isOption(startChar))
+        {
+            // The next word is a (possibly optional) file name.
+            // Find the end of the line, the first path separator, the first
+            // option, or the first comment.
+            while (currentIndex < currentLineLength)
+            {
+                char currentCharacter = currentLine.charAt(currentIndex);
+                if (isFileDelimiter(currentCharacter) ||
+                    (isOption(currentCharacter) ||
+                     isComment(currentCharacter)) &&
+                    Character.isWhitespace(currentLine.charAt(currentIndex-1))) {
+                    break;
+                }
+
+                currentIndex++;
+            }
+
+            endIndex = currentIndex;
+
+            // Trim any trailing whitespace.
+            while (endIndex > startIndex &&
+                   Character.isWhitespace(currentLine.charAt(endIndex-1)))
+            {
+                endIndex--;
+            }
+        }
+        else if (isDelimiter(startChar))
+        {
+            // The next word is a single delimiting character.
+            endIndex = ++currentIndex;
+        }
         else
         {
             // The next word is a simple character string.
@@ -213,9 +252,9 @@ public abstract class WordReader
             while (currentIndex < currentLineLength)
             {
                 char currentCharacter = currentLine.charAt(currentIndex);
-                if (isDelimiter(currentCharacter) ||
-                    Character.isWhitespace(currentCharacter))
-                {
+                if (isDelimiter(currentCharacter)            ||
+                    Character.isWhitespace(currentCharacter) ||
+                    isComment(currentCharacter)) {
                     break;
                 }
 
@@ -305,12 +344,34 @@ public abstract class WordReader
 
     // Small utility methods.
 
+    private boolean isOption(char character)
+    {
+        return character == '-';
+    }
+
+
+    private boolean isComment(char character)
+    {
+        return character == COMMENT_CHARACTER;
+    }
+
+
     private boolean isDelimiter(char character)
     {
         return character == '@' ||
                character == '{' ||
                character == '}' ||
                character == '(' ||
+               character == ')' ||
+               character == ',' ||
+               character == ';' ||
+               character == File.pathSeparatorChar;
+    }
+
+
+    private boolean isFileDelimiter(char character)
+    {
+        return character == '(' ||
                character == ')' ||
                character == ',' ||
                character == ';' ||

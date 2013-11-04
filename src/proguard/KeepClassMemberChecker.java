@@ -68,8 +68,13 @@ implements   ClassVisitor
                      keepClassSpecification.methodSpecifications.size() == 0))
                 {
                     String className = keepClassSpecification.className;
+                    if (className == null)
+                    {
+                        className = keepClassSpecification.extendsClassName;
+                    }
 
-                    if (notePrinter.accepts(className))
+                    if (className != null &&
+                        notePrinter.accepts(className))
                     {
                         notePrinter.print(className,
                                           "Note: the configuration doesn't specify which class members to keep for class '" +

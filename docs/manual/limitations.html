@@ -9,8 +9,11 @@
 <!--
 if (window.self==window.top)
   window.top.location.replace("../index.html#"+window.location.pathname+window.location.hash);
-//else if (window.top.location.hash!="#"+window.location.pathname)
-//  window.top.location.hash="#"+window.location.pathname;
+else {
+  var hash="#"+window.location.pathname.replace(window.top.location.pathname.replace("index.html", ""), "");
+  if (window.top.location.hash!=hash)
+    window.top.location.hash=hash;
+}
 //-->
 </script>
 </head>
@@ -33,6 +36,12 @@ which are easily avoided or resolved:
     some way this is a good thing: optimized code may throw fewer exceptions.
     Should this entire assumption be false, you'll have to switch off
     optimization using the <code>-dontoptimize</code> option.</li>
+
+<li>ProGuard's optimization algorithms currently also assume that the
+    processed code never creates <b>busy-waiting loops</b> without at least
+    testing on a volatile field. Again, it may remove such loops. Should this
+    assumption be false, you'll have to switch off optimization using
+    the <code>-dontoptimize</code> option.</li>
 
 <li>If an input jar and a library jar contain classes in the <b>same
     package</b>, the obfuscated output jar may contain class names that

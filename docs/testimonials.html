@@ -9,8 +9,11 @@
 <!--
 if (window.self==window.top)
   window.top.location.replace("index.html#"+window.location.pathname+window.location.hash);
-//else if (window.top.location.hash!="#"+window.location.pathname)
-//  window.top.location.hash="#"+window.location.pathname;
+else {
+  var hash="#"+window.location.pathname.replace(window.top.location.pathname.replace("index.html", ""), "");
+  if (window.top.location.hash!=hash)
+    window.top.location.hash=hash;
+}
 //-->
 </script>
 </head>
@@ -22,8 +25,8 @@ And now for some shameless self-glorification and name-dropping...
 <p>
 <b>ProGuard</b> is probably the most popular java shrinker, optimizer, and
 obfuscator world-wide. It is being used by developers at companies and
-organizations like Sun, IBM, HP, Siemens, Nokia, Google, and NATO. It is the
-default tool in many development environments like Sun's Wireless Toolkit,
+organizations like IBM, HP, Siemens, Nokia, Google, and NATO. It is the
+default tool in many development environments like Oracle's Wireless Toolkit,
 Netbeans, EclipseME, Google's Android SDK, and more. Although the quotes below
 probably don't represent official views of any kind, encouragements like these
 do keep me happy.

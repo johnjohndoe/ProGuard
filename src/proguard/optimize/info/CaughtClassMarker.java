@@ -25,8 +25,9 @@ import proguard.classfile.util.SimplifiedVisitor;
 import proguard.classfile.visitor.ClassVisitor;
 
 /**
- * This InstructionVisitor marks all classes that are used in an 'instanceof'
- * test by any of the instructions that it visits.
+ * This ClassVisitor marks all program classes that it visits as caught.
+ * This means that these classes are exception classes that occur in exception
+ * handlers.
  *
  * @author Eric Lafortune
  */

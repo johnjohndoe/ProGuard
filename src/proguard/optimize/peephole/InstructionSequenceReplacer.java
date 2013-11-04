@@ -22,9 +22,9 @@ package proguard.optimize.peephole;
 
 import proguard.classfile.*;
 import proguard.classfile.attribute.CodeAttribute;
-import proguard.classfile.constant.Constant;
+import proguard.classfile.constant.*;
 import proguard.classfile.constant.visitor.ConstantVisitor;
-import proguard.classfile.editor.CodeAttributeEditor;
+import proguard.classfile.editor.*;
 import proguard.classfile.instruction.*;
 import proguard.classfile.instruction.visitor.InstructionVisitor;
 import proguard.classfile.util.*;
@@ -42,10 +42,48 @@ extends      SimplifiedVisitor
 implements   InstructionVisitor,
              ConstantVisitor
 {
+    /*
+    public  static       boolean DEBUG = true;
+    /*/
     private static final boolean DEBUG = false;
+    //*/
+
+    public static final int X = InstructionSequenceMatcher.X;
+    public static final int Y = InstructionSequenceMatcher.Y;
+    public static final int Z = InstructionSequenceMatcher.Z;
+
+    public static final int A = InstructionSequenceMatcher.A;
+    public static final int B = InstructionSequenceMatcher.B;
+    public static final int C = InstructionSequenceMatcher.C;
+    public static final int D = InstructionSequenceMatcher.D;
+
+    private static final int BOOLEAN_STRING = 0x1;
+    private static final int CHAR_STRING    = 0x2;
+    private static final int INT_STRING     = 0x3;
+    private static final int LONG_STRING    = 0x4;
+    private static final int FLOAT_STRING   = 0x5;
+    private static final int DOUBLE_STRING  = 0x6;
+    private static final int STRING_STRING  = 0x7;
+
+    public static final int STRING_A_LENGTH  = 0x20000000;
+    public static final int BOOLEAN_A_STRING = 0x20000001;
+    public static final int CHAR_A_STRING    = 0x20000002;
+    public static final int INT_A_STRING     = 0x20000003;
+    public static final int LONG_A_STRING    = 0x20000004;
+    public static final int FLOAT_A_STRING   = 0x20000005;
+    public static final int DOUBLE_A_STRING  = 0x20000006;
+    public static final int STRING_A_STRING  = 0x20000007;
+    public static final int BOOLEAN_B_STRING = 0x20000010;
+    public static final int CHAR_B_STRING    = 0x20000020;
+    public static final int INT_B_STRING     = 0x20000030;
+    public static final int LONG_B_STRING    = 0x20000040;
+    public static final int FLOAT_B_STRING   = 0x20000050;
+    public static final int DOUBLE_B_STRING  = 0x20000060;
+    public static final int STRING_B_STRING  = 0x20000070;
 
 
     private final InstructionSequenceMatcher instructionSequenceMatcher;
+    private final Constant[]                 patternConstants;
     private final Instruction[]              replacementInstructions;
     private final BranchTargetFinder         branchTargetFinder;
     private final CodeAttributeEditor        codeAttributeEditor;
@@ -101,6 +139,7 @@ implements   InstructionVisitor,
                                        InstructionVisitor  extraInstructionVisitor)
     {
         this.instructionSequenceMatcher = new InstructionSequenceMatcher(patternConstants, patternInstructions);
+        this.patternConstants           = patternConstants;
         this.replacementInstructions    = replacementInstructions;
         this.branchTargetFinder         = branchTargetFinder;
         this.codeAttributeEditor        = codeAttributeEditor;
@@ -140,7 +179,7 @@ implements   InstructionVisitor,
                 for (int index = 0; index < replacementInstructions.length; index++)
                 {
                     int matchedOffset = instructionSequenceMatcher.matchedInstructionOffset(index);
-                    System.out.println("    "+replacementInstructionFactory.create(index).shrink().toString(matchedOffset));
+                    System.out.println("    "+replacementInstructionFactory.create(clazz, index).shrink().toString(matchedOffset));
                 }
             }
 
@@ -148,7 +187,7 @@ implements   InstructionVisitor,
             for (int index = 0; index < replacementInstructions.length; index++)
             {
                 codeAttributeEditor.replaceInstruction(instructionSequenceMatcher.matchedInstructionOffset(index),
-                                                       replacementInstructionFactory.create(index).shrink());
+                                                       replacementInstructionFactory.create(clazz, index).shrink());
             }
 
             // Delete any remaining instructions in the from sequence.
@@ -204,10 +243,10 @@ implements   InstructionVisitor,
          * Creates the replacement instruction for the given index in the
          * instruction sequence.
          */
-        public Instruction create(int index)
+        public Instruction create(Clazz clazz, int index)
         {
             // Create the instruction.
-            replacementInstructions[index].accept(null,
+            replacementInstructions[index].accept(clazz,
                                                   null,
                                                   null,
                                                   instructionSequenceMatcher.matchedInstructionOffset(index),
@@ -224,7 +263,7 @@ implements   InstructionVisitor,
         {
             replacementInstruction =
                 new SimpleInstruction(simpleInstruction.opcode,
-                                      instructionSequenceMatcher.matchedArgument(simpleInstruction.constant));
+                                      matchedArgument(clazz, simpleInstruction.constant));
         }
 
 
@@ -241,7 +280,8 @@ implements   InstructionVisitor,
         {
             replacementInstruction =
                 new ConstantInstruction(constantInstruction.opcode,
-                                        instructionSequenceMatcher.matchedConstantIndex(constantInstruction.constantIndex),
+                                        matchedConstantIndex((ProgramClass)clazz,
+                                                             constantInstruction.constantIndex),
                                         instructionSequenceMatcher.matchedArgument(constantInstruction.constant));
         }
 
@@ -250,7 +290,8 @@ implements   InstructionVisitor,
         {
             replacementInstruction =
                 new BranchInstruction(branchInstruction.opcode,
-                                      instructionSequenceMatcher.matchedBranchOffset(offset, branchInstruction.branchOffset));
+                                      instructionSequenceMatcher.matchedBranchOffset(offset,
+                                                                                     branchInstruction.branchOffset));
         }
 
 
@@ -261,7 +302,8 @@ implements   InstructionVisitor,
                                            instructionSequenceMatcher.matchedBranchOffset(offset, tableSwitchInstruction.defaultOffset),
                                            instructionSequenceMatcher.matchedArgument(tableSwitchInstruction.lowCase),
                                            instructionSequenceMatcher.matchedArgument(tableSwitchInstruction.highCase),
-                                           instructionSequenceMatcher.matchedJumpOffsets(offset, tableSwitchInstruction.jumpOffsets));
+                                           instructionSequenceMatcher.matchedJumpOffsets(offset,
+                                                                                         tableSwitchInstruction.jumpOffsets));
 
         }
 
@@ -273,6 +315,106 @@ implements   InstructionVisitor,
                                             instructionSequenceMatcher.matchedBranchOffset(offset, lookUpSwitchInstruction.defaultOffset),
                                             instructionSequenceMatcher.matchedArguments(lookUpSwitchInstruction.cases),
                                             instructionSequenceMatcher.matchedJumpOffsets(offset, lookUpSwitchInstruction.jumpOffsets));
+        }
+
+
+        /**
+         * Returns the matched argument for the given pattern argument.
+         */
+        private int matchedArgument(Clazz clazz, int argument)
+        {
+            // Special case: do we have to compute the string length?
+            if (argument == STRING_A_LENGTH)
+            {
+                // Return the string length.
+                return clazz.getStringString(instructionSequenceMatcher.matchedArgument(A)).length();
+            }
+
+            // Otherwise, just return the matched argument.
+            return instructionSequenceMatcher.matchedArgument(argument);
+        }
+
+
+        /**
+         * Returns the matched or newly created constant index for the given
+         * pattern constant index.
+         */
+        private int matchedConstantIndex(ProgramClass programClass, int constantIndex)
+        {
+            // Special case: do we have to create a concatenated string?
+            if (constantIndex >= BOOLEAN_A_STRING &&
+                constantIndex <= (STRING_A_STRING  | STRING_B_STRING))
+            {
+                // Create a new string constant and return its index.
+                return new ConstantPoolEditor(programClass).addStringConstant(
+                    argumentAsString(programClass,  constantIndex        & 0xf, A) +
+                    argumentAsString(programClass, (constantIndex >>> 4) & 0xf, B),
+                    null,
+                    null);
+            }
+
+            int matchedConstantIndex =
+                instructionSequenceMatcher.matchedConstantIndex(constantIndex);
+
+            // Do we have a matched constant index?
+            if (matchedConstantIndex > 0)
+            {
+                // Return its index.
+                return matchedConstantIndex;
+            }
+
+            // Otherwise, we still have to create a new constant.
+            // This currently only works for constants without any wildcards.
+            ProgramClass dummyClass = new ProgramClass();
+            dummyClass.constantPool = patternConstants;
+
+            return new ConstantAdder(programClass).addConstant(dummyClass, constantIndex);
+        }
+
+
+        private String argumentAsString(ProgramClass programClass,
+                                        int          valueType,
+                                        int          argument)
+        {
+            switch (valueType)
+            {
+                case BOOLEAN_STRING:
+                    return Boolean.toString((instructionSequenceMatcher.wasConstant(argument) ?
+                        ((IntegerConstant)(programClass.getConstant(instructionSequenceMatcher.matchedConstantIndex(argument)))).getValue() :
+                        instructionSequenceMatcher.matchedArgument(argument)) != 0);
+
+                case CHAR_STRING:
+                    return Character.toString((char)(instructionSequenceMatcher.wasConstant(argument) ?
+                        ((IntegerConstant)(programClass.getConstant(instructionSequenceMatcher.matchedConstantIndex(argument)))).getValue() :
+                        instructionSequenceMatcher.matchedArgument(argument)));
+
+                case INT_STRING:
+                    return Integer.toString(instructionSequenceMatcher.wasConstant(argument) ?
+                        ((IntegerConstant)(programClass.getConstant(instructionSequenceMatcher.matchedConstantIndex(argument)))).getValue() :
+                        instructionSequenceMatcher.matchedArgument(argument));
+
+                case LONG_STRING:
+                    return Long.toString(instructionSequenceMatcher.wasConstant(argument) ?
+                        ((LongConstant)(programClass.getConstant(instructionSequenceMatcher.matchedConstantIndex(argument)))).getValue() :
+                        instructionSequenceMatcher.matchedArgument(argument));
+
+                case FLOAT_STRING:
+                    return Float.toString(instructionSequenceMatcher.wasConstant(argument) ?
+                        ((FloatConstant)(programClass.getConstant(instructionSequenceMatcher.matchedConstantIndex(argument)))).getValue() :
+                        instructionSequenceMatcher.matchedArgument(argument));
+
+                case DOUBLE_STRING:
+                    return Double.toString(instructionSequenceMatcher.wasConstant(argument) ?
+                        ((DoubleConstant)(programClass.getConstant(instructionSequenceMatcher.matchedConstantIndex(argument)))).getValue() :
+                        instructionSequenceMatcher.matchedArgument(argument));
+
+                case STRING_STRING:
+                    return
+                        programClass.getStringString(instructionSequenceMatcher.matchedConstantIndex(argument));
+
+                default:
+                    return "";
+            }
         }
     }
 }

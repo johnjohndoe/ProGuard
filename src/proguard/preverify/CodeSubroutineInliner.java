@@ -67,6 +67,7 @@ implements   AttributeVisitor,
 //        DEBUG =
 //            clazz.getName().equals("abc/Def") &&
 //            method.getName(clazz).equals("abc");
+//        CodeAttributeComposer.DEBUG = DEBUG;
 
         // TODO: Remove this when the subroutine inliner has stabilized.
         // Catch any unexpected exceptions from the actual visiting method.

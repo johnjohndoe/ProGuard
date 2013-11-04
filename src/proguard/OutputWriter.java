@@ -102,6 +102,40 @@ public class OutputWriter
             }
         }
 
+        // Check for potential problems with mixed-case class names on
+        // case-insensitive file systems.
+        if (configuration.obfuscate                          &&
+            configuration.useMixedCaseClassNames             &&
+            configuration.classObfuscationDictionary == null &&
+            (configuration.note == null ||
+             !configuration.note.isEmpty()))
+        {
+            String os = System.getProperty("os.name").toLowerCase();
+            if (os.startsWith("windows") ||
+                os.startsWith("mac os"))
+            {
+                // Go over all program class path entries.
+                for (int index = 0; index < programJars.size(); index++)
+                {
+                    // Is it an output directory?
+                    ClassPathEntry entry = programJars.get(index);
+                    if (entry.isOutput() &&
+                        !entry.isJar() &&
+                        !entry.isWar() &&
+                        !entry.isEar() &&
+                        !entry.isZip())
+                    {
+                        System.out.println("Note: you're writing the processed class files to a directory [" + entry.getName() +"].");
+                        System.out.println("      This will likely cause problems with obfuscated mixed-case class names.");
+                        System.out.println("      You should consider writing the output to a jar file, or otherwise");
+                        System.out.println("      specify '-dontusemixedclassnames'.");
+
+                        break;
+                    }
+                }
+            }
+        }
+
         int firstInputIndex = 0;
         int lastInputIndex  = 0;
 
@@ -227,7 +261,7 @@ public class OutputWriter
         }
         catch (IOException ex)
         {
-            throw new IOException("Can't write [" + classPath.get(fromOutputIndex).getName() + "] (" + ex.getMessage() + ")");
+            throw (IOException)new IOException("Can't write [" + classPath.get(fromOutputIndex).getName() + "] (" + ex.getMessage() + ")").initCause(ex);
         }
     }
 

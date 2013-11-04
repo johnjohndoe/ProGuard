@@ -9,8 +9,11 @@
 <!--
 if (window.self==window.top)
   window.top.location.replace("index.html#"+window.location.pathname+window.location.hash);
-//else if (window.top.location.hash!="#"+window.location.pathname)
-//  window.top.location.hash="#"+window.location.pathname;
+else {
+  var hash="#"+window.location.pathname.replace(window.top.location.pathname.replace("index.html", ""), "");
+  if (window.top.location.hash!=hash)
+    window.top.location.hash=hash;
+}
 //-->
 </script>
 </head>
@@ -130,12 +133,14 @@ Yes, you can. <b>ProGuard</b> itself is distributed under the GPL, but this
 doesn't affect the programs that you process. Your code remains yours, and
 its license can remain the same.
 
-<h3><a name="jdk1.4">Does <b>ProGuard</b> work with Java 2? Java 5? Java 6?</a></h3>
+<h3><a name="jdk1.4">Does <b>ProGuard</b> work with Java 2? Java 5? Java 6? Java 7?</a></h3>
 
-Yes, <b>ProGuard</b> supports all JDKs from 1.1 up to and including 6.0. Java 2
+Yes, <b>ProGuard</b> supports all JDKs from 1.1 up to and including 7.0. Java 2
 introduced some small differences in the class file format. Java 5 added
-attributes for generics and for annotations. Java 6 introduced preverification
-attributes. <b>ProGuard</b> handles all versions correctly.
+attributes for generics and for annotations. Java 6 introduced optional
+preverification attributes. Java 7 made preverification obligatory and
+introduced support for dynamic languages. <b>ProGuard</b> handles all versions
+correctly.
 
 <h3><a name="jme">Does <b>ProGuard</b> work with Java Micro Edition?</a></h3>
 

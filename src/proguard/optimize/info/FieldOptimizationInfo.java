@@ -69,6 +69,16 @@ implements   AttributeVisitor
     }
 
 
+    public FieldOptimizationInfo(FieldOptimizationInfo FieldOptimizationInfo)
+    {
+        this.isWritten        = FieldOptimizationInfo.isWritten;
+        this.isRead           = FieldOptimizationInfo.isRead;
+        this.canBeMadePrivate = FieldOptimizationInfo.canBeMadePrivate;
+        this.referencedClass  = FieldOptimizationInfo.referencedClass;
+        this.value            = FieldOptimizationInfo.value;
+    }
+
+
     public void setWritten()
     {
         isWritten = true;

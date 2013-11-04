@@ -21,7 +21,7 @@
 package proguard.shrink;
 
 import proguard.*;
-import proguard.classfile.ClassPool;
+import proguard.classfile.*;
 import proguard.classfile.attribute.visitor.*;
 import proguard.classfile.visitor.*;
 
@@ -67,9 +67,20 @@ public class Shrinker
             new UsageMarker() :
             new ShortestUsageMarker();
 
+        // Automatically mark the parameterless constructors of seed classes,
+        // mainly for convenience and for backward compatibility.
+        ClassVisitor classUsageMarker =
+            new MultiClassVisitor(new ClassVisitor[]
+            {
+                usageMarker,
+                new NamedMethodVisitor(ClassConstants.INTERNAL_METHOD_NAME_INIT,
+                                       ClassConstants.INTERNAL_METHOD_TYPE_INIT,
+                                       usageMarker)
+            });
+
         ClassPoolVisitor classPoolvisitor =
             ClassSpecificationVisitorFactory.createClassPoolVisitor(configuration.keep,
-                                                                    usageMarker,
+                                                                    classUsageMarker,
                                                                     usageMarker,
                                                                     true,
                                                                     false,

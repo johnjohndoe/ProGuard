@@ -31,6 +31,8 @@ import proguard.evaluation.*;
 import proguard.evaluation.value.*;
 import proguard.optimize.peephole.BranchTargetFinder;
 
+import java.util.Arrays;
+
 /**
  * This AttributeVisitor performs partial evaluation on the code attributes
  * that it visits.
@@ -1127,13 +1129,13 @@ implements   AttributeVisitor,
         else
         {
             // Reset the arrays.
+            Arrays.fill(branchOriginValues,  null);
+            Arrays.fill(branchTargetValues,  null);
+            Arrays.fill(generalizedContexts, false);
+            Arrays.fill(evaluationCounts,    0);
+
             for (int index = 0; index < codeLength; index++)
             {
-                branchOriginValues[index]   = null;
-                branchTargetValues[index]   = null;
-                generalizedContexts[index]  = false;
-                evaluationCounts[index]     = 0;
-
                 if (variablesBefore[index] != null)
                 {
                     variablesBefore[index].reset(codeAttribute.u2maxLocals);

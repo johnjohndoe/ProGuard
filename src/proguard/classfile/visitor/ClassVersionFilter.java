@@ -39,6 +39,19 @@ public class ClassVersionFilter implements ClassVisitor
     /**
      * Creates a new ClassVersionFilter.
      * @param minimumClassVersion the minimum class version number.
+     * @param classVisitor        the <code>ClassVisitor</code> to which visits
+     *                            will be delegated.
+     */
+    public ClassVersionFilter(int          minimumClassVersion,
+                              ClassVisitor classVisitor)
+    {
+        this(minimumClassVersion, Integer.MAX_VALUE, classVisitor);
+    }
+
+
+    /**
+     * Creates a new ClassVersionFilter.
+     * @param minimumClassVersion the minimum class version number.
      * @param maximumClassVersion the maximum class version number.
      * @param classVisitor        the <code>ClassVisitor</code> to which visits
      *                            will be delegated.

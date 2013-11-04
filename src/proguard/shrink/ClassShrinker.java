@@ -24,15 +24,17 @@ import proguard.classfile.*;
 import proguard.classfile.attribute.*;
 import proguard.classfile.attribute.annotation.*;
 import proguard.classfile.attribute.annotation.visitor.*;
-import proguard.classfile.attribute.visitor.AttributeVisitor;
+import proguard.classfile.attribute.visitor.*;
 import proguard.classfile.constant.*;
 import proguard.classfile.editor.*;
 import proguard.classfile.util.*;
 import proguard.classfile.visitor.*;
 
+import java.util.Arrays;
+
 /**
- * This ClassVisitor removes constant pool entries and class members that
- * are not marked as being used.
+ * This ClassVisitor removes constant pool entries, class members, and other
+ * class elements that are not marked as being used.
  *
  * @see UsageMarker
  *
@@ -48,8 +50,7 @@ implements   ClassVisitor,
 {
     private final UsageMarker usageMarker;
 
-    private int[] constantIndexMap = new int[ClassConstants.TYPICAL_CONSTANT_POOL_SIZE];
-
+    private       int[]                constantIndexMap     = new int[ClassConstants.TYPICAL_CONSTANT_POOL_SIZE];
     private final ConstantPoolRemapper constantPoolRemapper = new ConstantPoolRemapper();
 
 
@@ -76,7 +77,7 @@ implements   ClassVisitor,
                                      programClass.u2interfacesCount);
 
         // Shrinking the constant pool also sets up an index map.
-        programClass.u2constantPoolCount =
+        int newConstantPoolCount =
             shrinkConstantPool(programClass.constantPool,
                                programClass.u2constantPoolCount);
 
@@ -98,9 +99,15 @@ implements   ClassVisitor,
         programClass.methodsAccept(this);
         programClass.attributesAccept(this);
 
-        // Remap all constant pool references.
-        constantPoolRemapper.setConstantIndexMap(constantIndexMap);
-        constantPoolRemapper.visitProgramClass(programClass);
+        // Remap the references to the constant pool if it has shrunk.
+        if (newConstantPoolCount < programClass.u2constantPoolCount)
+        {
+            programClass.u2constantPoolCount = newConstantPoolCount;
+
+            // Remap all constant pool references.
+            constantPoolRemapper.setConstantIndexMap(constantIndexMap);
+            constantPoolRemapper.visitProgramClass(programClass);
+        }
 
         // Remove the unused interfaces from the class signature.
         programClass.attributesAccept(new SignatureShrinker());
@@ -138,6 +145,15 @@ implements   ClassVisitor,
     // Implementations for AttributeVisitor.
 
     public void visitAnyAttribute(Clazz clazz, Attribute attribute) {}
+
+
+    public void visitBootstrapMethodsAttribute(Clazz clazz, BootstrapMethodsAttribute bootstrapMethodsAttribute)
+    {
+        // Shrink the array of BootstrapMethodInfo objects.
+        bootstrapMethodsAttribute.u2bootstrapMethodsCount =
+            shrinkArray(bootstrapMethodsAttribute.bootstrapMethods,
+                        bootstrapMethodsAttribute.u2bootstrapMethodsCount);
+    }
 
 
     public void visitInnerClassesAttribute(Clazz clazz, InnerClassesAttribute innerClassesAttribute)
@@ -349,10 +365,7 @@ implements   ClassVisitor,
         }
 
         // Clear the remaining constant pool elements.
-        for (int index = counter; index < length; index++)
-        {
-            constantPool[index] = null;
-        }
+        Arrays.fill(constantPool, counter, length, null);
 
         return counter;
     }
@@ -377,10 +390,7 @@ implements   ClassVisitor,
         }
 
         // Clear the remaining array elements.
-        for (int index = counter; index < length; index++)
-        {
-            array[index] = 0;
-        }
+        Arrays.fill(array, counter, length, 0);
 
         return counter;
     }
@@ -437,10 +447,10 @@ implements   ClassVisitor,
             }
         }
 
-        // Clear the remaining array elements.
-        for (int index = counter; index < length; index++)
+        // Clear any remaining array elements.
+        if (counter < length)
         {
-            array[index] = null;
+            Arrays.fill(array, counter, length, null);
         }
 
         return counter;

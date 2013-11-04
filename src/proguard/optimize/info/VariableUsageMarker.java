@@ -27,6 +27,8 @@ import proguard.classfile.instruction.*;
 import proguard.classfile.instruction.visitor.InstructionVisitor;
 import proguard.classfile.util.SimplifiedVisitor;
 
+import java.util.Arrays;
+
 /**
  * This AttributeVisitor marks the local variables that are used in the code
  * attributes that it visits.
@@ -62,14 +64,13 @@ implements   AttributeVisitor,
         // Try to reuse the previous array.
         if (variableUsed.length < maxLocals)
         {
+            // Create a new array.
             variableUsed = new boolean[maxLocals];
         }
         else
         {
-            for (int index = 0; index < maxLocals; index++)
-            {
-                variableUsed[index] = false;
-            }
+            // Reset the array.
+            Arrays.fill(variableUsed, 0, maxLocals, false);
         }
 
         codeAttribute.instructionsAccept(clazz, method, this);

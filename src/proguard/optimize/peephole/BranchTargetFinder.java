@@ -29,6 +29,8 @@ import proguard.classfile.instruction.*;
 import proguard.classfile.instruction.visitor.InstructionVisitor;
 import proguard.classfile.util.SimplifiedVisitor;
 
+import java.util.Arrays;
+
 /**
  * This AttributeVisitor finds all instruction offsets, branch targets, and
  * exception targets in the CodeAttribute objects that it visits.
@@ -312,25 +314,19 @@ implements   AttributeVisitor,
             initializationOffsets = new int[codeLength];
 
             // Reset the arrays.
-            for (int index = 0; index < codeLength; index++)
-            {
-                subroutineStarts[index]      = NONE;
-                subroutineEnds[index]        = NONE;
-                creationOffsets[index]       = NONE;
-                initializationOffsets[index] = NONE;
-            }
+            Arrays.fill(subroutineStarts,      0, codeLength, NONE);
+            Arrays.fill(subroutineEnds,        0, codeLength, NONE);
+            Arrays.fill(creationOffsets,       0, codeLength, NONE);
+            Arrays.fill(initializationOffsets, 0, codeLength, NONE);
         }
         else
         {
             // Reset the arrays.
-            for (int index = 0; index < codeLength; index++)
-            {
-                instructionMarks[index]      = 0;
-                subroutineStarts[index]      = NONE;
-                subroutineEnds[index]        = NONE;
-                creationOffsets[index]       = NONE;
-                initializationOffsets[index] = NONE;
-            }
+            Arrays.fill(instructionMarks,      0, codeLength, (short)0);
+            Arrays.fill(subroutineStarts,      0, codeLength, NONE);
+            Arrays.fill(subroutineEnds,        0, codeLength, NONE);
+            Arrays.fill(creationOffsets,       0, codeLength, NONE);
+            Arrays.fill(initializationOffsets, 0, codeLength, NONE);
 
             instructionMarks[codeLength] = 0;
         }

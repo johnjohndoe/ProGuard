@@ -9,8 +9,11 @@
 <!--
 if (window.self==window.top)
   window.top.location.replace("index.html#"+window.location.pathname+window.location.hash);
-//else if (window.top.location.hash!="#"+window.location.pathname)
-//  window.top.location.hash="#"+window.location.pathname;
+else {
+  var hash="#"+window.location.pathname.replace(window.top.location.pathname.replace("index.html", ""), "");
+  if (window.top.location.hash!=hash)
+    window.top.location.hash=hash;
+}
 //-->
 </script>
 </head>
@@ -113,7 +116,17 @@ below is incorrect.
 
 <tr>
 <td><a target="other" rel="nofollow" href="http://ant.apache.org/">Apache</a></td>
-<td><a target="other" href="http://ant.apache.org/manual/OptionalTypes/classfileset.html">Ant Classfileset</a></td>
+<td><a target="other" href="http://ant.apache.org/manual/Types/classfileset.html">Ant Classfileset</a></td>
+<td align="center"><img src="checkmark.gif" width="11" height="11" alt="x" /></td>
+<td align="center"><br /></td>
+<td align="center"><br /></td>
+<td align="center"><br /></td>
+<td>Free (Apache)</td>
+</tr>
+
+<tr>
+<td><a target="other" rel="nofollow" href="http://www.celton.mobi/">Carsten Elton S&oslash;rensen</a></td>
+<td><a target="other" href="http://code.google.com/p/treeshaker/">Treeshaker</a></td>
 <td align="center"><img src="checkmark.gif" width="11" height="11" alt="x" /></td>
 <td align="center"><br /></td>
 <td align="center"><br /></td>
@@ -142,8 +155,8 @@ below is incorrect.
 </tr>
 
 <tr>
-<td><a target="other" rel="nofollow" href="https://dcd.dev.java.net/">Emeric Vernat</a></td>
-<td><a target="other" href="https://dcd.dev.java.net/">DCD</a></td>
+<td><a target="other" rel="nofollow" href="http://java.net/projects/dcd/">Emeric Vernat</a></td>
+<td><a target="other" href="http://java.net/projects/dcd/">DCD</a></td>
 <td align="center"><img src="checkmark.gif" width="11" height="11" alt="x" /></td>
 <td align="center"><br /></td>
 <td align="center"><br /></td>
@@ -212,18 +225,8 @@ below is incorrect.
 </tr>
 
 <tr>
-<td><a target="other" rel="nofollow" href="http://www.elegant-software.com/">Elegant Software</a></td>
-<td><a target="other" href="http://www.elegant-software.com/software/jmangle/">JMangle</a></td>
-<td align="center"><br /></td>
-<td align="center"><br /></td>
-<td align="center"><img src="checkmark.gif" width="11" height="11" alt="x" /></td>
-<td align="center"><br /></td>
-<td>Free</td>
-</tr>
-
-<tr>
 <td><a target="other" rel="nofollow" href="http://www.bebbosoft.de/">BebboSoft</a></td>
-<td><a target="other" href="http://www.bebbosoft.de/index.html#java/mug/index.html">Bb_mug</a></td>
+<td><a target="other" href="http://www.bebbosoft.de/#java/mug/index.wiki">Bb_mug</a></td>
 <td align="center"><br /></td>
 <td align="center"><br /></td>
 <td align="center"><img src="checkmark.gif" width="11" height="11" alt="x" /></td>
@@ -333,7 +336,7 @@ below is incorrect.
 
 <tr>
 <td><a target="other" rel="nofollow" href="http://www.force5.com/">Force 5</a></td>
-<td><a target="other" href="http://www.force5.com/">JCloak</a></td>
+<td><a target="other" href="http://www.force5.com/JCloak/ProductJCloak.html">JCloak</a></td>
 <td align="center"><br /></td>
 <td align="center"><br /></td>
 <td align="center"><img src="checkmark.gif" width="11" height="11" alt="x" /></td>
@@ -456,6 +459,16 @@ below is incorrect.
 <td><a target="other" rel="nofollow" href="http://www.utdallas.edu/~gxz014000/jcmp/">JCMP</a></td>
 <td align="center"><br /></td>
 <td align="center"><img src="checkmark.gif" width="11" height="11" alt="x" /></td>
+<td align="center"><img src="checkmark.gif" width="11" height="11" alt="x" /></td>
+<td align="center"><br /></td>
+<td>(disappeared?)</td>
+</tr>
+
+<tr class="disappeared">
+<td><a target="other" rel="nofollow" href="http://www.elegant-software.com/">Elegant Software</a></td>
+<td><a target="other" rel="nofollow" href="http://www.elegant-software.com/software/jmangle/">JMangle</a></td>
+<td align="center"><br /></td>
+<td align="center"><br /></td>
 <td align="center"><img src="checkmark.gif" width="11" height="11" alt="x" /></td>
 <td align="center"><br /></td>
 <td>(disappeared?)</td>

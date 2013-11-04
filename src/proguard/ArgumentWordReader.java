@@ -32,7 +32,8 @@ import java.io.*;
 public class ArgumentWordReader extends WordReader
 {
     private final String[] arguments;
-    private int      index = 0;
+
+    private int index = 0;
 
 
 //    /**
@@ -86,7 +87,7 @@ public class ArgumentWordReader extends WordReader
             {
                 while (true)
                 {
-                    String word = reader.nextWord();
+                    String word = reader.nextWord(false);
                     if (word == null)
                         System.exit(-1);
 

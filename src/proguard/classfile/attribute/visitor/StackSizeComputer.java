@@ -27,6 +27,8 @@ import proguard.classfile.instruction.*;
 import proguard.classfile.instruction.visitor.InstructionVisitor;
 import proguard.classfile.util.SimplifiedVisitor;
 
+import java.util.Arrays;
+
 /**
  * This AttributeVisitor computes the stack sizes at all instruction offsets
  * of the code attributes that it visits.
@@ -140,10 +142,7 @@ implements   AttributeVisitor,
         }
         else
         {
-            for (int index = 0; index < codeLength; index++)
-            {
-                evaluated[index] = false;
-            }
+            Arrays.fill(evaluated, 0, codeLength, false);
         }
 
         // The initial stack is always empty.

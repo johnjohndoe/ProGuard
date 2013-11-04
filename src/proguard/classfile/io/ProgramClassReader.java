@@ -46,6 +46,7 @@ implements   ClassVisitor,
              MemberVisitor,
              ConstantVisitor,
              AttributeVisitor,
+             BootstrapMethodInfoVisitor,
              InnerClassesInfoVisitor,
              ExceptionInfoVisitor,
              StackMapFrameVisitor,
@@ -250,6 +251,20 @@ implements   ClassVisitor,
     }
 
 
+    public void visitInvokeDynamicConstant(Clazz clazz, InvokeDynamicConstant invokeDynamicConstant)
+    {
+        invokeDynamicConstant.u2bootstrapMethodAttributeIndex = dataInput.readUnsignedShort();
+        invokeDynamicConstant.u2nameAndTypeIndex              = dataInput.readUnsignedShort();
+    }
+
+
+    public void visitMethodHandleConstant(Clazz clazz, MethodHandleConstant methodHandleConstant)
+    {
+        methodHandleConstant.u1referenceKind  = dataInput.readUnsignedByte();
+        methodHandleConstant.u2referenceIndex = dataInput.readUnsignedShort();
+    }
+
+
     public void visitAnyRefConstant(Clazz clazz, RefConstant refConstant)
     {
         refConstant.u2classIndex       = dataInput.readUnsignedShort();
@@ -260,6 +275,12 @@ implements   ClassVisitor,
     public void visitClassConstant(Clazz clazz, ClassConstant classConstant)
     {
         classConstant.u2nameIndex = dataInput.readUnsignedShort();
+    }
+
+
+    public void visitMethodTypeConstant(Clazz clazz, MethodTypeConstant methodTypeConstant)
+    {
+        methodTypeConstant.u2descriptorIndex = dataInput.readUnsignedShort();
     }
 
 
@@ -278,6 +299,21 @@ implements   ClassVisitor,
         byte[] info = new byte[unknownAttribute.u4attributeLength];
         dataInput.readFully(info);
         unknownAttribute.info = info;
+    }
+
+
+    public void visitBootstrapMethodsAttribute(Clazz clazz, BootstrapMethodsAttribute bootstrapMethodsAttribute)
+    {
+        // Read the bootstrap methods.
+        bootstrapMethodsAttribute.u2bootstrapMethodsCount = dataInput.readUnsignedShort();
+
+        bootstrapMethodsAttribute.bootstrapMethods = new BootstrapMethodInfo[bootstrapMethodsAttribute.u2bootstrapMethodsCount];
+        for (int index = 0; index < bootstrapMethodsAttribute.u2bootstrapMethodsCount; index++)
+        {
+            BootstrapMethodInfo bootstrapMethodInfo = new BootstrapMethodInfo();
+            visitBootstrapMethodInfo(clazz, bootstrapMethodInfo);
+            bootstrapMethodsAttribute.bootstrapMethods[index] = bootstrapMethodInfo;
+        }
     }
 
 
@@ -302,7 +338,7 @@ implements   ClassVisitor,
         for (int index = 0; index < innerClassesAttribute.u2classesCount; index++)
         {
             InnerClassesInfo innerClassesInfo = new InnerClassesInfo();
-            this.visitInnerClassesInfo(clazz, innerClassesInfo);
+            visitInnerClassesInfo(clazz, innerClassesInfo);
             innerClassesAttribute.classes[index] = innerClassesInfo;
         }
     }
@@ -372,7 +408,7 @@ implements   ClassVisitor,
         for (int index = 0; index < codeAttribute.u2exceptionTableLength; index++)
         {
             ExceptionInfo exceptionInfo = new ExceptionInfo();
-            this.visitExceptionInfo(clazz, method, codeAttribute, exceptionInfo);
+            visitExceptionInfo(clazz, method, codeAttribute, exceptionInfo);
             codeAttribute.exceptionTable[index] = exceptionInfo;
         }
 
@@ -398,7 +434,7 @@ implements   ClassVisitor,
         for (int index = 0; index < stackMapAttribute.u2stackMapFramesCount; index++)
         {
             FullFrame stackMapFrame = new FullFrame();
-            this.visitFullFrame(clazz, method, codeAttribute, index, stackMapFrame);
+            visitFullFrame(clazz, method, codeAttribute, index, stackMapFrame);
             stackMapAttribute.stackMapFrames[index] = stackMapFrame;
         }
     }
@@ -428,7 +464,7 @@ implements   ClassVisitor,
         for (int index = 0; index < lineNumberTableAttribute.u2lineNumberTableLength; index++)
         {
             LineNumberInfo lineNumberInfo = new LineNumberInfo();
-            this.visitLineNumberInfo(clazz, method, codeAttribute, lineNumberInfo);
+            visitLineNumberInfo(clazz, method, codeAttribute, lineNumberInfo);
             lineNumberTableAttribute.lineNumberTable[index] = lineNumberInfo;
         }
     }
@@ -443,7 +479,7 @@ implements   ClassVisitor,
         for (int index = 0; index < localVariableTableAttribute.u2localVariableTableLength; index++)
         {
             LocalVariableInfo localVariableInfo = new LocalVariableInfo();
-            this.visitLocalVariableInfo(clazz, method, codeAttribute, localVariableInfo);
+            visitLocalVariableInfo(clazz, method, codeAttribute, localVariableInfo);
             localVariableTableAttribute.localVariableTable[index] = localVariableInfo;
         }
     }
@@ -458,7 +494,7 @@ implements   ClassVisitor,
         for (int index = 0; index < localVariableTypeTableAttribute.u2localVariableTypeTableLength; index++)
         {
             LocalVariableTypeInfo localVariableTypeInfo = new LocalVariableTypeInfo();
-            this.visitLocalVariableTypeInfo(clazz, method, codeAttribute, localVariableTypeInfo);
+            visitLocalVariableTypeInfo(clazz, method, codeAttribute, localVariableTypeInfo);
             localVariableTypeTableAttribute.localVariableTypeTable[index] = localVariableTypeInfo;
         }
     }
@@ -473,7 +509,7 @@ implements   ClassVisitor,
         for (int index = 0; index < annotationsAttribute.u2annotationsCount; index++)
         {
             Annotation annotation = new Annotation();
-            this.visitAnnotation(clazz, annotation);
+            visitAnnotation(clazz, annotation);
             annotationsAttribute.annotations[index] = annotation;
         }
     }
@@ -508,7 +544,7 @@ implements   ClassVisitor,
             for (int index = 0; index < u2annotationsCount; index++)
             {
                 Annotation annotation = new Annotation();
-                this.visitAnnotation(clazz, annotation);
+                visitAnnotation(clazz, annotation);
                 annotations[index] = annotation;
             }
 
@@ -524,6 +560,22 @@ implements   ClassVisitor,
         ElementValue elementValue = createElementValue();
         elementValue.accept(clazz, null, this);
         annotationDefaultAttribute.defaultValue = elementValue;
+    }
+
+
+    // Implementations for BootstrapMethodInfoVisitor.
+
+    public void visitBootstrapMethodInfo(Clazz clazz, BootstrapMethodInfo bootstrapMethodInfo)
+    {
+        bootstrapMethodInfo.u2methodHandleIndex = dataInput.readUnsignedShort();
+
+        // Read the bootstrap method arguments.
+        bootstrapMethodInfo.u2methodArgumentCount = dataInput.readUnsignedShort();
+        bootstrapMethodInfo.u2methodArguments = new int[bootstrapMethodInfo.u2methodArgumentCount];
+        for (int index = 0; index < bootstrapMethodInfo.u2methodArgumentCount; index++)
+        {
+            bootstrapMethodInfo.u2methodArguments[index] = dataInput.readUnsignedShort();
+        }
     }
 
 
@@ -721,7 +773,7 @@ implements   ClassVisitor,
     {
         // Read the annotation.
         Annotation annotationValue = new Annotation();
-        this.visitAnnotation(clazz, annotationValue);
+        visitAnnotation(clazz, annotationValue);
         annotationElementValue.annotationValue = annotationValue;
     }
 
@@ -749,16 +801,19 @@ implements   ClassVisitor,
 
         switch (u1tag)
         {
-            case ClassConstants.CONSTANT_Utf8:               return new Utf8Constant();
             case ClassConstants.CONSTANT_Integer:            return new IntegerConstant();
             case ClassConstants.CONSTANT_Float:              return new FloatConstant();
             case ClassConstants.CONSTANT_Long:               return new LongConstant();
             case ClassConstants.CONSTANT_Double:             return new DoubleConstant();
             case ClassConstants.CONSTANT_String:             return new StringConstant();
+            case ClassConstants.CONSTANT_Utf8:               return new Utf8Constant();
+            case ClassConstants.CONSTANT_InvokeDynamic:      return new InvokeDynamicConstant();
+            case ClassConstants.CONSTANT_MethodHandle:       return new MethodHandleConstant();
             case ClassConstants.CONSTANT_Fieldref:           return new FieldrefConstant();
             case ClassConstants.CONSTANT_Methodref:          return new MethodrefConstant();
             case ClassConstants.CONSTANT_InterfaceMethodref: return new InterfaceMethodrefConstant();
             case ClassConstants.CONSTANT_Class:              return new ClassConstant();
+            case ClassConstants.CONSTANT_MethodType  :       return new MethodTypeConstant();
             case ClassConstants.CONSTANT_NameAndType:        return new NameAndTypeConstant();
 
             default: throw new RuntimeException("Unknown constant type ["+u1tag+"] in constant pool");
@@ -771,7 +826,9 @@ implements   ClassVisitor,
         int u2attributeNameIndex = dataInput.readUnsignedShort();
         int u4attributeLength    = dataInput.readInt();
         String attributeName     = clazz.getString(u2attributeNameIndex);
+
         Attribute attribute =
+            attributeName.equals(ClassConstants.ATTR_BootstrapMethods)                     ? (Attribute)new BootstrapMethodsAttribute():
             attributeName.equals(ClassConstants.ATTR_SourceFile)                           ? (Attribute)new SourceFileAttribute():
             attributeName.equals(ClassConstants.ATTR_SourceDir)                            ? (Attribute)new SourceDirAttribute():
             attributeName.equals(ClassConstants.ATTR_InnerClasses)                         ? (Attribute)new InnerClassesAttribute():

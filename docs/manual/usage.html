@@ -9,8 +9,11 @@
 <!--
 if (window.self==window.top)
   window.top.location.replace("../index.html#"+window.location.pathname+window.location.hash);
-//else if (window.top.location.hash!="#"+window.location.pathname)
-//  window.top.location.hash="#"+window.location.pathname;
+else {
+  var hash="#"+window.location.pathname.replace(window.top.location.pathname.replace("index.html", ""), "");
+  if (window.top.location.hash!=hash)
+    window.top.location.hash=hash;
+}
 //-->
 </script>
 </head>
@@ -23,33 +26,32 @@ To run ProGuard, just type:
 <code><b>java -jar proguard.jar </b></code><i>options</i> ...
 </p>
 You can find the ProGuard jar in the <code>lib</code> directory of the
-ProGuard distribution. Options can also be put in one or more configuration
-files. Typically, you'll put most options in a configuration file (say,
-<code>myconfig.pro</code>), and just call:
+ProGuard distribution. Alternatively, the <code>bin</code> directory contains
+some short Linux and Windows scripts containing this command. Typically, you'll
+put most options in a configuration file (say, <code>myconfig.pro</code>), and
+just call:
 <p class="code">
 <code><b>java -jar proguard.jar @myconfig.pro</b></code>
 </p>
-You can combine command line options and options from configuration files, for
+You can combine command line options and options from configuration files. For
 instance:
 <p class="code">
 <code><b>java -jar proguard.jar @myconfig.pro -verbose</b></code>
 </p>
 <p>
-In a configuration file, a <code><b>#</b></code> sign and all remaining
-characters on that line are ignored, allowing you to add comments.
+You can add comments in a configuration file, starting with a
+<code><b>#</b></code> character and continuing until the end of the line.
 <p>
-Extra whitespace between words and delimiters is ignored. To specify file
-names with spaces or special characters, words can be quoted with single or
-double quotes. Note that the quotes may need to be escaped when used on the
-command line, to avoid them being gobbled by the shell.
+Extra whitespace between words and delimiters is ignored. File names with
+spaces or special characters should be quoted with single or double quotes.
 <p>
 Options can be grouped arbitrarily in arguments on the command line and in
-lines in configuration files. This means that you can quote any arbitrary
-section of command line options, to avoid shell expansion of special
-characters, for instance.
+lines in configuration files. This means that you can quote arbitrary sections
+of command line options, to avoid shell expansion of special characters, for
+instance.
 <p>
-The order of the options is generally irrelevant. They can be abbreviated to
-their first unique characters.
+The order of the options is generally irrelevant. For quick experiments, you
+can abbreviate them to their first unique characters.
 <p>
 
 The sections below provide more details:
@@ -185,11 +187,11 @@ The sections below provide more details:
 <dd>Specifies the version number to be set in the processed class files. The
     version number can be one of <code>1.0</code>, <code>1.1</code>,
     <code>1.2</code>, <code>1.3</code>, <code>1.4</code>, <code>1.5</code> (or
-    just <code>5</code>), or <code>1.6</code> (or just <code>6</code>). By
-    default, the version numbers of the class files are left unchanged. For
-    example, you may want to <a href="examples.html#upgrade">upgrade class
-    files to Java 6</a>, by changing their version numbers and having them
-    preverified.</dd>
+    just <code>5</code>), <code>1.6</code> (or just <code>6</code>), or
+     <code>1.7</code> (or just <code>7</code>). By default, the version numbers
+    of the class files are left unchanged. For example, you may want to
+    <a href="examples.html#upgrade">upgrade class files to Java 6</a>, by
+    changing their version numbers and having them preverified.</dd>
 
 <dt><a name="forceprocessing"><code><b>-forceprocessing</b></code></a></dt>
 

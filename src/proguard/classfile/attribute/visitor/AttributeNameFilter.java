@@ -24,7 +24,7 @@ import proguard.classfile.*;
 import proguard.classfile.attribute.*;
 import proguard.classfile.attribute.annotation.*;
 import proguard.classfile.attribute.preverification.*;
-import proguard.util.StringMatcher;
+import proguard.util.*;
 
 /**
  * This AttributeVisitor delegates its visits another AttributeVisitor, but
@@ -41,7 +41,21 @@ implements   AttributeVisitor
 
 
     /**
-     * Creates a new AttributeNameFilter.
+     * Creates a new AttributeNameFilter based on a given name.
+     * @param name             the string matcher that will check the attribute
+     *                         names.
+     * @param attributeVisitor the <code>AttributeVisitor</code> to which
+     *                         visits will be delegated.
+     */
+    public AttributeNameFilter(String           name,
+                               AttributeVisitor attributeVisitor)
+    {
+        this(new FixedStringMatcher(name), attributeVisitor);
+    }
+
+
+    /**
+     * Creates a new AttributeNameFilter based on a given string matcher.
      * @param stringMatcher    the string matcher that will check the attribute
      *                         names.
      * @param attributeVisitor the <code>AttributeVisitor</code> to which
@@ -62,6 +76,15 @@ implements   AttributeVisitor
         if (accepted(clazz, unknownAttribute))
         {
             unknownAttribute.accept(clazz, attributeVisitor);
+        }
+    }
+
+
+    public void visitBootstrapMethodsAttribute(Clazz clazz, BootstrapMethodsAttribute bootstrapMethodsAttribute)
+    {
+        if (accepted(clazz, bootstrapMethodsAttribute))
+        {
+            bootstrapMethodsAttribute.accept(clazz, attributeVisitor);
         }
     }
 

@@ -220,7 +220,7 @@ public abstract class Instruction
         false, // invokespecial
         false, // invokestatic
         false, // invokeinterface
-        false, // unused
+        false, // invokedynamic
         false, // new
         false, // newarray
         false, // anewarray
@@ -429,7 +429,7 @@ public abstract class Instruction
         1, // invokespecial
         0, // invokestatic
         1, // invokeinterface
-        0, // unused
+        0, // invokedynamic
         0, // new
         1, // newarray
         1, // anewarray
@@ -638,7 +638,7 @@ public abstract class Instruction
         0, // invokespecial
         0, // invokestatic
         0, // invokeinterface
-        0, // unused
+        0, // invokedynamic
         1, // new
         1, // newarray
         1, // anewarray

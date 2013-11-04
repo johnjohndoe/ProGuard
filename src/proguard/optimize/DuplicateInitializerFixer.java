@@ -86,7 +86,7 @@ implements   MemberVisitor,
             if (!programMethod.equals(similarMethod))
             {
                 // Should this initializer be preserved?
-                if (!KeepMarker.isKept(programMethod))
+                if (KeepMarker.isKept(programMethod))
                 {
                     // Fix the other initializer.
                     programMethod = (ProgramMethod)similarMethod;
@@ -95,12 +95,23 @@ implements   MemberVisitor,
                 int index = descriptor.indexOf(ClassConstants.INTERNAL_METHOD_ARGUMENTS_CLOSE);
 
                 // Try to find a new, unique descriptor.
-                for (int typeIndex = 0; typeIndex < TYPES.length; typeIndex++)
+                int typeCounter = 0;
+                while (true)
                 {
-                    String newDescriptor =
-                        descriptor.substring(0, index) +
-                        TYPES[typeIndex] +
-                        descriptor.substring(index);
+                    // Construct the new descriptor by inserting a new type
+                    // as an additional last argument.
+                    StringBuffer newDescriptorBuffer =
+                        new StringBuffer(descriptor.substring(0, index));
+
+                    for (int arrayDimension = 0; arrayDimension < typeCounter / TYPES.length; arrayDimension++)
+                    {
+                        newDescriptorBuffer.append(ClassConstants.INTERNAL_TYPE_ARRAY);
+                    }
+
+                    newDescriptorBuffer.append(TYPES[typeCounter % TYPES.length]);
+                    newDescriptorBuffer.append(descriptor.substring(index));
+
+                    String newDescriptor = newDescriptorBuffer.toString();
 
                     // Is the new initializer descriptor unique?
                     if (programClass.findMethod(name, newDescriptor) == null)
@@ -130,12 +141,9 @@ implements   MemberVisitor,
                         // We're done with this constructor.
                         return;
                     }
-                }
 
-                throw new IllegalStateException("Can't find unique constructor descriptor for ["+
-                                                programClass.getName()+"."+
-                                                programMethod.getName(programClass)+
-                                                programMethod.getDescriptor(programClass)+"]");
+                    typeCounter++;
+                }
             }
         }
     }

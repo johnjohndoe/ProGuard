@@ -80,6 +80,15 @@ implements   AttributeVisitor
     }
 
 
+    public void visitBootstrapMethodsAttribute(Clazz clazz, BootstrapMethodsAttribute bootstrapMethodsAttribute)
+    {
+        if (requiredAttributeVisitor != null)
+        {
+            bootstrapMethodsAttribute.accept(clazz, requiredAttributeVisitor);
+        }
+    }
+
+
     public void visitSourceFileAttribute(Clazz clazz, SourceFileAttribute sourceFileAttribute)
     {
         if (optionalAttributeVisitor != null)

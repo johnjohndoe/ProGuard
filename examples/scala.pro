@@ -8,9 +8,9 @@
 # Specify the input jars, output jars, and library jars.
 
 -injars  in.jar
--injars  /usr/local/java/scala-2.8.1/lib/scala-library.jar
-#-injars  /usr/local/java/scala-2.8.1/lib/scala-compiler.jar(!META-INF/MANIFEST.MF)
-#-injars  /usr/local/java/scala-2.8.1/lib/jline.jar(!META-INF/MANIFEST.MF)
+-injars  /usr/local/java/scala-2.9.1/lib/scala-library.jar
+#-injars  /usr/local/java/scala-2.9.1/lib/scala-compiler.jar(!META-INF/MANIFEST.MF)
+#-injars  /usr/local/java/scala-2.9.1/lib/jline.jar(!META-INF/MANIFEST.MF)
 -outjars out.jar
 
 -libraryjars <java.home>/lib/rt.jar
@@ -19,13 +19,7 @@
 
 # Ignore some compiler artefacts.
 
--dontwarn **$$anonfun$*
--dontwarn scala.collection.immutable.RedBlack$Empty
-
-# Ignore some dependencies on the Scala compiler library, under the assumption
-# that it is not used.
-
--dontwarn scala.tools.**,plugintemplate.**
+-dontwarn scala.**
 
 # Save the obfuscation mapping to a file, so you can de-obfuscate any stack
 # traces later on. Keep a fixed source file attribute and all line number

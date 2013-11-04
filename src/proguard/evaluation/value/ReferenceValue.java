@@ -280,10 +280,24 @@ public class ReferenceValue extends Category1Value
                 thisReferencedClass.hierarchyAccept(false, true, true, false,
                                                     new ClassCollector(thisSuperClasses));
 
+                int thisSuperClassesCount = thisSuperClasses.size();
+                if (thisSuperClassesCount == 0 &&
+                    thisReferencedClass.getSuperName() != null)
+                {
+                    throw new IllegalArgumentException("Can't find any super classes of ["+thisType+"] (not even immediate super class ["+thisReferencedClass.getSuperName()+"])");
+                }
+
                 // Collect the superclasses and interfaces of the other class.
                 Set otherSuperClasses = new HashSet();
                 otherReferencedClass.hierarchyAccept(false, true, true, false,
                                                      new ClassCollector(otherSuperClasses));
+
+                int otherSuperClassesCount = otherSuperClasses.size();
+                if (otherSuperClassesCount == 0 &&
+                    otherReferencedClass.getSuperName() != null)
+                {
+                    throw new IllegalArgumentException("Can't find any super classes of ["+otherType+"] (not even immediate super class ["+otherReferencedClass.getSuperName()+"])");
+                }
 
                 if (DEBUG)
                 {
@@ -302,7 +316,7 @@ public class ReferenceValue extends Category1Value
 
                 // Find a class that is a subclass of all common superclasses,
                 // or that at least has the maximum number of common superclasses.
-                Clazz commonClazz = null;
+                Clazz commonClass = null;
 
                 int maximumSuperClassCount = -1;
 
@@ -317,31 +331,33 @@ public class ReferenceValue extends Category1Value
                     int superClassCount = superClassCount(commonSuperClass, thisSuperClasses);
                     if (maximumSuperClassCount < superClassCount ||
                         (maximumSuperClassCount == superClassCount &&
-                         commonClazz != null                       &&
-                         commonClazz.getName().compareTo(commonSuperClass.getName()) > 0))
+                         commonClass != null                       &&
+                         commonClass.getName().compareTo(commonSuperClass.getName()) > 0))
                     {
-                        commonClazz            = commonSuperClass;
+                        commonClass            = commonSuperClass;
                         maximumSuperClassCount = superClassCount;
                     }
                 }
 
-                if (commonClazz == null)
+                if (commonClass == null)
                 {
-                    throw new IllegalArgumentException("Can't find common super class of ["+thisType+"] and ["+otherType+"]");
+                    throw new IllegalArgumentException("Can't find common super class of ["+
+                                                       thisType +"] (with "+thisSuperClassesCount +" known super classes) and ["+
+                                                       otherType+"] (with "+otherSuperClassesCount+" known super classes)");
                 }
 
                 if (DEBUG)
                 {
-                    System.out.println("  Best common class: ["+commonClazz.getName()+"]");
+                    System.out.println("  Best common class: ["+commonClass.getName()+"]");
                 }
 
                 // TODO: Handle more difficult cases, with multiple global subclasses.
 
                 return new ReferenceValue(commonDimensionCount == 0 ?
-                                              commonClazz.getName() :
-                                              ClassUtil.internalArrayTypeFromClassName(commonClazz.getName(),
+                                              commonClass.getName() :
+                                              ClassUtil.internalArrayTypeFromClassName(commonClass.getName(),
                                                                                        commonDimensionCount),
-                                          commonClazz,
+                                          commonClass,
                                           mayBeNull);
             }
         }

@@ -25,8 +25,8 @@ import proguard.classfile.constant.*;
 import proguard.classfile.util.SimplifiedVisitor;
 
 /**
- * This <code>ConstantVisitor</code> delegates its visits to a specified type
- * of constants.
+ * This <code>ConstantVisitor</code> delegates its visits to one or more
+ * specified types of constants.
  *
  * @author Eric Lafortune
  */
@@ -34,21 +34,42 @@ public class ConstantTagFilter
 extends      SimplifiedVisitor
 implements   ConstantVisitor
 {
-    private final int             constantTag;
+    private final int             constantTagMask;
     private final ConstantVisitor constantVisitor;
 
 
     /**
-     * Creates a new ConstantTypeFilter.
+     * Creates a new ConstantTagFilter.
      * @param constantTag     the type of constants for which visits will be
      *                        delegated.
      * @param constantVisitor the <code>ConstantVisitor</code> to which visits
      *                        will be delegated.
      */
     public ConstantTagFilter(int             constantTag,
-                              ConstantVisitor constantVisitor)
+                             ConstantVisitor constantVisitor)
     {
-        this.constantTag     = constantTag;
+        this.constantTagMask = 1 << constantTag;
+        this.constantVisitor = constantVisitor;
+    }
+
+
+    /**
+     * Creates a new ConstantTagFilter.
+     * @param constantTags    the types of constants for which visits will be
+     *                        delegated.
+     * @param constantVisitor the <code>ConstantVisitor</code> to which visits
+     *                        will be delegated.
+     */
+    public ConstantTagFilter(int[]           constantTags,
+                             ConstantVisitor constantVisitor)
+    {
+        int constantTagMask = 0;
+        for (int index = 0; index < constantTags.length; index++)
+        {
+            constantTagMask |= 1 << constantTags[index];
+        }
+
+        this.constantTagMask = constantTagMask;
         this.constantVisitor = constantVisitor;
     }
 
@@ -57,7 +78,7 @@ implements   ConstantVisitor
 
     public void visitAnyConstant(Clazz clazz, Constant constant)
     {
-        if (constant.getTag() == constantTag)
+        if (((1 << constant.getTag()) & constantTagMask) != 0)
         {
             constant.accept(clazz, constantVisitor);
         }

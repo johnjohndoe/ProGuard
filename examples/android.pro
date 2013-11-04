@@ -4,11 +4,11 @@
 # Usage:
 #     java -jar proguard.jar @android.pro
 #
-# If you're using the Android 2.3 SDK with API level 9 (android-9), the
-# android tool already creates a file like this in your project, called
-# proguard.cfg. It should contain the settings of this file, minus the
-# input and output paths (-injars, -outjars, -libraryjars, -printmapping, and
-# -printseeds). The generated Ant build file automatically sets these paths.
+# If you're using the Android SDK (version 2.3 or higher), the android tool
+# already creates a file like this in your project, called proguard.cfg.
+# It should contain the settings of this file, minus the input and output paths
+# (-injars, -outjars, -libraryjars, -printmapping, and -printseeds).
+# The generated Ant build file automatically sets these paths.
 
 # Specify the input jars, output jars, and library jars.
 # Note that ProGuard works with Java bytecode (.class),
@@ -106,6 +106,11 @@
 -keep public interface com.android.vending.licensing.ILicensingService
 
 -dontnote com.android.vending.licensing.ILicensingService
+
+# The Android Compatibility library references some classes that may not be
+# present in all versions of the API, but we know that's ok.
+
+-dontwarn android.support.**
 
 # Preserve all native method names and the names of their classes.
 

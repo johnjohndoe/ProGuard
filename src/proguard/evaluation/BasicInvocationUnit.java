@@ -162,6 +162,7 @@ implements   InvocationUnit,
                 break;
 
             case InstructionConstants.OP_INVOKESTATIC:
+            case InstructionConstants.OP_INVOKEDYNAMIC:
                 isStatic = true;
                 break;
 
@@ -227,6 +228,31 @@ implements   InvocationUnit,
         if (returnType.charAt(0) != ClassConstants.INTERNAL_TYPE_VOID)
         {
             stack.push(getMethodReturnValue(clazz, methodrefConstant, returnType));
+        }
+    }
+
+    public void visitInvokeDynamicConstant(Clazz clazz, InvokeDynamicConstant invokeDynamicConstant)
+    {
+        String type = invokeDynamicConstant.getType(clazz);
+
+        // Count the number of parameters.
+        int parameterCount = ClassUtil.internalMethodParameterCount(type);
+        if (!isStatic)
+        {
+            parameterCount++;
+        }
+
+        // Pop the parameters and the class reference, in reverse order.
+        for (int parameterIndex = parameterCount-1; parameterIndex >= 0; parameterIndex--)
+        {
+            stack.pop();
+        }
+
+        // Push the return value, if applicable.
+        String returnType = ClassUtil.internalMethodReturnType(type);
+        if (returnType.charAt(0) != ClassConstants.INTERNAL_TYPE_VOID)
+        {
+            stack.push(getMethodReturnValue(clazz, invokeDynamicConstant, returnType));
         }
     }
 
@@ -333,6 +359,25 @@ implements   InvocationUnit,
         // Try to figure out the class of the return type.
         returnTypeClass = null;
         refConstant.referencedMemberAccept(this);
+
+        return valueFactory.createValue(type,
+                                        returnTypeClass,
+                                        true);
+    }
+
+
+    /**
+     * Returns the return value of the specified method.
+     */
+    protected Value getMethodReturnValue(Clazz                 clazz,
+                                         InvokeDynamicConstant invokeDynamicConstant,
+                                         String                type)
+    {
+        // Try to figure out the class of the return type.
+        Clazz[] referencedClasses = invokeDynamicConstant.referencedClasses;
+
+        Clazz returnTypeClass = referencedClasses == null ? null :
+            referencedClasses[referencedClasses.length - 1];
 
         return valueFactory.createValue(type,
                                         returnTypeClass,

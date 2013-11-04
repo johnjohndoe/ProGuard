@@ -10,8 +10,11 @@
 <!--
 if (window.self==window.top)
   window.top.location.replace("index.html#"+window.location.pathname+window.location.hash);
-//else if (window.top.location.hash!="#"+window.location.pathname)
-//  window.top.location.hash="#"+window.location.pathname;
+else {
+  var hash="#"+window.location.pathname.replace(window.top.location.pathname.replace("index.html", ""), "");
+  if (window.top.location.hash!=hash)
+    window.top.location.hash=hash;
+}
 //-->
 </script>
 </head>
@@ -21,13 +24,21 @@ if (window.self==window.top)
 
 By now, I've invested a fair amount of time in <b>ProGuard</b>. You can help
 by providing feedback! If you have problems, bugs, bug fixes, ideas,
-encouragements, etc., please let me know:
+encouragements, etc., please get in touch:
 <p>
 <ul class="spacious">
+<li>Through
+    <a href="http://www.saikoa.com/proguard/support" target="_top">Saikoa</a>,
+    we provide professional support for ProGuard. If you find ProGuard useful
+    and you would like to have some professional backing, this is the place to
+    go.</li>
+
 <li>The <a href="https://sourceforge.net/projects/proguard/forums/forum/182456"
     target="other">help forum</a> (at SourceForge) is the right place to ask
     questions about any problems you might have configuring and running
-    <b>ProGuard</b>.</li>
+    ProGuard. At this time, I can generally only assist other open source
+    projects though. If you're working on commercial software, please consider
+    our professional support above.</li>
 
 <li>The <a href="https://sourceforge.net/projects/proguard/forums/forum/182455"
     target="other">open discussion forum</a> (at SourceForge) offers a place

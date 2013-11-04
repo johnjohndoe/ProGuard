@@ -22,6 +22,8 @@ package proguard.evaluation;
 
 import proguard.evaluation.value.*;
 
+import java.util.Arrays;
+
 /**
  * This class represents an operand stack that contains <code>Value</code>
  * objects.
@@ -163,10 +165,7 @@ public class Stack
     public void clear()
     {
         // Clear the stack contents.
-        for (int index = 0; index < currentSize; index++)
-        {
-            values[index] = null;
-        }
+        Arrays.fill(values, 0, currentSize, null);
 
         currentSize = 0;
     }

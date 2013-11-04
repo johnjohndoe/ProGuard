@@ -48,8 +48,9 @@ implements   ClassVisitor,
              ConstantVisitor,
              MemberVisitor,
              AttributeVisitor,
-             ExceptionInfoVisitor,
+             BootstrapMethodInfoVisitor,
              InnerClassesInfoVisitor,
+             ExceptionInfoVisitor,
              StackMapFrameVisitor,
              VerificationTypeVisitor,
              LineNumberInfoVisitor,
@@ -223,10 +224,30 @@ implements   ClassVisitor,
     }
 
 
+    public void visitInvokeDynamicConstant(Clazz clazz, InvokeDynamicConstant invokeDynamicConstant)
+    {
+        println(visitorInfo(invokeDynamicConstant) + " InvokeDynamic [bootstrap method index = " + invokeDynamicConstant.u2bootstrapMethodAttributeIndex + "]:");
+
+        indent();
+        clazz.constantPoolEntryAccept(invokeDynamicConstant.u2nameAndTypeIndex, this);
+        outdent();
+    }
+
+
+    public void visitMethodHandleConstant(Clazz clazz, MethodHandleConstant methodHandleConstant)
+    {
+        println(visitorInfo(methodHandleConstant) + " MethodHandle [kind = " + methodHandleConstant.u1referenceKind + "]:");
+
+        indent();
+        clazz.constantPoolEntryAccept(methodHandleConstant.u2referenceIndex, this);
+        outdent();
+    }
+
+
     public void visitFieldrefConstant(Clazz clazz, FieldrefConstant fieldrefConstant)
     {
         println(visitorInfo(fieldrefConstant) + " Fieldref [" +
-                clazz.getClassName(fieldrefConstant.u2classIndex)  + "." +
+                clazz.getClassName(fieldrefConstant.u2classIndex) + "." +
                 clazz.getName(fieldrefConstant.u2nameAndTypeIndex) + " " +
                 clazz.getType(fieldrefConstant.u2nameAndTypeIndex) + "]");
     }
@@ -254,6 +275,13 @@ implements   ClassVisitor,
     {
         println(visitorInfo(classConstant) + " Class [" +
                 clazz.getString(classConstant.u2nameIndex) + "]");
+    }
+
+
+    public void visitMethodTypeConstant(Clazz clazz, MethodTypeConstant methodTypeConstant)
+    {
+        println(visitorInfo(methodTypeConstant) + " MethodType [" +
+                clazz.getString(methodTypeConstant.u2descriptorIndex) + "]");
     }
 
 
@@ -359,6 +387,17 @@ implements   ClassVisitor,
     {
         println(visitorInfo(unknownAttribute) +
                 " Unknown attribute (" + clazz.getString(unknownAttribute.u2attributeNameIndex) + ")");
+    }
+
+
+    public void visitBootstrapMethodsAttribute(Clazz clazz, BootstrapMethodsAttribute bootstrapMethodsAttribute)
+    {
+        println(visitorInfo(bootstrapMethodsAttribute) +
+                " Bootstrap methods attribute (count = " + bootstrapMethodsAttribute.u2bootstrapMethodsCount + "):");
+
+        indent();
+        bootstrapMethodsAttribute.bootstrapMethodEntriesAccept(clazz, this);
+        outdent();
     }
 
 
@@ -592,6 +631,21 @@ implements   ClassVisitor,
 
         indent();
         annotationDefaultAttribute.defaultValueAccept(clazz, this);
+        outdent();
+    }
+
+
+    // Implementations for BootstrapMethodInfoVisitor.
+
+    public void visitBootstrapMethodInfo(Clazz clazz, BootstrapMethodInfo bootstrapMethodInfo)
+    {
+        println(visitorInfo(bootstrapMethodInfo) +
+                " BootstrapMethodInfo (argument count = " +
+                bootstrapMethodInfo.u2methodArgumentCount+ "):");
+
+        indent();
+        clazz.constantPoolEntryAccept(bootstrapMethodInfo.u2methodHandleIndex, this);
+        bootstrapMethodInfo.methodArgumentsAccept(clazz, this);
         outdent();
     }
 

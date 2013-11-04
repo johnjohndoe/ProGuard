@@ -182,6 +182,7 @@ public class InstructionFactory
             case InstructionConstants.OP_INVOKESPECIAL:
             case InstructionConstants.OP_INVOKESTATIC:
             case InstructionConstants.OP_INVOKEINTERFACE:
+            case InstructionConstants.OP_INVOKEDYNAMIC:
 
             case InstructionConstants.OP_NEW:
             case InstructionConstants.OP_ANEWARRAY:

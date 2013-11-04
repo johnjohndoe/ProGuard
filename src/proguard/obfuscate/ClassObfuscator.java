@@ -469,13 +469,25 @@ implements   ClassVisitor,
     {
         // Come up with class names until we get an original one.
         String newClassName;
+        String newMixedCaseClassName;
         do
         {
             // Let the factory produce a class name.
             newClassName = newPackagePrefix +
                            classNameFactory.nextName();
+
+            newMixedCaseClassName = mixedCaseClassName(newClassName);
         }
-        while (classNamesToAvoid.contains(mixedCaseClassName(newClassName)));
+        while (classNamesToAvoid.contains(newMixedCaseClassName));
+
+        // Explicitly make sure the name isn't used again if we have a
+        // user-specified dictionary and we're not allowed to have mixed case
+        // class names -- just to protect against problematic dictionaries.
+        if (this.classNameFactory != null &&
+            !useMixedCaseClassNames)
+        {
+            classNamesToAvoid.add(newMixedCaseClassName);
+        }
 
         return newClassName;
     }

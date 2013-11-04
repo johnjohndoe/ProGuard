@@ -123,6 +123,13 @@ implements   ClassVisitor,
     }
 
 
+    public void visitInvokeDynamicConstant(Clazz clazz, InvokeDynamicConstant invokeDynamicConstant)
+    {
+        // Let the visitor visit the class referenced in the reference constant.
+        invokeDynamicConstant.referencedClassesAccept(classVisitor);
+    }
+
+
     public void visitClassConstant(Clazz clazz, ClassConstant classConstant)
     {
         // Let the visitor visit the class referenced in the class constant.

@@ -298,22 +298,17 @@ implements   ClassVisitor,
         {
             Clazz referencedClass = enclosingMethodAttribute.referencedClass;
 
-            // Does it have a new class?
-            if (!enclosingMethodAttribute.getClassName(clazz).equals(referencedClass.getName()))
-            {
-                // Update the class index.
-                enclosingMethodAttribute.u2classIndex =
-                    new ConstantPoolEditor((ProgramClass)clazz).addClassConstant(referencedClass);
-            }
-
             // Does it have a new name or type?
-            if (!enclosingMethodAttribute.getName(clazz).equals(referencedMember.getName(referencedClass)) ||
-                !enclosingMethodAttribute.getType(clazz).equals(referencedMember.getDescriptor(referencedClass)))
+            String newName = referencedMember.getName(referencedClass);
+            String newType = referencedMember.getDescriptor(referencedClass);
+
+            if (!enclosingMethodAttribute.getName(clazz).equals(newName) ||
+                !enclosingMethodAttribute.getType(clazz).equals(newType))
             {
                 // Update the name and type index.
                 enclosingMethodAttribute.u2nameAndTypeIndex =
-                    new ConstantPoolEditor((ProgramClass)clazz).addNameAndTypeConstant(referencedMember.getName(referencedClass),
-                                                                                       referencedMember.getDescriptor(referencedClass));
+                    new ConstantPoolEditor((ProgramClass)clazz).addNameAndTypeConstant(newName,
+                                                                                       newType);
             }
         }
     }
@@ -433,10 +428,9 @@ implements   ClassVisitor,
                        Member         referencedMember)
     {
         System.out.println("MemberReferenceFixer:");
-        System.out.println("  Class file      = "+clazz.getName());
-        System.out.println("  Ref class       = "+referencedClass.getName());
-        System.out.println("  Ref member name = "+stringConstant.getString(clazz));
-        System.out.println("                 -> "+referencedMember.getName(referencedClass));
+        System.out.println("  ["+clazz.getName()+"]: String ["+
+                           stringConstant.getString(clazz)+"] -> ["+
+                           referencedClass.getName()+"."+referencedMember.getName(referencedClass)+" "+referencedMember.getDescriptor(referencedClass)+"]");
     }
 
 
@@ -446,11 +440,8 @@ implements   ClassVisitor,
                        Member      referencedMember)
     {
         System.out.println("MemberReferenceFixer:");
-        System.out.println("  Class file      = "+clazz.getName());
-        System.out.println("  Ref class       = "+referencedClass.getName());
-        System.out.println("  Ref member name = "+refConstant.getName(clazz));
-        System.out.println("                 -> "+referencedMember.getName(referencedClass));
-        System.out.println("  Ref descriptor  = "+refConstant.getType(clazz));
-        System.out.println("                 -> "+referencedMember.getDescriptor(referencedClass));
+        System.out.println("  ["+clazz.getName()+"]: ["+
+                           refConstant.getClassName(clazz)+"."+refConstant.getName(clazz)+" "+refConstant.getType(clazz)+"] -> ["+
+                           referencedClass.getName()+"."+referencedMember.getName(referencedClass)+" "+referencedMember.getDescriptor(referencedClass)+"]");
     }
 }

@@ -21,10 +21,14 @@
 package proguard.classfile.editor;
 
 import proguard.classfile.*;
-import proguard.classfile.util.SimplifiedVisitor;
+import proguard.classfile.attribute.*;
+import proguard.classfile.attribute.visitor.AttributeVisitor;
+import proguard.classfile.constant.*;
+import proguard.classfile.constant.visitor.ConstantVisitor;
+import proguard.classfile.util.*;
 import proguard.classfile.visitor.ClassVisitor;
 
-import java.util.Arrays;
+import java.util.*;
 
 /**
  * This ClassVisitor sorts the interfaces of the program classes that it visits.
@@ -33,7 +37,8 @@ import java.util.Arrays;
  */
 public class InterfaceSorter
 extends      SimplifiedVisitor
-implements   ClassVisitor
+implements   ClassVisitor,
+             AttributeVisitor
 {
     // Implementations for ClassVisitor.
 
@@ -42,26 +47,106 @@ implements   ClassVisitor
         int[] interfaces      = programClass.u2interfaces;
         int   interfacesCount = programClass.u2interfacesCount;
 
-        // Sort the interfaces.
-        Arrays.sort(interfaces, 0, interfacesCount);
-
-        // Remove any duplicate entries.
-        int newInterfacesCount     = 0;
-        int previousInterfaceIndex = 0;
-        for (int index = 0; index < interfacesCount; index++)
+        if (interfacesCount > 1)
         {
-            int interfaceIndex = interfaces[index];
+            // Sort the interfaces.
+            Arrays.sort(interfaces, 0, interfacesCount);
 
-            // Isn't this a duplicate of the previous interface?
-            if (interfaceIndex != previousInterfaceIndex)
+            // Remove any duplicate entries.
+            int newInterfacesCount     = 0;
+            int previousInterfaceIndex = 0;
+            for (int index = 0; index < interfacesCount; index++)
             {
-                interfaces[newInterfacesCount++] = interfaceIndex;
+                int interfaceIndex = interfaces[index];
 
-                // Remember the interface.
-                previousInterfaceIndex = interfaceIndex;
+                // Isn't this a duplicate of the previous interface?
+                if (interfaceIndex != previousInterfaceIndex)
+                {
+                    interfaces[newInterfacesCount++] = interfaceIndex;
+
+                    // Remember the interface.
+                    previousInterfaceIndex = interfaceIndex;
+                }
+            }
+
+            programClass.u2interfacesCount = newInterfacesCount;
+
+            // Update the signature, if any
+            programClass.attributesAccept(this);
+        }
+    }
+
+
+    // Implementations for AttributeVisitor.
+
+    public void visitAnyAttribute(Clazz clazz, Attribute attribute) {}
+
+
+    public void visitSignatureAttribute(Clazz clazz, SignatureAttribute signatureAttribute)
+    {
+        // Process the generic definitions, superclass, and implemented
+        // interfaces.
+        String signature = clazz.getString(signatureAttribute.u2signatureIndex);
+
+        // Count the signature types.
+        InternalTypeEnumeration internalTypeEnumeration =
+            new InternalTypeEnumeration(signature);
+
+        int count           =  0;
+        int interfacesCount = -1;
+        while (internalTypeEnumeration.hasMoreTypes())
+        {
+            String internalType = internalTypeEnumeration.nextType();
+
+            count++;
+
+            if (ClassUtil.isInternalClassType(internalType))
+            {
+                interfacesCount++;
             }
         }
 
-        programClass.u2interfacesCount = newInterfacesCount;
+        // Put the signature types in an array.
+        internalTypeEnumeration =
+            new InternalTypeEnumeration(signature);
+
+        String[] internalTypes = new String[count];
+
+        for (int index = 0; index < count; index++)
+        {
+            String internalType = internalTypeEnumeration.nextType();
+
+            internalTypes[index] = internalType;
+        }
+
+        // Sort the interface types in the array.
+        Arrays.sort(internalTypes, count - interfacesCount, count);
+
+        // Recompose the signature types in a string.
+        StringBuffer newSignatureBuffer = new StringBuffer();
+
+        for (int index = 0; index < count; index++)
+        {
+            // Is this not an interface type, or an interface type that isn't
+            // a duplicate of the previous interface type?
+            if (index < count - interfacesCount ||
+                !internalTypes[index].equals(internalTypes[index-1]))
+            {
+                newSignatureBuffer.append(internalTypes[index]);
+            }
+        }
+
+        String newSignature = newSignatureBuffer.toString();
+
+        // Did the signature change?
+        if (!newSignature.equals(signature))
+        {
+            // Update the signature.
+            ((Utf8Constant)((ProgramClass)clazz).constantPool[signatureAttribute.u2signatureIndex]).setString(newSignatureBuffer.toString());
+
+            // Clear the referenced classes.
+            // TODO: Properly update the referenced classes.
+            signatureAttribute.referencedClasses = null;
+        }
     }
 }

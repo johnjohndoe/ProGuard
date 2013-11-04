@@ -21,6 +21,7 @@
 package proguard.optimize.peephole;
 
 import proguard.classfile.*;
+import proguard.classfile.constant.ClassConstant;
 import proguard.classfile.constant.visitor.*;
 import proguard.classfile.editor.*;
 import proguard.classfile.util.*;
@@ -58,6 +59,8 @@ implements   ClassVisitor,
     private final boolean      allowAccessModification;
     private final boolean      mergeInterfacesAggressively;
     private final ClassVisitor extraClassVisitor;
+
+    private final MemberVisitor fieldOptimizationInfoCopier = new FieldOptimizationInfoCopier();
 
 
     /**
@@ -261,7 +264,7 @@ implements   ClassVisitor,
 
             // Copy over the class members.
             MemberAdder memberAdder =
-                new MemberAdder(targetClass);
+                new MemberAdder(targetClass, fieldOptimizationInfoCopier);
 
             programClass.fieldsAccept(memberAdder);
             programClass.methodsAccept(memberAdder);
@@ -367,12 +370,19 @@ implements   ClassVisitor,
      */
     private Set caughtSuperClasses(Clazz clazz)
     {
+        // Don't bother if this isn't an exception at all.
+        if (!clazz.extends_(ClassConstants.INTERNAL_NAME_JAVA_LANG_THROWABLE))
+        {
+            return Collections.EMPTY_SET;
+        }
+
+        // Visit all superclasses, collecting the ones that are caught
+        // (plus java.lang.Object, in the current implementation).
         Set set = new HashSet();
 
-        // Visit all superclasses, collecting the ones that are caught.
         clazz.hierarchyAccept(true, true, false, false,
                               new CaughtClassFilter(
-                              new ClassCollector(set)));
+                                  new ClassCollector(set)));
 
         return set;
     }
@@ -535,6 +545,32 @@ implements   ClassVisitor,
             }
 
             targetClass = clazz;
+        }
+    }
+
+
+    /**
+     * This MemberVisitor copies field optimization info from copied fields.
+     */
+    private static class FieldOptimizationInfoCopier
+    extends              SimplifiedVisitor
+    implements           MemberVisitor
+    {
+        public void visitProgramField(ProgramClass programClass, ProgramField programField)
+        {
+            // Copy the optimization info from the field that was just copied.
+            ProgramField copiedField = (ProgramField)programField.getVisitorInfo();
+            Object       info        = copiedField.getVisitorInfo();
+
+            programField.setVisitorInfo(info instanceof FieldOptimizationInfo ?
+                new FieldOptimizationInfo((FieldOptimizationInfo)info) :
+                info);
+        }
+
+
+        public void visitProgramMethod(ProgramClass programClass, ProgramMethod programMethod)
+        {
+            // Linked methods share their optimization info.
         }
     }
 }

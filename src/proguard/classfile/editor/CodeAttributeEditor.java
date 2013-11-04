@@ -29,6 +29,8 @@ import proguard.classfile.instruction.*;
 import proguard.classfile.instruction.visitor.InstructionVisitor;
 import proguard.classfile.util.SimplifiedVisitor;
 
+import java.util.Arrays;
+
 /**
  * This AttributeVisitor accumulates specified changes to code, and then applies
  * these accumulated changes to the code attributes that it visits.
@@ -104,13 +106,10 @@ implements   AttributeVisitor,
         }
         else
         {
-            for (int index = 0; index < codeLength; index++)
-            {
-                preInsertions[index]  = null;
-                replacements[index]   = null;
-                postInsertions[index] = null;
-                deleted[index]        = false;
-            }
+            Arrays.fill(preInsertions,  0, codeLength, null);
+            Arrays.fill(replacements,   0, codeLength, null);
+            Arrays.fill(postInsertions, 0, codeLength, null);
+            Arrays.fill(deleted,        0, codeLength, false);
         }
 
         modified = false;

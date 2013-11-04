@@ -10,8 +10,11 @@
 <!--
 if (window.self==window.top)
   window.top.location.replace("index.html#"+window.location.pathname+window.location.hash);
-//else if (window.top.location.hash!="#"+window.location.pathname)
-//  window.top.location.hash="#"+window.location.pathname;
+else {
+  var hash="#"+window.location.pathname.replace(window.top.location.pathname.replace("index.html", ""), "");
+  if (window.top.location.hash!=hash)
+    window.top.location.hash=hash;
+}
 //-->
 </script>
 </head>
@@ -51,6 +54,37 @@ Finally, there may be beta versions of upcoming releases. They may be of
 interest too, because they typically contain any less urgent bug fixes
 collected since the previous release.
 <p>
+
+<h3><div>Dec 2011</div> Version 4.7</h3>
+<ul>
+<li>Added support for Java 7.
+<li>Parsing unquoted file names with special characters more leniently.
+<li>Added support for instance methods overriding class methods.
+<li>Added removal of unused parameterless constructors.
+<li>Added removal of empty class initializers.
+<li>Added peephole optimizations for constant strings.
+<li>Avoiding idle optimization passes.
+<li>Improved removal of unused constants after obfuscation.
+<li>Fixed removal of unused classes referenced by annotations.
+<li>Fixed simplifying parameters of constructors that should actually be
+    preserved.
+<li>Fixed simplifying parameters of large numbers of similar constructors.
+<li>Fixed exceptions in optimization of unusual obfuscated code.
+<li>Fixed NullPointerException when specifying <code>-keepclassmembers</code>
+    without specific class or class members.
+<li>Fixed potential problems with mixed-case class name dictionaries when not
+    allowing mixed-case class names.
+<li>Fixed obfuscation of classes with EnclosingMethod attributes that don't
+    specify methods.
+<li>Fixed preverification of returning try blocks with finally blocks, inside
+    try blocks, when compiled with JDK 1.4.
+<li>Fixed sorting of interfaces containing generics.
+<li>Fixed paths in shell scripts.
+<li>Fixed filling in of text fields showing class obfuscation dictionary and
+    package obfuscation dictionary from configuration in GUI.
+<li>Worked around Oracle Java 6/7 bug #7027598 that locked the GUI on Linux.
+<li>Updated documentation and examples.
+</ul>
 
 <h3><div>Feb 2011</div> Version 4.6</h3>
 <ul>

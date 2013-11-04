@@ -84,8 +84,9 @@ implements   InstructionVisitor
             int branchOffset = branchInstruction.branchOffset;
             int targetOffset = offset + branchOffset;
 
-            if (branchOffset != branchInstruction.length(offset) &&
-                !codeAttributeEditor.isModified(offset) &&
+            if (branchOffset != 0                                &&
+                branchOffset != branchInstruction.length(offset) &&
+                !codeAttributeEditor.isModified(offset)          &&
                 !codeAttributeEditor.isModified(targetOffset))
             {
                 Instruction targetInstruction =

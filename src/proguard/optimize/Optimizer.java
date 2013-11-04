@@ -23,6 +23,7 @@ package proguard.optimize;
 import proguard.*;
 import proguard.classfile.*;
 import proguard.classfile.attribute.visitor.*;
+import proguard.classfile.constant.Constant;
 import proguard.classfile.constant.visitor.*;
 import proguard.classfile.editor.*;
 import proguard.classfile.instruction.visitor.*;
@@ -66,6 +67,7 @@ public class Optimizer
     private static final String CODE_SIMPLIFICATION_CAST       = "code/simplification/cast";
     private static final String CODE_SIMPLIFICATION_FIELD      = "code/simplification/field";
     private static final String CODE_SIMPLIFICATION_BRANCH     = "code/simplification/branch";
+    private static final String CODE_SIMPLIFICATION_STRING     = "code/simplification/string";
     private static final String CODE_SIMPLIFICATION_ADVANCED   = "code/simplification/advanced";
     private static final String CODE_REMOVAL_ADVANCED          = "code/removal/advanced";
     private static final String CODE_REMOVAL_SIMPLE            = "code/removal/simple";
@@ -97,6 +99,7 @@ public class Optimizer
         CODE_SIMPLIFICATION_CAST,
         CODE_SIMPLIFICATION_FIELD,
         CODE_SIMPLIFICATION_BRANCH,
+        CODE_SIMPLIFICATION_STRING,
         CODE_SIMPLIFICATION_ADVANCED,
         CODE_REMOVAL_ADVANCED,
         CODE_REMOVAL_SIMPLE,
@@ -158,6 +161,7 @@ public class Optimizer
         boolean codeSimplificationCast       = filter.matches(CODE_SIMPLIFICATION_CAST);
         boolean codeSimplificationField      = filter.matches(CODE_SIMPLIFICATION_FIELD);
         boolean codeSimplificationBranch     = filter.matches(CODE_SIMPLIFICATION_BRANCH);
+        boolean codeSimplificationString     = filter.matches(CODE_SIMPLIFICATION_STRING);
         boolean codeSimplificationAdvanced   = filter.matches(CODE_SIMPLIFICATION_ADVANCED);
         boolean codeRemovalAdvanced          = filter.matches(CODE_REMOVAL_ADVANCED);
         boolean codeRemovalSimple            = filter.matches(CODE_REMOVAL_SIMPLE);
@@ -187,6 +191,7 @@ public class Optimizer
         InstructionCounter codeSimplificationCastCounter       = new InstructionCounter();
         InstructionCounter codeSimplificationFieldCounter      = new InstructionCounter();
         InstructionCounter codeSimplificationBranchCounter     = new InstructionCounter();
+        InstructionCounter codeSimplificationStringCounter     = new InstructionCounter();
         InstructionCounter codeSimplificationAdvancedCounter   = new InstructionCounter();
         InstructionCounter deletedCounter                      = new InstructionCounter();
         InstructionCounter addedCounter                        = new InstructionCounter();
@@ -263,6 +268,16 @@ public class Optimizer
             new AllConstantVisitor(
             new ConstantTagFilter(ClassConstants.CONSTANT_String,
             new ReferencedMemberVisitor(keepMarker))));
+
+        // We also keep all bootstrap method signatures.
+        programClassPool.classesAccept(
+            new ClassVersionFilter(ClassConstants.INTERNAL_CLASS_VERSION_1_7,
+            new AllAttributeVisitor(
+            new AttributeNameFilter(ClassConstants.ATTR_BootstrapMethods,
+            new AllBootstrapMethodInfoVisitor(
+            new BootstrapMethodHandleTraveler(
+            new MethodrefTraveler(
+            new ReferencedMemberVisitor(keepMarker))))))));
 
         // Attach some optimization info to all classes and class members, so
         // it can be filled out later.
@@ -359,18 +374,29 @@ public class Optimizer
                 new AllAttributeVisitor(
                 new PartialEvaluator(valueFactory, storingInvocationUnit, false))));
 
-            // Count the constant fields and methods.
-            programClassPool.classesAccept(
-                new MultiClassVisitor(
-                new ClassVisitor[]
-                {
+            if (fieldPropagationValue)
+            {
+                // Count the constant fields.
+                programClassPool.classesAccept(
                     new AllFieldVisitor(
-                    new ConstantMemberFilter(fieldPropagationValueCounter)),
+                    new ConstantMemberFilter(fieldPropagationValueCounter)));
+            }
+
+            if (methodPropagationParameter)
+            {
+                // Count the constant method parameters.
+                programClassPool.classesAccept(
                     new AllMethodVisitor(
-                    new ConstantParameterFilter(methodPropagationParameterCounter)),
+                    new ConstantParameterFilter(methodPropagationParameterCounter)));
+            }
+
+            if (methodPropagationReturnvalue)
+            {
+                // Count the constant method return values.
+                programClassPool.classesAccept(
                     new AllMethodVisitor(
-                    new ConstantMemberFilter(methodPropagationReturnvalueCounter)),
-                }));
+                    new ConstantMemberFilter(methodPropagationReturnvalueCounter)));
+            }
         }
 
         InvocationUnit loadingInvocationUnit =
@@ -430,6 +456,12 @@ public class Optimizer
             // This operation also updates the stack sizes.
             programClassPool.classesAccept(
                 new MemberReferenceFixer());
+
+            // Remove unused bootstrap method arguments.
+            programClassPool.classesAccept(
+                new AllAttributeVisitor(
+                new AllBootstrapMethodInfoVisitor(
+                new BootstrapMethodArgumentShrinker())));
         }
 
         if (methodRemovalParameter ||
@@ -743,6 +775,15 @@ public class Optimizer
                 new GotoReturnReplacer(codeAttributeEditor, codeSimplificationBranchCounter));
         }
 
+        if (codeSimplificationString)
+        {
+            // Peephole optimizations involving branches.
+            peepholeOptimizations.add(
+                new InstructionSequencesReplacer(InstructionSequenceConstants.CONSTANTS,
+                                                 InstructionSequenceConstants.STRING,
+                                                 branchTargetFinder, codeAttributeEditor, codeSimplificationStringCounter));
+        }
+
         if (!peepholeOptimizations.isEmpty())
         {
             // Convert the list into an array.
@@ -795,6 +836,11 @@ public class Optimizer
                 new VariableOptimizer(false, codeAllocationVariableCounter))));
         }
 
+
+        // Remove unused constants.
+        programClassPool.classesAccept(
+            new ConstantPoolShrinker());
+
         int classMarkingFinalCount            = classMarkingFinalCounter           .getCount();
         int classMergingVerticalCount         = classMergingVerticalCounter        .getCount();
         int classMergingHorizontalCount       = classMergingHorizontalCounter      .getCount();
@@ -816,11 +862,22 @@ public class Optimizer
         int codeSimplificationCastCount       = codeSimplificationCastCounter      .getCount();
         int codeSimplificationFieldCount      = codeSimplificationFieldCounter     .getCount();
         int codeSimplificationBranchCount     = codeSimplificationBranchCounter    .getCount();
+        int codeSimplificationStringCount     = codeSimplificationStringCounter    .getCount();
         int codeSimplificationAdvancedCount   = codeSimplificationAdvancedCounter  .getCount();
         int codeRemovalCount                  = deletedCounter                     .getCount() - addedCounter.getCount();
         int codeRemovalVariableCount          = codeRemovalVariableCounter         .getCount();
         int codeRemovalExceptionCount         = codeRemovalExceptionCounter        .getCount();
         int codeAllocationVariableCount       = codeAllocationVariableCounter      .getCount();
+
+        // Forget about constant fields, parameters, and return values, if they
+        // didn't lead to any useful optimizations. We want to avoid fruitless
+        // additional optimization passes.
+        if (codeSimplificationAdvancedCount == 0)
+        {
+            fieldPropagationValueCount        = 0;
+            methodPropagationParameterCount   = 0;
+            methodPropagationReturnvalueCount = 0;
+        }
 
         if (configuration.verbose)
         {
@@ -845,6 +902,7 @@ public class Optimizer
             System.out.println("  Number of cast peephole optimizations:       " + codeSimplificationCastCount       + disabled(codeSimplificationCast));
             System.out.println("  Number of field peephole optimizations:      " + codeSimplificationFieldCount      + disabled(codeSimplificationField));
             System.out.println("  Number of branch peephole optimizations:     " + codeSimplificationBranchCount     + disabled(codeSimplificationBranch));
+            System.out.println("  Number of string peephole optimizations:     " + codeSimplificationStringCount     + disabled(codeSimplificationString));
             System.out.println("  Number of simplified instructions:           " + codeSimplificationAdvancedCount   + disabled(codeSimplificationAdvanced));
             System.out.println("  Number of removed instructions:              " + codeRemovalCount                  + disabled(codeRemovalAdvanced));
             System.out.println("  Number of removed local variables:           " + codeRemovalVariableCount          + disabled(codeRemovalVariable));
@@ -873,6 +931,7 @@ public class Optimizer
                codeSimplificationCastCount       > 0 ||
                codeSimplificationFieldCount      > 0 ||
                codeSimplificationBranchCount     > 0 ||
+               codeSimplificationStringCount     > 0 ||
                codeSimplificationAdvancedCount   > 0 ||
                codeRemovalCount                  > 0 ||
                codeRemovalVariableCount          > 0 ||

@@ -277,6 +277,18 @@ implements   ClassVisitor,
     }
 
 
+    public void visitInvokeDynamicConstant(Clazz clazz, InvokeDynamicConstant invokeDynamicConstant)
+    {
+        dataInput.skipBytes(4);
+    }
+
+
+    public void visitMethodHandleConstant(Clazz clazz, MethodHandleConstant methodHandleConstant)
+    {
+        dataInput.skipBytes(3);
+    }
+
+
     public void visitAnyRefConstant(Clazz clazz, RefConstant refConstant)
     {
         dataInput.skipBytes(4);
@@ -286,6 +298,12 @@ implements   ClassVisitor,
     public void visitClassConstant(Clazz clazz, ClassConstant classConstant)
     {
         classConstant.u2nameIndex = dataInput.readUnsignedShort();
+    }
+
+
+    public void visitMethodTypeConstant(Clazz clazz, MethodTypeConstant methodTypeConstant)
+    {
+        dataInput.skipBytes(2);
     }
 
 
@@ -325,16 +343,19 @@ implements   ClassVisitor,
 
         switch (u1tag)
         {
-            case ClassConstants.CONSTANT_Utf8:               return new Utf8Constant();
             case ClassConstants.CONSTANT_Integer:            return new IntegerConstant();
             case ClassConstants.CONSTANT_Float:              return new FloatConstant();
             case ClassConstants.CONSTANT_Long:               return new LongConstant();
             case ClassConstants.CONSTANT_Double:             return new DoubleConstant();
             case ClassConstants.CONSTANT_String:             return new StringConstant();
+            case ClassConstants.CONSTANT_Utf8:               return new Utf8Constant();
+            case ClassConstants.CONSTANT_InvokeDynamic:      return new InvokeDynamicConstant();
+            case ClassConstants.CONSTANT_MethodHandle:       return new MethodHandleConstant();
             case ClassConstants.CONSTANT_Fieldref:           return new FieldrefConstant();
             case ClassConstants.CONSTANT_Methodref:          return new MethodrefConstant();
             case ClassConstants.CONSTANT_InterfaceMethodref: return new InterfaceMethodrefConstant();
             case ClassConstants.CONSTANT_Class:              return new ClassConstant();
+            case ClassConstants.CONSTANT_MethodType  :       return new MethodTypeConstant();
             case ClassConstants.CONSTANT_NameAndType:        return new NameAndTypeConstant();
 
             default: throw new RuntimeException("Unknown constant type ["+u1tag+"] in constant pool");

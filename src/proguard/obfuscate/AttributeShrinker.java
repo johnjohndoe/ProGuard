@@ -26,6 +26,8 @@ import proguard.classfile.attribute.visitor.AttributeVisitor;
 import proguard.classfile.util.SimplifiedVisitor;
 import proguard.classfile.visitor.*;
 
+import java.util.Arrays;
+
 /**
  * This ClassVisitor removes attributes that are not marked as being used or
  * required.
@@ -111,10 +113,7 @@ implements   ClassVisitor,
         }
 
         // Clear the remaining array elements.
-        for (int index = counter; index < length; index++)
-        {
-            array[index] = null;
-        }
+        Arrays.fill(array, counter, length, null);
 
         return counter;
     }

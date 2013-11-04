@@ -109,7 +109,7 @@ public class ClassReader implements DataEntryReader
         }
         catch (Exception ex)
         {
-            throw new IOException("Can't process class ["+dataEntry.getName()+"] ("+ex.getMessage()+")");
+            throw (IOException)new IOException("Can't process class ["+dataEntry.getName()+"] ("+ex.getMessage()+")").initCause(ex);
         }
     }
 }
