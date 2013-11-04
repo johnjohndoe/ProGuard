@@ -1,4 +1,4 @@
-/* $Id: ClassFileHierarchyInitializer.java,v 1.3 2003/02/09 15:22:28 eric Exp $
+/* $Id: ClassFileHierarchyInitializer.java,v 1.4 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -101,7 +101,7 @@ public class ClassFileHierarchyInitializer
     }
 
 
-    // Implementations for ClassFileVisitor
+    // Implementations for ClassFileVisitor.
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
@@ -199,7 +199,7 @@ public class ClassFileHierarchyInitializer
     }
 
 
-    // Implementations for CpInfoVisitor
+    // Implementations for CpInfoVisitor.
 
     public void visitIntegerCpInfo(ClassFile classFile, IntegerCpInfo integerCpInfo) {}
     public void visitLongCpInfo(ClassFile classFile, LongCpInfo longCpInfo) {}

@@ -1,4 +1,4 @@
-/* $Id: KeepCommand.java,v 1.19 2003/02/10 18:59:58 eric Exp $
+/* $Id: KeepCommand.java,v 1.22 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -26,6 +26,7 @@ import proguard.obfuscate.*;
 import proguard.shrink.*;
 
 import java.io.*;
+import java.util.List;
 
 
 /**
@@ -67,53 +68,19 @@ public class KeepCommand
     private int                          memberCounter;
     private int                          memberVisitCounter;
 
+
+
     /**
      * Creates a new command that instructs to keep the specified class(es).
      *
-     * @param requiredSetAccessFlags   the class access flags that must be set
-     *                                 in order for the class to apply.
-     * @param requiredUnsetAccessFlags the class access flags that must be unset
-     *                                 in order for the class to apply.
-     * @param className                the class name. The name may be null to
-     *                                 specify any class, or it may contain
-     *                                 "**", "*", or "?" wildcards.
-     * @param extendsClassName         the name of the class that the class must
-     *                                 extend or implement in order to apply.
-     *                                 The name may be null to specify any class.
-     * @param asClassName              the new name that the class should get.
-     *                                 A value of null specifies the original
-     *                                 name.
-     * @param markClassFiles           specifies whether to mark the class files.
-     *                                 If false, only class members are marked.
-     *                                 If true, the class files are marked as
-     *                                 well.
-     * @param markConditionally        specifies whether to mark the class files
-     *                                 and class members conditionally.
-     *                                 If true, class files and class members
-     *                                 are marked, on the condition that all
-     *                                 specified class members are present.
-     * @param onlyKeepNames            specifies whether the class files and class
-     *                                 members need to be kept from obfuscation
-     *                                 only.
-     *                                 If true, the specified class class files
-     *                                 and class members will be kept from
-     *                                 obfuscation, but the may be removed in
-     *                                 the shrinking phase.
-     *                                 If false, they will be kept from
-     *                                 shrinking and obfuscation alike.
+     * @param keepClassFileOption the specifications of the class(es) and class
+     *                            members to keep.
      */
-    public KeepCommand(int     requiredSetAccessFlags,
-                       int     requiredUnsetAccessFlags,
-                       String  className,
-                       String  extendsClassName,
-                       String  asClassName,
-                       boolean markClassFiles,
-                       boolean markConditionally,
-                       boolean onlyKeepNames)
+    public KeepCommand(KeepClassFileOption keepClassFileOption)
     {
-        this.extendsClassName  = extendsClassName;
-        this.markConditionally = markConditionally;
-        this.onlyKeepNames     = onlyKeepNames;
+        this.extendsClassName  = keepClassFileOption.extendsClassName;
+        this.markConditionally = keepClassFileOption.markConditionally;
+        this.onlyKeepNames     = keepClassFileOption.onlyKeepNames;
 
         // The visitor is a multi-class file visitor that is empty initially.
         // Visitors to mark class files and class members will be added in a
@@ -121,7 +88,8 @@ public class KeepCommand
         ClassFileVisitor classFileVisitor = multiClassFileVisitor;
 
         // If specified, let the marker visit the class file itself.
-        if (markClassFiles || markConditionally)
+        if (keepClassFileOption.markClassFiles ||
+            keepClassFileOption.markConditionally)
         {
             multiClassFileVisitor.addClassFileVisitor(variableClassFileVisitor);
         }
@@ -153,7 +121,7 @@ public class KeepCommand
         }
 
         // By default, start visiting from the class name, if it's specified.
-        String fullySpecifiedClassName = className;
+        String className = keepClassFileOption.className;
 
         // If wildcarded, only visit class files with matching names.
         if (className != null &&
@@ -164,21 +132,21 @@ public class KeepCommand
                                         className);
 
             // We'll have to visit all classes now.
-            fullySpecifiedClassName = null;
+            className = null;
         }
 
         // If specified, only visit class files with the right access flags.
-        if (requiredSetAccessFlags   != 0 ||
-            requiredUnsetAccessFlags != 0)
+        if (keepClassFileOption.requiredSetAccessFlags   != 0 ||
+            keepClassFileOption.requiredUnsetAccessFlags != 0)
         {
             classFileVisitor =
                 new ClassFileAccessFilter(classFileVisitor,
-                                          requiredSetAccessFlags,
-                                          requiredUnsetAccessFlags);
+                                          keepClassFileOption.requiredSetAccessFlags,
+                                          keepClassFileOption.requiredUnsetAccessFlags);
         }
 
         // If it's specified, start visiting from the extended class.
-        if (fullySpecifiedClassName == null &&
+        if (className == null &&
             extendsClassName != null)
         {
             classFileVisitor =
@@ -196,99 +164,53 @@ public class KeepCommand
             else
             {
                 // Start visiting from the extended class name.
-                fullySpecifiedClassName = extendsClassName;
+                className = extendsClassName;
             }
         }
 
         // If specified, visit a single named class, otherwise visit all classes.
-        classPoolMarker = fullySpecifiedClassName != null ?
-            (ClassPoolVisitor)new NamedClassFileVisitor(classFileVisitor, fullySpecifiedClassName) :
+        classPoolMarker = className != null ?
+            (ClassPoolVisitor)new NamedClassFileVisitor(classFileVisitor, className) :
             (ClassPoolVisitor)new AllClassFileVisitor(classFileVisitor);
+
+        keepClassMembers(keepClassFileOption.keepFieldOptions,  true);
+        keepClassMembers(keepClassFileOption.keepMethodOptions, false);
     }
 
 
     /**
-     * Instructs to keep the specified field(s) of this command's class(es).
+     * Instructs to keep the specified List of class members.
      *
-     * @param requiredSetAccessFlags   the field access flags that must be set
-     *                                 in order for the field to apply.
-     * @param requiredUnsetAccessFlags the field access flags that must be unset
-     *                                 in order for the field to apply.
-     * @param name                     the field name. The name may be null to
-     *                                 specify any field.
-     * @param descriptor               the field descriptor. The descriptor may
-     *                                 be null to specify any field.
-     * @param asName                   the new name that the field should get.
-     *                                 A value of null specifies the original
-     *                                 name. (currently ignored)
+     * @param keepClassMemberOptions the List of KeepClassMemberOption
+     *                               specifications.
+     * @param isField                specifies whether the class members are
+     *                               fields or methods.
      */
-    public void keepField(int    requiredSetAccessFlags,
-                          int    requiredUnsetAccessFlags,
-                          String name,
-                          String descriptor,
-                          String asName)
+    private void keepClassMembers(List    keepClassMemberOptions,
+                                  boolean isField)
     {
-        keepClassMember(requiredSetAccessFlags,
-                        requiredUnsetAccessFlags,
-                        name,
-                        descriptor,
-                        asName,
-                        true);
-    }
-
-    /**
-     * Instructs to keep the specified method(s) of this command's class(es).
-     *
-     * @param requiredSetAccessFlags   the method access flags that must be set
-     *                                 in order for the method to apply.
-     * @param requiredUnsetAccessFlags the method access flags that must be unset
-     *                                 in order for the method to apply.
-     * @param name                     the method name. The name may be null to
-     *                                 specify any method.
-     * @param descriptor               the method descriptor. The descriptor may
-     *                                 be null to specify any method.
-     * @param asName                   the new name that the method should get.
-     *                                 A value of null specifies the original
-     *                                 name. (currently ignored)
-     */
-    public void keepMethod(int    requiredSetAccessFlags,
-                           int    requiredUnsetAccessFlags,
-                           String name,
-                           String descriptor,
-                           String asName)
-    {
-        keepClassMember(requiredSetAccessFlags,
-                        requiredUnsetAccessFlags,
-                        name,
-                        descriptor,
-                        asName,
-                        false);
+        if (keepClassMemberOptions != null)
+        {
+            for (int index = 0; index < keepClassMemberOptions.size(); index++)
+            {
+                KeepClassMemberOption keepClassMemberOption =
+                    (KeepClassMemberOption)keepClassMemberOptions.get(index);
+                keepClassMember(keepClassMemberOption, isField);
+            }
+        }
     }
 
 
     /**
      * Instructs to keep the specified class member(s) of this command's class(es).
      *
-     * @param requiredSetAccessFlags   the field access flags that must be set
-     *                                 in order for the field to apply.
-     * @param requiredUnsetAccessFlags the field access flags that must be unset
-     *                                 in order for the field to apply.
-     * @param name                     the field name. The name may be null to
-     *                                 specify any field.
-     * @param descriptor               the field descriptor. The descriptor may
-     *                                 be null to specify any field.
-     * @param asName                   the new name that the field should get.
-     *                                 A value of null specifies the original
-     *                                 name. (currently ignored)
-     * @param isField                  specifies whether the class member is
-     *                                 a field or a method.
+     * @param keepClassFileOption the specifications of the class member(s) to
+     *                            keep.
+     * @param isField             specifies whether the class member is
+     *                            a field or a method.
      */
-    private void keepClassMember(int     requiredSetAccessFlags,
-                                 int     requiredUnsetAccessFlags,
-                                 String  name,
-                                 String  descriptor,
-                                 String  asName,
-                                 boolean isField)
+    private void keepClassMember(KeepClassMemberOption keepClassMemberOption,
+                                 boolean               isField)
     {
         MemberInfoVisitor memberInfoVisitor = variableMemberInfoVisitor;
 
@@ -301,6 +223,9 @@ public class KeepCommand
             memberInfoVisitor =
                 new ConditionalMemberInfoVisitor(memberInfoVisitor);
         }
+
+        String name       = keepClassMemberOption.name;
+        String descriptor = keepClassMemberOption.descriptor;
 
         // If name or descriptor are not fully specified, only visit matching
         // class members.
@@ -328,13 +253,13 @@ public class KeepCommand
         }
 
         // If any access flags are specified, only visit matching class members.
-        if (requiredSetAccessFlags   != 0 ||
-            requiredUnsetAccessFlags != 0)
+        if (keepClassMemberOption.requiredSetAccessFlags   != 0 ||
+            keepClassMemberOption.requiredUnsetAccessFlags != 0)
         {
             memberInfoVisitor =
                 new MemberInfoAccessFilter(memberInfoVisitor,
-                                           requiredSetAccessFlags,
-                                           requiredUnsetAccessFlags);
+                                           keepClassMemberOption.requiredSetAccessFlags,
+                                           keepClassMemberOption.requiredUnsetAccessFlags);
         }
 
         // Depending on what's specified, visit a single named class member,
@@ -459,7 +384,7 @@ public class KeepCommand
         }
 
 
-        // Implementations for ClassFileVisitor
+        // Implementations for ClassFileVisitor.
 
         public void visitProgramClassFile(ProgramClassFile programClassFile)
         {
@@ -498,7 +423,7 @@ public class KeepCommand
             this.classFileVisitor = classFileVisitor;
         }
 
-        // Implementations for ClassFileVisitor
+        // Implementations for ClassFileVisitor.
 
         public void visitProgramClassFile(ProgramClassFile programClassFile)
         {
@@ -535,7 +460,7 @@ public class KeepCommand
             this.memberInfoVisitor = memberInfoVisitor;
         }
 
-        // Implementations for MemberInfoVisitor
+        // Implementations for MemberInfoVisitor.
 
         public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
         {

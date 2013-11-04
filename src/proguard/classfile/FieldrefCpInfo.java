@@ -1,4 +1,4 @@
-/* $Id: FieldrefCpInfo.java,v 1.15 2003/02/09 15:22:28 eric Exp $
+/* $Id: FieldrefCpInfo.java,v 1.16 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -36,7 +36,7 @@ public class FieldrefCpInfo extends RefCpInfo
     }
 
 
-    // Implementations for CpInfo
+    // Implementations for CpInfo.
 
     public int getTag()
     {

@@ -1,4 +1,4 @@
-/* $Id: MappingPrinter.java,v 1.11 2003/04/28 17:24:21 eric Exp $
+/* $Id: MappingPrinter.java,v 1.13 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -64,7 +64,7 @@ public class MappingPrinter
     }
 
 
-    // Implementations for ClassFileVisitor
+    // Implementations for ClassFileVisitor.
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
@@ -93,7 +93,7 @@ public class MappingPrinter
     }
 
 
-    // Implementations for MemberInfoVisitor
+    // Implementations for MemberInfoVisitor.
 
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {

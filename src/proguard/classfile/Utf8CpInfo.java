@@ -1,4 +1,4 @@
-/* $Id: Utf8CpInfo.java,v 1.14 2003/02/09 15:22:28 eric Exp $
+/* $Id: Utf8CpInfo.java,v 1.17 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -33,9 +33,25 @@ import java.io.*;
  */
 public class Utf8CpInfo extends CpInfo
 {
-    private static final String ENCODING   = "UTF-8";
-    private static final byte   NULL_BYTE1 = (byte)0xc0;
-    private static final byte   NULL_BYTE2 = (byte)0x80;
+    private static final String ENCODING = "UTF-8";
+
+    private static final char TWO_BYTE_LIMIT     = 0x80;
+    private static final byte TWO_BYTE_CONSTANT1 = (byte)0xc0;
+    private static final byte TWO_BYTE_CONSTANT2 = (byte)0x80;
+    private static final int  TWO_BYTE_SHIFT1    = 6;
+    private static final byte TWO_BYTE_MASK1     = (byte)0x1f;
+    private static final byte TWO_BYTE_MASK2     = (byte)0x3f;
+
+    private static final char THREE_BYTE_LIMIT     = 0x800;
+    private static final byte THREE_BYTE_CONSTANT1 = (byte)0xe0;
+    private static final byte THREE_BYTE_CONSTANT2 = (byte)0x80;
+    private static final byte THREE_BYTE_CONSTANT3 = (byte)0x80;
+    private static final int  THREE_BYTE_SHIFT1    = 12;
+    private static final int  THREE_BYTE_SHIFT2    = 6;
+    private static final byte THREE_BYTE_MASK1     = (byte)0x0f;
+    private static final byte THREE_BYTE_MASK2     = (byte)0x3f;
+    private static final byte THREE_BYTE_MASK3     = (byte)0x3f;
+
 
     // There are a lot of Utf8CpInfo objects, so we're optimising their storage.
     // Initially, we're storing the UTF-8 bytes in a byte array.
@@ -87,7 +103,7 @@ public class Utf8CpInfo extends CpInfo
     }
 
 
-    // Implementations for CpInfo
+    // Implementations for CpInfo.
 
     public int getTag()
     {
@@ -142,43 +158,58 @@ public class Utf8CpInfo extends CpInfo
             return bytes;
         }
 
-        // Otherwise reconstruct it from the String representation.
-        byte[] bytes  = utf8string.getBytes(ENCODING);
-        int    length = bytes.length;
+        // We're computing the byte array ourselves, because the implementation
+        // of String.getBytes("UTF-8") has a bug, at least up to JRE 1.4.2.
+        // Also note the special treatment of the 0 character.
 
-        // Check for embedded null bytes.
-        int count = 0;
-        for (int index = 0; index < length; index++)
+        // Compute the byte array length.
+        int byteLength   = 0;
+        int stringLength = utf8string.length();
+        for (int stringIndex = 0; stringIndex < stringLength; stringIndex++)
         {
-            if (bytes[index] == 0)
+            char c = utf8string.charAt(stringIndex);
+
+            // The character is represented by one, two, or three bytes.
+            byteLength += c == 0                ? 2 :
+                          c <  TWO_BYTE_LIMIT   ? 1 :
+                          c <  THREE_BYTE_LIMIT ? 2 :
+                                                  3;
+        }
+
+        // Allocate the byte array with the computed length.
+        byte[] bytes  = new byte[byteLength];
+
+        // Fill out the array.
+        int byteIndex = 0;
+        for (int stringIndex = 0; stringIndex < stringLength; stringIndex++)
+        {
+            char c = utf8string.charAt(stringIndex);
+            if (c == 0)
             {
-                count++;
+                // The 0 character gets a two-byte representation in class files.
+                bytes[byteIndex++] = TWO_BYTE_CONSTANT1;
+                bytes[byteIndex++] = TWO_BYTE_CONSTANT2;
             }
-        }
-
-        // Return the original array if it doesn't need to be modified.
-        if (count == 0)
-        {
-            return bytes;
-        }
-
-        // Create a new array with all null bytes properly replaced.
-        byte[] newBytes = new byte[length + count];
-        int    newIndex = 0;
-
-        for (int index = 0; index < length; index++)
-        {
-            if (bytes[index] == 0)
+            else if (c < TWO_BYTE_LIMIT)
             {
-                newBytes[newIndex++] = NULL_BYTE1;
-                newBytes[newIndex++] = NULL_BYTE2;
+                // The character is represented by a single byte.
+                bytes[byteIndex++] = (byte)c;
+            }
+            else if (c < THREE_BYTE_LIMIT)
+            {
+                // The character is represented by two bytes.
+                bytes[byteIndex++] = (byte)(TWO_BYTE_CONSTANT1 | ((c >>> TWO_BYTE_SHIFT1) & TWO_BYTE_MASK1));
+                bytes[byteIndex++] = (byte)(TWO_BYTE_CONSTANT2 | ( c                      & TWO_BYTE_MASK2));
             }
             else
             {
-                newBytes[newIndex++] = bytes[index];
+                // The character is represented by three bytes.
+                bytes[byteIndex++] = (byte)(THREE_BYTE_CONSTANT1 | ((c >>> THREE_BYTE_SHIFT1) & THREE_BYTE_MASK1));
+                bytes[byteIndex++] = (byte)(THREE_BYTE_CONSTANT2 | ((c >>> THREE_BYTE_SHIFT2) & THREE_BYTE_MASK2));
+                bytes[byteIndex++] = (byte)(THREE_BYTE_CONSTANT3 | ( c                        & THREE_BYTE_MASK3));
             }
         }
 
-        return newBytes;
+        return bytes;
     }
 }

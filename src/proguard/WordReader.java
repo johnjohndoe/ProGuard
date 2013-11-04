@@ -1,4 +1,4 @@
-/* $Id: WordReader.java,v 1.9 2003/02/20 20:45:28 eric Exp $
+/* $Id: WordReader.java,v 1.11 2003/12/06 22:12:42 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -25,21 +25,30 @@ import java.io.*;
 
 /**
  * An abstract reader of words, with the possibility to include other readers.
+ * Words are separated by spaces or broken off at delimiters. Words containing
+ * spaces or delimiters can be quoted with single or double quotes.
+ * Comments (everything starting with '#' on a single line) are ignored.
  *
  * @author Eric Lafortune
  */
 public abstract class WordReader
 {
-    private static final String JAR_SEPARATOR_KEY = "path.separator";
-    private static final char   JAR_SEPARATOR     = System.getProperty(JAR_SEPARATOR_KEY).charAt(0);
-
+    private static final char COMMENT_CHARACTER = '#';
 
     private WordReader includeWordReader;
     private String     currentLine;
+    private int        currentLineLength;
     private int        currentIndex;
     private String     currentWord;
+    private String     currentComments;
 
 
+    /**
+     * Specifies to start reading words from the given WordReader. When it is
+     * exhausted, this WordReader will continue to provide its own words.
+     *
+     * @param newIncludeWordReader the WordReader that will start reading words.
+     */
     public void includeWordReader(WordReader newIncludeWordReader)
     {
         if (includeWordReader == null)
@@ -53,6 +62,12 @@ public abstract class WordReader
     }
 
 
+    /**
+     * Reads a word from this WordReader, or from one of its active included
+     * WordReader objects.
+     *
+     * @return the read word.
+     */
     public String nextWord() throws IOException
     {
         currentWord = null;
@@ -76,14 +91,14 @@ public abstract class WordReader
 
         // Skip leading whitespace.
         while (currentLine != null &&
-               currentIndex < currentLine.length() &&
+               currentIndex < currentLineLength &&
                Character.isWhitespace(currentLine.charAt(currentIndex)))
         {
             currentIndex++;
         }
 
         // Make sure we have a non-blank line.
-        while (currentLine == null || currentIndex == currentLine.length())
+        while (currentLine == null || currentIndex == currentLineLength)
         {
             currentLine = nextLine();
             if (currentLine == null)
@@ -91,9 +106,26 @@ public abstract class WordReader
                 return null;
             }
 
+            // Trim off any comments.
+            int comments_start = currentLine.indexOf(COMMENT_CHARACTER);
+            if (comments_start >= 0)
+            {
+                currentLineLength = comments_start;
+
+                // Remember the comments.
+                String comment = currentLine.substring(comments_start + 1);
+                currentComments = currentComments == null ?
+                    comment :
+                    currentComments + '\n' + comment;
+            }
+            else
+            {
+                currentLineLength = currentLine.length();
+            }
+
             // Skip leading whitespace.
             currentIndex = 0;
-            while (currentIndex < currentLine.length() &&
+            while (currentIndex < currentLineLength &&
                    Character.isWhitespace(currentLine.charAt(currentIndex)))
             {
                 currentIndex++;
@@ -123,7 +155,7 @@ public abstract class WordReader
             {
                 currentIndex++;
 
-                if (currentIndex == currentLine.length())
+                if (currentIndex == currentLineLength)
                 {
                     currentWord = currentLine.substring(startIndex-1, currentIndex);
                     throw new IOException("Missing closing quote for "+locationDescription());
@@ -138,7 +170,7 @@ public abstract class WordReader
             // The next word is a simple character string.
             // Find the end of the line, the first delimiter, or the first
             // white space.
-            while (currentIndex < currentLine.length())
+            while (currentIndex < currentLineLength)
             {
                 char currentCharacter = currentLine.charAt(currentIndex);
                 if (isDelimiter(currentCharacter) ||
@@ -160,6 +192,33 @@ public abstract class WordReader
     }
 
 
+    /**
+     * Returns the comments collected before returning the last word.
+     * Starts collecting new comments.
+     *
+     * @return the collected comments, or <code>null</code> if there weren't any.
+     */
+    public String lastComments() throws IOException
+    {
+        if (includeWordReader == null)
+        {
+            String comments = currentComments;
+            currentComments = null;
+            return comments;
+        }
+        else
+        {
+            return includeWordReader.lastComments();
+        }
+    }
+
+
+    /**
+     * Constructs a readable description of the current position in this
+     * WordReader and its included WordReader objects.
+     *
+     * @return the description.
+     */
     public String locationDescription()
     {
         return
@@ -173,9 +232,20 @@ public abstract class WordReader
     }
 
 
+    /**
+     * Reads a line from this WordReader, or from one of its active included
+     * WordReader objects.
+     *
+     * @return the read line.
+     */
     protected abstract String nextLine() throws IOException;
 
 
+    /**
+     * Constructs a readable description of the current WordReader position.
+     *
+     * @return the description.
+     */
     protected abstract String lineLocationDescription();
 
 
@@ -188,7 +258,7 @@ public abstract class WordReader
                character == ')' ||
                character == ',' ||
                character == ';' ||
-               character == JAR_SEPARATOR;
+               character == File.pathSeparatorChar;
     }
 
 

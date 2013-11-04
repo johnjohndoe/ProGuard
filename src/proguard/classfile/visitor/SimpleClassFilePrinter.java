@@ -1,4 +1,4 @@
-/* $Id: SimpleClassFilePrinter.java,v 1.12 2003/02/09 15:22:29 eric Exp $
+/* $Id: SimpleClassFilePrinter.java,v 1.13 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -72,7 +72,7 @@ public class SimpleClassFilePrinter
     }
 
 
-    // Implementations for ClassFileVisitor
+    // Implementations for ClassFileVisitor.
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
@@ -94,7 +94,7 @@ public class SimpleClassFilePrinter
     }
 
 
-    // Implementations for MemberInfoVisitor
+    // Implementations for MemberInfoVisitor.
 
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {

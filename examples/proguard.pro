@@ -6,13 +6,16 @@
 #
 
 -libraryjars <java.home>/lib/rt.jar
--injars      proguard.jar
+
+# We'll filter out the Ant and WTK classes, keeping everything else.
+
+-injars      proguard.jar(!proguard/ant/**,!proguard/wtk/**,**)
 -outjar      proguard_out.jar
 
-# Disregard warnings about missing classes, in case we don't have
-# the Ant or J2ME libraries.
+# Write out an obfuscation mapping file, for de-obfuscating any stack traces
+# later on, or for incremental obfuscation of extensions.
 
--ignorewarnings
+-printmapping proguard.map
 
 
 # Allow methods with the same signature, except for the return type,
@@ -26,13 +29,9 @@
 -defaultpackage ''
 
 
-# The main seeds: ProGuard and its companion tool ReTrace.
+# The main seed: ProGuard and its main method.
 
 -keep public class proguard.ProGuard {
-    public static void main(java.lang.String[]);
-}
-
--keep public class proguard.ReTrace {
     public static void main(java.lang.String[]);
 }
 
@@ -49,7 +48,7 @@
 
 
 # If you want to preserve the WTK obfuscation plug-in, you'll have to specify
-# the kenv.zip.
+# the kenv.zip file.
 
 #-libraryjars /usr/local/java/j2me2.0beta/wtklib/kenv.zip
 #-keep public class proguard.wtk.ProGuardObfuscator

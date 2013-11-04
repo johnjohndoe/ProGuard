@@ -1,4 +1,4 @@
-/* $Id: Utf8Shrinker.java,v 1.13 2003/02/09 15:22:29 eric Exp $
+/* $Id: Utf8Shrinker.java,v 1.15 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -46,7 +46,7 @@ public class Utf8Shrinker
     private int[] cpIndexMap;
 
 
-    // Implementations for ClassFileVisitor
+    // Implementations for ClassFileVisitor.
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
@@ -79,7 +79,7 @@ public class Utf8Shrinker
     }
 
 
-    // Implementations for CpInfoVisitor
+    // Implementations for CpInfoVisitor.
 
     public void visitClassCpInfo(ClassFile classFile, ClassCpInfo classCpInfo)
     {
@@ -161,7 +161,7 @@ public class Utf8Shrinker
     }
 
 
-    // Implementations for MemberInfoVisitor
+    // Implementations for MemberInfoVisitor.
 
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {
@@ -200,7 +200,7 @@ public class Utf8Shrinker
     }
 
 
-    // Implementations for AttrInfoVisitor
+    // Implementations for AttrInfoVisitor.
 
     public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo)
     {
@@ -280,6 +280,15 @@ public class Utf8Shrinker
     }
 
 
+    public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo)
+    {
+        sourceDirAttrInfo.u2attrNameIndex =
+            remapCpIndex(sourceDirAttrInfo.u2attrNameIndex);
+        sourceDirAttrInfo.u2sourceDirIndex =
+            remapCpIndex(sourceDirAttrInfo.u2sourceDirIndex);
+    }
+
+
     public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo)
     {
         deprecatedAttrInfo.u2attrNameIndex =
@@ -294,7 +303,7 @@ public class Utf8Shrinker
     }
 
 
-    // Implementations for InstructionVisitor
+    // Implementations for InstructionVisitor.
 
     public void visitInstruction(ClassFile classFile, Instruction instruction)
     {
@@ -308,7 +317,7 @@ public class Utf8Shrinker
     }
 
 
-    // Implementations for InnerClassesInfoVisitor
+    // Implementations for InnerClassesInfoVisitor.
 
     public void visitInnerClassesInfo(ClassFile classFile, InnerClassesInfo innerClassesInfo)
     {
@@ -332,7 +341,7 @@ public class Utf8Shrinker
     }
 
 
-    // Implementations for ExceptionInfoVisitor
+    // Implementations for ExceptionInfoVisitor.
 
     public void visitExceptionInfo(ClassFile classFile, ExceptionInfo exceptionInfo)
     {
@@ -344,7 +353,7 @@ public class Utf8Shrinker
     }
 
 
-    // Implementations for LocalVariableInfoVisitor
+    // Implementations for LocalVariableInfoVisitor.
 
     public void visitLocalVariableInfo(ClassFile classFile, LocalVariableInfo localVariableInfo)
     {

@@ -1,4 +1,4 @@
-/* $Id: LibraryClassFileFilter.java,v 1.2 2003/04/28 17:24:21 eric Exp $
+/* $Id: LibraryClassFileFilter.java,v 1.4 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -45,7 +45,7 @@ public class LibraryClassFileFilter implements ClassFileVisitor
     }
 
 
-    // Implementations for ClassFileVisitor
+    // Implementations for ClassFileVisitor.
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {

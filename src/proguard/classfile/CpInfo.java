@@ -1,4 +1,4 @@
-/* $Id: CpInfo.java,v 1.18 2003/02/09 15:22:28 eric Exp $
+/* $Id: CpInfo.java,v 1.19 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -152,7 +152,7 @@ public abstract class CpInfo implements VisitorAccepter
     public abstract void accept(ClassFile classFile, CpInfoVisitor cpInfoVisitor);
 
 
-    // Implementations for VisitorAccepter
+    // Implementations for VisitorAccepter.
 
     public Object getVisitorInfo()
     {

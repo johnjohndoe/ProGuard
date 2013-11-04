@@ -1,4 +1,4 @@
-/* $Id: ClassFileWriter.java,v 1.2 2003/04/28 17:24:21 eric Exp $
+/* $Id: ClassFileWriter.java,v 1.4 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -37,13 +37,13 @@ public class ClassFileWriter implements ClassFileVisitor
     private DataEntryWriter dataEntryWriter;
 
 
-    public ClassFileWriter(DataEntryWriter zipEntryWriter)
+    public ClassFileWriter(DataEntryWriter dataEntryWriter)
     {
-        this.dataEntryWriter = zipEntryWriter;
+        this.dataEntryWriter = dataEntryWriter;
     }
 
 
-    // Implementations for ClassFileVisitor
+    // Implementations for ClassFileVisitor.
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
@@ -53,14 +53,17 @@ public class ClassFileWriter implements ClassFileVisitor
         {
             // Open the ZIP entry output stream.
             OutputStream outputStream = dataEntryWriter.openDataEntry(name);
+            if (outputStream != null)
+            {
+                // Write the class file using a DataOutputStream.
+                DataOutputStream classOutputStream =
+                    new DataOutputStream(outputStream);
+                programClassFile.write(classOutputStream);
+                classOutputStream.flush();
 
-            // Write the class file using a DataOutputStream.
-            DataOutputStream classOutputStream = new DataOutputStream(outputStream);
-            programClassFile.write(classOutputStream);
-            classOutputStream.flush();
-
-            // Close the data entry.
-            dataEntryWriter.closeDataEntry();
+                // Close the data entry.
+                dataEntryWriter.closeDataEntry();
+            }
         }
         catch (IOException ex)
         {

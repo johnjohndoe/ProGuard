@@ -1,4 +1,4 @@
-/* $Id: RefCpInfo.java,v 1.13 2003/02/09 15:22:28 eric Exp $
+/* $Id: RefCpInfo.java,v 1.14 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -107,7 +107,7 @@ public abstract class RefCpInfo extends CpInfo
     }
 
 
-    // Implementations for CpInfo
+    // Implementations for CpInfo.
 
     protected void readInfo(DataInput din) throws IOException
     {

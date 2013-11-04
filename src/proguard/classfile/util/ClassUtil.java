@@ -1,4 +1,4 @@
-/* $Id: ClassUtil.java,v 1.15 2003/02/11 18:06:44 eric Exp $
+/* $Id: ClassUtil.java,v 1.17 2003/12/06 22:12:42 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -335,6 +335,20 @@ public class ClassUtil
 
 
     /**
+     * Returns whether the given internal descriptor String represents a method
+     * descriptor.
+     * @param internalDescriptor the internal descriptor String,
+     *                                 e.g. "<code>(II)Z</code>".
+     * @return <code>true</code> if the given String is a method descriptor,
+     *         <code>false</code> otherwise.
+     */
+    public static boolean isInternalMethodDescriptor(String internalDescriptor)
+    {
+        return internalDescriptor.charAt(0) == ClassConstants.INTERNAL_METHOD_ARGUMENTS_OPEN;
+    }
+
+
+    /**
      * Returns whether the given member String represents an external method
      * name with arguments.
      * @param externalMemberNameAndArguments the external member String,
@@ -463,7 +477,9 @@ public class ClassUtil
                externalMethodReturnTypeAndName(internalClassName,
                                                internalMethodName,
                                                internalMethodDescriptor) +
-               externalMethodArguments(internalMethodDescriptor);
+               ClassConstants.EXTERNAL_METHOD_ARGUMENTS_OPEN +
+               externalMethodArguments(internalMethodDescriptor) +
+               ClassConstants.EXTERNAL_METHOD_ARGUMENTS_CLOSE;
     }
 
 
@@ -471,9 +487,22 @@ public class ClassUtil
      * Converts internal class access flags to an external access description.
      * @param accessFlags the class access flags.
      * @return the external class access description,
-     *                    e.g. "public final".
+     *         e.g. "public final ".
      */
     public static String externalClassAccessFlags(int accessFlags)
+    {
+        return externalClassAccessFlags(accessFlags, "");
+    }
+
+
+    /**
+     * Converts internal class access flags to an external access description.
+     * @param accessFlags the class access flags.
+     * @param an optional prefix that is added to each access modifier.
+     * @return the external class access description,
+     *         e.g. "public final ".
+     */
+    public static String externalClassAccessFlags(int accessFlags, String prefix)
     {
         if (accessFlags == 0)
         {
@@ -484,21 +513,21 @@ public class ClassUtil
 
         if ((accessFlags & ClassConstants.INTERNAL_ACC_PUBLIC) != 0)
         {
-            string.append(ClassConstants.EXTERNAL_ACC_PUBLIC).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_PUBLIC).append(" ");
         }
         if ((accessFlags & ClassConstants.INTERNAL_ACC_FINAL) != 0)
         {
-            string.append(ClassConstants.EXTERNAL_ACC_FINAL).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_FINAL).append(" ");
         }
         if ((accessFlags & ClassConstants.INTERNAL_ACC_INTERFACE) != 0)
         {
-            string.append(ClassConstants.EXTERNAL_ACC_INTERFACE).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_INTERFACE).append(" ");
         }
         else
         {
             if ((accessFlags & ClassConstants.INTERNAL_ACC_ABSTRACT) != 0)
             {
-                string.append(ClassConstants.EXTERNAL_ACC_ABSTRACT).append(" ");
+                string.append(prefix).append(ClassConstants.EXTERNAL_ACC_ABSTRACT).append(" ");
             }
         }
 
@@ -510,9 +539,22 @@ public class ClassUtil
      * Converts internal field access flags to an external access description.
      * @param accessFlags the field access flags.
      * @return the external field access description,
-     *                    e.g. "public volatile".
+     *         e.g. "public volatile ".
      */
     public static String externalFieldAccessFlags(int accessFlags)
+    {
+        return externalFieldAccessFlags(accessFlags, "");
+    }
+
+
+    /**
+     * Converts internal field access flags to an external access description.
+     * @param accessFlags the field access flags.
+     * @param an optional prefix that is added to each access modifier.
+     * @return the external field access description,
+     *         e.g. "public volatile ".
+     */
+    public static String externalFieldAccessFlags(int accessFlags, String prefix)
     {
         if (accessFlags == 0)
         {
@@ -523,31 +565,31 @@ public class ClassUtil
 
         if ((accessFlags & ClassConstants.INTERNAL_ACC_PUBLIC) != 0)
         {
-            string.append(ClassConstants.EXTERNAL_ACC_PUBLIC).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_PUBLIC).append(" ");
         }
         if ((accessFlags & ClassConstants.INTERNAL_ACC_PRIVATE) != 0)
         {
-            string.append(ClassConstants.EXTERNAL_ACC_PRIVATE).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_PRIVATE).append(" ");
         }
         if ((accessFlags & ClassConstants.INTERNAL_ACC_PROTECTED) != 0)
         {
-            string.append(ClassConstants.EXTERNAL_ACC_PROTECTED).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_PROTECTED).append(" ");
         }
         if ((accessFlags & ClassConstants.INTERNAL_ACC_STATIC) != 0)
         {
-            string.append(ClassConstants.EXTERNAL_ACC_STATIC).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_STATIC).append(" ");
         }
         if ((accessFlags & ClassConstants.INTERNAL_ACC_FINAL) != 0)
         {
-            string.append(ClassConstants.EXTERNAL_ACC_FINAL).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_FINAL).append(" ");
         }
         if ((accessFlags & ClassConstants.INTERNAL_ACC_VOLATILE) != 0)
         {
-            string.append(ClassConstants.EXTERNAL_ACC_VOLATILE).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_VOLATILE).append(" ");
         }
         if ((accessFlags & ClassConstants.INTERNAL_ACC_TRANSIENT) != 0)
         {
-            string.append(ClassConstants.EXTERNAL_ACC_TRANSIENT).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_TRANSIENT).append(" ");
         }
 
         return string.toString();
@@ -558,9 +600,21 @@ public class ClassUtil
      * Converts internal method access flags to an external access description.
      * @param accessFlags the method access flags.
      * @return the external method access description,
-     *                    e.g. "public synchronized".
+     *                    e.g. "public synchronized ".
      */
     public static String externalMethodAccessFlags(int accessFlags)
+    {
+        return externalMethodAccessFlags(accessFlags, "");
+    }
+
+
+    /**
+     * Converts internal method access flags to an external access description.
+     * @param accessFlags the method access flags.
+     * @return the external method access description,
+     *         e.g. "public synchronized ".
+     */
+    public static String externalMethodAccessFlags(int accessFlags, String prefix)
     {
         if (accessFlags == 0)
         {
@@ -571,39 +625,39 @@ public class ClassUtil
 
         if ((accessFlags & ClassConstants.INTERNAL_ACC_PUBLIC) != 0)
         {
-            string.append(ClassConstants.EXTERNAL_ACC_PUBLIC).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_PUBLIC).append(" ");
         }
         if ((accessFlags & ClassConstants.INTERNAL_ACC_PRIVATE) != 0)
         {
-            string.append(ClassConstants.EXTERNAL_ACC_PRIVATE).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_PRIVATE).append(" ");
         }
         if ((accessFlags & ClassConstants.INTERNAL_ACC_PROTECTED) != 0)
         {
-            string.append(ClassConstants.EXTERNAL_ACC_PROTECTED).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_PROTECTED).append(" ");
         }
         if ((accessFlags & ClassConstants.INTERNAL_ACC_STATIC) != 0)
         {
-            string.append(ClassConstants.EXTERNAL_ACC_STATIC).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_STATIC).append(" ");
         }
         if ((accessFlags & ClassConstants.INTERNAL_ACC_FINAL) != 0)
         {
-            string.append(ClassConstants.EXTERNAL_ACC_FINAL).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_FINAL).append(" ");
         }
         if ((accessFlags & ClassConstants.INTERNAL_ACC_SYNCHRONIZED) != 0)
         {
-            string.append(ClassConstants.EXTERNAL_ACC_SYNCHRONIZED).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_SYNCHRONIZED).append(" ");
         }
         if ((accessFlags & ClassConstants.INTERNAL_ACC_NATIVE) != 0)
         {
-            string.append(ClassConstants.EXTERNAL_ACC_NATIVE).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_NATIVE).append(" ");
         }
         if ((accessFlags & ClassConstants.INTERNAL_ACC_ABSTRACT) != 0)
         {
-            string.append(ClassConstants.EXTERNAL_ACC_ABSTRACT).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_ABSTRACT).append(" ");
         }
         if ((accessFlags & ClassConstants.INTERNAL_ACC_STRICT) != 0)
         {
-            string.append(ClassConstants.EXTERNAL_ACC_STRICT).append(" ");
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_STRICT).append(" ");
         }
 
         return string.toString();
@@ -657,13 +711,11 @@ public class ClassUtil
      * @param internalMethodDescriptor the internal method descriptor,
      *                                 e.g. "<code>(II)Z</code>".
      * @return the external method argument description,
-     *                                 e.g. "<code>(int,int)</code>".
+     *                                 e.g. "<code>int,int</code>".
      */
     public static String externalMethodArguments(String internalMethodDescriptor)
     {
-
         StringBuffer externalMethodNameAndArguments = new StringBuffer();
-        externalMethodNameAndArguments.append(ClassConstants.EXTERNAL_METHOD_ARGUMENTS_OPEN);
 
         internalTypeEnumeration.setDescriptor(internalMethodDescriptor);
         while (internalTypeEnumeration.hasMoreTypes())
@@ -674,8 +726,6 @@ public class ClassUtil
                 externalMethodNameAndArguments.append(ClassConstants.EXTERNAL_METHOD_ARGUMENTS_SEPARATOR);
             }
         }
-
-        externalMethodNameAndArguments.append(ClassConstants.EXTERNAL_METHOD_ARGUMENTS_CLOSE);
 
         return externalMethodNameAndArguments.toString();
     }

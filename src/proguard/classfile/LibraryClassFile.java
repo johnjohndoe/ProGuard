@@ -1,4 +1,4 @@
-/* $Id: LibraryClassFile.java,v 1.21 2003/02/09 15:22:28 eric Exp $
+/* $Id: LibraryClassFile.java,v 1.22 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -303,7 +303,7 @@ public class LibraryClassFile implements ClassFile
     }
 
 
-    // Implementations for ClassFile
+    // Implementations for ClassFile.
 
     public int getAccessFlags()
     {
@@ -443,7 +443,7 @@ public class LibraryClassFile implements ClassFile
     }
 
 
-    // Implementations for VisitorAccepter
+    // Implementations for VisitorAccepter.
 
     public Object getVisitorInfo() {
         return visitorInfo;

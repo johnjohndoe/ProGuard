@@ -1,4 +1,4 @@
-/* $Id: KeepField.java,v 1.7 2003/08/04 08:46:45 eric Exp $
+/* $Id: KeepField.java,v 1.9 2003/12/19 04:17:03 eric Exp $
  *
  * ProGuard - integration into Ant.
  *
@@ -10,7 +10,7 @@
  * any later version.
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * ANY WARRAntY; without even the implied warranty of MERCHAntABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
@@ -20,21 +20,22 @@
  */
 package proguard.ant;
 
+import java.util.*;
+
 import proguard.classfile.*;
 import proguard.classfile.util.*;
 
-import java.util.*;
 
 /**
  * Keep a field.
  *
  * @author Dirk SChnelle
  */
-public class KeepField extends KeepClassMember
+public class KeepField
+        extends KeepClassMember
 {
     /** Access parser to be used. */
     private final static AccessParser ACCESS_PARSER;
-
 
     static
     {
@@ -47,7 +48,6 @@ public class KeepField extends KeepClassMember
         ACCESS_PARSER = new AccessParser(accessMapping);
     }
 
-
     /**
      * Defaults constructor.
      */
@@ -56,9 +56,9 @@ public class KeepField extends KeepClassMember
         super();
     }
 
-
     /**
      * Gets the access parser for the access attributes of the member.
+     *
      * @return AccessParser.
      */
     protected AccessParser getAccessParser()
@@ -68,25 +68,26 @@ public class KeepField extends KeepClassMember
 
     /**
      * Get the default type.
+     *
+     * @return DOCUMENT ME!
      */
     protected String getDefaultType()
     {
-       return null;
+        return null;
     }
-
 
     /**
      * Executes this subtask for the given parent task.
+     *
      * @param parent Parent task object.
-      */
+     */
     public void execute(KeepClassSpecification parent)
     {
         evalNestedAccess();
 
-        parent.keepField(accessFlags,
-                         unsetAccessFlags,
-                         name,
-                         type == null ? null : ClassUtil.internalType(type),
-                         null);
+        parent.keepField(accessFlags, unsetAccessFlags, name,
+            (type == null)
+            ? null
+            : ClassUtil.internalType(type), null);
     }
 }

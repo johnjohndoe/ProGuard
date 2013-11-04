@@ -1,4 +1,4 @@
-/* $Id: ClassFileObfuscator.java,v 1.16 2003/04/28 17:24:21 eric Exp $
+/* $Id: ClassFileObfuscator.java,v 1.20 2003/12/13 20:09:41 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -39,13 +39,13 @@ import java.util.*;
 public class ClassFileObfuscator
   implements ClassFileVisitor
 {
-    private ClassPool programClassPool;
-    private boolean   useMixedCaseClassNames;
-    private String    defaultPackageName;
+    private boolean useMixedCaseClassNames;
+    private String  defaultPackageName;
 
     // Map: [package name - class name factory]
     private final Map         packageMap = new HashMap();
     private final NameFactory defaultPackageClassNameFactory;
+    private final Set         namesToAvoid = new HashSet();
 
 
     /**
@@ -63,14 +63,30 @@ public class ClassFileObfuscator
                                String    defaultPackageName,
                                boolean   useMixedCaseClassNames)
     {
-        this.programClassPool               = programClassPool;
         this.defaultPackageName             = defaultPackageName;
         this.useMixedCaseClassNames         = useMixedCaseClassNames;
         this.defaultPackageClassNameFactory = new NameFactory(useMixedCaseClassNames);
+
+        // Collect all names that have been taken already.
+        programClassPool.classFilesAccept(new ClassFileVisitor()
+        {
+            public void visitProgramClassFile(ProgramClassFile programClassFile)
+            {
+                String newClassName = newClassName(programClassFile);
+                if (newClassName != null)
+                {
+                    namesToAvoid.add(newClassName);
+                }
+            }
+
+            public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
+            {
+            }
+        });
     }
 
 
-    // Implementations for ClassFileVisitor
+    // Implementations for ClassFileVisitor.
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
@@ -103,11 +119,11 @@ public class ClassFileObfuscator
                 }
             }
 
-            // Come up with a unique class name.
+            // Come up with class names until we get an original one.
             String newClassName;
-            while (true)
+            do
             {
-                // Let the factory produce a unique class name.
+                // Let the factory produce a class name.
                 newClassName = packageClassNameFactory.nextName();
 
                 // We may have to add a package part to the class name.
@@ -119,14 +135,8 @@ public class ClassFileObfuscator
                         newClassName;
                 }
 
-                // Isn't there a class file that has this name reserved?
-                ClassFile otherClassFile = programClassPool.getClass(newClassName);
-                if (otherClassFile == null ||
-                    !newClassName.equals(newClassName(otherClassFile)))
-                {
-                    break;
-                }
             }
+            while (namesToAvoid.contains(newClassName));
 
             setNewClassName(programClassFile, newClassName);
         }

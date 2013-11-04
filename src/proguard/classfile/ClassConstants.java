@@ -1,4 +1,4 @@
-/* $Id: ClassConstants.java,v 1.14 2003/03/10 19:46:58 eric Exp $
+/* $Id: ClassConstants.java,v 1.15 2003/11/10 16:50:56 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -109,6 +109,7 @@ public interface ClassConstants
     public static final String ATTR_LineNumberTable     = "LineNumberTable";
     public static final String ATTR_LocalVariableTable  = "LocalVariableTable";
     public static final String ATTR_SourceFile          = "SourceFile";
+    public static final String ATTR_SourceDir           = "SourceDir";
     public static final String ATTR_Deprecated          = "Deprecated";
     public static final String ATTR_Synthetic           = "Synthetic";
 

@@ -1,4 +1,4 @@
-/* $Id: ProGuardObfuscator.java,v 1.5 2003/05/12 16:35:00 eric Exp $
+/* $Id: ProGuardObfuscator.java,v 1.8 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -47,7 +47,7 @@ import java.util.*;
  */
 public class ProGuardObfuscator implements Obfuscator
 {
-    // Implementations for Obfuscator
+    // Implementations for Obfuscator.
 
     public void createScriptFile(File jadFile,
                                  File projectDir)
@@ -67,70 +67,72 @@ public class ProGuardObfuscator implements Obfuscator
     throws IOException
     {
         // Create the ProGuard options.
-        ProGuardOptions options = new ProGuardOptions();
+        Configuration configuration = new Configuration();
 
-        options.libraryJars = classPathElements(classPath);
-
-        options.inJars = new ArrayList(1);
-        options.inJars.add(jarFileName);
-
-        options.resourceJars = new ArrayList(1);
-        options.resourceJars.add(projectDirName + File.separator + "res");
-
-        options.outJar = obfuscatedJarFile.getPath();
+        configuration.libraryJars  = classPath(classPath);
+        configuration.inJars       = classPath(jarFileName);
+        configuration.resourceJars = classPath(projectDirName + File.separator + "res");
+        configuration.outJars      = classPath(obfuscatedJarFile.getPath());
 
         // We want to keep all public MIDlets:
         // "-keep public class * extends javax.microedition.midlet.MIDlet".
-        options.keepCommands = new ArrayList(1);
-        options.keepCommands.add(new KeepCommand(ClassConstants.INTERNAL_ACC_PUBLIC,
-                                                 0,
-                                                 null,
-                                                 "javax/microedition/midlet/MIDlet",
-                                                 null,
-                                                 true,
-                                                 false,
-                                                 false));
+        configuration.keepClassFileOptions = new ArrayList(1);
+        configuration.keepClassFileOptions.add(
+            new KeepClassFileOption(ClassConstants.INTERNAL_ACC_PUBLIC,
+                                    0,
+                                    null,
+                                    "javax/microedition/midlet/MIDlet",
+                                    null,
+                                    true,
+                                    false,
+                                    false));
 
         // The preverify tool seems to unpack the resulting class files,
         // so we must not use mixed-case class names on Windows.
-        options.useMixedCaseClassNames =
+        configuration.useMixedCaseClassNames =
             !System.getProperty("os.name").regionMatches(true, 0, "windows", 0, 7);
 
         // We'll overload names with different return types.
-        options.overloadAggressively = true;
+        configuration.overloadAggressively = true;
 
         // We'll move all classes to the root package.
-        options.defaultPackage = "";
+        configuration.defaultPackage = "";
 
         // Run ProGuard with these options.
-        ProGuard proGuard = new ProGuard(options);
+        ProGuard proGuard = new ProGuard(configuration);
         proGuard.execute();
     }
 
 
     /**
-     * Returns the individual elements of the given class path.
+     * Converts the given class path String into a ClassPath object.
      */
-    private List classPathElements(String classPath)
+    private ClassPath classPath(String classPathString)
     {
-        List list = new ArrayList();
+        ClassPath classPath = new ClassPath();
 
         String separator = System.getProperty("path.separator");
 
         int index = 0;
-        while (index < classPath.length())
+        while (index < classPathString.length())
         {
-            int next_index = classPath.indexOf(separator, index);
+            // Find the next separator, or the end of the String.
+            int next_index = classPathString.indexOf(separator, index);
             if (next_index < 0)
             {
-                next_index = classPath.length();
+                next_index = classPathString.length();
             }
 
-            list.add(classPath.substring(index, next_index));
+            // Create and add the found class path entry.
+            ClassPathEntry classPathEntry =
+                new ClassPathEntry(classPathString.substring(index, next_index));
 
+            classPath.add(classPathEntry);
+
+            // Continue after the separator.
             index = next_index + 1;
         }
 
-        return list;
+        return classPath;
     }
 }

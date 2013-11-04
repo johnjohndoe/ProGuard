@@ -1,4 +1,4 @@
-/* $Id: BottomClassFileFilter.java,v 1.1 2003/05/01 17:54:46 eric Exp $
+/* $Id: BottomClassFileFilter.java,v 1.3 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -46,7 +46,7 @@ public class BottomClassFileFilter implements ClassFileVisitor
     }
 
 
-    // Implementations for ClassFileVisitor
+    // Implementations for ClassFileVisitor.
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {

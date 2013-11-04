@@ -1,16 +1,14 @@
 <!doctype html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <html>
 <head>
+<meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="content-style-type" content="text/css">
+<link rel="stylesheet" type="text/css" href="style.css">
 <title>ProGuard Examples</title>
 </head>
-<body
- bgcolor="#ffffff"
- text="#000000">
+<body>
 
-<table width="100%" cellpadding="10" cellspacing="0"><tr><th bgcolor="#EEEEFF">
-<font size="+2">Examples</font>
-</th></tr></table>
-<p>
+<h2>Examples</h2>
 
 Some typical useful configurations:
 <ol>
@@ -25,7 +23,9 @@ Some typical useful configurations:
 <li><a href="#native">Processing native methods</a>
 <li><a href="#serializable">Processing serializable classes</a>
 <li><a href="#beans">Processing bean classes</a>
+<li><a href="#rmi">Processing RMI code</a>
 <li><a href="#stacktrace">Producing useful obfuscated stack traces</a>
+<li><a href="#incremental">Incremental obfuscation</a>
 <li><a href="#deadcode">Finding dead code</a>
 <li><a href="#structure">Printing out the internal structure of class files</a>
 </ol>
@@ -34,17 +34,17 @@ Some typical useful configurations:
 <h3>A typical application</h3>
 To shrink and obfuscate the ProGuard application itself, one would typically
 create a configuration file <code>proguard.pro</code> and then type:
-<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
-<code>java -jar proguard.jar @proguard.pro</code>
-</td></tr></table>
+<pre>
+java -jar proguard.jar @proguard.pro
+</pre>
 <p>
 
 The configuration file would contain the following options:
-<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
 <pre>
--libraryjars &lt;java.home&gt;/lib/rt.jar
--injars      proguard.jar
--outjar      proguard_out.jar
+-libraryjars  &lt;java.home&gt;/lib/rt.jar
+-injars       proguard.jar
+-outjar       proguard_out.jar
+-printmapping proguard.map
 -overloadaggressively
 -defaultpackage ''
 
@@ -52,7 +52,6 @@ The configuration file would contain the following options:
     public static void main(java.lang.String[]);
 }
 </pre>
-</td></tr></table>
 <p>
 Note the use of the <code>&lt;java.home&gt;</code> system property; it is
 replaced automatically.
@@ -70,6 +69,10 @@ could leave them out as well. The <code>-defaultpackage</code> directive moves
 all classes to the given package, in this case the root package. Only
 <code>proguard.ProGuard</code> keeps its original name.
 <p>
+We're writing out an obfuscation mapping file with <code>-printmapping</code>,
+for de-obfuscating any stack traces later on, or for incremental obfuscation of
+extensions.
+<p>
 In general, you might need a few additional directives for processing <a
 href="#native">native methods</a>, <a href="#serializable">serializable
 classes</a>, or <a href="#beans">bean classes</a>. For 'simple' applications
@@ -78,7 +81,6 @@ like ProGuard, that is not required.
 <a name="applet">&nbsp;</a>
 <h3>A typical applet</h3>
 These options shrink and obfuscate the applet <code>mypackage.MyApplet</code>:
-<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
 <pre>
 -libraryjars &lt;java.home&gt;/lib/rt.jar
 -injars      in.jar
@@ -86,7 +88,6 @@ These options shrink and obfuscate the applet <code>mypackage.MyApplet</code>:
 
 -keep public class mypackage.MyApplet
 </pre>
-</td></tr></table>
 <p>
 The typical applet methods will be preserved automatically, since
 <code>mypackage.MyApplet</code> is an extension of the <code>Applet</code>
@@ -100,7 +101,6 @@ classes</a>, or <a href="#beans">bean classes</a>.
 <h3>A typical midlet</h3>
 These options shrink and obfuscate the J2ME midlet
 <code>mypackage.MyMIDlet</code>:
-<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
 <pre>
 -libraryjars /usr/local/java/wtk104/lib/midpapi.zip
 -injars      in.jar
@@ -110,7 +110,6 @@ These options shrink and obfuscate the J2ME midlet
 
 -keep public class mypackage.MyMIDlet
 </pre>
-</td></tr></table>
 <p>
 Note how we're now targeting the J2ME run-time environment
 <code>midpapi.zip</code>, instead of the J2SE run-time environment
@@ -125,7 +124,9 @@ href="#native">native methods</a>, <a href="#serializable">serializable
 classes</a>, or <a href="#beans">bean classes</a>.
 <p>
 You should preverify your midlets <i>after</i> having processed them, using
-J2ME's <code>preverify</code> tool.
+J2ME's <code>preverify</code> tool. Because this tool unpacks your processed
+jars, you should use ProGuard's <code>-dontusemixedcaseclassnames</code>
+option on platforms with case-insensitive filing systems, such as Windows.
 <p>
 Please note the in-depth article <a
 href="http://wireless.java.sun.com/midp/ttips/proguard/">"Obfuscating MIDlet
@@ -136,7 +137,6 @@ href="http://wireless.java.sun.com/">wireless.java.sun.com</a>.
 <h3>All possible applications in the input jars</h3>
 These options shrink and obfuscate all public applications in
 <code>in.jar</code>:
-<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
 <pre>
 -libraryjars &lt;java.home&gt;/lib/rt.jar
 -injars      in.jar
@@ -147,7 +147,6 @@ These options shrink and obfuscate all public applications in
     public static void main(java.lang.String[]);
 }
 </pre>
-</td></tr></table>
 <p>
 Note the use of <code>-keepclasseswithmembers</code>. We don't want to preserve
 all classes, just all classes that have main methods, and those methods.
@@ -162,7 +161,6 @@ classes</a>, or <a href="#beans">bean classes</a>.
 <a name="applets">&nbsp;</a>
 <h3>All possible applets in the input jars</h3>
 These options shrink and obfuscate all public applets in <code>in.jar</code>:
-<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
 <pre>
 -libraryjars &lt;java.home&gt;/lib/rt.jar
 -injars      in.jar
@@ -171,7 +169,6 @@ These options shrink and obfuscate all public applets in <code>in.jar</code>:
 
 -keep public class * extends java.applet.Applet
 </pre>
-</td></tr></table>
 <p>
 We're simply keeping all classes that extend the <code>Applet</code> class.
 <p>
@@ -186,7 +183,6 @@ classes</a>, or <a href="#beans">bean classes</a>.
 <h3>All possible midlets in the input jars</h3>
 These options shrink and obfuscate all public J2ME midlets in
 <code>in.jar</code>:
-<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
 <pre>
 -libraryjars /wtk104/lib/midpapi.zip
 -injars      in.jar
@@ -197,7 +193,6 @@ These options shrink and obfuscate all public J2ME midlets in
 
 -keep public class * extends javax.microedition.midlet.MIDlet
 </pre>
-</td></tr></table>
 <p>
 We're simply keeping all classes that extend the <code>MIDlet</code> class.
 <p>
@@ -209,12 +204,13 @@ href="#native">native methods</a>, <a href="#serializable">serializable
 classes</a>, or <a href="#beans">bean classes</a>.
 <p>
 You should preverify your midlets <i>after</i> having processed them, using
-J2ME's <code>preverify</code> tool.
+J2ME's <code>preverify</code> tool. Because this tool unpacks your processed
+jars, you should use ProGuard's <code>-dontusemixedcaseclassnames</code>
+option on platforms with case-insensitive filing systems, such as Windows.
 
 <a name="servlets">&nbsp;</a>
 <h3>All possible servlets in the input jars</h3>
 These options shrink and obfuscate all public servlets in <code>in.jar</code>:
-<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
 <pre>
 -libraryjars &lt;java.home&gt;/lib/rt.jar
 -libraryjars /usr/local/java/servlet/servlet.jar
@@ -224,7 +220,6 @@ These options shrink and obfuscate all public servlets in <code>in.jar</code>:
 
 -keep public class * implements javax.servlet.Servlet
 </pre>
-</td></tr></table>
 <p>
 Keeping all servlets is very similar to keeping all applets. The servlet API
 is not part of the standard run-time jar, so we're specifying it as a library.
@@ -247,7 +242,6 @@ classes</a>, or <a href="#beans">bean classes</a>.
 These options shrink and obfuscate an entire library, keeping all public and
 protected classes and class members, native method names, and serialization
 code:
-<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
 <pre>
 -libraryjars  &lt;java.home&gt;/lib/rt.jar
 -injars       in.jar
@@ -278,20 +272,20 @@ code:
     java.lang.Object readResolve();
 }
 </pre>
-</td></tr></table>
 <p>
 This configuration should preserve everything we'll ever want to access in the
 library. Only if there are any other non-public classes or methods that are
 invoked dynamically, they should be specified using additional
 <code>-keep</code> directives.
 <p>
-Note the use of <code>-keepclassmembernames</code> for the <code>class$</code>
-methods. These methods are inserted by the <code>javac</code> compiler and the
-<code>jikes</code> compiler respectively, to implement the <code>.class</code>
-construct. ProGuard will automatically detect them and deal with them; no
-problem at this point. However, ProGuard may be used again to shrink an
-application that uses this obfuscated library. Without having preserved the
-method names, the automatic detection would fail the second time around.
+The <code>-keepclassmembernames</code> directive for the <code>class$</code>
+methods is not strictly necessary. These methods are inserted by the
+<code>javac</code> compiler and the <code>jikes</code> compiler respectively,
+to implement the <code>.class</code> construct. ProGuard will automatically
+detect them and deal with them, even when their names have been obfuscated.
+However, older versions of ProGuard and other obfuscators may rely on the
+original method names. It may therefore be helpful to preserve them, in case
+these other obfuscators are ever used for further obfuscation of the library.
 <p>
 We've added some directives for keeping the "Deprecated" attribute, for <a
 href="#stacktrace">useful stack traces</a>, for <a href="#native">native
@@ -309,13 +303,11 @@ If your application, applet, servlet, library, etc., contains native methods,
 you'll want to preserve their names and their classes' names, so they can
 still be linked to the native library. The following additional option will
 ensure that:
-<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
 <pre>
 -keepclasseswithmembernames class * {
     native &lt;methods&gt;;
 }
 </pre>
-</td></tr></table>
 <p>
 Note the use of <code>-keepclasseswithmembernames</code>. We don't want to
 preserve all classes or all native methods; we just want to keep the relevant
@@ -332,7 +324,6 @@ may require special attention:
     long-term storage. Classes that are shrunk and obfuscated should then
     continue to function fine with the following additional directives:
 
-<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
 <pre>
 -keepclassmembers class * implements java.io.Serializable {
     private void writeObject(java.io.ObjectOutputStream);
@@ -341,7 +332,6 @@ may require special attention:
     java.lang.Object readResolve();
 }
 </pre>
-</td></tr></table>
 <p>
 
     The <code>-keepclassmembers</code> option makes sure that any
@@ -358,7 +348,6 @@ may require special attention:
     have <code>serialVersionUID</code> fields. The following directives should
     then be sufficient to ensure compatibility over time:
 
-<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
 <pre>
 -keepnames class * implements java.io.Serializable
 
@@ -371,7 +360,6 @@ may require special attention:
     java.lang.Object readResolve();
 }
 </pre>
-</td></tr></table>
 <p>
 
     The <code>serialVersionUID</code> line makes sure that field is preserved.
@@ -386,13 +374,12 @@ may require special attention:
     is then computed from a list of features the serializable class. Changing
     the class ever so slightly may change the computed serial version UID. The
     list of features is specified in the chapter on <a
-    href="http://java.sun.com/j2se/1.4/docs/guide/serialization/spec/class.doc6.html">Stream
+    href="http://java.sun.com/j2se/1.4/docs/guide/serialization/spec/class.html#wp4100">Stream
     Unique Identifiers</a> of Sun's <a
     href="http://java.sun.com/j2se/1.4/docs/guide/serialization/">Object
     Serialization Guide</a>. The following directives should at least
     partially ensure compatibility with the original classes
 
-<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
 <pre>
 -keepnames class * implements java.io.Serializable
 
@@ -407,7 +394,6 @@ may require special attention:
     java.lang.Object readResolve();
 }
 </pre>
-</td></tr></table>
 <p>
 
     The new directives force preservation of the elements involved in the UID
@@ -433,7 +419,6 @@ introspection on bean classes to find bean editor classes, or getter and
 setter methods, then configuration may become laborious. There's not much else
 you can do than making sure the bean class names, or the getter and setter
 names don't change. For instance:
-<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
 <pre>
 -keep public class mypackage.MyBean {
     public void setMyProperty(int);
@@ -442,24 +427,68 @@ names don't change. For instance:
 
 -keep public class mypackage.MyBeanEditor
 </pre>
-</td></tr></table>
+<p>
+If there are too many elements to list explicitly, wildcards in class names and
+method signatures might be helpful. A simple example, which ignores arrays or
+indexed properties:
+<pre>
+-keep class mybeans.** {
+    void set**(byte);
+    void set**(char);
+    void set**(short);
+    void set**(int);
+    void set**(long);
+    void set**(float);
+    void set**(double);
+    void set**(**);
+
+    byte   get**();
+    char   get**();
+    short  get**();
+    int    get**();
+    long   get**();
+    float  get**();
+    double get**();
+    **     get();
+}
+</pre>
+<p>
+Note that the class wildcards don't match primitive types or array types.
+
+<a name="rmi">&nbsp;</a>
+<h3>Processing RMI code</h3>
+Reportedly, the easiest way to handle RMI code is to process the code with
+ProGuard first and then invoke the <code>rmic</code> tool. If that is not
+possible, you may want to try something like this:
+<pre>
+-keep interface * extends java.rmi.Remote {
+    &lt;methods&gt;;
+}
+
+-keep class * implements java.rmi.Remote {
+    &lt;init&gt;(java.rmi.activation.ActivationID, java.rmi.MarshalledObject);
+}
+</pre>
+<p>
+The first directive keeps all your Remote interfaces and their methods. The
+second one keeps all the implementations, along with their particular RMI
+constructors, if any.
 
 <a name="stacktrace">&nbsp;</a>
 <h3>Producing useful obfuscated stack traces</h3>
 These options let obfuscated applications or libraries produce stack traces
 that can still be deciphered later on:
-<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
 <pre>
 -printmapping out.map
 
 -renamesourcefileattribute SourceFile
 -keepattributes SourceFile,LineNumberTable
 </pre>
-</td></tr></table>
 <p>
 We're keeping all source file attributes, but we're replacing their values by
 the string "SourceFile". We could use any string. This string is already
-present in all class files, so it doesn't take up any extra space.
+present in all class files, so it doesn't take up any extra space. If you're
+working with J++, you'll want to keep the "SourceDir" attribute as well.
 <p>
 We're also keeping the line number tables of all methods.
 <p>
@@ -469,13 +498,35 @@ will include line number information when printing out exception stack traces.
 The information will only be useful if we can map the obfuscated names back to
 their original names, so we're saving the mapping to a file
 <code>out.map</code>. The information can then be used by the <a
-href="retrace.html">ReTrace</a> tool to restore the original stack trace.
+href="retrace/index.html">ReTrace</a> tool to restore the original stack trace.
+
+<a name="incremental">&nbsp;</a>
+<h3>Incremental obfuscation</h3>
+After having <a href="#application">processed an application</a>, e.g.
+ProGuard itself, one can still incrementally add other pieces of code that
+depend on it, e.g. the ProGuard GUI:
+<pre>
+-libraryjars  &lt;java.home&gt;/lib/rt.jar
+-injars       proguardgui.jar
+-injars       proguard.jar
+-applymapping proguard.map
+-outjars      proguardgui_out.jar(proguard/gui/**)
+
+-keep public class proguard.gui.ProGuardGUI {
+    public static void main(java.lang.String[]);
+}
+</pre>
+<p>
+We're reading both unprocessed input jars. The <code>-applymapping</code>
+option then makes sure the ProGuard part of the code is obfuscated with the
+previously produced obfuscation mapping. We're filtering the output jar, only
+keeping the additional GUI files. The final application consists of the
+obfuscated ProGuard jar and the additional obfuscated GUI jar.
 
 <a name="deadcode">&nbsp;</a>
 <h3>Finding dead code</h3>
 These options list unused fields and methods in the application
 <code>mypackage.MyApplication</code>:
-<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
 <pre>
 -libraryjars &lt;java.home&gt;/lib/rt.jar
 -injars      in.jar
@@ -486,7 +537,6 @@ These options list unused fields and methods in the application
     public static void main(java.lang.String[]);
 }
 </pre>
-</td></tr></table>
 <p>
 We're not specifying an output jar, just printing out some results.
 <p>
@@ -496,22 +546,15 @@ We're saving a little bit of time by not passing through the obfuscation phase.
 <h3>Printing out the internal structure of class files</h3>
 These options print out the internal structure of all class files in the input
 jar:
-<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
 <pre>
 -injars in.jar
--dontwarn
--dontnote
 -dontshrink
 -dontobfuscate
 -dump
 </pre>
-</td></tr></table>
 <p>
 Note how we don't need to specify the Java run-time jar, because we're not
-processing the input jar at all. In this case, we can safely ignore any
-warnings about unresolved references, so we use the <code>-dontwarn</code>
-option. We're also not interested in any advice about dynamic invocations,
-so we use the <code>-dontnote</code> option.
+processing the input jar at all.
 <p>
 
 <hr>

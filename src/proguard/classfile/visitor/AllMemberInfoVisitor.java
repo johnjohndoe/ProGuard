@@ -1,4 +1,4 @@
-/* $Id: AllMemberInfoVisitor.java,v 1.6 2003/04/28 17:24:21 eric Exp $
+/* $Id: AllMemberInfoVisitor.java,v 1.8 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -40,7 +40,7 @@ public class AllMemberInfoVisitor implements ClassFileVisitor
     }
 
 
-    // Implementations for ClassFileVisitor
+    // Implementations for ClassFileVisitor.
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {

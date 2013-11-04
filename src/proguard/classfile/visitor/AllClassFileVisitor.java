@@ -1,4 +1,4 @@
-/* $Id: AllClassFileVisitor.java,v 1.7 2003/04/28 17:24:21 eric Exp $
+/* $Id: AllClassFileVisitor.java,v 1.8 2003/08/22 17:11:15 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *

@@ -1,4 +1,4 @@
-/* $Id: AttrInfo.java,v 1.15 2003/02/09 15:22:27 eric Exp $
+/* $Id: AttrInfo.java,v 1.17 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -66,6 +66,7 @@ public abstract class AttrInfo implements VisitorAccepter
             attrName.equals(ClassConstants.ATTR_Exceptions)         ? (AttrInfo)new ExceptionsAttrInfo():
             attrName.equals(ClassConstants.ATTR_LineNumberTable)    ? (AttrInfo)new LineNumberTableAttrInfo():
             attrName.equals(ClassConstants.ATTR_SourceFile)         ? (AttrInfo)new SourceFileAttrInfo():
+            attrName.equals(ClassConstants.ATTR_SourceDir)          ? (AttrInfo)new SourceDirAttrInfo():
             attrName.equals(ClassConstants.ATTR_LocalVariableTable) ? (AttrInfo)new LocalVariableTableAttrInfo():
             attrName.equals(ClassConstants.ATTR_InnerClasses)       ? (AttrInfo)new InnerClassesAttrInfo():
             attrName.equals(ClassConstants.ATTR_Synthetic)          ? (AttrInfo)new SyntheticAttrInfo():
@@ -128,7 +129,7 @@ public abstract class AttrInfo implements VisitorAccepter
     public abstract void accept(ClassFile classFile, AttrInfoVisitor attrInfoVisitor);
 
 
-    // Implementations for VisitorAccepter
+    // Implementations for VisitorAccepter.
 
     public Object getVisitorInfo() {
         return visitorInfo;

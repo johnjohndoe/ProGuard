@@ -1,4 +1,4 @@
-/* $Id: NameAndTypeUsageMarker.java,v 1.7 2003/02/09 15:22:29 eric Exp $
+/* $Id: NameAndTypeUsageMarker.java,v 1.8 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -40,7 +40,7 @@ public class NameAndTypeUsageMarker
     private static final Object USED = new Object();
 
 
-    // Implementations for ClassFileVisitor
+    // Implementations for ClassFileVisitor.
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
@@ -54,7 +54,7 @@ public class NameAndTypeUsageMarker
     }
 
 
-    // Implementations for CpInfoVisitor
+    // Implementations for CpInfoVisitor.
 
     public void visitIntegerCpInfo(ClassFile classFile, IntegerCpInfo integerCpInfo) {}
     public void visitLongCpInfo(ClassFile classFile, LongCpInfo longCpInfo) {}

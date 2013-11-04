@@ -1,4 +1,4 @@
-/* $Id: ClassFileUpDownTraveler.java,v 1.9 2003/02/09 15:22:29 eric Exp $
+/* $Id: ClassFileUpDownTraveler.java,v 1.11 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -99,7 +99,7 @@ public class ClassFileUpDownTraveler
     }
 
 
-    // Implementations for ClassFileVisitor
+    // Implementations for ClassFileVisitor.
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
@@ -170,7 +170,10 @@ public class ClassFileUpDownTraveler
             {
                 for (int i = 0; i < interfaceClasses.length; i++)
                 {
-                    interfaceClasses[i].accept(classFileUpTraveler);
+                    if (interfaceClasses[i] != null)
+                    {
+                        interfaceClasses[i].accept(classFileUpTraveler);
+                    }
                 }
             }
         }
@@ -190,7 +193,7 @@ public class ClassFileUpDownTraveler
     }
 
 
-    // Implementations for CpInfoVisitor
+    // Implementations for CpInfoVisitor.
 
     public void visitIntegerCpInfo(ClassFile classFile, IntegerCpInfo integerCpInfo) {}
     public void visitLongCpInfo(ClassFile classFile, LongCpInfo longCpInfo) {}

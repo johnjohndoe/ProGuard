@@ -1,4 +1,4 @@
-/* $Id: DataEntryWriter.java,v 1.2 2003/04/28 17:24:21 eric Exp $
+/* $Id: DataEntryWriter.java,v 1.3 2003/08/22 17:11:15 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -40,7 +40,8 @@ public interface DataEntryWriter
 
     /**
      * Prepares writing a data entry and returns a stream for writing the actual
-     * data.
+     * data. The stream may be <code>null</code> to indicate that the data entry
+     * should not be written.
      */
     public OutputStream openDataEntry(String name) throws IOException;
 

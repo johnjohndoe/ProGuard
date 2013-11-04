@@ -30,8 +30,8 @@
 
       <!-- Preserve all .class method names. -->
       <keepclassmembernames access="public">
-         <method type="Class" name="class$(java.lang.String)" />
-         <method type="Class" name="class$(java.lang.String, boolean)" />
+         <method type="java.lang.Class" name="class$(java.lang.String)" />
+         <method type="java.lang.Class" name="class$(java.lang.String, boolean)" />
       </keepclassmembernames>
 
       <!-- Preserve all native method names and the names of their classes. -->

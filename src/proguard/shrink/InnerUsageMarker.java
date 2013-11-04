@@ -1,4 +1,4 @@
-/* $Id: InnerUsageMarker.java,v 1.8 2003/02/09 15:22:29 eric Exp $
+/* $Id: InnerUsageMarker.java,v 1.10 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -42,7 +42,7 @@ public class InnerUsageMarker
     private boolean used;
 
 
-    // Implementations for ClassFileVisitor
+    // Implementations for ClassFileVisitor.
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
@@ -70,7 +70,7 @@ public class InnerUsageMarker
     }
 
 
-    // Implementations for CpInfoVisitor
+    // Implementations for CpInfoVisitor.
 
     public void visitIntegerCpInfo(ClassFile classFile, IntegerCpInfo integerCpInfo) {}
     public void visitLongCpInfo(ClassFile classFile, LongCpInfo longCpInfo) {}
@@ -118,7 +118,7 @@ public class InnerUsageMarker
     }
 
 
-    // Implementations for AttrInfoVisitor
+    // Implementations for AttrInfoVisitor.
 
     public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo) {}
     public void visitConstantValueAttrInfo(ClassFile classFile, ConstantValueAttrInfo constantValueAttrInfo) {}
@@ -127,6 +127,7 @@ public class InnerUsageMarker
     public void visitLineNumberTableAttrInfo(ClassFile classFile, LineNumberTableAttrInfo lineNumberTableAttrInfo) {}
     public void visitLocalVariableTableAttrInfo(ClassFile classFile, LocalVariableTableAttrInfo localVariableTableAttrInfo) {}
     public void visitSourceFileAttrInfo(ClassFile classFile, SourceFileAttrInfo sourceFileAttrInfo) {}
+    public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo) {}
     public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo) {}
     public void visitSyntheticAttrInfo(ClassFile classFile, SyntheticAttrInfo syntheticAttrInfo) {}
 
@@ -154,7 +155,7 @@ public class InnerUsageMarker
     }
 
 
-    // Implementations for InnerClassesInfoVisitor
+    // Implementations for InnerClassesInfoVisitor.
 
     public void visitInnerClassesInfo(ClassFile classFile, InnerClassesInfo innerClassesInfo)
     {

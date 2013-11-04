@@ -1,4 +1,4 @@
-/* $Id: JarWriter.java,v 1.7 2003/05/19 13:15:40 eric Exp $
+/* $Id: JarWriter.java,v 1.11 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -64,7 +64,7 @@ public class JarWriter implements DataEntryWriter
     }
 
 
-    // Implementations for DataEntryWriter
+    // Implementations for DataEntryWriter.
 
     public void close() throws IOException
     {
@@ -81,14 +81,6 @@ public class JarWriter implements DataEntryWriter
 
     public OutputStream openDataEntry(String name) throws IOException
     {
-        // The manifest file should be set in the constructor; it should not
-        // be added as another entry (perhaps read as a file from a directory
-        // or as a rogue entry in a zip file).
-        if (name.equals(JarFile.MANIFEST_NAME))
-        {
-            throw new IOException("Can't add manifest file as an ordinary zip entry");
-        }
-
         // We have to check if the name is already used, because ZipOutputStream
         // doesn't handle this case properly (it throws an exception which can
         // be caught, but the ZipEntry is remembered anyway).

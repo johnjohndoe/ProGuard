@@ -1,4 +1,4 @@
-/* $Id: ConstantValueAttrInfo.java,v 1.10 2003/02/09 15:22:28 eric Exp $
+/* $Id: ConstantValueAttrInfo.java,v 1.11 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -44,7 +44,7 @@ public class ConstantValueAttrInfo extends AttrInfo
     }
 
 
-    // Implementations for AttrInfo
+    // Implementations for AttrInfo.
 
     protected int getAttrInfoLength()
     {

@@ -1,16 +1,14 @@
 <!doctype html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <html>
 <head>
+<meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="content-style-type" content="text/css">
+<link rel="stylesheet" type="text/css" href="style.css">
 <title>ProGuard Troubleshooting</title>
 </head>
-<body
- bgcolor="#ffffff"
- text="#000000">
+<body>
 
-<table width="100%" cellpadding="10" cellspacing="0"><tr><th bgcolor="#EEEEFF">
-<font size="+2">Troubleshooting</font>
-</th></tr></table>
-<p>
+<h2>Troubleshooting</h2>
 
 <h3>Problems while processing</h3>
 
@@ -63,7 +61,11 @@ some more serious warnings:
     <p>
     If the class that is reported as missing is a non-public library class,
     you should specify the <code>-dontskipnonpubliclibraryclasses</code>
-    option.
+    option. A common example is the class
+    <code>java.util.zip.ZipConstants</code>, which is used as an interface
+    class in some public classes, even though it is only package visible (in
+    this case, the warning could also be ignored, because the class is not a
+    fundamental part of the class hierarchy).
     <p>
     If you're missing a library and you're absolutely sure it isn't used
     anyway, you can try your luck with the <code>-ignorewarnings</code>
@@ -81,10 +83,18 @@ some more serious warnings:
 
 Should ProGuard crash while processing your application:
 <ul>
+<li>If you get an <code><b>OutOfMemoryError</b></code>, you can try increasing
+    the heap size of the Java virtual machine (with the usual
+    <code>-Xms</code> and <code>-Xmx</code> options). You can also reduce the
+    amount of memory that ProGuard needs by removing unnecessary library jars
+    from your configuration. Remember that only libraries containing classes
+    or interfaces that are extended or implemented by classes in your input
+    jars are required.
+    <p>
+
 <li>Maybe your class files are corrupt. See if recompiling them and trying
-    again helps. If not, please contact me, at least reporting the version of
-    your JDK, the version of ProGuard, the options, and the printed output,
-    including exception stack trace (use the <code>-verbose</code> option).
+    again helps. If not, please report the problem, preferably with the
+    simplest example that causes ProGuard to crash.
 </ul>
 <p>
 
@@ -93,6 +103,14 @@ Should ProGuard crash while processing your application:
 If ProGuard runs fine, but your processed application doesn't work, there
 might be several reasons:
 <ul>
+
+<li>If ProGuard is <b>not keeping the right classes or class members</b>, make
+    sure you are using fully qualified class names. If the package name of
+    some class is missing, ProGuard won't match the elements that you might be
+    expecting. It may help to double-check for typos too. You can use the
+    <code>-printseeds</code> option to see which elements are being kept
+    exactly.
+    <p>
 
 <li>If it looks like <b>a whole bunch of classes has disappeared</b> from your
     output jar, you should make sure you're not writing your output class
@@ -131,10 +149,11 @@ might be several reasons:
 <li>If you get a <code><b>NullPointerException</b></code> or if you don't see
     any icons, your processed code may be unable to find some resource files.
     ProGuard currently simply copies resource files over from the input jars
-    to the output jar. Their names and contents remain unchanged. If you've
-    used the <code>-defaultpackage</code> option, the package names of some
-    classes may have changed, and along with them, the directory in which they
-    look for their resource files. It's better not to use this option in these
+    or, if specified, from the resource jars, to the output jar. Their names
+    and contents remain unchanged. If you've used the
+    <code>-defaultpackage</code> option, the package names of some classes may
+    have changed, and along with them, the directory in which they look for
+    their resource files. It's better not to use this option in these
     circumstances.
     <p>
 
@@ -147,14 +166,15 @@ might be several reasons:
     <code><b>AbstractMethodError</b></code>, you should make sure you're not
     writing your output class files to a directory (or unpacking the output
     jar) on a platform with a case-insensitive file system, such as Windows.
-    Refer to the first bullet item in this list for details.
+    Refer to the item about disappearing classes, higher up in this list, for
+    details.
     <p>
     Furthermore, you should check whether you have specified your program jars
     and library jars properly. Program classes can refer to library classes,
     but not the other way around.
     <p>
     If all of this seems ok, perhaps there's a bug in ProGuard (gasp!). If so,
-    please contact me, preferably with the simplest example on which you can
+    please report it, preferably with the simplest example on which you can
     find ProGuard to fail.
 
 </ul>

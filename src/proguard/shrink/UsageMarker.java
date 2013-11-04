@@ -1,4 +1,4 @@
-/* $Id: UsageMarker.java,v 1.19 2003/07/29 16:42:27 eric Exp $
+/* $Id: UsageMarker.java,v 1.23 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -49,9 +49,6 @@ public class UsageMarker
     // A visitor info flag to indicate the visitor accepter is being used.
     private static final Object USED          = new Object();
 
-    // A flag specifying whether to mark class files recursively or just locally.
-    private boolean recurse;
-
 
     // A field acting as a parameter to the visitMemberInfo method.
     private boolean processing = false;
@@ -59,40 +56,7 @@ public class UsageMarker
     private MyInterfaceUsageMarker interfaceUsageMarker = new MyInterfaceUsageMarker();
 
 
-    /**
-     * Creates a new UsageMarker that recurses in referenced class files in the
-     * class tree.
-     */
-    public UsageMarker()
-    {
-        this(true);
-    }
-
-
-    /**
-     * Creates a new UsageMarker.
-     * @param recurse a flag that indicates whether to recurse in the class tree.
-     * Without recursion, it just marks the elements of the class file locally.
-     */
-    public UsageMarker(boolean recurse)
-    {
-        this.recurse = recurse;
-    }
-
-
-    public void setRecurse(boolean recurse)
-    {
-        this.recurse = recurse;
-    }
-
-
-    public boolean getRecurse()
-    {
-        return recurse;
-    }
-
-
-    // Implementations for ClassFileVisitor
+    // Implementations for ClassFileVisitor.
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
@@ -110,22 +74,10 @@ public class UsageMarker
                 markCpEntry(programClassFile, programClassFile.u2superClass);
             }
 
-            // Mark the interfaces.
-            if (recurse)
-            {
-                // Give the interfaces preliminary marks.
-                programClassFile.accept(
-                    new ClassFileUpDownTraveler(false, false, true, false,
-                                                interfaceUsageMarker));
-            }
-            else
-            {
-                // Mark the interface constant pool entries.
-                for (int i = 0; i < programClassFile.u2interfacesCount; i++)
-                {
-                    markCpEntry(programClassFile, programClassFile.u2interfaces[i]);
-                }
-            }
+            // Give the interfaces preliminary marks.
+            programClassFile.accept(
+                new ClassFileUpDownTraveler(false, false, true, false,
+                                            interfaceUsageMarker));
 
             // Note that the <clinit> method and the parameterless <init> method
             // are 'overridden' from the ones in java.lang.Object, and therefore
@@ -133,7 +85,6 @@ public class UsageMarker
             // The MIDP run-time jar midpapi.zip has a version of java.lang.Object
             // without a <clinit> method. So we'll explicitly mark it before
             // processing the methods.
-
             programClassFile.methodAccept(this,
                                           ClassConstants.INTERNAL_METHOD_NAME_CLINIT,
                                           ClassConstants.INTERNAL_METHOD_TYPE_CLINIT);
@@ -161,25 +112,22 @@ public class UsageMarker
             // if this class is being used, all of its methods will be used as
             // well. We'll mark them as such (here and in all subclasses).
 
-            if (recurse)
+            // Mark the superclass.
+            ClassFile superClass = libraryClassFile.superClass;
+            if (superClass != null)
             {
-                // Mark the superclass.
-                ClassFile superClass = libraryClassFile.superClass;
-                if (superClass != null)
-                {
-                    superClass.accept(this);
-                }
+                superClass.accept(this);
+            }
 
-                // Mark the interfaces.
-                ClassFile[] interfaceClasses = libraryClassFile.interfaceClasses;
-                if (interfaceClasses != null)
+            // Mark the interfaces.
+            ClassFile[] interfaceClasses = libraryClassFile.interfaceClasses;
+            if (interfaceClasses != null)
+            {
+                for (int i = 0; i < interfaceClasses.length; i++)
                 {
-                    for (int i = 0; i < interfaceClasses.length; i++)
+                    if (interfaceClasses[i] != null)
                     {
-                        if (interfaceClasses[i] != null)
-                        {
-                            interfaceClasses[i].accept(this);
-                        }
+                        interfaceClasses[i].accept(this);
                     }
                 }
             }
@@ -214,7 +162,7 @@ public class UsageMarker
     }
 
 
-    // Implementations for MemberInfoVisitor
+    // Implementations for MemberInfoVisitor.
 
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {
@@ -232,9 +180,8 @@ public class UsageMarker
     {
         if (!isUsed(programMemberInfo))
         {
-            if (!recurse ||
-                (processing ? isPossiblyUsed(programMemberInfo) :
-                              isUsed(programClassFile)))
+            if (processing ? isPossiblyUsed(programMemberInfo) :
+                             isUsed(programClassFile))
             {
                 boolean oldProcessing = processing;
                 processing = false;
@@ -248,11 +195,8 @@ public class UsageMarker
                 // Mark the attributes.
                 programMemberInfo.attributesAccept(programClassFile, this);
 
-                if (recurse)
-                {
-                    // Mark the classes referenced in the descriptor string.
-                    programMemberInfo.referencedClassesAccept(this);
-                }
+                // Mark the classes referenced in the descriptor string.
+                programMemberInfo.referencedClassesAccept(this);
 
                 // Restore the processing flag.
                 processing = oldProcessing;
@@ -276,45 +220,42 @@ public class UsageMarker
         {
             markAsUsed(libraryMethodInfo);
 
-            if (recurse)
-            {
-                String name = libraryMethodInfo.getName(libraryClassFile);
-                String type = libraryMethodInfo.getDescriptor(libraryClassFile);
+            String name = libraryMethodInfo.getName(libraryClassFile);
+            String type = libraryMethodInfo.getDescriptor(libraryClassFile);
 
-                // Mark all implementations of the method.
-                // Library class methods are supposed to be used by
-                // default, so we don't want to lose their redefinitions.
-                //
-                // For an abstract method:
-                //   First go to  all concrete classes of the interface.
-                //   From there, travel up and down the class hierarchy to mark
-                //   the method.
-                //
-                //   This way, we're also catching retro-fitted interfaces,
-                //   where a class's implementation of an interface method is
-                //   hiding higher up its class hierarchy.
-                //
-                // For a concrete method:
-                //   Simply mark all overriding implementations down the
-                //   class hierarchy.
-                libraryClassFile.accept(
-                    (libraryMethodInfo.getAccessFlags() &
-                     ClassConstants.INTERNAL_ACC_ABSTRACT) != 0 ?
+            // Mark all implementations of the method.
+            // Library class methods are supposed to be used by
+            // default, so we don't want to lose their redefinitions.
+            //
+            // For an abstract method:
+            //   First go to  all concrete classes of the interface.
+            //   From there, travel up and down the class hierarchy to mark
+            //   the method.
+            //
+            //   This way, we're also catching retro-fitted interfaces,
+            //   where a class's implementation of an interface method is
+            //   hiding higher up its class hierarchy.
+            //
+            // For a concrete method:
+            //   Simply mark all overriding implementations down the
+            //   class hierarchy.
+            libraryClassFile.accept(
+                (libraryMethodInfo.getAccessFlags() &
+                 ClassConstants.INTERNAL_ACC_ABSTRACT) != 0 ?
 
-                    (ClassFileVisitor)
-                    new ConcreteClassFileDownTraveler(
-                    new ClassFileUpDownTraveler(true, true, false, true,
-                    new NamedMethodVisitor(this, name, type))) :
+                (ClassFileVisitor)
+                new ConcreteClassFileDownTraveler(
+                new ClassFileUpDownTraveler(true, true, false, true,
+                new NamedMethodVisitor(this, name, type))) :
 
-                    (ClassFileVisitor)
-                    new ClassFileUpDownTraveler(false, false, false, true,
-                    new NamedMethodVisitor(this, name, type)));
-            }
+                (ClassFileVisitor)
+                new ClassFileUpDownTraveler(false, false, false, true,
+                new NamedMethodVisitor(this, name, type)));
         }
     }
 
 
-    // Implementations for CpInfoVisitor
+    // Implementations for CpInfoVisitor.
 
     public void visitIntegerCpInfo(ClassFile classFile, IntegerCpInfo integerCpInfo)
     {
@@ -360,12 +301,9 @@ public class UsageMarker
 
             markCpEntry(classFile, stringCpInfo.u2stringIndex);
 
-            if (recurse)
-            {
-                // Mark the referenced class, if the string is being used in
-                // a Class.forName construct.
-                stringCpInfo.referencedClassAccept(this);
-            }
+            // Mark the referenced class, if the string is being used in
+            // a Class.forName construct.
+            stringCpInfo.referencedClassAccept(this);
         }
     }
 
@@ -388,17 +326,14 @@ public class UsageMarker
             markCpEntry(classFile, fieldrefCpInfo.u2classIndex);
             markCpEntry(classFile, fieldrefCpInfo.u2nameAndTypeIndex);
 
-            if (recurse)
-            {
-                // Mark the referenced field itself.
-                fieldrefCpInfo.referencedMemberInfoAccept(this);
+            // When compiled with "-target 1.2", the class actually containing
+            // the referenced field may be higher up the hierarchy. It should
+            // be marked as one of the super classes, but we'll mark it here
+            // as well, as we do for method references.
+            fieldrefCpInfo.referencedClassAccept(this);
 
-                // When compiled with "-target 1.2", the class or interface
-                // actually containing the referenced field may be higher up
-                // the hierarchy. Make sure it's marked, in case it isn't
-                // used elsewhere.
-                fieldrefCpInfo.referencedClassAccept(this);
-            }
+            // Mark the referenced field itself.
+            fieldrefCpInfo.referencedMemberInfoAccept(this);
         }
     }
 
@@ -412,33 +347,30 @@ public class UsageMarker
             markCpEntry(classFile, interfaceMethodrefCpInfo.u2classIndex);
             markCpEntry(classFile, interfaceMethodrefCpInfo.u2nameAndTypeIndex);
 
-            if (recurse)
-            {
-                // Mark the referenced interface method itself.
-                interfaceMethodrefCpInfo.referencedMemberInfoAccept(this);
+            // When compiled with "-target 1.2", the interface actually
+            // containing the referenced method may be higher up the
+            // hierarchy. Make sure it's marked, in case it isn't
+            // used elsewhere.
+            interfaceMethodrefCpInfo.referencedClassAccept(this);
 
-                // When compiled with "-target 1.2", the interface actually
-                // containing the referenced method may be higher up the
-                // hierarchy. Make sure it's marked, in case it isn't
-                // used elsewhere.
-                interfaceMethodrefCpInfo.referencedClassAccept(this);
+            // Mark the referenced interface method itself.
+            interfaceMethodrefCpInfo.referencedMemberInfoAccept(this);
 
-                String name = interfaceMethodrefCpInfo.getName(classFile);
-                String type = interfaceMethodrefCpInfo.getType(classFile);
+            String name = interfaceMethodrefCpInfo.getName(classFile);
+            String type = interfaceMethodrefCpInfo.getType(classFile);
 
-                // Mark all implementations of the method.
-                // First go to  all concrete classes of the interface.
-                // From there, travel up and down the class hierarchy to mark
-                // the method.
-                //
-                // This way, we're also catching retro-fitted interfaces, where
-                // a class's implementation of an interface method is hiding
-                // higher up its class hierarchy.
-                interfaceMethodrefCpInfo.referencedClassAccept(
-                    new ConcreteClassFileDownTraveler(
-                    new ClassFileUpDownTraveler(true, true, false, true,
-                    new NamedMethodVisitor(this, name, type))));
-            }
+            // Mark all implementations of the method.
+            // First go to  all concrete classes of the interface.
+            // From there, travel up and down the class hierarchy to mark
+            // the method.
+            //
+            // This way, we're also catching retro-fitted interfaces, where
+            // a class's implementation of an interface method is hiding
+            // higher up its class hierarchy.
+            interfaceMethodrefCpInfo.referencedClassAccept(
+                new ConcreteClassFileDownTraveler(
+                new ClassFileUpDownTraveler(true, true, false, true,
+                new NamedMethodVisitor(this, name, type))));
         }
     }
 
@@ -452,26 +384,23 @@ public class UsageMarker
             markCpEntry(classFile, methodrefCpInfo.u2classIndex);
             markCpEntry(classFile, methodrefCpInfo.u2nameAndTypeIndex);
 
-            if (recurse)
-            {
-                // Mark the referenced method itself.
-                methodrefCpInfo.referencedMemberInfoAccept(this);
+            // When compiled with "-target 1.2", the class or interface
+            // actually containing the referenced method may be higher up
+            // the hierarchy. Make sure it's marked, in case it isn't
+            // used elsewhere.
+            methodrefCpInfo.referencedClassAccept(this);
 
-                // When compiled with "-target 1.2", the class or interface
-                // actually containing the referenced method may be higher up
-                // the hierarchy. Make sure it's marked, in case it isn't
-                // used elsewhere.
-                methodrefCpInfo.referencedClassAccept(this);
+            // Mark the referenced method itself.
+            methodrefCpInfo.referencedMemberInfoAccept(this);
 
-                String name = methodrefCpInfo.getName(classFile);
-                String type = methodrefCpInfo.getType(classFile);
+            String name = methodrefCpInfo.getName(classFile);
+            String type = methodrefCpInfo.getType(classFile);
 
-                // Mark all overriding implementations of the method,
-                // down the class hierarchy.
-                methodrefCpInfo.referencedClassAccept(
-                    new ClassFileUpDownTraveler(false, false, false, true,
-                    new NamedMethodVisitor(this, name, type)));
-            }
+            // Mark all overriding implementations of the method,
+            // down the class hierarchy.
+            methodrefCpInfo.referencedClassAccept(
+                new ClassFileUpDownTraveler(false, false, false, true,
+                new NamedMethodVisitor(this, name, type)));
         }
     }
 
@@ -484,11 +413,8 @@ public class UsageMarker
 
             markCpEntry(classFile, classCpInfo.u2nameIndex);
 
-            if (recurse)
-            {
-                // Mark the referenced class itself.
-                classCpInfo.referencedClassAccept(this);
-            }
+            // Mark the referenced class itself.
+            classCpInfo.referencedClassAccept(this);
         }
     }
 
@@ -502,16 +428,13 @@ public class UsageMarker
             markCpEntry(classFile, nameAndTypeCpInfo.u2nameIndex);
             markCpEntry(classFile, nameAndTypeCpInfo.u2descriptorIndex);
 
-            if (recurse)
-            {
-                // Mark the classes referenced in the descriptor string.
-                nameAndTypeCpInfo.referencedClassesAccept(this);
-            }
+            // Mark the classes referenced in the descriptor string.
+            nameAndTypeCpInfo.referencedClassesAccept(this);
         }
     }
 
 
-    // Implementations for AttrInfoVisitor
+    // Implementations for AttrInfoVisitor.
     // Note that attributes are typically only referenced once, so we don't
     // test if they have been marked already.
 
@@ -593,6 +516,15 @@ public class UsageMarker
     }
 
 
+    public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo)
+    {
+        markAsUsed(sourceDirAttrInfo);
+
+        markCpEntry(classFile, sourceDirAttrInfo.u2attrNameIndex);
+        markCpEntry(classFile, sourceDirAttrInfo.u2sourceDirIndex);
+    }
+
+
     public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo)
     {
         markAsUsed(deprecatedAttrInfo);
@@ -609,7 +541,7 @@ public class UsageMarker
     }
 
 
-    // Implementations for InstructionVisitor
+    // Implementations for InstructionVisitor.
 
     public void visitInstruction(ClassFile classFile, Instruction instruction)
     {
@@ -623,7 +555,7 @@ public class UsageMarker
     }
 
 
-    // Implementations for ExceptionInfoVisitor
+    // Implementations for ExceptionInfoVisitor.
 
     public void visitExceptionInfo(ClassFile classFile, ExceptionInfo exceptionInfo)
     {
@@ -636,14 +568,13 @@ public class UsageMarker
     }
 
 
-    // Implementations for InnerClassesInfoVisitor
+    // Implementations for InnerClassesInfoVisitor.
 
     public void visitInnerClassesInfo(ClassFile classFile, InnerClassesInfo innerClassesInfo)
     {
         // For now, only make sure we mark outer classes of this class.
-        if (recurse &&
-            (innerClassesInfo.u2innerClassInfoIndex != 0 ||
-             !classFile.getName().equals(classFile.getCpClassNameString(innerClassesInfo.u2innerClassInfoIndex))))
+        if (innerClassesInfo.u2innerClassInfoIndex != 0 ||
+            !classFile.getName().equals(classFile.getCpClassNameString(innerClassesInfo.u2innerClassInfoIndex)))
         {
             // Skip any other InnerClassesInfo. We may mark it later, in
             // InnerUsageMarker.
@@ -669,7 +600,7 @@ public class UsageMarker
     }
 
 
-    // Implementations for LocalVariableInfoVisitor
+    // Implementations for LocalVariableInfoVisitor.
 
     public void visitLocalVariableInfo(ClassFile classFile, LocalVariableInfo localVariableInfo)
     {

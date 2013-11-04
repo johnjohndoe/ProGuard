@@ -1,4 +1,4 @@
-/* $Id: ClassFileShrinker.java,v 1.11 2003/02/09 15:22:29 eric Exp $
+/* $Id: ClassFileShrinker.java,v 1.13 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -46,7 +46,7 @@ public class ClassFileShrinker
     private int[] cpIndexMap;
 
 
-    // Implementations for ClassFileVisitor
+    // Implementations for ClassFileVisitor.
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
@@ -107,7 +107,7 @@ public class ClassFileShrinker
     }
 
 
-    // Implementations for CpInfoVisitor
+    // Implementations for CpInfoVisitor.
 
     public void visitClassCpInfo(ClassFile classFile, ClassCpInfo classCpInfo)
     {
@@ -189,7 +189,7 @@ public class ClassFileShrinker
     }
 
 
-    // Implementations for MemberInfoVisitor
+    // Implementations for MemberInfoVisitor.
 
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {
@@ -234,7 +234,7 @@ public class ClassFileShrinker
     }
 
 
-    // Implementations for AttrInfoVisitor
+    // Implementations for AttrInfoVisitor.
 
     public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo)
     {
@@ -324,6 +324,15 @@ public class ClassFileShrinker
     }
 
 
+    public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo)
+    {
+        sourceDirAttrInfo.u2attrNameIndex =
+            remapCpIndex(sourceDirAttrInfo.u2attrNameIndex);
+        sourceDirAttrInfo.u2sourceDirIndex =
+            remapCpIndex(sourceDirAttrInfo.u2sourceDirIndex);
+    }
+
+
     public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo)
     {
         deprecatedAttrInfo.u2attrNameIndex =
@@ -338,7 +347,7 @@ public class ClassFileShrinker
     }
 
 
-    // Implementations for InstructionVisitor
+    // Implementations for InstructionVisitor.
 
     public void visitInstruction(ClassFile classFile, Instruction instruction)
     {
@@ -352,7 +361,7 @@ public class ClassFileShrinker
     }
 
 
-    // Implementations for InnerClassesInfoVisitor
+    // Implementations for InnerClassesInfoVisitor.
 
     public void visitInnerClassesInfo(ClassFile classFile, InnerClassesInfo innerClassesInfo)
     {
@@ -376,7 +385,7 @@ public class ClassFileShrinker
     }
 
 
-    // Implementations for ExceptionInfoVisitor
+    // Implementations for ExceptionInfoVisitor.
 
     public void visitExceptionInfo(ClassFile classFile, ExceptionInfo exceptionInfo)
     {
@@ -388,7 +397,7 @@ public class ClassFileShrinker
     }
 
 
-    // Implementations for LocalVariableInfoVisitor
+    // Implementations for LocalVariableInfoVisitor.
 
     public void visitLocalVariableInfo(ClassFile classFile, LocalVariableInfo localVariableInfo)
     {

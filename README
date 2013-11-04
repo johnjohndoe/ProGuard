@@ -3,7 +3,7 @@ ProGuard, Java class file shrinker and obfuscator
 
 This distribution contains the following directories:
 
-- lib      : the main proguard.jar, compiled and ready to use
+- lib      : the main jars, compiled and ready to use with "java -jar ...."
 - docs     : the complete documentation, licenses, etc. in html format
 - examples : some example configuration files
 - src      : the source code
@@ -33,6 +33,7 @@ compiling the source code yourself:
     mkdir classes
     javac -sourcepath src -d classes src/proguard/ProGuard.java
     javac -sourcepath src -d classes src/proguard/ReTrace.java
+    javac -sourcepath src -d classes src/proguard/gui/ProGuardGUI.java
 
 If you want to compile the ProGuard Ant task as well:
 

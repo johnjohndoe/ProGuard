@@ -1,4 +1,4 @@
-/* $Id: AttributeShrinker.java,v 1.10 2003/02/09 15:22:29 eric Exp $
+/* $Id: AttributeShrinker.java,v 1.12 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -28,7 +28,7 @@ import proguard.classfile.visitor.*;
  * This ClassFileVisitor removes attributes that are not marked
  * as being used or required.
  *
- * @see AttributeMarker
+ * @see AttributeUsageMarker
  *
  * @author Eric Lafortune
  */
@@ -37,7 +37,7 @@ public class AttributeShrinker
              MemberInfoVisitor,
              AttrInfoVisitor
 {
-    // Implementations for ClassFileVisitor
+    // Implementations for ClassFileVisitor.
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
@@ -59,7 +59,7 @@ public class AttributeShrinker
     }
 
 
-    // Implementations for MemberInfoVisitor
+    // Implementations for MemberInfoVisitor.
 
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {
@@ -97,7 +97,7 @@ public class AttributeShrinker
     }
 
 
-    // Implementations for AttrInfoVisitor
+    // Implementations for AttrInfoVisitor.
 
     public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo) {}
     public void visitConstantValueAttrInfo(ClassFile classFile, ConstantValueAttrInfo constantValueAttrInfo) {}
@@ -106,6 +106,7 @@ public class AttributeShrinker
     public void visitLineNumberTableAttrInfo(ClassFile classFile, LineNumberTableAttrInfo lineNumberTableAttrInfo) {}
     public void visitLocalVariableTableAttrInfo(ClassFile classFile, LocalVariableTableAttrInfo localVariableTableAttrInfo) {}
     public void visitSourceFileAttrInfo(ClassFile classFile, SourceFileAttrInfo sourceFileAttrInfo) {}
+    public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo) {}
     public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo) {}
     public void visitSyntheticAttrInfo(ClassFile classFile, SyntheticAttrInfo syntheticAttrInfo) {}
 

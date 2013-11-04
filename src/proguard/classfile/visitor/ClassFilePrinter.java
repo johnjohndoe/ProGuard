@@ -1,4 +1,4 @@
-/* $Id: ClassFilePrinter.java,v 1.13 2003/02/09 15:22:29 eric Exp $
+/* $Id: ClassFilePrinter.java,v 1.15 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -66,7 +66,7 @@ public class ClassFilePrinter
     }
 
 
-    // Implementations for ClassFileVisitor
+    // Implementations for ClassFileVisitor.
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
@@ -138,7 +138,7 @@ public class ClassFilePrinter
     }
 
 
-    // Implementations for CpInfoVisitor
+    // Implementations for CpInfoVisitor.
 
     public void visitClassCpInfo(ClassFile classFile, ClassCpInfo classCpInfo)
     {
@@ -226,7 +226,7 @@ public class ClassFilePrinter
     }
 
 
-    // Implementations for MemberInfoVisitor
+    // Implementations for MemberInfoVisitor.
 
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {
@@ -276,7 +276,7 @@ public class ClassFilePrinter
     }
 
 
-    // Implementations for AttrInfoVisitor
+    // Implementations for AttrInfoVisitor.
     // Note that attributes are typically only referenced once, so we don't
     // test if they are marked already.
 
@@ -372,6 +372,17 @@ public class ClassFilePrinter
     }
 
 
+    public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo)
+    {
+        println(visitorInfo(sourceDirAttrInfo) +
+                " Source dir attribute:");
+
+        indent();
+        classFile.constantPoolEntryAccept(this, sourceDirAttrInfo.u2sourceDirIndex);
+        outdent();
+    }
+
+
     public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo)
     {
         println(visitorInfo(deprecatedAttrInfo) +
@@ -386,7 +397,7 @@ public class ClassFilePrinter
     }
 
 
-    // Implementations for InstructionVisitor
+    // Implementations for InstructionVisitor.
 
     public void visitInstruction(ClassFile classFile, Instruction instruction)
     {
@@ -410,7 +421,7 @@ public class ClassFilePrinter
     }
 
 
-    // Implementations for ExceptionInfoVisitor
+    // Implementations for ExceptionInfoVisitor.
 
     public void visitExceptionInfo(ClassFile classFile, ExceptionInfo exceptionInfo)
     {
@@ -424,7 +435,7 @@ public class ClassFilePrinter
     }
 
 
-    // Implementations for InnerClassesInfoVisitor
+    // Implementations for InnerClassesInfoVisitor.
 
     public void visitInnerClassesInfo(ClassFile classFile, InnerClassesInfo innerClassesInfo)
     {

@@ -1,4 +1,4 @@
-/* $Id: ClassFileCleaner.java,v 1.9 2003/02/09 15:22:28 eric Exp $
+/* $Id: ClassFileCleaner.java,v 1.11 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -37,7 +37,7 @@ public class ClassFileCleaner
              ExceptionInfoVisitor,
              InnerClassesInfoVisitor
 {
-    // Implementations for ClassFileVisitor
+    // Implementations for ClassFileVisitor.
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
@@ -61,7 +61,7 @@ public class ClassFileCleaner
     }
 
 
-    // Implementations for CpInfoVisitor
+    // Implementations for CpInfoVisitor.
 
     public void visitClassCpInfo(ClassFile classFile, ClassCpInfo classCpInfo)
     {
@@ -129,7 +129,7 @@ public class ClassFileCleaner
     }
 
 
-    // Implementations for MemberInfoVisitor
+    // Implementations for MemberInfoVisitor.
 
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {
@@ -163,7 +163,7 @@ public class ClassFileCleaner
     }
 
 
-    // Implementations for AttrInfoVisitor
+    // Implementations for AttrInfoVisitor.
     // Note that attributes are typically only referenced once, so we don't
     // test if they are marked already.
 
@@ -222,6 +222,12 @@ public class ClassFileCleaner
     }
 
 
+    public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo)
+    {
+        clean(sourceDirAttrInfo);
+    }
+
+
     public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo)
     {
         clean(deprecatedAttrInfo);
@@ -234,7 +240,7 @@ public class ClassFileCleaner
     }
 
 
-    // Implementations for ExceptionInfoVisitor
+    // Implementations for ExceptionInfoVisitor.
 
     public void visitExceptionInfo(ClassFile classFile, ExceptionInfo exceptionInfo)
     {
@@ -242,7 +248,7 @@ public class ClassFileCleaner
     }
 
 
-    // Implementations for InnerClassesInfoVisitor
+    // Implementations for InnerClassesInfoVisitor.
 
     public void visitInnerClassesInfo(ClassFile classFile, InnerClassesInfo innerClassesInfo)
     {

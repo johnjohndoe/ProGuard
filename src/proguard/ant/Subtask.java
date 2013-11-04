@@ -1,4 +1,4 @@
-/* $Id: Subtask.java,v 1.2 2003/02/10 19:47:27 eric Exp $
+/* $Id: Subtask.java,v 1.4 2003/12/19 04:17:03 eric Exp $
  *
  * ProGuard - integration into Ant.
  *
@@ -10,7 +10,7 @@
  * any later version.
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * ANY WARRAntY; without even the implied warranty of MERCHAntABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
@@ -22,6 +22,7 @@ package proguard.ant;
 
 import org.apache.tools.ant.*;
 
+
 /**
  * Subtask of the ProGuardTask.
  *
@@ -31,15 +32,17 @@ public interface Subtask
 {
     /**
      * Validates this subtask.
-     * @exception BuildException
-     *             Validating not successful.
+     *
+     * @exception BuildException Validating not successful.
      */
-    public void validate() throws BuildException;
-
+    public void validate()
+            throws BuildException;
 
     /**
      * Executes this subtask for the given parent task.
+     *
      * @param parent Parent task object.
      */
-    public void execute(ProGuardTask parent);
+    public void execute(ProGuardConfigurationTask parent);
 }
+

@@ -1,4 +1,4 @@
-/* $Id: Utf8UsageMarker.java,v 1.12 2003/02/09 15:22:29 eric Exp $
+/* $Id: Utf8UsageMarker.java,v 1.14 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -44,7 +44,7 @@ public class Utf8UsageMarker
     private static final Object USED = new Object();
 
 
-    // Implementations for ClassFileVisitor
+    // Implementations for ClassFileVisitor.
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
@@ -65,7 +65,7 @@ public class Utf8UsageMarker
     }
 
 
-    // Implementations for MemberInfoVisitor
+    // Implementations for MemberInfoVisitor.
 
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {
@@ -94,7 +94,7 @@ public class Utf8UsageMarker
     public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo) {}
 
 
-    // Implementations for CpInfoVisitor
+    // Implementations for CpInfoVisitor.
 
     public void visitIntegerCpInfo(ClassFile classFile, IntegerCpInfo integerCpInfo) {}
     public void visitLongCpInfo(ClassFile classFile, LongCpInfo longCpInfo) {}
@@ -125,7 +125,7 @@ public class Utf8UsageMarker
     }
 
 
-    // Implementations for AttrInfoVisitor
+    // Implementations for AttrInfoVisitor.
 
     public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo)
     {
@@ -184,6 +184,14 @@ public class Utf8UsageMarker
     }
 
 
+    public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo)
+    {
+        markCpUtf8Entry(classFile, sourceDirAttrInfo.u2attrNameIndex);
+
+        markCpUtf8Entry(classFile, sourceDirAttrInfo.u2sourceDirIndex);
+    }
+
+
     public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo)
     {
         markCpUtf8Entry(classFile, deprecatedAttrInfo.u2attrNameIndex);
@@ -196,7 +204,7 @@ public class Utf8UsageMarker
     }
 
 
-    // Implementations for InnerClassesInfoVisitor
+    // Implementations for InnerClassesInfoVisitor.
 
     public void visitInnerClassesInfo(ClassFile classFile, InnerClassesInfo innerClassesInfo)
     {
@@ -207,7 +215,7 @@ public class Utf8UsageMarker
     }
 
 
-    // Implementations for LocalVariableInfoVisitor
+    // Implementations for LocalVariableInfoVisitor.
 
     public void visitLocalVariableInfo(ClassFile classFile, LocalVariableInfo localVariableInfo)
     {

@@ -19,7 +19,7 @@
 
 -printmapping out.map
 -renamesourcefileattribute SourceFile
--keepattributes InnerClasses,SourceFile,LineNumberTable,Deprecated
+-keepattributes SourceFile,LineNumberTable,Deprecated
 
 
 # Preserve all public classes, and their public and protected fields and
@@ -55,8 +55,8 @@
     static final long serialVersionUID;
     private void writeObject(java.io.ObjectOutputStream);
     private void readObject(java.io.ObjectInputStream);
-    java.lang.Object writeReplace();
-    java.lang.Object readResolve();
+    Object writeReplace();
+    Object readResolve();
 }
 
 

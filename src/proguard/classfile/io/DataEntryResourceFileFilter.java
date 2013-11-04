@@ -1,4 +1,4 @@
-/* $Id: DataEntryResourceFileFilter.java,v 1.2 2003/02/09 15:22:28 eric Exp $
+/* $Id: DataEntryResourceFileFilter.java,v 1.4 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -35,16 +35,16 @@ import java.util.zip.*;
  */
 public class DataEntryResourceFileFilter implements DataEntryReader
 {
-    private DataEntryReader zipEntryReader;
+    private DataEntryReader dataEntryReader;
 
 
-    public DataEntryResourceFileFilter(DataEntryReader zipEntryReader)
+    public DataEntryResourceFileFilter(DataEntryReader dataEntryReader)
     {
-        this.zipEntryReader = zipEntryReader;
+        this.dataEntryReader = dataEntryReader;
     }
 
 
-    // Implementations for DataEntryReader
+    // Implementations for DataEntryReader.
 
     public void readZipEntry(ZipEntry    zipEntry,
                              InputStream inputStream)
@@ -55,7 +55,7 @@ public class DataEntryResourceFileFilter implements DataEntryReader
         if (!zipEntry.isDirectory() &&
             !name.endsWith(ClassConstants.CLASS_FILE_EXTENSION))
         {
-            zipEntryReader.readZipEntry(zipEntry, inputStream);
+            dataEntryReader.readZipEntry(zipEntry, inputStream);
         }
     }
 
@@ -69,7 +69,7 @@ public class DataEntryResourceFileFilter implements DataEntryReader
         if (!file.isDirectory() &&
             !name.endsWith(ClassConstants.CLASS_FILE_EXTENSION))
         {
-            zipEntryReader.readFile(file, directory);
+            dataEntryReader.readFile(file, directory);
         }
     }
 }

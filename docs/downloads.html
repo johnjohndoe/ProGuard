@@ -1,13 +1,14 @@
 <!doctype html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <html>
 <head>
+<meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="content-style-type" content="text/css">
+<link rel="stylesheet" type="text/css" href="style.css">
 <title>ProGuard Downloads</title>
 </head>
-<body
- bgcolor="#ffffff"
- text="#000000">
+<body>
 
-<center><h2>Downloads</h2></center>
+<h2>Downloads</h2>
 
 <b>ProGuard</b> is distributed under the GNU General Public License.
 Please refer to the <a href="license.html">license page</a> for more details.
@@ -31,14 +32,28 @@ href="http://proguard.sourceforge.net/downloads.html">on-line version</a> if
 you're reading a local copy of this page.
 <p>
 
-<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
+<h3>Version 2.0</h3>
+<ul>
+<li>Added a graphical user interface for ProGuard and ReTrace.
+<li>Added <code>-applymapping</code> option for incremental obfuscation.
+<li>Added support for filtering input and output files.
+<li>Added support for the J++ <code>SourceDir</code> attribute.
+<li>Improved detection of <code>.class</code> constructs.
+<li>Improved handling of misplaced manifest files.
+<li>Improved implementation of ReTrace.
+<li>Worked around String UTF-8 encoding bug affecting foreign characters.
+<li>Fixed exception when ignoring warnings.
+<li>Fixed various Ant task bugs.
+<li>Updated documentation and examples.
+</ul>
+
 <h3>Version 1.7</h3>
-</td></tr></table>
 <ul>
 <li>Fixed various Ant task bugs.
 <li>Fixed ClassCastException due to explicitly used abstract classes with
     implicitly used interfaces targeted at JRE1.2 (the default in JDK1.4).
-<li>Fixed -defaultpackage bug for protected classes and class members.
+<li>Fixed <code>-defaultpackage</code> bug for protected classes and class
+    members.
 <li>Fixed ReTrace bug when retracing without line number tables.
 <li>Worked around zip package problems with duplicate out entries and rogue
     manifest files.
@@ -46,16 +61,14 @@ you're reading a local copy of this page.
 <li>Updated documentation and examples.
 </ul>
 
-<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
 <h3>Version 1.6</h3>
-</td></tr></table>
 <ul>
 <li>Added support for Ant.
 <li>Added support for the J2ME Wireless Toolkit.
 <li>Added support for reading and writing directory hierarchies.
 <li>Added option for specifying resource jars and directories.
 <li>Added support for wildcards in class member specifications.
-<li>Improved handling of the -defaultpackage option.
+<li>Improved handling of the <code>-defaultpackage</code> option.
 <li>Improved stack trace parsing in ReTrace tool.
 <li>Fixed processing of libraries containing public as well as non-public
     extensions of non-public classes.
@@ -63,9 +76,7 @@ you're reading a local copy of this page.
 <li>Updated documentation and examples.
 </ul>
 
-<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
 <h3>Version 1.5</h3>
-</td></tr></table>
 <ul>
 <li>Fixed processing of retrofitted library interfaces.
 <li>Fixed processing of <code>.class</code> constructs in internal classes
@@ -75,9 +86,7 @@ you're reading a local copy of this page.
 <li>Updated documentation and examples.
 </ul>
 
-<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
 <h3>Version 1.4</h3>
-</td></tr></table>
 <ul>
 <li>Now copying resource files over from the input jars to the output jar.
 <li>Added option to obfuscate using lower-case class names only.
@@ -87,9 +96,7 @@ you're reading a local copy of this page.
 <li>Updated documentation and examples.
 </ul>
 
-<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
 <h3>Version 1.3</h3>
-</td></tr></table>
 <ul>
 <li>Added support for wildcards in class names.
 <li>Added tool to de-obfuscate stack traces.
@@ -102,9 +109,7 @@ you're reading a local copy of this page.
 <li>Updated documentation and examples.
 </ul>
 
-<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
 <h3>Version 1.2</h3>
-</td></tr></table>
 <ul>
 <li>Improved speed.
 <li>Fixed processing of classes targeted at JRE1.2 (the default in JDK1.4)
@@ -115,9 +120,7 @@ you're reading a local copy of this page.
 <li>Updated documentation.
 </ul>
 
-<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
 <h3>Version 1.1</h3>
-</td></tr></table>
 <ul>
 <li>Added automatic detection of <code>Class.forName("MyClass")</code>,
     <code>MyClass.class</code>, and
@@ -136,11 +139,9 @@ you're reading a local copy of this page.
 <li>Updated documentation and examples.
 </ul>
 
-<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
 <h3>Version 1.0</h3>
-</td></tr></table>
 <ul>
-<li>First public release, based on class parsing code from Mark Welch's
+<li>First public release, based on class parsing code from Mark Welsh's
     <b>RetroGuard</b>.
 </ul>
 

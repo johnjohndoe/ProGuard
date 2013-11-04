@@ -1,4 +1,4 @@
-/* $Id: DirectoryReader.java,v 1.3 2003/03/25 20:08:53 eric Exp $
+/* $Id: DirectoryReader.java,v 1.6 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -24,13 +24,12 @@ import java.io.*;
 
 
 /**
- * This class can read a given directory, recursively, applying a given
- * DataEntryReader to all files it comes across. The reader can for instance
- * collect the class files, or copy the resource files.
+ * This DataEntryPump can read a given directory, recursively, applying a given
+ * DataEntryReader to all files it comes across.
  *
  * @author Eric Lafortune
  */
-public class DirectoryReader
+public class DirectoryReader implements DataEntryPump
 {
     private File directory;
 
@@ -41,11 +40,9 @@ public class DirectoryReader
     }
 
 
-    /**
-     * Reads the directory recursively, applying the given DataEntryReader to
-     * all files that are encountered.
-     */
-    public void readFiles(DataEntryReader dataEntryReader)
+    // Implementation for DataEntryPump.
+
+    public void pumpDataEntries(DataEntryReader dataEntryReader)
     throws IOException
     {
         readFiles(directory, dataEntryReader);

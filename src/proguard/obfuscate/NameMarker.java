@@ -1,4 +1,4 @@
-/* $Id: NameMarker.java,v 1.10 2003/04/28 17:24:21 eric Exp $
+/* $Id: NameMarker.java,v 1.12 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -38,7 +38,7 @@ public class NameMarker
   implements ClassFileVisitor,
              MemberInfoVisitor
 {
-    // Implementations for ClassFileVisitor
+    // Implementations for ClassFileVisitor.
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
@@ -50,7 +50,7 @@ public class NameMarker
 
     public void visitLibraryClassFile(LibraryClassFile libraryClassFile) {}
 
-    // Implementations for MemberInfoVisitor
+    // Implementations for MemberInfoVisitor.
 
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {

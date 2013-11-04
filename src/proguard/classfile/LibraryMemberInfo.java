@@ -1,4 +1,4 @@
-/* $Id: LibraryMemberInfo.java,v 1.15 2003/02/09 15:22:28 eric Exp $
+/* $Id: LibraryMemberInfo.java,v 1.16 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -91,7 +91,7 @@ abstract public class LibraryMemberInfo implements VisitorAccepter
     }
 
 
-    // Implementations for MemberInfo
+    // Implementations for MemberInfo.
 
     public int getAccessFlags()
     {
@@ -109,7 +109,7 @@ abstract public class LibraryMemberInfo implements VisitorAccepter
     }
 
 
-    // Implementations for VisitorAccepter
+    // Implementations for VisitorAccepter.
 
     public Object getVisitorInfo() {
         return visitorInfo;

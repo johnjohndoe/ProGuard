@@ -1,8 +1,8 @@
-/* $Id: KeepClassSpecification.java,v 1.8 2003/08/04 08:46:45 eric Exp $
+/* $Id: KeepClassSpecification.java,v 1.11 2003/12/19 04:17:03 eric Exp $
  *
- * ProGuard - integration into ANT.
+ * ProGuard - integration into Ant.
  *
- * Copyright (C) 2003 Dirk Schnelle (dirk.schnelle@web.de)
+ * Copyright (c) 2003 Dirk Schnelle (dirk.schnelle@web.de)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -10,7 +10,7 @@
  * any later version.
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * ANY WARRAntY; without even the implied warranty of MERCHAntABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
@@ -18,13 +18,14 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
-
-
 package proguard.ant;
 
 import java.util.*;
+
 import org.apache.tools.ant.*;
+
 import proguard.*;
+
 import proguard.classfile.*;
 import proguard.classfile.util.*;
 
@@ -35,28 +36,29 @@ import proguard.classfile.util.*;
  * @author Dirk Schnelle
  */
 public class KeepClassSpecification
-        implements Subtask, AccessContainer
+        implements Subtask,
+            AccessContainer
 {
-    /** the class keyword. */
+    /** The class keyword. */
     private final static String CLASS_KEYWORD = "class";
 
-    /** the interface keyword. */
+    /** The interface keyword. */
     private final static String INTERFACE_KEYWORD = "interface";
 
-    /** not an interface keyword. */
+    /** Not an interface keyword. */
     private final static String NOT_INTERFACEKEYWORD = "!interface";
 
-    /** any class keyword. */
+    /** Any class keyword. */
     private final static String ANY_CLASS_KEYWORD = "*";
 
     /** The access parser to be use. */
     private final static AccessParser ACCESS_PARSER;
 
-    /** The parent ProGuardTask. */
-    private ProGuardTask parent;
+    /** The parent ProGuardConfiguration. */
+    private ProGuardConfigurationTask parent;
 
     /** The command specification. */
-    private KeepCommand keepCommand;
+    private KeepClassFileOption keepClassFileOption;
 
     /** All access flags to be set. */
     private int accessFlags;
@@ -79,16 +81,16 @@ public class KeepClassSpecification
     /** Nested access flags- */
     private Collection nestedAccessFlags;
 
-    /** mark the class files. */
+    /** Mark the class files. */
     private boolean markClassFiles;
 
-    /** mark the class files conditionally. */
+    /** Mark the class files conditionally. */
     private boolean markClassFilesConditionally;
 
-    /** only keep the names. */
+    /** Only keep the names. */
     private boolean onlyKeepNames;
 
-    /** members of the class to be kept. */
+    /** Members of the class to be kept. */
     private Collection keepMembers;
 
     static
@@ -109,16 +111,16 @@ public class KeepClassSpecification
     /**
      * Initializes this class definition
      *
-     * @param parent The parent ProGuardTask
+     * @param parent The parent ProGuardConfiguration
      * @param markClassFiles Mark the class files
      * @param markClassFilesConditionally Mark the class files conditionally
      * @param onlyKeepNames Only keep the names.
      */
     public void init(
-        ProGuardTask parent,
-        boolean      markClassFiles,
-        boolean      markClassFilesConditionally,
-        boolean      onlyKeepNames)
+        ProGuardConfigurationTask parent,
+        boolean                   markClassFiles,
+        boolean                   markClassFilesConditionally,
+        boolean                   onlyKeepNames)
     {
         this.parent                          = parent;
         this.markClassFiles                  = markClassFiles;
@@ -131,16 +133,31 @@ public class KeepClassSpecification
         nestedAccessFlags = null;
     }
 
+    /**
+     * DOCUMENT ME!
+     *
+     * @param on DOCUMENT ME!
+     */
     public void setMarkClassFiles(boolean on)
     {
         this.markClassFiles = on;
     }
 
+    /**
+     * DOCUMENT ME!
+     *
+     * @param on DOCUMENT ME!
+     */
     public void setMarkClassFilesConditionally(boolean on)
     {
         this.markClassFilesConditionally = on;
     }
 
+    /**
+     * DOCUMENT ME!
+     *
+     * @param on DOCUMENT ME!
+     */
     public void setOnlyKeepNames(boolean on)
     {
         this.onlyKeepNames = on;
@@ -163,14 +180,22 @@ public class KeepClassSpecification
         String asName)
     {
         StringBuffer str = new StringBuffer();
-        str.append("keeping field: accessFlags: ").append(requiredSetAccessFlags)
-                   .append(", unsetAccessFlags: ")
-                   .append(requiredUnsetAccessFlags).append(", ").append(name)
-                   .append(", ").append(descriptor);
+
+        str.append("keeping field: accessFlags: ");
+        str.append(requiredSetAccessFlags);
+        str.append(", unsetAccessFlags: ");
+        str.append(requiredUnsetAccessFlags);
+        str.append(", ");
+        str.append(name);
+        str.append(", ");
+        str.append(descriptor);
+
         parent.log(str.toString(), Project.MSG_VERBOSE);
 
-        keepCommand.keepField(requiredSetAccessFlags, requiredUnsetAccessFlags,
-            name, descriptor, asName);
+        KeepClassMemberOption field =
+            new KeepClassMemberOption(requiredSetAccessFlags,
+                requiredUnsetAccessFlags, name, descriptor, asName);
+        keepClassFileOption.addField(field);
     }
 
     /**
@@ -200,14 +225,22 @@ public class KeepClassSpecification
         String asName)
     {
         StringBuffer str = new StringBuffer();
-        str.append("keeping method: accessFlags: ")
-                   .append(requiredSetAccessFlags).append(", unsetAccessFlags: ")
-                   .append(requiredUnsetAccessFlags).append(", ").append(name)
-                   .append(", ").append(descriptor);
+
+        str.append("keeping method: accessFlags: ");
+        str.append(requiredSetAccessFlags);
+        str.append(", unsetAccessFlags: ");
+        str.append(requiredUnsetAccessFlags);
+        str.append(", ");
+        str.append(name);
+        str.append(", ");
+        str.append(descriptor);
+
         parent.log(str.toString(), Project.MSG_VERBOSE);
 
-        keepCommand.keepMethod(requiredSetAccessFlags,
-            requiredUnsetAccessFlags, name, descriptor, asName);
+        KeepClassMemberOption method =
+            new KeepClassMemberOption(requiredSetAccessFlags,
+                requiredUnsetAccessFlags, name, descriptor, asName);
+        keepClassFileOption.addMethod(method);
     }
 
     /**
@@ -252,8 +285,10 @@ public class KeepClassSpecification
             throws BuildException
     {
         if (!nestedAccessTasks.isEmpty())
+        {
             throw new BuildException(
                 "Access cannot be set directly and in nested access tasks");
+        }
 
         accessFlags          = ACCESS_PARSER.getAccessFlags(access);
         unsetAccessFlags     = ACCESS_PARSER.getUnsetAccessFlags(access);
@@ -270,7 +305,9 @@ public class KeepClassSpecification
             throws BuildException
     {
         if (nestedAccessFlags == null)
+        {
             nestedAccessFlags = new java.util.ArrayList();
+        }
 
         nestedAccessFlags.add(access);
     }
@@ -286,14 +323,22 @@ public class KeepClassSpecification
             throws BuildException
     {
         if (CLASS_KEYWORD.equalsIgnoreCase(type))
+        {
             this.type = CLASS_KEYWORD;
+        }
         else if (INTERFACE_KEYWORD.equalsIgnoreCase(type))
+        {
             this.type = type;
+        }
         else if (NOT_INTERFACEKEYWORD.equalsIgnoreCase(type))
+        {
             this.type = type;
+        }
         else
+        {
             throw new BuildException(
                 "Type for a class must match any of the following: class, interface, !interface");
+        }
     }
 
     /**
@@ -324,7 +369,9 @@ public class KeepClassSpecification
     public void setName(String name)
     {
         if (!ANY_CLASS_KEYWORD.equals(name))
+        {
             this.name = ClassUtil.internalClassName(name);
+        }
     }
 
     /**
@@ -340,28 +387,35 @@ public class KeepClassSpecification
      *
      * @param parent Parent task object.
      */
-    public void execute(ProGuardTask parent)
+    public void execute(ProGuardConfigurationTask parent)
     {
         evalNestedAccess();
 
         StringBuffer str = new StringBuffer();
-        str.append("keeping: accessFlags: ").append(accessFlags)
-                   .append(", unsetAccessFlags: ").append(unsetAccessFlags)
-                   .append(", ").append(name).append(", ")
-                   .append(extendsClassName).append(", markClassFiles: ")
-                   .append(markClassFiles)
-                   .append(", markClassFilesConditionaly: ")
-                   .append(markClassFilesConditionally)
-                   .append(", onlyKeepNamens: ").append(onlyKeepNames);
+
+        str.append("keeping: accessFlags: ");
+        str.append(accessFlags);
+        str.append(", unsetAccessFlags: ");
+        str.append(unsetAccessFlags);
+        str.append(", ");
+        str.append(name);
+        str.append(", ");
+        str.append(extendsClassName);
+        str.append(", markClassFiles: ");
+        str.append(markClassFiles);
+        str.append(", markClassFilesConditionaly: ");
+        str.append(markClassFilesConditionally);
+        str.append(", onlyKeepNamens: ");
+        str.append(onlyKeepNames);
 
         parent.log(str.toString(), Project.MSG_VERBOSE);
 
-        keepCommand =
-            new KeepCommand(accessFlags, unsetAccessFlags, name,
+        keepClassFileOption =
+            new KeepClassFileOption(accessFlags, unsetAccessFlags, name,
                 extendsClassName, null, markClassFiles,
                 markClassFilesConditionally, onlyKeepNames);
 
-        parent.addKeepCommand(keepCommand);
+        parent.addKeepClassFileOption(keepClassFileOption);
 
         evalNestedMembers();
     }

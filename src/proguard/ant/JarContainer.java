@@ -1,4 +1,4 @@
-/* $Id: JarContainer.java,v 1.8 2003/08/04 08:46:45 eric Exp $
+/* $Id: JarContainer.java,v 1.10 2003/12/19 04:17:03 eric Exp $
  *
  * ProGuard - integration into Ant.
  *
@@ -10,7 +10,7 @@
  * any later version.
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * ANY WARRAntY; without even the implied warranty of MERCHAntABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
@@ -20,10 +20,14 @@
  */
 package proguard.ant;
 
-import java.io.File;
+import java.io.*;
+
 import java.util.*;
+
 import org.apache.tools.ant.*;
 import org.apache.tools.ant.types.*;
+
+import proguard.*;
 
 
 /**
@@ -38,7 +42,7 @@ public abstract class JarContainer
     private boolean gotJarFile;
 
     /** The parent task. */
-    protected ProGuardTask proGuardTask;
+    protected ProGuardConfigurationTask proGuardConfiguration;
 
     /** The ant project. */
     protected Project project;
@@ -48,6 +52,9 @@ public abstract class JarContainer
 
     /** Reference to a path. */
     protected Reference reference;
+
+    /** The class path entry, if directly set. */
+    protected ClassPathEntry classpathentry;
 
     /**
      * Creates a new JarContainer.
@@ -73,19 +80,19 @@ public abstract class JarContainer
     /**
      * Sets the parent task.
      *
-     * @param proGuardTask The parent task.
+     * @param configuration The parent task.
      */
-    void setParent(ProGuardTask proGuardTask)
+    void setParent(ProGuardConfigurationTask configuration)
     {
-        this.proGuardTask = proGuardTask;
+        this.proGuardConfiguration = configuration;
     }
 
     /**
-     * Adds the found jar file.
+     * Adds the found jar.
      *
-     * @param jar Name of the jar file to add.
+     * @param jar jar to add.
      */
-    protected abstract void addJar(String jar);
+    protected abstract void addJar(ClassPathEntry jar);
 
     /**
      * Sets the ant project
@@ -110,6 +117,20 @@ public abstract class JarContainer
     }
 
     /**
+     * Get a class path entry for the given filen name.
+     *
+     * @param name Name of the jar file.
+     *
+     * @return Corresponding class path entry.
+     */
+    protected ClassPathEntry getClassPathEntry(String name)
+    {
+        String fullName = proGuardConfiguration.getFullPathName(name);
+
+        return new ClassPathEntry(fullName);
+    }
+
+    /**
      * Adds a jar file.
      *
      * @param jar Name of the jar file to add.
@@ -117,8 +138,94 @@ public abstract class JarContainer
     public void setName(String jar)
     {
         isJarFileSet();
-        gotJarFile = true;
-        addJar(jar);
+        gotJarFile     = true;
+
+        classpathentry = getClassPathEntry(jar);
+        addJar(classpathentry);
+    }
+
+    /**
+     * Add an exclude filter.
+     *
+     * @param filter Exclude filter.
+     */
+    public void addExclude(JarContainerExclude filter)
+    {
+        filter.setParent(this);
+    }
+
+    /**
+     * Add the given filter to the class path entry.
+     *
+     * @param filter Filter to be added.
+     */
+    private void addFilter(String filter)
+    {
+        String currentFilter = classpathentry.getFilter();
+
+        if (currentFilter == null)
+        {
+            currentFilter = "";
+        }
+        else if (currentFilter.length() > 0)
+        {
+            currentFilter = currentFilter + ",";
+        }
+
+        classpathentry.setFilter(currentFilter + filter);
+    }
+
+    /**
+     * Apply the exclude filter.
+     *
+     * @param filter Filter for exclusion.
+     *
+     * @throws BuildException There is no single jar.
+     */
+    void exclude(String filter)
+    {
+        if (classpathentry == null)
+        {
+            throw new BuildException(
+                "Exclude filters require direct setting of a jar.");
+        }
+
+        final String excludeFilter = "!" + filter;
+        proGuardConfiguration.log("excluding '" + excludeFilter + "'",
+            Project.MSG_VERBOSE);
+
+        addFilter(excludeFilter);
+    }
+
+    /**
+     * Add an include filter.
+     *
+     * @param filter Include filter.
+     */
+    public void addInclude(JarContainerInclude filter)
+    {
+        filter.setParent(this);
+    }
+
+    /**
+     * Apply the include filter.
+     *
+     * @param filter Filter for inclusion.
+     *
+     * @throws BuildException There is no single jar.
+     */
+    void include(String filter)
+    {
+        if (classpathentry == null)
+        {
+            throw new BuildException(
+                "Include filters require direct setting of a jar.");
+        }
+
+        proGuardConfiguration.log("including '" + filter + "'",
+            Project.MSG_VERBOSE);
+
+        addFilter(filter);
     }
 
     /**
@@ -126,27 +233,50 @@ public abstract class JarContainer
      *
      * @param parent Parent task object.
      */
-    public void execute(ProGuardTask parent)
+    public void execute(ProGuardConfigurationTask parent)
     {
         setProject(parent.getProject());
 
+        // Must call evalReference before evalFileset because
+        // a fileset could be added by a reference.
         evalReference();
         evalFilesets();
     }
 
     /**
      * Evaluates a given referenced path.
+     *
+     * @throws BuildException Reference to unsupported object type.
      */
     private void evalReference()
     {
         if (reference == null)
+        {
             return;
+        }
 
-        Path     path = (Path) reference.getReferencedObject(project);
-        String[] list = path.list();
+        Object referencedObject = reference.getReferencedObject(project);
 
-        for (int i = 0; i < list.length; i++)
-            addJar(list[i]);
+        if (referencedObject instanceof FileSet)
+        {
+            fileSets.add((FileSet) referencedObject);
+        }
+        else if (referencedObject instanceof Path)
+        {
+            Path     path = (Path) referencedObject;
+            String[] list = path.list();
+
+            for (int i = 0; i < list.length; i++)
+            {
+                ClassPathEntry entry = getClassPathEntry(list[i]);
+                addJar(entry);
+            }
+        }
+        else
+        {
+            throw new BuildException("Reference '" + reference.getRefId() +
+                "' must be a fileset or a path");
+        }
     }
 
     /**
@@ -170,7 +300,9 @@ public abstract class JarContainer
                 String libfile =
                     directoryscanner.getBasedir() + File.separator +
                     libfiles[i];
-                addJar(libfile);
+
+                ClassPathEntry entry = getClassPathEntry(libfile);
+                addJar(entry);
             }
         }
     }
@@ -184,8 +316,10 @@ public abstract class JarContainer
             throws BuildException
     {
         if (gotJarFile)
+        {
             throw new BuildException(
                 "take multiple injar or libraryjar tasks to set a jar file in several ways!");
+        }
     }
 
     /**

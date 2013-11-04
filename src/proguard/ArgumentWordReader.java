@@ -1,4 +1,4 @@
-/* $Id: ArgumentWordReader.java,v 1.7 2003/02/10 18:59:58 eric Exp $
+/* $Id: ArgumentWordReader.java,v 1.8 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -44,7 +44,7 @@ public class ArgumentWordReader extends WordReader
     }
 
 
-    // Implementations for WordReader
+    // Implementations for WordReader.
 
     protected String nextLine() throws IOException
     {

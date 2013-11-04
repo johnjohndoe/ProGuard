@@ -1,4 +1,4 @@
-/* $Id: AttributeUsageMarker.java,v 1.13 2003/02/11 18:06:45 eric Exp $
+/* $Id: AttributeUsageMarker.java,v 1.15 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -53,6 +53,7 @@ public class AttributeUsageMarker
     private boolean keepLineNumberTableAttribute;
     private boolean keepLocalVariableTableAttribute;
     private boolean keepSourceFileAttribute;
+    private boolean keepSourceDirAttribute;
     private boolean keepDeprecatedAttribute;
     private boolean keepSyntheticAttribute;
 
@@ -115,6 +116,10 @@ public class AttributeUsageMarker
         {
             keepSourceFileAttribute = true;
         }
+        else if (attributeName.equals(ClassConstants.ATTR_SourceDir))
+        {
+            keepSourceDirAttribute = true;
+        }
         else if (attributeName.equals(ClassConstants.ATTR_Deprecated))
         {
             keepDeprecatedAttribute = true;
@@ -135,7 +140,7 @@ public class AttributeUsageMarker
     }
 
 
-    // Implementations for ClassFileVisitor
+    // Implementations for ClassFileVisitor.
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
@@ -153,7 +158,7 @@ public class AttributeUsageMarker
     }
 
 
-    // Implementations for MemberInfoVisitor
+    // Implementations for MemberInfoVisitor.
 
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {
@@ -178,7 +183,7 @@ public class AttributeUsageMarker
     public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo) {}
 
 
-    // Implementations for AttrInfoVisitor
+    // Implementations for AttrInfoVisitor.
 
     public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo)
     {
@@ -260,6 +265,17 @@ public class AttributeUsageMarker
     }
 
 
+    public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo)
+    {
+        if (keepAllAttributes ||
+            keepAllKnownAttributes ||
+            keepSourceDirAttribute)
+        {
+            markAsUsed(sourceDirAttrInfo);
+        }
+    }
+
+
     public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo)
     {
         if (keepAllAttributes ||
@@ -282,7 +298,7 @@ public class AttributeUsageMarker
     }
 
 
-    // Implementations for InnerClassesInfoVisitor
+    // Implementations for InnerClassesInfoVisitor.
 
     public void visitInnerClassesInfo(ClassFile classFile, InnerClassesInfo innerClassesInfo)
     {

@@ -1,4 +1,4 @@
-/* $Id: AccessContainer.java,v 1.2 2003/02/10 19:47:27 eric Exp $
+/* $Id: AccessContainer.java,v 1.4 2003/12/19 04:17:03 eric Exp $
  *
  * ProGuard - integration into Ant.
  *
@@ -10,7 +10,7 @@
  * any later version.
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * ANY WARRAntY; without even the implied warranty of MERCHAntABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
@@ -22,6 +22,7 @@ package proguard.ant;
 
 import org.apache.tools.ant.*;
 
+
 /**
  * Interface for all tasks that handle nested access tasks.
  *
@@ -31,9 +32,11 @@ public interface AccessContainer
 {
     /**
      * Adds the given access string to the list of configured access flags.
+     *
      * @param access Name of the access flag.
-     * @exception BuildException
-     *            Error adding the access string
+     *
+     * @exception BuildException Error adding the access string
      */
-    public void addAccess(String access) throws BuildException;
+    public void addAccess(String access)
+            throws BuildException;
 }

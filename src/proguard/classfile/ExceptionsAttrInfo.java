@@ -1,4 +1,4 @@
-/* $Id: ExceptionsAttrInfo.java,v 1.9 2003/02/09 15:22:28 eric Exp $
+/* $Id: ExceptionsAttrInfo.java,v 1.10 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -45,7 +45,7 @@ public class ExceptionsAttrInfo extends AttrInfo
     }
 
 
-    // Implementations for AttrInfo
+    // Implementations for AttrInfo.
 
     protected int getAttrInfoLength()
     {

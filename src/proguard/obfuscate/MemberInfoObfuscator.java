@@ -1,4 +1,4 @@
-/* $Id: MemberInfoObfuscator.java,v 1.1 2003/04/28 17:24:21 eric Exp $
+/* $Id: MemberInfoObfuscator.java,v 1.4 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -32,7 +32,7 @@ import java.util.*;
  * visitor. The class file is typically a class file that is not being subclassed.
  *
  * @see MemberInfoLinker
- * 
+ *
  * @author Eric Lafortune
  */
 public class MemberInfoObfuscator
@@ -65,7 +65,7 @@ public class MemberInfoObfuscator
     }
 
 
-    // Implementations for ClassFileVisitor
+    // Implementations for ClassFileVisitor.
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
@@ -86,7 +86,7 @@ public class MemberInfoObfuscator
             while (memberNameIterator.hasNext())
             {
                 MemberInfo memberInfo = (MemberInfo)memberNameIterator.next();
-                
+
                 // Does the class member already have a name?
                 String newName = newMemberName(memberInfo);
                 if (newName != null)
@@ -145,7 +145,7 @@ public class MemberInfoObfuscator
     }
 
 
-    // Implementations for MemberInfoVisitor
+    // Implementations for MemberInfoVisitor.
 
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {
@@ -164,7 +164,7 @@ public class MemberInfoObfuscator
         // Make sure the library field keeps its name.
         String name = libraryFieldInfo.getName(libraryClassFile);
         setNewMemberName(libraryFieldInfo, name);
-        
+
         visitMemberInfo(libraryClassFile, libraryFieldInfo);
     }
 
@@ -174,7 +174,7 @@ public class MemberInfoObfuscator
         // Make sure the library method keeps its name.
         String name = libraryMethodInfo.getName(libraryClassFile);
         setNewMemberName(libraryMethodInfo, name);
-        
+
         visitMethodInfo(libraryClassFile, libraryMethodInfo);
     }
 

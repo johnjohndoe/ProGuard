@@ -1,0 +1,92 @@
+<!doctype html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="content-style-type" content="text/css">
+<link rel="stylesheet" type="text/css" href="style.css">
+<title>Ant Configuration Task</title>
+</head>
+<body>
+
+<h2>Ant Configuration Task</h2>
+
+<h3>Description</h3>
+
+<p>
+This task can be used in conjunction with the
+<a href="ant.html">ProGuard-Task</a>.
+</p>
+
+<p>
+It allows you to split the configuration settings for the
+ProGuard task into multiple, manageable pieces. This is of interest, if
+you have multiple calls to proguard with similar configuration settings.<br>
+This task can be used in as follow:
+<ol>
+<li>
+Standalone, to define a configuration that is common to multiple calls to
+ProGuard.
+</li>
+<li>
+As a <a href="ant.html#configurationTask">nested configuration</a>, to refer a
+configuration defined somewhere else in this script.
+</li>
+<li>
+As a nested configuration, to refer a configuration defined in a
+ProGuard configuration file.
+</li>
+</ol>
+</p>
+
+<p>
+Before you are able to use the <code>proguardconfiguration</code> task, you
+have to tell Ant about this new task. This is done through:
+</p>
+
+<code>
+&lt;taskdef name="proguardconfiguration" classname="proguard.ant.ProGuardConfiguration" classpath="/usr/local/java/proguard/lib/proguard.jar" /&gt;
+</code>
+
+<p>
+where you obviously have to replace the latter path by the path where you've
+installed ProGuard.
+</p>
+
+<h3>Parameters</h3>
+
+<p>
+This task has all parameters and nested tasks of the
+<a href="ant.html">ProGuard Task</a>. It is even allowed to have nested
+configuration settings in a configuration task. Besides there are some
+additional parameters to manage references of this configuration instance.
+</p>
+
+<table border="1" cellpadding="2" cellspacing="0">
+
+  <tr>
+    <td valign="top"><b>Attribute</b></td>
+    <td valign="top"><b>Description</b></td>
+    <td align="center" valign="top"><b>Required</b></td>
+  </tr>
+  <tr>
+    <td valign="top">id</td>
+    <td valign="top">
+        Unique identifier for this configuration instance,
+	can be used to reference this configuration setting in scripts.
+    </td>
+    <td valign="top" align="center">No</td>
+  </tr>
+  <tr>
+    <td valign="top">refid</td>
+    <td valign="top">
+	Reference to another configuration instance.
+    </td>
+    <td valign="top" align="center">No</td>
+  </tr>
+</table>
+<hr>
+<address>
+Copyright &copy; 2003 <a href="mailto:dirk.schnelle@web.de">Dirk Schnelle</a>.
+</address>
+
+</html>

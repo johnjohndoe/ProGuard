@@ -1,4 +1,4 @@
-/* $Id: DataEntryClassFileFilter.java,v 1.2 2003/02/09 15:22:28 eric Exp $
+/* $Id: DataEntryClassFileFilter.java,v 1.3 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -46,7 +46,7 @@ public class DataEntryClassFileFilter implements DataEntryReader
     }
 
 
-    // Implementations for DataEntryReader
+    // Implementations for DataEntryReader.
 
     public void readZipEntry(ZipEntry    zipEntry,
                              InputStream inputStream)

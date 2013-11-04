@@ -1,4 +1,4 @@
-/* $Id: ProgramMemberInfo.java,v 1.17 2003/02/09 15:22:28 eric Exp $
+/* $Id: ProgramMemberInfo.java,v 1.18 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -176,7 +176,7 @@ abstract public class ProgramMemberInfo implements MemberInfo
     }
 
 
-    // Implementations for MemberInfo
+    // Implementations for MemberInfo.
 
     public int getAccessFlags()
     {
@@ -194,7 +194,7 @@ abstract public class ProgramMemberInfo implements MemberInfo
     }
 
 
-    // Implementations for VisitorAccepter
+    // Implementations for VisitorAccepter.
 
     public Object getVisitorInfo() {
         return visitorInfo;

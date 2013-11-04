@@ -1,4 +1,4 @@
-/* $Id: Access.java,v 1.5 2003/03/03 19:11:45 eric Exp $
+/* $Id: Access.java,v 1.7 2003/12/19 04:17:03 eric Exp $
  *
  * ProGuard - integration into Ant.
  *
@@ -10,7 +10,7 @@
  * any later version.
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * ANY WARRAntY; without even the implied warranty of MERCHAntABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
@@ -33,17 +33,14 @@ public class Access
     /** Name of the access flag. */
     private String access;
 
-
     /**
      * Defaults constructor.
      */
-    public Access()
-    {
-    }
-
+    public Access() {}
 
     /**
      * Adds an access flag.
+     *
      * @param access Name of the access flag to add.
      */
     public void setName(String access)
@@ -51,23 +48,24 @@ public class Access
         this.access = access;
     }
 
-
     /**
      * Validates this subtask.
-     * @exception BuildException
-     *             Validation not successful.
+     *
+     * @exception BuildException Validation not successful.
      */
-    public void validate() throws BuildException
+    public void validate()
+            throws BuildException
     {
         if (access == null)
         {
-            throw new BuildException("name is a required attribute for the access task!");
+            throw new BuildException(
+                "name is a required attribute for the access task!");
         }
     }
 
-
     /**
      * Executes this subtask for the given access container.
+     *
      * @param accessContainer Parent task object.
      */
     public void execute(AccessContainer accessContainer)

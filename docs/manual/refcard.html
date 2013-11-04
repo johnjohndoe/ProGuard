@@ -1,34 +1,25 @@
 <!doctype html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <html>
 <head>
+<meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="content-style-type" content="text/css">
+<link rel="stylesheet" type="text/css" href="style.css">
 <title>ProGuard Reference Card</title>
 </head>
-<body
- bgcolor="#ffffff"
- text="#000000">
+<body>
 
-<center><h2>ProGuard Reference Card</h2></center>
+<h1>ProGuard Reference Card</h1>
 
-<table width="100%" cellpadding="8" cellspacing="0"><tr><th bgcolor="#EEEEFF">
-<font size="+1">Usage</font>
-</th></tr></table>
-<p>
+<h2>Usage</h2>
 
 <code><b>java -jar proguard.jar </b></code><i>options</i> ...
-<p>
-&nbsp;&nbsp;or
-<p>
-<code><b>java proguard.ProGuard </b></code><i>options</i> ...
 <p>
 &nbsp;&nbsp;Typically:
 <p>
 <code><b>java -jar proguard.jar @myconfig.pro</b></code>
 <p>
 
-<table width="100%" cellpadding="8" cellspacing="0"><tr><th bgcolor="#EEEEFF">
-<font size="+1">Options</font>
-</th></tr></table>
-<p>
+<h2">Options</h2>
 
 <table cellspacing="10">
 
@@ -45,25 +36,23 @@
 </tr>
 
 <tr>
-<td valign="top"><code><b>-libraryjars</b></code>
-    <i>jarname</i>[<b>:</b>...]</td>
+<td valign="top"><code><b>-libraryjars</b></code> <i>class_path</i></td>
 <td>Specifies the library jars (or directories).</td>
 </tr>
 
 <tr>
-<td valign="top"><code><b>-injars</b></code> <i>jarname</i>[<b>:</b>...]</td>
+<td valign="top"><code><b>-injars</b></code> <i>class_path</i></td>
 <td>Specifies the program jars (or directories).</td>
 </tr>
 
 <tr>
-<td valign="top"><code><b>-resourcejars</b></code>
-    <i>jarname</i>[<b>:</b>...]</td>
+<td valign="top"><code><b>-resourcejars</b></code> <i>class_path</i></td>
 <td>Specifies any resource jars (or directories).</td>
 </tr>
 
 <tr>
-<td valign="top"><code><b>-outjar</b></code> <i>jarname</i></td>
-<td>Specifies the name of the output jar (or directory).</td>
+<td valign="top"><code><b>-outjars</b></code> <i>class_path</i></td>
+<td>Specifies the name of the output jars (or directories).</td>
 </tr>
 
 <tr>
@@ -142,6 +131,11 @@
 </tr>
 
 <tr>
+<td valign="top"><code><b>-applymapping</b></code> <i>filename</i></td>
+<td>Reuse the given mapping, for incremental obfuscation.</td>
+</tr>
+
+<tr>
 <td valign="top"><code><b>-verbose</b></code></td>
 <td>Write out some more information during processing.</td>
 </tr>
@@ -204,17 +198,17 @@
 <p>
 Notes:
 <ul>
-<li><i>filename</i> and <i>jarname</i> can contain Java system properties
-    delimited by '<b>&lt;</b>' and '<b>&gt;</b>'.
-<li>If <i>filename</i> or <i>jarname</i> contain special characters, the
-    entire name should be quoted with single or double quotes.
+
+<li><i>class_path</i> is a list of jars and directories, with optional filters,
+    separated by path separators.
+<li><i>filename</i> can contain Java system properties delimited by
+    '<b>&lt;</b>' and '<b>&gt;</b>'.
+<li>If <i>filename</i> contains special characters, the entire name
+    should be quoted with single or double quotes.
 </ul>
 <p>
 
-<table width="100%" cellpadding="8" cellspacing="0"><tr><th bgcolor="#EEEEFF">
-<font size="+1"><code>-keep</code> Options</font>
-</th></tr></table>
-<p>
+<h2><code>-keep</code> Options</h2>
 
 <table cellpadding="5">
 
@@ -245,21 +239,18 @@ Notes:
 </table>
 <p>
 
-<table width="100%" cellpadding="8" cellspacing="0"><tr><th bgcolor="#EEEEFF">
-<font size="+1">Class Specifications</font>
-</th></tr></table>
-<p>
+<h2>Class Specifications</h2>
 
 <pre>
 [[<b>!</b>]<b>public</b>|<b>final</b>|<b>abstract</b> ...] ([<b>!</b>]<b>interface</b>)|<b>class</b> <i>classname</i>
     [<b>extends</b>|<b>implements</b> <i>classname</i>]
 [<b>{</b>
     [[<b>!</b>]<b>public</b>|<b>private</b>|<b>protected</b>|<b>static</b>|<b>volatile</b>|<b>transient</b> ...] <b>&lt;fields&gt;</b> |
-                                                                (<i>fieldtype fieldname</i>)<b>;</b>
+                                                                      (<i>fieldtype fieldname</i>)<b>;</b>
     [[<b>!</b>]<b>public</b>|<b>private</b>|<b>protected</b>|<b>static</b>|<b>synchronized</b>|<b>native</b>|<b>abstract</b>|<b>strictfp</b> ...] <b>&lt;methods&gt;</b> |
-                                                                                   <b>&lt;init&gt;(</b><i>argumenttype,...</i><b>)</b> |
-                                                                                   <i>classname</i><b>(</b><i>argumenttype,...</i><b>)</b> |
-                                                                                   (<i>returntype methodname</i><b>(</b><i>argumenttype,...</i><b>)</b>)<b>;</b>
+                                                                                           <b>&lt;init&gt;(</b><i>argumenttype,...</i><b>)</b> |
+                                                                                           <i>classname</i><b>(</b><i>argumenttype,...</i><b>)</b> |
+                                                                                           (<i>returntype methodname</i><b>(</b><i>argumenttype,...</i><b>)</b>)<b>;</b>
     [[<b>!</b>]<b>public</b>|<b>private</b>|<b>protected</b>|<b>static</b> ... ] <b>*;</b>
     ...
 <b>}</b>]
@@ -267,8 +258,8 @@ Notes:
 <p>
 Notes:
 <ul>
-<li>Class names must always be specfied in full, i.e. including their
-    package names.
+<li>Class names must always be fully qualified, i.e. including their package
+    names.
 <li>Class names in <i>classname</i>, <i>returntype</i>, and
     <i>argumenttype</i> can contain wildcards: '<code><b>?</b></code>' for a
     single character, '<code><b>*</b></code>' for any number of characters

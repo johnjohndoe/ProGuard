@@ -1,16 +1,14 @@
 <!doctype html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <html>
 <head>
+<meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="content-style-type" content="text/css">
+<link rel="stylesheet" type="text/css" href="style.css">
 <title>ProGuard Introduction</title>
 </head>
-<body
- bgcolor="#ffffff"
- text="#000000">
+<body>
 
-<table width="100%" cellpadding="10" cellspacing="0"><tr><th bgcolor="#EEEEFF">
-<font size="+2">Introduction</font>
-</th></tr></table>
-<p>
+<h2>Introduction</h2>
 
 <b>ProGuard</b> is a Java class file shrinker and obfuscator. It detects and
 removes unused classes, fields, methods, and attributes, and it renames the
@@ -21,51 +19,52 @@ ProGuard can also be used to list unused fields and methods in an application,
 and to print out the internal structure of class files.
 <p>
 
-<table align="center" cellpadding="8" cellspacing="2" border="0">
+<table class="diagram" align="center">
 
 <tr>
-<td rowspan="3" width="100" bgcolor="#BBBBFF" align="center">Input jars</td>
-<td colspan="4"></td>
+<td rowspan="3" class="lightblock">Input jars</td>
+<td colspan="4" class="transparentblock"></td>
 </tr>
 
 <tr>
-<td><br></td>
-<td rowspan="2" width="100" bgcolor="#BBBBFF" align="center">Shrunk code</td>
-<td colspan="2"></td>
+<td             class="transparentblock"></td>
+<td rowspan="2" class="lightblock">Shrunk code</td>
+<td colspan="2" class="transparentblock"></td>
 </tr>
 
 <tr>
-<td>- shrink &rarr;</td>
-<td>- obfuscate &rarr;</td>
-<td rowspan="2" width="100" bgcolor="#BBBBFF" align="center">Output jar</td>
+<td             class="transparentblock">- shrink &rarr;</td>
+<td             class="transparentblock">- obfuscate &rarr;</td>
+<td rowspan="2" class="lightblock">Output jars</td>
 </tr>
 
 <tr>
-<td bgcolor="#BBBBFF" align="center">Resource jars</td>
-<td colspan="3" align="center">----------------- (unchanged) -----------------&rarr;</td>
+<td             class="lightblock">Resource jars</td>
+<td colspan="3" class="transparentblock">----------------- (unchanged) -----------------&rarr;</td>
 </tr>
 
 <tr>
-<td bgcolor="#8888FF" align="center">Library jars</td>
-<td colspan="3" align="center">----------------- (unchanged) -----------------&rarr;</td>
-<td bgcolor="#8888FF" align="center">Library jars</td>
+<td             class="darkblock">Library jars</td>
+<td colspan="3" class="transparentblock">----------------- (unchanged) -----------------&rarr;</td>
+<td             class="darkblock">Library jars</td>
 </tr>
 
 </table>
 <p>
 
-ProGuard typically reads the <b>input jars</b> (or directories), shrinks their
-class files, obfuscates the shrunk class files, and writes them to an output
-jar (or directory). In order to determine which code has to be preserved,
-which code can be discarded, and which code can be obfuscated, you have to
-specify one or more seed classes or methods. These seeds are typically main
-classes, applets, midlets,... In the shrinking phase, ProGuard recursively
-determines which classes and class members are used, and discards the rest. In
-the obfuscation phase, all classes and class members get new names, except for
-the seeds, so they can still be called by their original names.
+ProGuard typically reads the <b>input jars</b> (or directories), shrinks
+their class files, obfuscates the shrunk class files, and writes them to one
+or more <b>output jars</b> (or directories). In order to determine which
+code has to be preserved, which code can be discarded, and which code can be
+obfuscated, you have to specify one or more seed classes or methods. These
+seeds are typically main classes, applets, midlets,... In the shrinking
+phase, ProGuard recursively determines which classes and class members are
+used, and discards the rest. In the obfuscation phase, all classes and class
+members get new names, except for the seeds, so they can still be called by
+their original names.
 <p>
 You can optionally specify <b>resource jars</b> (or directories). ProGuard
-copies all non-class resource files from these jars to the output jar. Their
+copies all non-class resource files from these jars to the output jars. Their
 names and contents remain unchanged. If no resource jars are specified, the
 input jars are used as resource jars.
 <p>

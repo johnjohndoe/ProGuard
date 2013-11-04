@@ -1,16 +1,14 @@
 <!doctype html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <html>
 <head>
+<meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="content-style-type" content="text/css">
+<link rel="stylesheet" type="text/css" href="style.css">
 <title>Ant Task</title>
 </head>
-<body
- bgcolor="#ffffff"
- text="#000000">
+<body>
 
-<table width="100%" cellpadding="10" cellspacing="0"><tr><th bgcolor="#EEEEFF">
-<font size="+2">Ant Task</font>
-</th></tr></table>
-<p>
+<h2>Ant Task</h2>
 
 <h3>Description</h3>
 
@@ -20,31 +18,104 @@ obfuscator.
 </p>
 
 <p>
-The standard ProGuard application can be configured using command line options
-or configuration files. The <code>proguard</code> task is an alternative for
-configuring and running ProGuard by means of an Ant build file.
-</p>
-
-<p>
-The task is designed to allow a smooth transition from ProGuard configuration
-files to full XML Ant build files. This transition is discussed in the section
-<a href="#migrating">Migrating from ProGuard configuration files to Ant build
-files</a>.
-</p>
-
-<p>
 Before you are able to use the <code>proguard</code> task, you have to tell
 Ant about this new task. This is done through:
 </p>
 
-<code>
+<pre>
 &lt;taskdef name="proguard" classname="proguard.ant.ProGuardTask" classpath="/usr/local/java/proguard/lib/proguard.jar" /&gt;
-</code>
+</pre>
 
 <p>
 where you obviously have to replace the latter path by the path where you've
 installed ProGuard.
 </p>
+
+<p>
+There are three ways to configure the ProGuard task: using an external
+configuration file, using embedded ProGuard configuration options, and using
+the equivalent XML configuration tags. These three ways can be combined,
+depending on practical circumstances and personal preference.
+</p>
+
+<h4>1. An external ProGuard configuration file</h4>
+
+<p>
+The simplest way to use the ProGuard task in an Ant build file is to keep
+your ProGuard configuration file, and include it from Ant. You can include
+your ProGuard configuration file by setting the <a
+href="#configuration">configuration</a> attribute of your
+<code>proguard</code> task. Your ant build file will then look like this:
+</p>
+
+<pre>
+&lt;taskdef name="proguard" classname="proguard.ant.ProGuardTask" /&gt;
+&lt;proguard configuration="myconfigfile.pro"/&gt;
+</pre>
+
+<p>
+This is a convenient option if you prefer ProGuard's configuration style over
+XML, if you want to keep your build file small, or if you have to share your
+configuration with developers who don't use Ant.
+</p>
+
+<h4>2. Embedded ProGuard configuration options</h4>
+
+<p>
+Instead of keeping an external ProGuard configuration file, you can also copy
+the contents of the file into the nested text of the <code>proguard</code> task
+(the PCDATA area). Your Ant build file will then look like this:
+</p>
+
+<pre>
+&lt;taskdef name="proguard" classname="proguard.ant.ProGuardTask" /&gt;
+&lt;proguard&gt;
+  -libraryjars ${java.home}/lib/rt.jar
+  -injars      in.jar
+  -outjar      out.jar
+
+  -keepclasseswithmembers public class * {
+      public static void main(java.lang.String[]);
+  }
+&lt;/proguard&gt;
+</pre>
+
+<p>
+Some minor syntactical changes are required in order to conform with the XML
+standard.
+</p>
+
+<p>
+Firstly, the <code>#</code> chararacter cannot be used for comments in an XML
+file. Comments must be enclosed by an opening <code>&lt;!--</code> and a
+closing <code>--&gt;</code>. All occurrences of the <code>#</code> chararacter
+can be removed.
+</p>
+
+<p>
+Secondly, the use of <code>&lt;</code> and <code>&gt;</code> characters to
+mark environment variables would upset the structure of the XML build file.
+Environment variables are now enclosed by an opening <code>${</code> and a
+closing <code>}</code>. This syntax is in line with Ant traditions. It also
+allows you to use Ant properties within the ProGuard configuration.
+</p>
+
+<p>
+Then there are some other keywords, <code>&lt;init&gt;</code>,
+<code>&lt;methods&gt;</code> and <code>&lt;fields&gt;</code>. All occurrences
+of the these keywords have to be replaced with <code>${proguard.init}</code>,
+<code>${proguard.methods}</code>, and <code>${proguard.fields}</code>,
+respectively.
+</p>
+
+<h4>3. XML configuration tags</h4>
+
+<p>
+If you prefer a full-blown XML configuration, you can replace the ProGuard
+configuration options by the equivalent XML configuration tags. The remainder
+of this page presents the supported tags.
+</p>
+
 
 <h3>Parameters</h3>
 
@@ -62,7 +133,8 @@ installed ProGuard.
         The settings of the configuration file are merged with the ant settings.
         For single value attributes the ant settings override the settings
         of the config file.<br>
-        The required values can also be set through the configuration file.
+        All values can also be set through the configuration file or a
+	nested <a href="#configurationTask">configuration</a> task.
     </td>
     <td valign="top" align="center">No</td>
   </tr>
@@ -72,7 +144,7 @@ installed ProGuard.
       Specifies the name of the output jar (or directory). It must be different
       from the input jars (and directories).
     </td>
-    <td valign="top" align="center">Yes</td>
+    <td valign="top" align="center">No</td>
   </tr>
   <tr>
     <td valign="top">renamesourcefileattribute</td>
@@ -104,7 +176,10 @@ installed ProGuard.
     <td valign="top">
      Specifies to list dead code of the input class files. The list is printed
      to the standard output or to the given file. For example, you can list
-     the unused code of an application. Only applicable when shrinking.
+     the unused code of an application.<br>
+     Specify the name of the file or <code>yes</code>, <code>on</code> or
+     <code>true</code> to print to the standard output.<br>
+     Defaults to <code>off</code>. Only applicable when shrinking.
     </td>
     <td valign="top" align="center">No</td>
   </tr>
@@ -115,6 +190,19 @@ installed ProGuard.
      class members that have been renamed. The mapping is printed to the
      standard output or to the given file. It is required if you ever want
      to make sense again of obfuscated stack traces.
+     Only applicable when obfuscating.
+    </td>
+    <td valign="top" align="center">No</td>
+  </tr>
+  <tr>
+    <td valign="top">applymapping</td>
+    <td valign="top">
+     Specifies to reuse the given name mapping that was printed out in a 
+     previous obfuscation run of ProGuard. Classes and class members that are 
+     listed in the mapping file receive the names specified along with them. 
+     Classes and class members that are not mentioned receive new names. 
+     This option can be useful for incremental obfuscation, i.e. processing 
+     add-ons or small patches to an existing piece of code. 
      Only applicable when obfuscating.
     </td>
     <td valign="top" align="center">No</td>
@@ -287,10 +375,68 @@ called needn't be present.
   <tr>
     <td valign="top">refid</td>
     <td valign="top">
-       Reference to a path like structure. Using a refid excludes specifying
-       a name.
+       Reference to a path like structure or a fileset. 
+       Using a refid excludes specifying a name.
     </td>
     <td valign="top" align="center">No</td>
+  </tr>
+</table>
+
+<h3>Parameters specified as nested elements</h3>
+<a name="filter"></a>
+<h3>exclude</h3>
+
+<p>
+Exclude files from a jar (or directory). The exclude parameter affects
+subsequent include parameters; it has no effect without the latter. File
+filters are discussed in some more detail in <a
+href="usage.html#classpath">ProGuard Usage</a>.
+</p>
+<p>
+This nested subtask is unsupported for fileset or path like structures. Use
+Ant's filtering methods instead.
+</p>
+
+
+<h3>Parameters</h3>
+
+<table border="1" cellpadding="2" cellspacing="0">
+  <tr>
+    <td valign="top"><b>Attribute</b></td>
+    <td valign="top"><b>Description</b></td>
+    <td align="center" valign="top"><b>Required</b></td>
+  </tr>
+  <tr>
+    <td valign="top">name</td>
+    <td valign="top">
+    Name or Pattern for the files to be excluded.
+    </td>
+    <td valign="top" align="center">Yes</td>
+  </tr>
+</table>
+
+<h3>include</h3>
+
+<p>
+Include files of a jar (or directory). This nested subtask is unsupported
+for fileset or path like structures. Use Ant's filtering methods instead. 
+</p>
+
+
+<h3>Parameters</h3>
+
+<table border="1" cellpadding="2" cellspacing="0">
+  <tr>
+    <td valign="top"><b>Attribute</b></td>
+    <td valign="top"><b>Description</b></td>
+    <td align="center" valign="top"><b>Required</b></td>
+  </tr>
+  <tr>
+    <td valign="top">name</td>
+    <td valign="top">
+    Name or Pattern for the files to be included.
+    </td>
+    <td valign="top" align="center">Yes</td>
   </tr>
 </table>
 
@@ -325,12 +471,17 @@ files from the <a href="#injar">injar</a> (or directories) will be copied.
   <tr>
     <td valign="top">refid</td>
     <td valign="top">
-       Reference to a path like structure. Using a refid excludes specifying
-       a name.
+       Reference to a path like structure or a fileset. 
+       Using a refid excludes specifying a name.
     </td>
     <td valign="top" align="center">No</td>
   </tr>
 </table>
+
+<h3>Parameters specified as nested elements</h3>
+
+Parameters are the same as the parameters of the <a
+href="#filter">libraryjars</a> nested tag.
 
 <a name="injar"></a>
 <h4>injar</h4>
@@ -362,12 +513,17 @@ The class files in these jars will be processed and merged in the output jar.
   <tr>
     <td valign="top">refid</td>
     <td valign="top">
-       Reference to a path like structure. Using a refid excludes specifying
-       a name.
+       Reference to a path like structure or a fileset. 
+       Using a refid excludes specifying a name.
     </td>
     <td valign="top" align="center">No</td>
   </tr>
 </table>
+
+<h3>Parameters specified as nested elements</h3>
+
+Parameters are the same as the parameters of the <a
+href="#filter">libraryjars</a> nested tag.
 
 <a name="keep"></a>
 <h3>keep</h3>
@@ -423,7 +579,7 @@ a library, you should specify all publicly accessible items.
     <td valign="top">
     Full name of the class. Wildcards are allowed. A description of the usage
     and limitations of wildcards can be found in
-    <a href="usage.html#classspecification">ProGuard usage</a>.<br>
+    <a href="usage.html#classspecification">ProGuard Usage</a>.<br>
     Defaults to <code>*</code>
     </td>
     <td valign="top" align="center">No</td>
@@ -726,6 +882,16 @@ Specifies any optional attributes to be preserved.
 Only applicable when obfuscating.
 </p>
 
+<a name="configurationTask"></a>
+<h3>configuration</h3>
+
+<p>
+With the nested configuration task it is possible to include configuration
+settings from a file or a configuration defined somewhere else in this build
+script. The configuration task is described in the document
+<a href="ant-configuration.html">Ant Configuration Task</a>. Nested
+configuration tasks are evaluated in the order they appear.
+</p>
 
 <h3>Parameters</h3>
 
@@ -756,105 +922,6 @@ Only applicable when obfuscating.
     <td valign="top" align="center">No</td>
   </tr>
 </table>
-
-<a name="migrating"></a>
-<h3>Migrating from a ProGuard configuration files to Ant build files</h3>
-
-<p>
-This section describes how you could move from using a ProGuard configuration
-file to working with a full XML Ant build file, in two steps.
-</p>
-
-<h3>Continuing to use a ProGuard configuration file</h3>
-
-<p>
-The simplest way to use the ProGuard task in an Ant build file is to keep
-your ProGuard configuration file, and include it from Ant. You can include
-your ProGuard configuration file by setting the <a
-href="#configuration">configuration</a> attribute of your
-<code>proguard</code> task. Your ant build file will then look like this:
-</p>
-
-<code>
-&lt;taskdef name="proguard" classname="proguard.ant.ProGuardTask" /&gt;<br>
-&lt;proguard configuration="myconfigfile.pro"/&gt;
-</code>
-
-<p>
-This is a convenient option if you prefer ProGuard's configuration style over
-XML, if you want to keep your build file small, or if you have to share your
-configuration with developers who don't use Ant.
-</p>
-
-<h3>Embedding a ProGuard configuration in the Ant build file</h3>
-
-<p>
-Another possibility is to copy the contents of the ProGuard configuration file
-into the nested text of the <code>proguard</code> task (the PCDATA area). Your
-Ant build file will then look like this:
-</p>
-
-<code>
-&lt;taskdef name="proguard" classname="proguard.ant.ProGuardTask" /&gt;<br>
-&lt;proguard&gt;<br>
-&nbsp;&nbsp;&lt;!--<br>
-&nbsp;&nbsp;This Ant build file illustrates how to process ProGuard itself.<br>
-&nbsp;&nbsp;Configuration files for typical applications will be very similar.<br>
-&nbsp;&nbsp;--&gt;<br>
-<br>
-&nbsp;&nbsp;-libraryjars ${java.home}/lib/rt.jar<br>
-&nbsp;&nbsp;-libraryjars ${ant.lib}/ant.jar<br>
-&nbsp;&nbsp;-injars      dist/proguard.jar<br>
-&nbsp;&nbsp;-outjar      dist/proguard_out.jar<br>
-<br>
-&nbsp;&nbsp;...<br>
-<br>
-&nbsp;&nbsp;&lt;!-- The main seeds: ProGuard and its companion tool ReTrace. --&gt;<br>
-<br>
-&nbsp;&nbsp;-keep public class proguard.ProGuard {<br>
-&nbsp;&nbsp;&nbsp;&nbsp;public static void main(java.lang.String[]);<br>
-&nbsp;&nbsp;}<br>
-<br>
-&nbsp;&nbsp;-keep public class proguard.ReTrace {<br>
-&nbsp;&nbsp;&nbsp;&nbsp;public static void main(java.lang.String[]);<br>
-&nbsp;&nbsp;}<br>
-&lt;/proguard&gt;<br>
-</code>
-
-<p>
-Some minor syntactical changes are required in order to be conform with the XML
-standard.
-</p>
-
-<p>
-Firstly, the <code>#</code> char cannot be used for comments in an XML file.
-Comments must be enclosed by an opening <code>&lt;--</code> and a closing
-<code>--&gt;</code>. All occurrences of the <code>#</code> char in between must
-be removed.
-</p>
-
-<p>
-Secondly, the use of the <code>&lt;</code> and the <code>&gt;</code> characters
-to mark an environment variable are would upset the structure of the XML build
-file invalid. Environment variables are now enclosed by an opening
-<code>${</code> and a closing <code>}</code>. This change is in line with
-Ant traditions. Thus you are able to use your ant properties within
-you proguard configuration code.
-<br>
-Besides there are some other keywords,
-<code>init</code>, <code>methods</code> and <code>fields</code>, enclosed
-in <code>&lt;</code> and <code>&gt;</code> characters. In order not
-to define a new syntax, the ProGuard task sets some properties
-when initializing as a replacement.
-All occurences of the above have to be replaced with <code>${proguard.init}</code>,
-<code>${proguard.methods}</code> and <code>${proguard.fields}</code>.
-</p>
-
-<p>
-You can then gradually replace the text enclosed by the <code>proguard</code>
-tags by task attributes or nested tasks. Mixing nested text configuration with
-attributes of the <code>proguard</code> task is allowed.
-</p>
 
 <hr>
 <address>

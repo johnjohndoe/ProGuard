@@ -1,15 +1,16 @@
 <!doctype html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <html>
 <head>
+<meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="content-style-type" content="text/css">
+<link rel="stylesheet" type="text/css" href="style.css">
 <title>ProGuard FAQ</title>
 </head>
-<body bgcolor="#ffffff">
+<body>
 
-<center><h2>Frequently Asked Questions</h2></center>
+<h2>Frequently Asked Questions</h2>
 
-<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
 <h3>Contents</h3>
-</td></tr></table>
 
 <ol>
 <li><a href="#shrinking">What is shrinking?</a>
@@ -29,10 +30,7 @@
 </ol>
 
 <a name="shrinking">&nbsp;</a>
-<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
 <h3>What is shrinking?</h3>
-</td></tr></table>
-<p>
 Java source code (.java files) is typically compiled to bytecode (.class
 files). Complete programs or program libraries are usually zipped up and
 distributed as Java archives (.jar files). Bytecode is more compact than Java
@@ -42,12 +40,8 @@ bytecode and remove unused packages, classes, fields, and methods. The program
 remains functionally equivalent, including the information given in exception
 stack traces.
 
-<p>
 <a name="obfuscation">&nbsp;</a>
-<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
 <h3>What is obfuscation?</h3>
-</td></tr></table>
-<p>
 By default, compiled bytecode still contains a lot of debugging information:
 source file names, line numbers, field names, method names, argument names,
 variable names, etc. This information makes it straightforward to decompile
@@ -58,12 +52,8 @@ it much harder to reverse-engineer the code. It further compacts the code as a
 bonus. The program remains functionally equivalent, except for the class
 names, method names, and line numbers given in exception stack traces.
 
-<p>
 <a name="jdk1.4">&nbsp;</a>
-<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
 <h3>Does <b>ProGuard</b> work with JDK1.4?</h3>
-</td></tr></table>
-<p>
 Yes. Class files compiled with the <code>javac</code> compiler of JDK1.4 are
 targeted at JRE 1.2 by default. These class files have a slightly different
 structure from older class files. The new class files fall within the original
@@ -71,12 +61,8 @@ Java bytecode specifications, so they will run on most virtual machines, but
 they may trip some obfuscators. <b>ProGuard</b> handles both class file
 structures correctly.
 
-<p>
 <a name="j2me">&nbsp;</a>
-<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
 <h3>Does <b>ProGuard</b> work with J2ME?</h3>
-</td></tr></table>
-<p>
 Yes. <b>ProGuard</b> itself runs in J2SE, but you can freely specify the
 run-time environment at which your programs are targeted, including J2ME. More
 specifically, you'll specify <code>midpapi.zip</code> as the run-time library,
@@ -89,35 +75,22 @@ href="manual/examples.html#midlets">all midlets</a> in your input jar, for
 instance. In addition, <b>ProGuard</b> provides an obfuscator plug-in for the
 J2ME Wireless Toolkit.
 
-<p>
 <a name="ant">&nbsp;</a>
-<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
 <h3>Does <b>ProGuard</b> have support for Ant?</h3>
-</td></tr></table>
-<p>
 Yes. <b>ProGuard</b> provides an Ant task, so that it integrates seamlessly
 into your Ant build processes. You can still use configurations in
 <b>ProGuard</b>'s own readable format. Alternatively, if you prefer XML, you
 can specify the equivalent XML configuration.
 
-<p>
 <a name="gui">&nbsp;</a>
-<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
 <h3>Does <b>ProGuard</b> come with a GUI?</h3>
-</td></tr></table>
-<p>
-No. <b>ProGuard</b> is a command-line tool. It can easily be integrated into
-any automatic build process. Configuration is done using a few compact and
-powerful options; just have a look at the examples in the <a
-href="manual/index.html">ProGuard User Manual</a>. However, a graphical user
-interface is currently being tested for release 2.0.
+Yes. First of all, <b>ProGuard</b> is perfectly usable as a command-line tool
+that can easily be integrated into any automatic build process. For casual
+users, there's also a graphical user interface that makes creating, loading,
+editing, executing, and saving ProGuard configurations a breeze.
 
-<p>
 <a name="forname">&nbsp;</a>
-<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
 <h3>Does <b>ProGuard</b> handle <code>Class.forName</code> calls?</h3>
-</td></tr></table>
-<p>
 Yes. <b>ProGuard</b> automatically handles
 <code>Class.forName("SomeClass")</code> and <code>SomeClass.class</code>
 constructs. The referenced classes are preserved in the shrinking phase, and
@@ -131,43 +104,27 @@ be an indication that the class or interface <code>SomeClass</code> and/or its
 implementations may need to be preserved. The user can adapt his configuration
 accordingly.
 
-<p>
 <a name="resource">&nbsp;</a>
-<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
 <h3>Does <b>ProGuard</b> handle resource files?</h3>
-</td></tr></table>
-<p>
 Yes, in the sense that <b>ProGuard</b> copies all non-class resource files
 from the given resource jars to the output jar. Their names and contents remain
 unchanged.
 
-<p>
 <a name="encrypt">&nbsp;</a>
-<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
 <h3>Does <b>ProGuard</b> encrypt strings constants?</h3>
-</td></tr></table>
-<p>
 No. Storing encrypted string constants in program code is fairly futile, since
 the encryption has to be perfectly reversible by definition. Moreover, the
 decryption costs additional memory and computation at run-time. If it is ever
 implemented, a tool to decrypt the strings will be provided.
 
-<p>
 <a name="incremental">&nbsp;</a>
-<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
 <h3>Does <b>ProGuard</b> support incremental obfuscation?</h3>
-</td></tr></table>
-<p>
-Not yet, but the upcoming release 2.0 does. This feature allows you to specify
-a previous obfuscation mapping file in a new obfuscation step, in order to
-produce incremental patches for obfuscated code.
+Yes. This feature allows you to specify a previous obfuscation mapping file in
+a new obfuscation step, in order to produce add-ons or patches for obfuscated
+code.
 
-<p>
 <a name="stacktrace">&nbsp;</a>
-<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
 <h3>Can <b>ProGuard</b> reconstruct obfuscated stack traces?</h3>
-</td></tr></table>
-<p>
 Yes. <b>ProGuard</b> comes with a companion tool, <b>ReTrace</b>, that can
 'de-obfuscate' stack traces produced by obfuscated applications. The
 reconstruction is based on the mapping file that <b>ProGuard</b> can write

@@ -1,0 +1,65 @@
+@charset "iso-8859-1";
+
+/* Global settings. */
+
+body {
+  background: #FFFFFF;
+}
+
+h1 {
+  text-align: center;
+}
+
+h2 {
+  background: #EEEEFF;
+  padding: 10px;
+}
+
+pre {
+  padding: 10px;
+  background: #E0E0E0;
+}
+
+/* Settings for variable width code. */
+
+p.code {
+  padding: 10px;
+  background: #E0E0E0;
+}
+
+
+/* Settings for diagrams. */
+
+table.diagram {
+  padding: 8px;
+  border: none;
+  border-spacing: 2px;
+}
+
+td.transparentblock {
+  text-align: center;
+  padding: 10px 0px;
+}
+
+td.lightblock {
+  width: 100px;
+  text-align: center;
+  border: solid #8888FF 1px;
+  background: #BBBBFF;
+  padding: 20px 0px;
+}
+
+td.darkblock {
+  width: 100px;
+  text-align: center;
+  background: #8888FF;
+  padding: 20px 0px;
+}
+
+/* Settings for buttons. */
+
+td.button {
+  background: #E0E0E0;
+  border: outset #FFFFFF 1px;
+  font-weight: bold;
+}

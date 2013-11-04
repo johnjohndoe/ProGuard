@@ -1,4 +1,4 @@
-/* $Id: IntegerCpInfo.java,v 1.11 2003/02/09 15:22:28 eric Exp $
+/* $Id: IntegerCpInfo.java,v 1.12 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -40,7 +40,7 @@ public class IntegerCpInfo extends CpInfo
     {
     }
 
-    // Implementations for CpInfo
+    // Implementations for CpInfo.
 
     public int getTag()
     {

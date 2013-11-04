@@ -1,4 +1,4 @@
-/* $Id: VariableMemberInfoVisitor.java,v 1.8 2003/02/09 15:22:29 eric Exp $
+/* $Id: VariableMemberInfoVisitor.java,v 1.9 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -57,7 +57,7 @@ public class VariableMemberInfoVisitor implements MemberInfoVisitor
     }
 
 
-    // Implementations for MemberInfoVisitor
+    // Implementations for MemberInfoVisitor.
 
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {

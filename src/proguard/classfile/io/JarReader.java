@@ -1,4 +1,4 @@
-/* $Id: JarReader.java,v 1.2 2003/02/09 15:22:28 eric Exp $
+/* $Id: JarReader.java,v 1.7 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -21,21 +21,18 @@
 package proguard.classfile.io;
 
 import java.io.*;
-import java.util.jar.*;
 import java.util.zip.*;
 
 
 /**
- * This class can read a given jar, applying a given DataEntryReader to all
- * ZIP entries it reads. The reader can for instance collect the class files,
- * or copy the resource files.
+ * This DataEntryPump can read a given jar, applying a given DataEntryReader to
+ * all ZIP entries it reads.
  *
  * @author Eric Lafortune
  */
-public class JarReader
+public class JarReader implements DataEntryPump
 {
-    private File     jarFile;
-    private Manifest manifest;
+    private File jarFile;
 
 
     public JarReader(File jarFile)
@@ -44,27 +41,16 @@ public class JarReader
     }
 
 
-    /**
-     * Returns the Manifest from the most recently read jar file.
-     */
-    public Manifest getManifest()
-    {
-        return manifest;
-    }
+    // Implementation for DataEntryPump.
 
-
-    /**
-     * Reads the given jar, applying the given DataEntryReader to all ZIP entries
-     * that are encountered.
-     */
-    public void readZipEntries(DataEntryReader zipEntryReader)
+    public void pumpDataEntries(DataEntryReader dataEntryReader)
     throws IOException
     {
-        JarInputStream jarInputStream = null;
+        ZipInputStream zipInputStream = null;
 
         try
         {
-            jarInputStream = new JarInputStream(
+            zipInputStream = new ZipInputStream(
                              new BufferedInputStream(
                              new FileInputStream(jarFile)));
 
@@ -72,28 +58,26 @@ public class JarReader
             while (true)
             {
                 // Can we get another entry?
-                ZipEntry zipEntry = jarInputStream.getNextEntry();
+                ZipEntry zipEntry = zipInputStream.getNextEntry();
                 if (zipEntry == null)
                 {
                     break;
                 }
 
-                // Delegate the actual reading to the ZIP entry reader.
-                zipEntryReader.readZipEntry(zipEntry, jarInputStream);
+                // Delegate the actual reading to the data entry reader.
+                dataEntryReader.readZipEntry(zipEntry, zipInputStream);
 
                 // Close the entry, so we can continue with the next one.
-                jarInputStream.closeEntry();
+                zipInputStream.closeEntry();
             }
-
-            manifest = jarInputStream.getManifest();
         }
         finally
         {
-            if (jarInputStream != null)
+            if (zipInputStream != null)
             {
                 try
                 {
-                    jarInputStream.close();
+                    zipInputStream.close();
                 }
                 catch (IOException ex)
                 {

@@ -1,4 +1,4 @@
-/* $Id: KeepAttribute.java,v 1.5 2003/03/03 19:11:45 eric Exp $
+/* $Id: KeepAttribute.java,v 1.7 2003/12/19 04:17:03 eric Exp $
  *
  * ProGuard - integration into Ant.
  *
@@ -10,7 +10,7 @@
  * any later version.
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * ANY WARRAntY; without even the implied warranty of MERCHAntABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
@@ -22,52 +22,65 @@ package proguard.ant;
 
 import org.apache.tools.ant.*;
 
+
 /**
  * Collect the attributes to keep.
  *
  * @author Dirk Schnelle
  */
-public class KeepAttribute implements Subtask
+public class KeepAttribute
+        implements Subtask
 {
     /** Name of the attribute to add. */
-    private String attribute;
+    private String attribute = null;
 
+    /** Flag if the name of the attribute is set. */
+    private boolean nameSet = false;
+
+    /** Any attribute should be set. */
+    private final static String ANY_ATTRIBUTE_KEYWORD = "*";
 
     /**
      * Defaults constructor.
      */
-    public KeepAttribute()
-    {
-    }
-
+    public KeepAttribute() {}
 
     /**
      * Adds an attribute.
+     *
      * @param attribute Name of the attribute to add.
      */
     public void setName(String attribute)
     {
-        this.attribute = attribute;
-    }
+        if (!ANY_ATTRIBUTE_KEYWORD.equals(attribute))
+        {
+            this.attribute = attribute;
+        }
 
+        nameSet = true;
+    }
 
     /**
      * Validates this subtask.
+     *
+     * @exception BuildException Name is not set.
      */
-    public void validate() throws BuildException
+    public void validate()
+            throws BuildException
     {
-        if (attribute == null)
+        if (!nameSet)
         {
-            throw new BuildException("name is a required attribute for the keepattribute task");
+            throw new BuildException(
+                "name is required for the keepattribute task");
         }
     }
 
-
     /**
      * Executes this subtask for the given parent task.
+     *
      * @param parent Parent task object.
      */
-    public void execute(ProGuardTask parent)
+    public void execute(ProGuardConfigurationTask parent)
     {
         parent.addKeepattribute(attribute);
     }

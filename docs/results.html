@@ -1,13 +1,14 @@
 <!doctype html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <html>
 <head>
+<meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="content-style-type" content="text/css">
+<link rel="stylesheet" type="text/css" href="style.css">
 <title>ProGuard Results</title>
 </head>
-<body
- bgcolor="#ffffff"
- text="#000000">
+<body>
 
-<center><h2>Results</h2></center>
+<h2>Results</h2>
 
 <b>ProGuard</b> shrinks and obfuscates jars quickly and effectively. The gains
 of removing dead code obviously depend on the original code. If you're using
@@ -18,7 +19,7 @@ short names), are on the order of 20%.
 The table below presents some typical results:
 <p>
 
-<table cellpadding="5">
+<table>
 
 <tr>
 <th width="28%">Input Program</th>
@@ -31,73 +32,73 @@ The table below presents some typical results:
 </tr>
 
 <tr>
-<td bgcolor="#EEEEFF"><a target="other" href="http://www.gnu.org/software/classpath/">ClassPath</a>, the GNU runtime library</td>
-<td bgcolor="#EEEEFF" align="center">2.2 M</td>
-<td bgcolor="#EEEEFF" align="center">2.2 M</td>
-<td bgcolor="#EEEEFF" align="center">1.9 M</td>
-<td bgcolor="#EEEEFF" align="center">13 %</td>
-<td bgcolor="#EEEEFF" align="center">22 s</td>
-<td bgcolor="#EEEEFF" align="center">30 M</td>
+<td><a target="other" href="http://www.gnu.org/software/classpath/">ClassPath</a>, the GNU runtime library</td>
+<td align="center">2.2 M</td>
+<td align="center">2.2 M</td>
+<td align="center">1.9 M</td>
+<td align="center">13 %</td>
+<td align="center">22 s</td>
+<td align="center">30 M</td>
 </tr>
 
 <tr>
-<td bgcolor="#EEEEFF"><a target="other" href="http://java.sun.com/j2me/">Worm</a>, a sample midlet from Sun's J2ME</td>
-<td bgcolor="#EEEEFF" align="center">9.9 K</td>
-<td bgcolor="#EEEEFF" align="center">9.5 K</td>
-<td bgcolor="#EEEEFF" align="center">8.3 K</td>
-<td bgcolor="#EEEEFF" align="center">16 %</td>
-<td bgcolor="#EEEEFF" align="center">1 s</td>
-<td bgcolor="#EEEEFF" align="center">9 M</td>
+<td><a target="other" href="http://java.sun.com/j2me/">Worm</a>, a sample midlet from Sun's J2ME</td>
+<td align="center">9.9 K</td>
+<td align="center">9.5 K</td>
+<td align="center">8.3 K</td>
+<td align="center">16 %</td>
+<td align="center">1 s</td>
+<td align="center">9 M</td>
 </tr>
 
 <tr>
-<td bgcolor="#EEEEFF"><a target="other" href="http://www.clarkware.com/software/JDepend.html">JDepend</a>, a Java quality metrics tool</td>
-<td bgcolor="#EEEEFF" align="center">60 K</td>
-<td bgcolor="#EEEEFF" align="center">40 K</td>
-<td bgcolor="#EEEEFF" align="center">32 K</td>
-<td bgcolor="#EEEEFF" align="center">46 %</td>
-<td bgcolor="#EEEEFF" align="center">5 s</td>
-<td bgcolor="#EEEEFF" align="center">16 M</td>
+<td><a target="other" href="http://www.clarkware.com/software/JDepend.html">JDepend</a>, a Java quality metrics tool</td>
+<td align="center">60 K</td>
+<td align="center">40 K</td>
+<td align="center">32 K</td>
+<td align="center">46 %</td>
+<td align="center">5 s</td>
+<td align="center">16 M</td>
 </tr>
 
 <tr>
-<td bgcolor="#EEEEFF"><b>ProGuard</b> itself</td>
-<td bgcolor="#EEEEFF" align="center">182 K</td>
-<td bgcolor="#EEEEFF" align="center">151 K</td>
-<td bgcolor="#EEEEFF" align="center">92 K</td>
-<td bgcolor="#EEEEFF" align="center">49 %</td>
-<td bgcolor="#EEEEFF" align="center">6 s</td>
-<td bgcolor="#EEEEFF" align="center">18 M</td>
+<td><b>ProGuard</b> itself</td>
+<td align="center">182 K</td>
+<td align="center">151 K</td>
+<td align="center">92 K</td>
+<td align="center">49 %</td>
+<td align="center">6 s</td>
+<td align="center">18 M</td>
 </tr>
 
 <tr>
-<td bgcolor="#EEEEFF"><a target="other" href="http://jakarta.apache.org/tomcat/index.html">Tomcat</a>, the Apache servlet container</td>
-<td bgcolor="#EEEEFF" align="center">1.2 M</td>
-<td bgcolor="#EEEEFF" align="center">542 K</td>
-<td bgcolor="#EEEEFF" align="center">377 K</td>
-<td bgcolor="#EEEEFF" align="center">68 %</td>
-<td bgcolor="#EEEEFF" align="center">10 s</td>
-<td bgcolor="#EEEEFF" align="center">28 M</td>
+<td><a target="other" href="http://jakarta.apache.org/tomcat/index.html">Tomcat</a>, the Apache servlet container</td>
+<td align="center">1.2 M</td>
+<td align="center">542 K</td>
+<td align="center">377 K</td>
+<td align="center">68 %</td>
+<td align="center">10 s</td>
+<td align="center">28 M</td>
 </tr>
 
 <tr>
-<td bgcolor="#EEEEFF"><a target="other" href="http://www.kclee.com/clemens/java/javancss/">JavaNCSS</a>, a Java source metrics tool</td>
-<td bgcolor="#EEEEFF" align="center">640 K</td>
-<td bgcolor="#EEEEFF" align="center">248 K</td>
-<td bgcolor="#EEEEFF" align="center">168 K</td>
-<td bgcolor="#EEEEFF" align="center">74 %</td>
-<td bgcolor="#EEEEFF" align="center">9 s</td>
-<td bgcolor="#EEEEFF" align="center">23 M</td>
+<td><a target="other" href="http://www.kclee.com/clemens/java/javancss/">JavaNCSS</a>, a Java source metrics tool</td>
+<td align="center">640 K</td>
+<td align="center">248 K</td>
+<td align="center">168 K</td>
+<td align="center">74 %</td>
+<td align="center">9 s</td>
+<td align="center">23 M</td>
 </tr>
 
 <tr>
-<td bgcolor="#EEEEFF"><a target="other" href="http://ant.apache.org/">Ant</a>, the Apache build tool</td>
-<td bgcolor="#EEEEFF" align="center">2.4 M</td>
-<td bgcolor="#EEEEFF" align="center">280 K</td>
-<td bgcolor="#EEEEFF" align="center">212 K</td>
-<td bgcolor="#EEEEFF" align="center">91 %</td>
-<td bgcolor="#EEEEFF" align="center">11 s</td>
-<td bgcolor="#EEEEFF" align="center">38 M</td>
+<td><a target="other" href="http://ant.apache.org/">Ant</a>, the Apache build tool</td>
+<td align="center">2.4 M</td>
+<td align="center">280 K</td>
+<td align="center">212 K</td>
+<td align="center">91 %</td>
+<td align="center">11 s</td>
+<td align="center">38 M</td>
 </tr>
 
 </table>

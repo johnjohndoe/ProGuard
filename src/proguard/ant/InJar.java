@@ -1,4 +1,4 @@
-/* $Id: InJar.java,v 1.3 2003/03/03 19:11:45 eric Exp $
+/* $Id: InJar.java,v 1.5 2003/12/19 04:17:03 eric Exp $
  *
  * ProGuard - integration into Ant.
  *
@@ -10,7 +10,7 @@
  * any later version.
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * ANY WARRAntY; without even the implied warranty of MERCHAntABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
@@ -20,6 +20,9 @@
  */
 package proguard.ant;
 
+import proguard.*;
+
+
 /**
  * Handles the injar nested task for the ProGuard task.
  *
@@ -27,7 +30,8 @@ package proguard.ant;
  *
  * @see proguard.ant.ProGuardTask
  */
-public class InJar extends JarContainer
+public class InJar
+        extends JarContainer
 {
     /**
      * Creates a new InJar nested task.
@@ -37,13 +41,13 @@ public class InJar extends JarContainer
         super();
     }
 
-
     /**
-     * Adds the found jar file.
-     * @param jar Name of the jar file to add.
+     * Adds the found jar.
+     *
+     * @param jar jar to add.
      */
-    protected void addJar(String jar)
+    protected void addJar(ClassPathEntry jar)
     {
-        proGuardTask.addInjar(jar);
+        proGuardConfiguration.addInjar(jar);
     }
 }

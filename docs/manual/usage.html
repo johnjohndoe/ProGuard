@@ -1,49 +1,31 @@
 <!doctype html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <html>
 <head>
+<meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="content-style-type" content="text/css">
+<link rel="stylesheet" type="text/css" href="style.css">
 <title>ProGuard Usage</title>
 </head>
-<body
- bgcolor="#ffffff"
- text="#000000">
+<body>
 
-<table width="100%" cellpadding="10" cellspacing="0"><tr><th bgcolor="#EEEEFF">
-<font size="+2">Usage</font>
-</th></tr></table>
-<p>
+<h2>Usage</h2>
 
 To run ProGuard, just type:
-<p>
-<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
+<p class="code">
 <code><b>java -jar proguard.jar </b></code><i>options</i> ...
-</td></tr></table>
-<p>
-Or, assuming the ProGuard jar is in your class path:
-<p>
-<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
-<code><b>java proguard.ProGuard </b></code><i>options</i> ...
-</td></tr></table>
-<p>
+</p>
 Options can also be put in one or more configuration files. Typically, you'll
 put most options in a configuration file, and just call:
-<p>
-<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
-<code><b>
-java -jar proguard.jar @myconfig.pro
-</b></code>
-</td></tr></table>
-<p>
+<p class="code">
+<code><b>java -jar proguard.jar @myconfig.pro</b></code>
+</p>
 where <code>myconfig.pro</code> contains the actual options.
 <p>
 You can simply combine command line options and options from configuration
 files, e.g.:
-<p>
-<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
-<code><b>
-java -jar proguard.jar @myconfig.pro -printusage -printmapping
-</b></code>
-</td></tr></table>
-<p>
+<p class="code">
+<code><b>java -jar proguard.jar @myconfig.pro -printmapping</b></code>
+</p>
 <p>
 In a configuration file, a <code><b>#</b></code> sign and all remaining
 characters on that line are ignored, allowing you to add comments.
@@ -64,10 +46,7 @@ unique characters.
 <p>
 
 <a name="options">&nbsp;</a>
-<table width="100%" cellpadding="10" cellspacing="0"><tr><th bgcolor="#EEEEFF">
-<font size="+2">Options</font>
-</th></tr></table>
-<p>
+<h2>Options</h2>
 
 The following table lists all ProGuard options:
 <p>
@@ -76,27 +55,26 @@ The following table lists all ProGuard options:
 
 <dd>Short for '<code>-include</code> <i>filename</i>'.<p></dd>
 
-<dt><code><b>-include</b></code>
+<dt><a name="include"><code><b>-include</b></code></a>
     <a href="#filename"><i>filename</i></a><p></dt>
 
 <dd>Recursively reads configuration commands from the given file
     <i>filename</i>.<p></dd>
 
-<dt><code><b>-libraryjars</b></code>
-    <a href="#filename"><i>jarname</i></a>[<b>:</b>...]<p></dt>
+<dt><a name="libraryjars"><code><b>-libraryjars</b></code></a>
+    <a href="#classpath"><i>class_path</i></a><p></dt>
 
 <dd>Specifies the library jars (or directories) of the application to be
     processed. The class files in these jars will not be included in the
     output jar. The specified library jars should at least contain the class
-    files that are
-    <i>extended</i> by application class files. Library class files that are
-    only <i>called</i> needn't be present. The jars can be specified with one
-    or more <code>-libraryjars</code> directives. Multiple jars can also be
-    specified using the path separator (e.g. ':' on Unix, or ';' on Windows
-    platforms).
+    files that are <i>extended</i> by application class files. Library class
+    files that are only <i>called</i> needn't be present. The files in the
+    class path can be filtered based on their names, as explained in the class
+    path section. It is allowed to specify multiple <code>-libraryjars</code>
+    options.
     <p>
     Please note that the boot path and class path set for running ProGuard are
-    not considered when looking for library classes. This also means that you
+    not considered when looking for library classes. This means that you
     explicitly have to specify the run-time jar that your code will use.
     Although seemingly cumbersome, it allows you to process applications
     targeted at different run-time environments. For example, you can process
@@ -104,36 +82,40 @@ The following table lists all ProGuard options:
     href="examples.html#midlet">J2ME midlets</a>, just by specifying the
     appropriate run-time jar.<p></dd>
 
-<dt><code><b>-injars</b></code>
-    <a href="#filename"><i>jarname</i></a>[<b>:</b>...]<p></dt>
+<dt><a name="injars"><code><b>-injars</b></code></a>
+    <a href="#classpath"><i>class_path</i></a><p></dt>
 
 <dd>Specifies the program jars (or directories) of the application to be
     processed. The class files in these jars will be processed and merged in
     the output jar. Any non-class files will be copied over as well, unless
     you specify a <code>-resourcejars</code> option. Please be aware of any
     temporary files (e.g. created by IDEs), especially if you are reading your
-    input files straight from directories. The jars can be specified with one
-    or more <code>-injars</code> directives. Multiple jars can also be
-    specified using the path separator (e.g. ':' on Unix, or ';' on Windows
-    platforms).<p></dd>
+    input files straight from directories. The files in the class path can be
+    filtered based on their names, as explained in the class path section. It
+    is allowed to specify multiple <code>-injars</code> options.<p></dd>
 
-<dt><code><b>-resourcejars</b></code>
-    <a href="#filename"><i>jarname</i></a>[<b>:</b>...]<p></dt>
+<dt><a name="resourcejars"><code><b>-resourcejars</b></code></a>
+    <a href="#classpath"><i>class_path</i></a><p></dt>
 
 <dd>Specifies any resource jars (or directories) to be copied into the output
-    jar. Only non-class files in these jars will be copied. The jars can be
-    specified with one or more <code>-resourcejars</code> directives. Multiple
-    jars can also be specified using the path separator (e.g. ':' on Unix, or
-    ';' on Windows platforms). If this option isn't specified, the resource
-    files from the program jars (or directories) will be copied.<p></dd>
+    jar. Only non-class files in these jars will be copied. The files in the
+    class path can be filtered based on their names, as explained in the class
+    path section. It is allowed to specify multiple <code>-resourcejars</code>
+    options. Without this option, the resource files from the program jars (or
+    directories) will be copied.<p></dd>
 
-<dt><code><b>-outjar</b></code> <a href="#filename"><i>jarname</i></a><p></dt>
+<dt><a name="outjars"><code><b>-outjars</b></code></a>
+    <a href="#classpath"><i>class_path</i></a><p></dt>
 
-<dd>Specifies the name of the output jar (or an existing directory, for
-    writing individual class files). It must be different from the input jars.
-    Without this directive, no jars or class files will be written.<p></dd>
+<dd>Specifies the name of the output jar or jars (or existing directories, for
+    writing individual class files). The output files can be filtered based
+    on their names, as explained in the class path section. Each processed
+    class file or resource file is then written to the first output jar with a
+    matching filter. It is allowed to specify multiple <code>-outjars</code>
+    options. The output files must never overwrite any input files. Without
+    this option, no jars or class files will be written.<p></dd>
 
-<dt><code><b>-keep</b></code>
+<dt><a name="keep"><code><b>-keep</b></code></a>
     <a href="#classspecification"><i>class_specification</i></a><p></dt>
 
 <dd>Specifies classes and class members (fields and methods) to be preserved.
@@ -145,7 +127,7 @@ The following table lists all ProGuard options:
     href="examples.html#library">process a library</a>, you should specify all
     publicly accessible items.<p></dd>
 
-<dt><code><b>-keepclassmembers</b></code>
+<dt><a name="keepclassmembers"><code><b>-keepclassmembers</b></code></a>
     <a href="#classspecification"><i>class_specification</i></a><p></dt>
 
 <dd>Specifies class members to be preserved, if their classes are preserved as
@@ -154,7 +136,7 @@ The following table lists all ProGuard options:
     methods</a> of classes that implement the <code>Serializable</code>
     interface.<p></dd>
 
-<dt><code><b>-keepclasseswithmembers</b></code>
+<dt><a name="keepclasseswithmembers"><code><b>-keepclasseswithmembers</b></code></a>
     <a href="#classspecification"><i>class_specification</i></a><p></dt>
 
 <dd>Specifies classes and class members to be preserved, on the condition that
@@ -162,7 +144,7 @@ The following table lists all ProGuard options:
     to <a href="examples.html#applications">keep all applications</a> that
     have a main method, without having to list them explicitly.<p></dd>
 
-<dt><code><b>-keepnames</b></code>
+<dt><a name="keepnames"><code><b>-keepnames</b></code></a>
     <a href="#classspecification"><i>class_specification</i></a><p></dt>
 
 <dd>Specifies classes and class members whose names are to be preserved, if
@@ -172,7 +154,7 @@ The following table lists all ProGuard options:
     processed code remains compatible with any originally serialized classes.
     Classes that aren't used at all can still be removed.<p></dd>
 
-<dt><code><b>-keepclassmembernames</b></code>
+<dt><a name="keepclassmembernames"><code><b>-keepclassmembernames</b></code></a>
     <a href="#classspecification"><i>class_specification</i></a><p></dt>
 
 <dd>Specifies class members whose names are to be preserved, if they aren't
@@ -182,7 +164,7 @@ The following table lists all ProGuard options:
     detect it again when processing an application that uses the processed
     library.<p></dd>
 
-<dt><code><b>-keepclasseswithmembernames</b></code>
+<dt><a name="keepclasseswithmembernames"><code><b>-keepclasseswithmembernames</b></code></a>
     <a href="#classspecification"><i>class_specification</i></a><p></dt>
 
 <dd>Specifies classes and class members whose names are to be preserved, on
@@ -194,7 +176,7 @@ The following table lists all ProGuard options:
     removed. If a class file is used, but none of its native methods are, its
     name will still be obfuscated.<p></dd>
 
-<dt><code><b>-keepattributes</b></code>
+<dt><a name="keepattributes"><code><b>-keepattributes</b></code></a>
     [<i>attribute_name<b>,</b>...</i>]<p></dt>
 
 <dd>Specifies any optional attributes to be preserved. The attributes can be
@@ -203,24 +185,25 @@ The following table lists all ProGuard options:
     list or a <code><b>*</b></code> wildcard preserves all attributes. Typical
     optional attributes are <code>LineNumberTable</code>,
     <code>LocalVariableTable</code>, <code>SourceFile</code>,
-    <code>Deprecated</code>, and <code>Synthetic</code>. The
-    <code>InnerClasses</code> attribute name can be specified as well,
-    referring to the source name part of this attribute. For example, you could
-    keep the <code>Deprecated</code> attribute when <a
-    href="examples.html#library">processing a library</a>. Only applicable when
-    obfuscating.<p></dd>
+    <code>SourceDir</code>, <code>Deprecated</code>, and
+    <code>Synthetic</code>. The <code>InnerClasses</code> attribute name can
+    be specified as well, referring to the source name part of this attribute.
+    For example, you could keep the <code>Deprecated</code> attribute when <a
+    href="examples.html#library">processing a library</a>. Only applicable
+    when obfuscating.<p></dd>
 
-<dt><code><b>-renamesourcefileattribute</b></code> [<i>string</i>]<p></dt>
+<dt><a name="renamesourcefileattribute"><code><b>-renamesourcefileattribute</b></code></a>
+    [<i>string</i>]<p></dt>
 
 <dd>Specifies a constant string to be put in the <code>SourceFile</code>
-    attributes of the class files. Note that the attribute also has to be
-    preserved explicitly using the <code>-keepattributes</code> directive, or
-    it will be removed anyway. For example, you may want to have your
-    processed libraries and applications produce <a
-    href="examples.html#stacktrace">useful obfuscated stack traces</a>. Only
-    applicable when obfuscating.<p></dd>
+    attributes (and <code>SourceDir</code> attributes) of the class files.
+    Note that the attribute has to be present to start with, so it also has to
+    be preserved explicitly using the <code>-keepattributes</code> directive.
+    For example, you may want to have your processed libraries and
+    applications produce <a href="examples.html#stacktrace">useful obfuscated
+    stack traces</a>. Only applicable when obfuscating.<p></dd>
 
-<dt><code><b>-printseeds</b></code>
+<dt><a name="printseeds"><code><b>-printseeds</b></code></a>
     [<a href="#filename"><i>filename</i></a>]<p></dt>
 
 <dd>Specifies to exhaustively list classes and class members matched by the
@@ -231,7 +214,7 @@ The following table lists all ProGuard options:
     href="examples.html#applications">applications</a> or all the <a
     href="examples.html#applets">applets</a> that you are keeping.<p></dd>
 
-<dt><code><b>-printusage</b></code>
+<dt><a name="printusage"><code><b>-printusage</b></code></a>
     [<a href="#filename"><i>filename</i></a>]<p></dt>
 
 <dd>Specifies to list dead code of the input class files. The list is printed
@@ -239,22 +222,35 @@ The following table lists all ProGuard options:
     href="examples.html#deadcode">list the unused code of an application</a>.
     Only applicable when shrinking.<p></dd>
 
-<dt><code><b>-printmapping</b></code>
+<dt><a name="printmapping"><code><b>-printmapping</b></code></a>
     [<a href="#filename"><i>filename</i></a>]<p></dt>
 
 <dd>Specifies to print the mapping from old names to new names for classes and
     class members that have been renamed. The mapping is printed to the
-    standard output or to the given file. It is required if you ever want to
-    make sense again of <a href="examples.html#stacktrace">obfuscated stack
-    traces</a>. Only applicable when obfuscating.<p></dd>
+    standard output or to the given file. It is required for subsequent
+    incremental obfuscation, or if you ever want to make sense again of <a
+    href="examples.html#stacktrace">obfuscated stack traces</a>. Only
+    applicable when obfuscating.<p></dd>
 
-<dt><code><b>-verbose</b></code><p></dt>
+<dt><a name="applymapping"><code><b>-applymapping</b></code></a>
+    <a href="#filename"><i>filename</i></a><p></dt>
+
+<dd>Specifies to reuse the given name mapping that was printed out in a
+    previous obfuscation run of ProGuard. Classes and class members that are
+    listed in the mapping file receive the names specified along with them.
+    Classes and class members that are not mentioned receive new names. This
+    option can be useful for incremental obfuscation, i.e. processing add-ons
+    or small patches to an existing piece of code. Only applicable when
+    obfuscating.<p></dd>
+
+<dt><a name="verbose"><code><b>-verbose</b></code></a><p></dt>
 
 <dd>Specifies to write out some more information during processing. If the
     program terminates with an exception, this option will print out the entire
     stack trace, instead of just the exception message.<p></dd>
 
-<dt><code><b>-dump</b></code> [<a href="#filename"><i>filename</i></a>]<p></dt>
+<dt><a name="dump"><code><b>-dump</b></code></a>
+    [<a href="#filename"><i>filename</i></a>]<p></dt>
 
 <dd>Specifies to write out the internal structure of the class files, after
     any processing. The structure is printed to the standard output or to the
@@ -262,7 +258,7 @@ The following table lists all ProGuard options:
     href="examples.html#structure">write out the contents of a given jar
     file</a>, without shrinking or obfuscating it first.<p></dd>
 
-<dt><code><b>-ignorewarnings</b></code><p></dt>
+<dt><a name="ignorewarnings"><code><b>-ignorewarnings</b></code></a><p></dt>
 
 <dd>Specifies to print any warnings about unresolved references to
     superclasses, interfaces, or class members, but to continue processing in
@@ -270,27 +266,27 @@ The following table lists all ProGuard options:
     processing, the output jar will not function properly. Only use this
     option if you know what you're doing!<p></dd>
 
-<dt><code><b>-dontwarn</b></code><p></dt>
+<dt><a name="dontwarn"><code><b>-dontwarn</b></code></a><p></dt>
 
 <dd>Specifies not to warn about unresolved references at all. Again, if the
     unresolved classes or class members are indeed required for processing,
     the output jar will not function properly. Only use this option if you
     know what you're doing!<p></dd>
 
-<dt><code><b>-dontnote</b></code><p></dt>
+<dt><a name="dontnote"><code><b>-dontnote</b></code></a><p></dt>
 
 <dd>Specifies not to print notes about class casts of variable dynamically
     created objects. These notes provide hints about classes that may have to
     be kept.<p></dd>
 
-<dt><code><b>-dontshrink</b></code><p></dt>
+<dt><a name="dontshrink"><code><b>-dontshrink</b></code></a><p></dt>
 
 <dd>Specifies not to shrink the input class files. By default, shrinking is
     applied: all classes and class members are removed, except for the ones
     listed by the various <code>-keep</code> commands, and the ones they
     depend on, recursively.<p></dd>
 
-<dt><code><b>-dontobfuscate</b></code><p></dt>
+<dt><a name="dontobfuscate"><code><b>-dontobfuscate</b></code></a><p></dt>
 
 <dd>Specifies not to obfuscate the input class files. By default, obfuscation
     is applied: classes and class members receive new short random names,
@@ -298,7 +294,7 @@ The following table lists all ProGuard options:
     Internal attributes that are useful for debugging, such as source files
     names, variable names, and line numbers are removed.<p></dd>
 
-<dt><code><b>-dontusemixedcaseclassnames</b></code><p></dt>
+<dt><a name="dontusemixedcaseclassnames"><code><b>-dontusemixedcaseclassnames</b></code></a><p></dt>
 
 <dd>Specifies not to generate mixed-case class names while obfuscating. By
     default, obfuscated class names can contain a mix of upper-case characters
@@ -310,7 +306,7 @@ The following table lists all ProGuard options:
     use this option to switch off this behavior. Note that the obfuscated jars
     will become larger as a result. Only applicable when obfuscating.<p></dd>
 
-<dt><code><b>-overloadaggressively</b></code><p></dt>
+<dt><a name="overloadaggressively"><code><b>-overloadaggressively</b></code></a><p></dt>
 
 <dd>Specifies to apply aggressive overloading while obfuscating. Multiple
     fields and methods can then get the same names, as long as their arguments
@@ -340,7 +336,8 @@ The following table lists all ProGuard options:
     #4216736</a>). You therefore probably shouldn't use this option for
     processing libraries.<p></dd>
 
-<dt><code><b>-defaultpackage</b></code> [<i>package_name</i>]<p></dt>
+<dt><a name="defaultpackage"><code><b>-defaultpackage</b></code></a>
+    [<i>package_name</i>]<p></dt>
 
 <dd>Specifies to repackage all class files that are renamed into the single
     given package. Without argument or with an empty string (''), the package
@@ -366,7 +363,7 @@ The following table lists all ProGuard options:
     in doubt, just leave the packaging untouched by not using this
     option.<p></dd>
 
-<dt><code><b>-dontskipnonpubliclibraryclasses</b></code><p></dt>
+<dt><a name="dontskipnonpubliclibraryclasses"><code><b>-dontskipnonpubliclibraryclasses</b></code></a><p></dt>
 
 <dd>Specifies not to ignore non-public library classes. By default, non-public
     library classes are skipped while parsing library jars. The classes are
@@ -384,10 +381,7 @@ The following table lists all ProGuard options:
 <p>
 
 <a name="keepoptions">&nbsp;</a>
-<table width="100%" cellpadding="8" cellspacing="0"><tr><th bgcolor="#EEEEFF">
-<font size="+2"><code>-keep</code> Options</font>
-</th></tr></table>
-<p>
+<h2><code>-keep</code> Options</h2>
 
 The various <code>-keep</code> options may seem a bit confusing at first, but
 there's actually a pattern behind them. The following table summarizes how they
@@ -432,14 +426,49 @@ If you're not sure which option you need, you should probably simply use
 are preserved from shrinking and from obfuscation.
 <p>
 
-<a name="filename">&nbsp;</a>
-<table width="100%" cellpadding="10" cellspacing="0"><tr><th bgcolor="#EEEEFF">
-<font size="+2">File Names</font>
-</th></tr></table>
+<a name="classpath">&nbsp;</a>
+<h2>Class Paths</h2>
+
+ProGuard uses class paths to specify its input files and its output files. As
+in Java, a class path consists of <a href="#filename">file names</a> of one or
+more jars or directories, separated by the path separator (e.g. '<b>:</b>' on
+Unix, or '<b>;</b>' on Windows platforms).
+<p>
+In addition, ProGuard provides the possibility to filter the files in the class
+path, based on the file names. Each jar or diectory can be followed by a
+filter between parentheses. A filter consists of one or more comma-separated
+file names that can contain wildcards. Only files with matching file names are
+read (in the case of input jars), or written (in the case of output jars). The
+following wildcards are supported:
+
+<table cellspacing="10">
+<tr><td valign="top"><code><b>?</b></code></td>
+    <td>matches any single character.</td></tr>
+<tr><td valign="top"><code><b>*</b></code></td>
+    <td>matches any string not containing the directory separator.</td></tr>
+<tr><td valign="top"><code><b>**</b></code></td>
+    <td>matches any string, possibly containing any number of directory
+        separators.</td></tr>
+</table>
+
+For example, "<code>rt.jar(java/**.class,javax/**.class)</code>" matches all
+class files in the <code>java</code> and <code>javax</code> directories inside
+the <code>rt</code> jar.
 <p>
 
-In a ProGuard configuration, file names and jar names can be specified using
-absolute or relative paths.
+Furthermore, a file name can be preceded by an exclamation mark '<b>!</b>' to
+<i>exclude</i> the file name from further attempts to match with
+<i>subsequent</i> file names.
+<p>
+For example, "<code>input.jar(!images/**,**)</code>" matches all files, except
+those in the <code>images</code> directory, inside the <code>input</code> jar.
+<p>
+
+<a name="filename">&nbsp;</a>
+<h2>File Names</h2>
+
+ProGuard accepts absolute paths and relative paths for the various file names,
+jar names, and directories.
 <p>
 The names can contain Java system properties delimited by '<b>&lt;</b>' and
 '<b>&gt;</b>'. The system properties
@@ -458,10 +487,7 @@ For example, on the command line, you could use an option like <code>'-injars
 <p>
 
 <a name="classspecification">&nbsp;</a>
-<table width="100%" cellpadding="10" cellspacing="0"><tr><th bgcolor="#EEEEFF">
-<font size="+2">Class Specifications</font>
-</th></tr></table>
-<p>
+<h2>Class Specifications</h2>
 
 A class specification is a template of classes and class members (fields and
 methods). It is used in the various <code>-keep</code> options. The
@@ -479,11 +505,11 @@ definition:
     [<b>extends</b>|<b>implements</b> <i>classname</i>]
 [<b>{</b>
     [[<b>!</b>]<b>public</b>|<b>private</b>|<b>protected</b>|<b>static</b>|<b>volatile</b>|<b>transient</b> ...] <b>&lt;fields&gt;</b> |
-                                                                (<i>fieldtype fieldname</i>)<b>;</b>
+                                                                      (<i>fieldtype fieldname</i>)<b>;</b>
     [[<b>!</b>]<b>public</b>|<b>private</b>|<b>protected</b>|<b>static</b>|<b>synchronized</b>|<b>native</b>|<b>abstract</b>|<b>strictfp</b> ...] <b>&lt;methods&gt;</b> |
-                                                                                   <b>&lt;init&gt;(</b><i>argumenttype,...</i><b>)</b> |
-                                                                                   <i>classname</i><b>(</b><i>argumenttype,...</i><b>)</b> |
-                                                                                   (<i>returntype methodname</i><b>(</b><i>argumenttype,...</i><b>)</b>)<b>;</b>
+                                                                                           <b>&lt;init&gt;(</b><i>argumenttype,...</i><b>)</b> |
+                                                                                           <i>classname</i><b>(</b><i>argumenttype,...</i><b>)</b> |
+                                                                                           (<i>returntype methodname</i><b>(</b><i>argumenttype,...</i><b>)</b>)<b>;</b>
     [[<b>!</b>]<b>public</b>|<b>private</b>|<b>protected</b>|<b>static</b> ... ] <b>*;</b>
     ...
 <b>}</b>]
@@ -504,7 +530,7 @@ intended meaning, but white-space is irrelevant in actual configuration files.
     interfaces.
     <p>
 
-<li>Every <i>classname</i> must be specified in full, e.g.
+<li>Every <i>classname</i> must be fully qualified, e.g.
     <code>java.lang.String</code>. Class names may be specified as regular
     expressions containing the following wildcards:
 
@@ -607,8 +633,8 @@ intended meaning, but white-space is irrelevant in actual configuration files.
     <p>
 
 <li>The class access modifiers and class member access modifiers are typically
-    used to restrict wildcard classes and class members. They specify that the
-    corresponding access flags have to be set for the member to match. A
+    used to restrict wildcarded classes and class members. They specify that
+    the corresponding access flags have to be set for the member to match. A
     preceding <code><b>!</b></code> specifies that the corresponding access
     flag should be unset.
     <p>

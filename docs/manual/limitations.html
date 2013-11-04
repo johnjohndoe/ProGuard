@@ -1,54 +1,46 @@
 <!doctype html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <html>
 <head>
+<meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="content-style-type" content="text/css">
+<link rel="stylesheet" type="text/css" href="style.css">
 <title>ProGuard Limitations</title>
 </head>
-<body
- bgcolor="#ffffff"
- text="#000000">
+<body>
 
-<table width="100%" cellpadding="10" cellspacing="0"><tr><th bgcolor="#EEEEFF">
-<font size="+2">Limitations</font>
-</th></tr></table>
-<p>
+<h2>Limitations</h2>
 
-When using ProGuard, you should be aware of a few minor issues, all of which
-are easily avoided or resolved:
+When using ProGuard, you should be aware of a few issues, all of which are
+easily avoided or resolved:
 <p>
 <ul>
-<li>ProGuard doesn't automatically preserve <b>native method names</b>, and
-    private fields and methods that are part of the serialization API. You'll
-    have to specify them in your configuration. It's quite simple; the example
-    section shows how.
+<li>ProGuard handles the essential elements of Java: classes, interfaces, class
+    members, inheritance,... ProGuard is not aware of any additional
+    <b>naming conventions or APIs</b>: native methods, beans, serialization,...
+    You'll have to specify these in your configuration. The configuration
+    syntax is intended to be compact, readable, expressive, and generally
+    applicable. It's usually quite simple. The examples section of this manual
+    provides many typical examples. The graphical user interface has checkboxes
+    for common boilerplate configurations.
     <p>
 
 <li>ProGuard currently copies <b>manifest files and resource files</b>
-    unchanged.
-    <p>
-
-<li>There is one caveat with regard to <code>.class</code> constructs, when
-    <b>processing libraries</b> that are to be used as such after obfuscation.
-    The javac compiler compiles <code>.class</code> to a method,
-    <code>class$(String)</code>. This method calls <code>Class.forName</code>
-    and returns a <code>Class</code> object, catching some exceptions along
-    the way. ProGuard detects occurrences of the method and deals with them
-    just fine. However, if you're processing an already obfuscated library, the
-    <code>class$</code> method may have received a different name, thus
-    escaping ProGuard's attention. The simple solution is to preserve the name
-    of this method when obfuscating libraries, as illustrated in this <a
-    href="examples.html#library">example</a>.
+    unchanged. Directory entries, on the other hand, are not copied to the
+    output jars. If your code has any special dependencies on these elements,
+    you should modify or add them manually.
     <p>
 
 <li>For efficiency, ProGuard always ignores any <b>private or package visible
     library classes</b>. If any of them are extended by public library classes,
     and then extended again by input classes, ProGuard will complain it can't
     find them. In that case, you'll have to use the
-    <code>-dontskipnonpubliclibraryclasses</code> option.
+    <code>-dontskipnonpubliclibraryclasses</code> option. The graphical user
+    interface has a checkbox for this setting.
     <p>
 
 <li>If an input jar and a library jar contain classes in the <b>same
     package</b>, the obfuscated output jar may contain class names that
-    overlap with class names in the library jar. This is most likely of the
+    overlap with class names in the library jar. This is most likely if the
     library jar has been obfuscated before, as it will then probably contain
     classes named 'a', 'b', etc. Packages should therefore never be split
     across input jars and library jars.

@@ -1,4 +1,4 @@
-/* $Id: FileWordReader.java,v 1.4 2003/02/09 15:22:27 eric Exp $
+/* $Id: FileWordReader.java,v 1.7 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -21,18 +21,16 @@
 package proguard;
 
 import java.io.*;
+import java.net.URL;
 
 
 /**
- * A <code>WordReader</code> that returns words from a file.
- * Comments (starting with '#' and ending with a newline) are removed.
+ * A <code>WordReader</code> that returns words from a file or a URL.
  *
  * @author Eric Lafortune
  */
 public class FileWordReader extends WordReader
 {
-    private static final char COMMENT_CHARACTER = '#';
-
     private String           fileName;
     private LineNumberReader reader;
 
@@ -49,24 +47,36 @@ public class FileWordReader extends WordReader
     }
 
 
-    // Implementations for WordReader
+    /**
+     * Creates a new FileWordReader for the given URL.
+     */
+    public FileWordReader(URL url) throws IOException
+    {
+        this.fileName = url.getPath();
+        this.reader   = new LineNumberReader(
+                        new BufferedReader(
+                        new InputStreamReader(
+                        url.openStream())));
+    }
+
+
+    /**
+     * Closes the FileWordReader.
+     */
+    public void close() throws IOException
+    {
+        if (reader != null)
+        {
+            reader.close();
+        }
+    }
+
+
+    // Implementations for WordReader.
 
     protected String nextLine() throws IOException
     {
-        String line = reader.readLine();
-        if (line == null)
-        {
-            return null;
-        }
-
-        // Trim off any comments.
-        int comments_start = line.indexOf(COMMENT_CHARACTER);
-        if (comments_start >= 0)
-        {
-           line = line.substring(0, comments_start);
-        }
-
-        return line;
+        return reader.readLine();
     }
 
 

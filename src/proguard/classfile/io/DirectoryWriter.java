@@ -1,4 +1,4 @@
-/* $Id: DirectoryWriter.java,v 1.1 2003/03/25 20:08:53 eric Exp $
+/* $Id: DirectoryWriter.java,v 1.2 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -47,7 +47,7 @@ public class DirectoryWriter implements DataEntryWriter
     }
 
 
-    // Implementations for DataEntryWriter
+    // Implementations for DataEntryWriter.
 
     public void close() throws IOException
     {

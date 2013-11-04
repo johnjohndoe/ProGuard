@@ -1,4 +1,4 @@
-/* $Id: MemberInfoLinker.java,v 1.1 2003/04/28 17:24:21 eric Exp $
+/* $Id: MemberInfoLinker.java,v 1.4 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -36,7 +36,7 @@ import java.util.*;
  * ignored.
  *
  * @see MemberInfoObfuscator
- * 
+ *
  * @author Eric Lafortune
  */
 public class MemberInfoLinker
@@ -48,7 +48,7 @@ public class MemberInfoLinker
     private final Map memberInfoMap = new HashMap();
 
 
-    // Implementations for ClassFileVisitor
+    // Implementations for ClassFileVisitor.
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
@@ -66,7 +66,7 @@ public class MemberInfoLinker
     }
 
 
-    // Implementations for MemberInfoVisitor
+    // Implementations for MemberInfoVisitor.
 
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {

@@ -1,12 +1,16 @@
 <!doctype html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <html>
 <head>
+<meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="content-script-type" content="text/javascript">
+<meta http-equiv="content-style-type" content="text/css">
+<link rel="stylesheet" type="text/css" href="../style.css">
 <title>Sections</title>
 
 <script type="text/javascript" language="JavaScript">
 <!--
 function defineSection(aName, aTarget, aURL) {
-  document.write("<tr><th height=\"40\" valign=\"middle\"");
+  document.write("<tr><th class=\"sections\"");
   document.write(document.body != null ?
     (" onMouseOver=\"lightUp(this)\" onMouseOut=\"lightDown(this)\" onClick=\"goTo(this,'"+aTarget+"','"+aURL+"')\" onAfterUpdate=\"lightUp(this)\">"+aName) :
     ("><a target=\""+aTarget+"\" href=\""+aURL+"\">"+aName+"</a>"));
@@ -41,16 +45,7 @@ function findFrameByName(aFrames, aFrameName) {
 </script>
 
 </head>
-<body
- bgcolor="white"
- text="black"
- link="black"
- vlink="black"
- alink="white"
- leftmargin="0"
- topmargin="0"
- marginwidth="0"
- marginheight="0">
+<body class="title">
 
 <script type="text/javascript" language="JavaScript">
 <!--
@@ -60,24 +55,22 @@ var fTH = null;
 
 <script type="text/javascript" language="JavaScript">
 <!--
-document.write("<table width=\"120\" border=\"1\"");
-if (document.body != null)
-  document.write(" style=\"border-style:outset\"");
-document.write(" cellspacing=\"0\" cellpadding=\"0\" background=\"../steel.gif\" bgcolor=\"#cccccc\">");
+document.write("<table class=\"sections\"");
 defineSection("&lt;&lt; Main Menu","sections","../sections.html");
-document.write("<tr><th height=\"60\" valign=\"middle\" bgcolor=\"white\">ProGuard<br>Manual</th></tr>");
-defineSection("Introduction","main","introduction.html");
-defineSection("Usage","main","usage.html");
-defineSection("Limitations","main","limitations.html");
-defineSection("Examples","main","examples.html");
+document.write("<tr><th class=\"sections\" bgcolor=\"white\">ProGuard<br>Manual</th></tr>");
+defineSection("Introduction",   "main","introduction.html");
+defineSection("Usage",          "main","usage.html");
+defineSection("Limitations",    "main","limitations.html");
+defineSection("Examples",       "main","examples.html");
 defineSection("Troubleshooting","main","troubleshooting.html");
-defineSection("Reference Card","main","refcard.html");
-defineSection("Ant Task","main","ant.html");
-defineSection("J2ME WTK","main","wtk.html");
-document.write("<tr><th height=\"60\" valign=\"middle\" bgcolor=\"white\">ReTrace<br>Manual</th></tr>");
-defineSection("Introduction","main","retrace/introduction.html");
-defineSection("Usage","main","retrace/usage.html");
-defineSection("Examples","main","retrace/examples.html");
+defineSection("Reference Card", "main","refcard.html");
+defineSection("GUI",            "main","gui.html");
+defineSection("Ant Task",       "main","ant.html");
+defineSection("J2ME WTK",       "main","wtk.html");
+document.write("<tr><th class=\"sections\" bgcolor=\"white\">ReTrace<br>Manual</th></tr>");
+defineSection("Introduction",   "main","retrace/introduction.html");
+defineSection("Usage",          "main","retrace/usage.html");
+defineSection("Examples",       "main","retrace/examples.html");
 document.write("</table>");
 document.write("<p>");
 document.write("<center>");
@@ -110,20 +103,21 @@ document.write("</center>");
 
 <tr><th height="40" valign="middle"><a href="../sections.html">&lt;&lt; Main menu</a></th></tr>
 
-<tr><th height="60" valign="middle" bgcolor="white">ProGuard<br>Manual</th></tr>
-<tr><th height="40" valign="middle"><a target="main" href="introduction.html">Introduction</a></th></tr>
-<tr><th height="40" valign="middle"><a target="main" href="usage.html">Usage</a></th></tr>
-<tr><th height="40" valign="middle"><a target="main" href="limitations.html">Limitations</a></th></tr>
-<tr><th height="40" valign="middle"><a target="main" href="examples.html">Examples</a></th></tr>
-<tr><th height="40" valign="middle"><a target="main" href="troubleshooting.html">Troubleshooting</a></th></tr>
-<tr><th height="40" valign="middle"><a target="main" href="refcard.html">Reference Card</a></th></tr>
-<tr><th height="40" valign="middle"><a target="main" href="ant.html">Ant Task</a></th></tr>
-<tr><th height="40" valign="middle"><a target="main" href="wtk.html">J2ME WTK</a></th></tr>
+<tr><th class="sections" bgcolor="white">ProGuard<br>Manual</th></tr>
+<tr><th class="sections"><a target="main" href="introduction.html">Introduction</a></th></tr>
+<tr><th class="sections"><a target="main" href="usage.html">Usage</a></th></tr>
+<tr><th class="sections"><a target="main" href="limitations.html">Limitations</a></th></tr>
+<tr><th class="sections"><a target="main" href="examples.html">Examples</a></th></tr>
+<tr><th class="sections"><a target="main" href="troubleshooting.html">Troubleshooting</a></th></tr>
+<tr><th class="sections"><a target="main" href="refcard.html">Reference Card</a></th></tr>
+<tr><th class="sections"><a target="main" href="gui.html">GUI</a></th></tr>
+<tr><th class="sections"><a target="main" href="ant.html">Ant Task</a></th></tr>
+<tr><th class="sections"><a target="main" href="wtk.html">J2ME WTK</a></th></tr>
 
-<tr><th height="60" valign="middle" bgcolor="white">ReTrace<br>Manual</th></tr>
-<tr><th height="40" valign="middle"><a target="main" href="retrace/introduction.html">Introduction</a></th></tr>
-<tr><th height="40" valign="middle"><a target="main" href="retrace/usage.html">Usage</a></th></tr>
-<tr><th height="40" valign="middle"><a target="main" href="retrace/examples.html">Examples</a></th></tr>
+<tr><th class="sections" bgcolor="white">ReTrace<br>Manual</th></tr>
+<tr><th class="sections"><a target="main" href="retrace/introduction.html">Introduction</a></th></tr>
+<tr><th class="sections"><a target="main" href="retrace/usage.html">Usage</a></th></tr>
+<tr><th class="sections"><a target="main" href="retrace/examples.html">Examples</a></th></tr>
 
 </table>
 <p>
@@ -131,12 +125,10 @@ document.write("</center>");
 <small>With support of</small>
 <p>
 <a href="http://sourceforge.net/projects/proguard/" target="other">
-<img src="../sflogo.png" width="88" height="31" border="0"
- alt="SourceForge"></a>
+<img src="../sflogo.png" width="88" height="31" alt="SourceForge"></a>
 <p>
 <a href="http://www.luciad.com/" target="other">
-<img src="../luciadlogo.png" width="88" height="24" border="0"
- alt="Luciad"></a>
+<img src="../luciadlogo.png" width="88" height="24" alt="Luciad"></a>
 </center>
 </noscript>
 

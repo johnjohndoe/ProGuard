@@ -1,8 +1,8 @@
-/* $Id: KeepMethod.java,v 1.5 2003/08/04 08:46:45 eric Exp $
+/* $Id: KeepMethod.java,v 1.8 2003/12/19 04:17:03 eric Exp $
  *
- * ProGuard - integration into ANT.
+ * ProGuard - integration into Ant.
  *
- * Copyright (C) 2003 Dirk Schnelle (dirk.schnelle@web.de)
+ * Copyright (c) 2003 Dirk Schnelle (dirk.schnelle@web.de)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -10,7 +10,7 @@
  * any later version.
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * ANY WARRAntY; without even the implied warranty of MERCHAntABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
@@ -18,11 +18,10 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
-
-
 package proguard.ant;
 
 import java.util.*;
+
 import proguard.classfile.*;
 import proguard.classfile.util.*;
 
@@ -58,7 +57,7 @@ public class KeepMethod
     private String param;
 
     /**
-     * Creates a new KeepMethod-object.
+     * Default constructor.
      */
     public KeepMethod()
     {
@@ -128,16 +127,23 @@ public class KeepMethod
      */
     private String getInternalName()
     {
+        // The internal name is always <init> for aconstructor.
         if (constructor)
+        {
             return "<init>";
+        }
 
         if (name == null)
+        {
             return null;
+        }
 
         int index = name.indexOf("(");
 
         if (index == -1)
+        {
             return name;
+        }
 
         return name.substring(0, index);
     }
@@ -150,7 +156,9 @@ public class KeepMethod
     private String getDescriptor()
     {
         if (name == null)
+        {
             return null;
+        }
 
         String paramSource = ((param == null)
             ? name
@@ -158,16 +166,22 @@ public class KeepMethod
         StringTokenizer tokenizer = new StringTokenizer(paramSource, "(), \t");
 
         if (!tokenizer.hasMoreTokens())
+        {
             return null;
+        }
 
         // Skip the name, if parsing from the name attribute.
         if (paramSource != param)
+        {
             tokenizer.nextToken();
+        }
 
         List args = new ArrayList();
 
         while (tokenizer.hasMoreTokens())
+        {
             args.add(tokenizer.nextToken());
+        }
 
         return ClassUtil.internalMethodDescriptor(type, args);
     }

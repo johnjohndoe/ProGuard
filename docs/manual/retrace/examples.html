@@ -1,16 +1,14 @@
 <!doctype html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <html>
 <head>
+<meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="content-style-type" content="text/css">
+<link rel="stylesheet" type="text/css" href="../style.css">
 <title>ReTrace Examples</title>
 </head>
-<body
- bgcolor="#ffffff"
- text="#000000">
+<body>
 
-<table width="100%" cellpadding="10" cellspacing="0"><tr><th bgcolor="#EEEEFF">
-<font size="+2">Examples</font>
-</th></tr></table>
-<p>
+<h2>Examples</h2>
 
 Some typical example uses:
 <ol>
@@ -24,14 +22,12 @@ Some typical example uses:
 
 Assume for instance ProGuard itself has been obfuscated using the following
 extra options:
-<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
 <pre>
 -printmapping proguard.map
 
 -renamesourcefileattribute ProGuard
 -keepattributes SourceFile,LineNumberTable
 </pre>
-</td></tr></table>
 <p>
 
 Now assume the processed application throws an exception, and we have saved the
@@ -39,7 +35,6 @@ stack trace in <code>proguard.trace</code>, shown below. Of course, in real
 life ProGuard rarely throws exceptions, so this is a purposely generated
 exception. :)
 
-<table width="100%" cellpadding="10"><tr><td bgcolor="#C0C0C0">
 <pre>
 Exception in thread "main" java.lang.Error: Random exception
         at pro.bY.a(ProGuard:576)
@@ -84,17 +79,15 @@ Exception in thread "main" java.lang.Error: Random exception
         at proguard.ProGuard.b(ProGuard:385)
         at proguard.ProGuard.main(ProGuard:429)
 </pre>
-</td></tr></table>
 <p>
 
 We can then use the following command to recover the stack trace:
-<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
-<code>java proguard.ReTrace proguard.map proguard.trace</code>
-</td></tr></table>
+<pre>
+<b>java -jar retrace.jar proguard.map proguard.trace</b>
+</pre>
 <p>
 
 The output will look as follows:
-<table width="100%" cellpadding="10"><tr><td bgcolor="#C0C0C0">
 <pre>
 Exception in thread "main" java.lang.Error: Random exception
         at proguard.shrink.UsageMarker.visitInstruction(ProGuard:576)
@@ -139,20 +132,17 @@ Exception in thread "main" java.lang.Error: Random exception
         at proguard.ProGuard.execute(ProGuard:385)
         at proguard.ProGuard.main(ProGuard:429)
 </pre>
-</td></tr></table>
-<p>
 
 <a name="withverbose">&nbsp;</a>
 <h3>Restoring a stack trace with line numbers (verbose)</h3>
 
 In the previous example, we could also use the verbose flag:
-<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
-<code>java proguard.ReTrace -verbose proguard.map proguard.trace</code>
-</td></tr></table>
+<pre>
+<b>java -jar retrace.jar -verbose proguard.map proguard.trace</b>
+</pre>
 <p>
 
 The output will then look as follows:
-<table width="100%" cellpadding="10"><tr><td bgcolor="#C0C0C0">
 <pre>
 Exception in thread "main" java.lang.Error: Random exception
         at proguard.shrink.UsageMarker.void visitInstruction(proguard.classfile.ClassFile,proguard.classfile.instruction.Instruction)(ProGuard:576)
@@ -197,7 +187,6 @@ Exception in thread "main" java.lang.Error: Random exception
         at proguard.ProGuard.void execute(java.lang.String[])(ProGuard:385)
         at proguard.ProGuard.void main(java.lang.String[])(ProGuard:429)
 </pre>
-</td></tr></table>
 
 
 <a name="without">&nbsp;</a>
@@ -205,16 +194,13 @@ Exception in thread "main" java.lang.Error: Random exception
 
 Assume for instance ProGuard itself has been obfuscated using the following
 extra options, this time without preserving the line number tables:
-<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
 <pre>
 -printmapping proguard.map
 </pre>
-</td></tr></table>
 <p>
 
 A stack trace <code>proguard.trace</code> will then lack line number
 information:
-<table width="100%" cellpadding="10"><tr><td bgcolor="#C0C0C0">
 <pre>
 Exception in thread "main" java.lang.Error: Random exception
         at pro.bY.a(Unknown Source)
@@ -259,18 +245,16 @@ Exception in thread "main" java.lang.Error: Random exception
         at proguard.ProGuard.b(Unknown Source)
         at proguard.ProGuard.main(Unknown Source)
 </pre>
-</td></tr></table>
 <p>
 
 We can still use the same command to recover the stack trace:
-<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
-<code>java proguard.ReTrace proguard.map proguard.trace</code>
-</td></tr></table>
+<pre>
+<b>java -jar retrace.jar proguard.map proguard.trace</b>
+</pre>
 <p>
 
 The output will now give a list of alternative original method names for each
 ambiguous obfuscated method name:
-<table width="100%" cellpadding="10"><tr><td bgcolor="#C0C0C0">
 <pre>
 Exception in thread "main" java.lang.Error: Random exception
         at proguard.shrink.UsageMarker.visitProgramClassFile(Unknown Source)
@@ -340,7 +324,6 @@ Exception in thread "main" java.lang.Error: Random exception
                              execute
         at proguard.ProGuard.main(Unknown Source)
 </pre>
-</td></tr></table>
 <p>
 
 <hr>

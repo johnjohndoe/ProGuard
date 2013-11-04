@@ -1,4 +1,4 @@
-/* $Id: ClassFileRenamer.java,v 1.22 2003/06/19 16:48:17 eric Exp $
+/* $Id: ClassFileRenamer.java,v 1.25 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -65,7 +65,7 @@ public class ClassFileRenamer
     }
 
 
-    // Implementations for ClassFileVisitor
+    // Implementations for ClassFileVisitor.
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
@@ -96,7 +96,7 @@ public class ClassFileRenamer
     public void visitLibraryClassFile(LibraryClassFile libraryClassFile) {}
 
 
-    // Implementations for MemberInfoVisitor
+    // Implementations for MemberInfoVisitor.
 
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {
@@ -151,7 +151,7 @@ public class ClassFileRenamer
     private class MyNameAndTypeTypeRenamer
        implements CpInfoVisitor
     {
-        // Implementations for CpInfoVisitor
+        // Implementations for CpInfoVisitor.
 
         public void visitIntegerCpInfo(ClassFile classFile, IntegerCpInfo integerCpInfo) {}
         public void visitLongCpInfo(ClassFile classFile, LongCpInfo longCpInfo) {}
@@ -179,7 +179,7 @@ public class ClassFileRenamer
     }
 
 
-    // Implementations for CpInfoVisitor
+    // Implementations for CpInfoVisitor.
 
     public void visitIntegerCpInfo(ClassFile classFile, IntegerCpInfo integerCpInfo) {}
     public void visitLongCpInfo(ClassFile classFile, LongCpInfo longCpInfo) {}
@@ -254,7 +254,7 @@ public class ClassFileRenamer
     }
 
 
-    // Implementations for AttrInfoVisitor
+    // Implementations for AttrInfoVisitor.
 
     public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo) {}
     public void visitInnerClassesAttrInfo(ClassFile classFile, InnerClassesAttrInfo innerClassesAttrInfo) {}
@@ -270,6 +270,13 @@ public class ClassFileRenamer
     public void visitSourceFileAttrInfo(ClassFile classFile, SourceFileAttrInfo sourceFileAttrInfo)
     {
         sourceFileAttrInfo.u2sourceFileIndex =
+            createUtf8CpInfo((ProgramClassFile)classFile, newSourceFileAttribute);
+    }
+
+
+    public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo)
+    {
+        sourceDirAttrInfo.u2sourceDirIndex =
             createUtf8CpInfo((ProgramClassFile)classFile, newSourceFileAttribute);
     }
 

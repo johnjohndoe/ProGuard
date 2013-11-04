@@ -1,4 +1,4 @@
-/* $Id: DataEntryCopier.java,v 1.6 2003/03/25 20:08:53 eric Exp $
+/* $Id: DataEntryCopier.java,v 1.9 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -41,30 +41,32 @@ public class DataEntryCopier implements DataEntryReader
 
 
 
-    public DataEntryCopier(DataEntryWriter zipEntryWriter)
+    public DataEntryCopier(DataEntryWriter dataEntryWriter)
     {
-        this.dataEntryWriter = zipEntryWriter;
+        this.dataEntryWriter = dataEntryWriter;
     }
 
 
-    // Implementations for DataEntryReader
+    // Implementations for DataEntryReader.
 
-    public void readZipEntry(ZipEntry    inEntry,
+    public void readZipEntry(ZipEntry    zipEntry,
                              InputStream inputStream)
     throws IOException
     {
-        String name = inEntry.getName();
+        String name = zipEntry.getName();
 
         try
         {
             // Open the data entry output stream.
             OutputStream outputStream = dataEntryWriter.openDataEntry(name);
+            if (outputStream != null)
+            {
+                // Copy the data from the input stream to the output stream.
+                copyData(inputStream, outputStream);
 
-            // Copy the data from the input stream to the output stream.
-            copyData(inputStream, outputStream);
-
-            // Close the data entry.
-            dataEntryWriter.closeDataEntry();
+                // Close the data entry.
+                dataEntryWriter.closeDataEntry();
+            }
         }
         catch (IOException ex)
         {
@@ -89,12 +91,14 @@ public class DataEntryCopier implements DataEntryReader
         {
             // Open the data entry output stream.
             OutputStream outputStream = dataEntryWriter.openDataEntry(name);
+            if (outputStream != null)
+            {
+                // Copy the data from the input stream to the output stream.
+                copyData(inputStream, outputStream);
 
-            // Copy the data from the input stream to the output stream.
-            copyData(inputStream, outputStream);
-
-            // Close the data entry.
-            dataEntryWriter.closeDataEntry();
+                // Close the data entry.
+                dataEntryWriter.closeDataEntry();
+            }
         }
         catch (IOException ex)
         {
