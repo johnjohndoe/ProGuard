@@ -107,15 +107,16 @@ The following table lists all ProGuard options:
     <a href="#filename"><i>jarname</i></a>[<b>:</b>...]<p></dt>
 
 <dd>Specifies the program jars of the application to be processed. The class
-    files in these jars will be processed and merged in the output jar. The
-    jars can be specified with one or more <code>-injars</code> directives.
-    Multiple jars can also be specified using the path separator (e.g. ':' on
-    Unix, or ';' on Windows platforms).<p></dd>
+    files in these jars will be processed and merged in the output jar. Any
+    non-class files will simply be copied. The jars can be specified with one
+    or more <code>-injars</code> directives. Multiple jars can also be
+    specified using the path separator (e.g. ':' on Unix, or ';' on Windows
+    platforms).<p></dd>
 
 <dt><code><b>-outjar</b></code> <a href="#filename"><i>jarname</i></a><p></dt>
 
-<dd>Specifies the name of the output jar. Without this directive, no jars will
-    be written.<p></dd>
+<dd>Specifies the name of the output jar. It must be different from the input
+    jars. Without this directive, no jars will be written.<p></dd>
 
 <dt><code><b>-keep</b></code>
     <a href="#classspecification"><i>class_specification</i></a><p></dt>

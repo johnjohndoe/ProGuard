@@ -1,4 +1,4 @@
-/* $Id: ClassFileReferenceInitializer.java,v 1.4 2002/11/03 13:30:14 eric Exp $
+/* $Id: ClassFileReferenceInitializer.java,v 1.5 2003/01/13 19:16:28 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -456,7 +456,6 @@ public class ClassFileReferenceInitializer
             // Note that .class is implemented as "static Class class$(String)"
             // or as "static Class class$(String, boolean)".
             isDotClassInvocation =
-                className .equals(classFile.getName())                           &&
                 methodName.equals(ClassConstants.INTERNAL_METHOD_NAME_DOT_CLASS) &&
                 (methodType.equals(ClassConstants.INTERNAL_METHOD_TYPE_DOT_CLASS_JAVAC) ||
                  methodType.equals(ClassConstants.INTERNAL_METHOD_TYPE_DOT_CLASS_JIKES));

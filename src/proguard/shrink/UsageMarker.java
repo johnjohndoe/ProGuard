@@ -1,4 +1,4 @@
-/* $Id: UsageMarker.java,v 1.16 2002/11/03 13:30:14 eric Exp $
+/* $Id: UsageMarker.java,v 1.17 2003/01/06 19:37:48 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -278,14 +278,37 @@ public class UsageMarker
 
             if (recurse)
             {
-                // Mark the library class method in all classes down the class
-                // hierarchy. Library class methods are supposed to be used by
-                // default, so we don't want to loose their redefinitions.
+                String name = libraryMethodInfo.getName(libraryClassFile);
+                String type = libraryMethodInfo.getDescriptor(libraryClassFile);
+
+                // Mark all implementations of the method.
+                // Library class methods are supposed to be used by
+                // default, so we don't want to lose their redefinitions.
+                //
+                // For an abstract method:
+                //   First go to  all concrete classes of the interface.
+                //   From there, travel up and down the class hierarchy to mark
+                //   the method.
+                //
+                //   This way, we're also catching retro-fitted interfaces,
+                //   where a class's implementation of an interface method is
+                //   hiding higher up its class hierarchy.
+                //
+                // For a concrete method:
+                //   Simply mark all overriding implementations down the
+                //   class hierarchy.
                 libraryClassFile.accept(
+                    (libraryMethodInfo.getAccessFlags() &
+                     ClassConstants.INTERNAL_ACC_ABSTRACT) != 0 ?
+
+                    (ClassFileVisitor)
+                    new ConcreteClassFileDownTraveler(
+                    new ClassFileUpDownTraveler(true, true, false, true,
+                    new NamedMethodVisitor(this, name, type))) :
+
+                    (ClassFileVisitor)
                     new ClassFileUpDownTraveler(false, false, false, true,
-                        new NamedMethodVisitor(this,
-                                               libraryMethodInfo.getName(libraryClassFile),
-                                               libraryMethodInfo.getDescriptor(libraryClassFile))));
+                    new NamedMethodVisitor(this, name, type)));
             }
         }
     }

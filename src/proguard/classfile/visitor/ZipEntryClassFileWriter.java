@@ -1,4 +1,4 @@
-/* $Id: ZipEntryClassFileWriter.java,v 1.2 2002/11/03 13:30:14 eric Exp $
+/* $Id: ZipEntryClassFileWriter.java,v 1.3 2003/01/09 19:48:24 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -47,12 +47,12 @@ public class ZipEntryClassFileWriter implements ClassFileVisitor
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
+        // Create a new ZIP entry.
+        String name = programClassFile.getName() + ClassConstants.CLASS_FILE_EXTENSION;
+        ZipEntry zipEntry = new ZipEntry(name);
+
         try
         {
-            // Create a new ZIP entry.
-            String className = programClassFile.getName() + ClassConstants.CLASS_FILE_EXTENSION;
-            ZipEntry zipEntry = new ZipEntry(className);
-
             // Open the ZIP entry output stream.
             OutputStream outputStream = zipEntryWriter.openZipEntry(zipEntry);
 
@@ -66,7 +66,7 @@ public class ZipEntryClassFileWriter implements ClassFileVisitor
         }
         catch (IOException ex)
         {
-            throw new IllegalArgumentException(ex.getMessage());
+            throw new IllegalArgumentException("Can't write class file ["+name+"] ("+ex.getMessage()+")");
         }
     }
 

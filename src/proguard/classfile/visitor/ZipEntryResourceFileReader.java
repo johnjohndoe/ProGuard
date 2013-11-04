@@ -1,4 +1,4 @@
-/* $Id: ZipEntryResourceFileReader.java,v 1.2 2002/11/03 13:30:14 eric Exp $
+/* $Id: ZipEntryResourceFileReader.java,v 1.3 2003/01/09 19:48:24 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -54,7 +54,14 @@ public class ZipEntryResourceFileReader implements ZipEntryReader
         if (!zipEntry.isDirectory() &&
             !name.endsWith(ClassConstants.CLASS_FILE_EXTENSION))
         {
-            zipEntryReader.readZipEntry(zipEntry, inputStream);
+            try
+            {
+                zipEntryReader.readZipEntry(zipEntry, inputStream);
+            }
+            catch (Exception ex)
+            {
+                throw new IOException("Can't process zip entry ["+name+"] ("+ex.getMessage()+")");
+            }
         }
     }
 }

@@ -1,4 +1,4 @@
-/* $Id: ClassUtil.java,v 1.11 2002/11/03 13:30:14 eric Exp $
+/* $Id: ClassUtil.java,v 1.12 2003/01/09 19:37:16 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -49,7 +49,7 @@ public class ClassUtil
     {
         if (magicNumber != ClassConstants.MAGIC)
         {
-            throw new IOException("Invalid magic number ["+Integer.toHexString(magicNumber)+"] in class file.");
+            throw new IOException("Invalid magic number ["+Integer.toHexString(magicNumber)+"] in class file");
         }
     }
 
@@ -69,7 +69,7 @@ public class ClassUtil
              minorVersionNumber >  ClassConstants.MINOR_VERSION_MAX) ||
             majorVersionNumber > ClassConstants.MAJOR_VERSION_MAX)
         {
-            throw new IOException("Unsupported version number ["+majorVersionNumber+"."+minorVersionNumber+"] for class file format.");
+            throw new IOException("Unsupported version number ["+majorVersionNumber+"."+minorVersionNumber+"] for class file format");
         }
     }
 

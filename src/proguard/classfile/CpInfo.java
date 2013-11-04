@@ -1,4 +1,4 @@
-/* $Id: CpInfo.java,v 1.15 2002/11/03 13:30:13 eric Exp $
+/* $Id: CpInfo.java,v 1.16 2003/01/09 19:37:16 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -78,7 +78,7 @@ public abstract class CpInfo implements VisitorAccepter
         case ClassConstants.CONSTANT_Methodref:          cpInfo = new MethodrefCpInfo();         break;
         case ClassConstants.CONSTANT_InterfaceMethodref: cpInfo = new InterfaceMethodrefCpInfo();break;
         case ClassConstants.CONSTANT_NameAndType:        cpInfo = new NameAndTypeCpInfo();       break;
-        default: throw new IOException("Unknown constant type ["+u1tag+"] in constant pool.");
+        default: throw new IOException("Unknown constant type ["+u1tag+"] in constant pool");
         }
         cpInfo.readInfo(din);
         return cpInfo;
@@ -109,7 +109,7 @@ public abstract class CpInfo implements VisitorAccepter
         case ClassConstants.CONSTANT_Methodref:          cpInfo = methodrefCpInfo;          break;
         case ClassConstants.CONSTANT_InterfaceMethodref: cpInfo = interfaceMethodrefCpInfo; break;
         case ClassConstants.CONSTANT_NameAndType:        cpInfo = nameAndTypeCpInfo;        break;
-        default: throw new IOException("Unknown constant type ["+u1tag+"] in constant pool.");
+        default: throw new IOException("Unknown constant type ["+u1tag+"] in constant pool");
         }
         cpInfo.readInfo(din);
         return cpInfo;

@@ -1,4 +1,4 @@
-/* $Id: ZipEntryClassFileReader.java,v 1.2 2002/11/03 13:30:14 eric Exp $
+/* $Id: ZipEntryClassFileReader.java,v 1.3 2003/01/09 19:48:24 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -97,7 +97,7 @@ public class ZipEntryClassFileReader implements ZipEntryReader
             }
             catch (Exception ex)
             {
-                throw new IOException("Corrupt class file ["+name+"]");
+                throw new IOException("Can't process class file ["+name+"] ("+ex.getMessage()+")");
             }
         }
     }

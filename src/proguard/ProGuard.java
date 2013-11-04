@@ -1,4 +1,4 @@
-/* $Id: ProGuard.java,v 1.29 2002/11/03 14:29:56 eric Exp $
+/* $Id: ProGuard.java,v 1.33 2003/01/09 19:52:45 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -37,7 +37,7 @@ import java.io.*;
  */
 public class ProGuard
 {
-    public static final String VERSION = "ProGuard, version 1.4";
+    public static final String VERSION = "ProGuard, version 1.5";
 
     private ProGuardOptions options;
     private ClassPool       programClassPool = new ClassPool();
@@ -125,7 +125,7 @@ public class ProGuard
         }
         catch (IOException ex)
         {
-            System.err.println("Can't read [" + jarFileName + "]");
+            System.err.println("Can't read [" + jarFileName + "] (" + ex.getMessage() + ")");
         }
     }
 
@@ -184,7 +184,7 @@ public class ProGuard
         {
             System.err.println("         If you are sure the mentioned classes are not used anyway,");
             System.err.println("         you could try your luck using the '-ignorewarnings' option.");
-            throw new IOException("");
+            throw new IOException("Please correct the above warnings first.");
         }
 
         // Discard unused library classes.
@@ -408,11 +408,17 @@ public class ProGuard
     /**
      * Writes the output jars.
      */
-    private void writeJars()
+    private void writeJar() throws IOException
     {
         if (options.verbose)
         {
             System.out.println("Writing jar...");
+        }
+
+        // Make sure the output jar is different from the input jars.
+        if (options.inJars.contains(options.outJar))
+        {
+            throw new IOException("The output jar [" + options.outJar + "] must be different from all input jars.");
         }
 
         System.out.println("Writing output jar [" + options.outJar + "]...");
@@ -481,7 +487,7 @@ public class ProGuard
     /**
      * Performs all subsequent ProGuard operations.
      */
-    private void execute() throws IOException
+    public void execute() throws IOException
     {
         readJars();
 
@@ -505,7 +511,10 @@ public class ProGuard
             obfuscate();
         }
 
-        writeJars();
+        if (options.outJar != null)
+        {
+            writeJar();
+        }
 
         if (options.dump != null)
         {

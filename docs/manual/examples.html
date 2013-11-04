@@ -251,7 +251,7 @@ code:
 -printmapping out.map
 
 -renamesourcefileattribute SourceFile
--keepattributes SourceFile,LineNumberTable,Deprecated
+-keepattributes InnerClasses,SourceFile,LineNumberTable,Deprecated
 
 -keep public class * {
     public protected *;
@@ -294,6 +294,11 @@ We've added some directives for keeping the "Deprecated" attribute, for <a
 href="#stacktrace">useful stack traces</a>, for <a href="#native">native
 methods</a>, and for <a href="#serializable">serializable classes</a>, which
 are discussed in their respective examples.
+<p>
+The "InnerClasses" attribute (or more precisely, its source name part) has to
+be preserved as well, for any inner classes that can be referenced from
+outside the library. The <code>javac</code> compiler would be unable to find
+the inner classes otherwise.
 
 <a name="native">&nbsp;</a>
 <h3>Processing native methods</h3>
