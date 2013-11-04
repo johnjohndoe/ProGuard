@@ -216,7 +216,7 @@ public class Obfuscator
                     new AllMemberVisitor(
                     new MemberAccessFilter(0, ClassConstants.INTERNAL_ACC_PRIVATE,
                     new MemberNameCollector(configuration.overloadAggressively,
-                                                descriptorMap)))),
+                                            descriptorMap)))),
 
                     // Assign new names to all non-private members in this class.
                     new AllMemberVisitor(
@@ -290,15 +290,17 @@ public class Obfuscator
                 new MemberNameCollector(configuration.overloadAggressively,
                                         descriptorMap)))),
 
-                // Collect all non-private member names anywhere in the hierarchy.
-                new ClassHierarchyTraveler(true, true, true, true,
+                // Collect all non-private member names in this class and
+                // higher up the hierarchy.
+                new ClassHierarchyTraveler(true, true, true, false,
                 new AllMemberVisitor(
                 new MemberAccessFilter(0, ClassConstants.INTERNAL_ACC_PRIVATE,
                 new MemberNameCollector(configuration.overloadAggressively,
                                         descriptorMap)))),
 
-                // Assign new names to all conflicting non-private members in
-                // this class.
+                // Assign new names to all conflicting non-private members
+                // in this class and higher up the hierarchy.
+                new ClassHierarchyTraveler(true, true, true, false,
                 new AllMemberVisitor(
                 new MemberAccessFilter(0, ClassConstants.INTERNAL_ACC_PRIVATE,
                 new MemberNameConflictFixer(configuration.overloadAggressively,
@@ -306,7 +308,7 @@ public class Obfuscator
                                             warningPrinter,
                 new MemberObfuscator(configuration.overloadAggressively,
                                      specialNameFactory,
-                                     specialDescriptorMap)))),
+                                     specialDescriptorMap))))),
 
                 // Clear the collected names.
                 new MapCleaner(descriptorMap)

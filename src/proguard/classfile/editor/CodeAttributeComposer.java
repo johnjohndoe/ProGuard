@@ -514,8 +514,8 @@ implements   AttributeVisitor,
         int startPC = remapInstructionOffset(localVariableTypeInfo.u2startPC);
         int endPC   = remapInstructionOffset(localVariableTypeInfo.u2startPC + localVariableTypeInfo.u2length);
 
-        localVariableTypeInfo.u2length  = startPC;
-        localVariableTypeInfo.u2startPC = endPC - startPC;
+        localVariableTypeInfo.u2startPC = startPC;
+        localVariableTypeInfo.u2length  = endPC - startPC;
     }
 
 

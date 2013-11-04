@@ -148,6 +148,14 @@ implements   ClassVisitor,
     public void visitAnyConstant(Clazz clazz, Constant constant) {}
 
 
+    public void visitStringConstant(Clazz clazz, StringConstant stringConstant)
+    {
+        // Fill out the String class.
+        stringConstant.javaLangStringClass =
+            findClass(ClassConstants.INTERNAL_NAME_JAVA_LANG_STRING);
+    }
+
+
     public void visitAnyRefConstant(Clazz clazz, RefConstant refConstant)
     {
         String className = refConstant.getClassName(clazz);
@@ -193,8 +201,13 @@ implements   ClassVisitor,
 
     public void visitClassConstant(Clazz clazz, ClassConstant classConstant)
     {
+        // Fill out the referenced class.
         classConstant.referencedClass =
             findClass(classConstant.getName(clazz));
+
+        // Fill out the Class class.
+        classConstant.javaLangClassClass =
+            findClass(ClassConstants.INTERNAL_NAME_JAVA_LANG_CLASS);
     }
 
 

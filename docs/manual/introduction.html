@@ -118,15 +118,15 @@ However, ProGuard will already detect and handle the following cases for you:
 
 <ul>
 <li><code>Class.forName("SomeClass")</code>
-<li><code><code>SomeClass.class</code>
-<li><code><code>SomeClass.class.getField("someField")</code>
-<li><code><code>SomeClass.class.getDeclaredField("someField")</code>
-<li><code><code>SomeClass.class.getMethod("someMethod", new Class[] {})</code>
-<li><code><code>SomeClass.class.getMethod("someMethod", new Class[] { A.class })</code>
-<li><code><code>SomeClass.class.getMethod("someMethod", new Class[] { A.class, B.class })</code>
-<li><code><code>SomeClass.class.getDeclaredMethod("someMethod", new Class[] {})</code>
-<li><code><code>SomeClass.class.getDeclaredMethod("someMethod", new Class[] { A.class })</code>
-<li><code><code>SomeClass.class.getDeclaredMethod("someMethod", new Class[] { A.class, B.class })</code>
+<li><code>SomeClass.class</code>
+<li><code>SomeClass.class.getField("someField")</code>
+<li><code>SomeClass.class.getDeclaredField("someField")</code>
+<li><code>SomeClass.class.getMethod("someMethod", new Class[] {})</code>
+<li><code>SomeClass.class.getMethod("someMethod", new Class[] { A.class })</code>
+<li><code>SomeClass.class.getMethod("someMethod", new Class[] { A.class, B.class })</code>
+<li><code>SomeClass.class.getDeclaredMethod("someMethod", new Class[] {})</code>
+<li><code>SomeClass.class.getDeclaredMethod("someMethod", new Class[] { A.class })</code>
+<li><code>SomeClass.class.getDeclaredMethod("someMethod", new Class[] { A.class, B.class })</code>
 </ul>
 
 The names of the classes and class members may of course be different, but the

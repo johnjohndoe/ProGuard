@@ -40,6 +40,14 @@ public class ClassConstant extends Constant
      */
     public Clazz referencedClass;
 
+    /**
+     * An extra field pointing to the java.lang.Class Clazz object.
+     * This field is typically filled out by the <code>{@link
+     * proguard.classfile.util.ClassReferenceInitializer
+     * ClassReferenceInitializer}</code>..
+     */
+    public Clazz javaLangClassClass;
+
 
     /**
      * Creates an uninitialized ClassConstant.

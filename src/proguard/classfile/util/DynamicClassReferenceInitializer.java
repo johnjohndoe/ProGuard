@@ -66,7 +66,7 @@ implements   InstructionVisitor,
         new MethodrefConstant(1, 2, null, null),
         new ClassConstant(3, null),
         new NameAndTypeConstant(4, 5),
-        new Utf8Constant(ClassConstants.INTERNAL_CLASS_NAME_JAVA_LANG_CLASS),
+        new Utf8Constant(ClassConstants.INTERNAL_NAME_JAVA_LANG_CLASS),
         new Utf8Constant(ClassConstants.INTERNAL_METHOD_NAME_CLASS_FOR_NAME),
         new Utf8Constant(ClassConstants.INTERNAL_METHOD_TYPE_CLASS_FOR_NAME),
 

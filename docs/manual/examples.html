@@ -630,6 +630,8 @@ Reportedly, the easiest way to handle RMI code is to process the code with
 ProGuard first and then invoke the <code>rmic</code> tool. If that is not
 possible, you may want to try something like this:
 <pre>
+-keepattributes Exceptions
+
 -keep interface * extends java.rmi.Remote {
     &lt;methods&gt;;
 }
@@ -639,9 +641,13 @@ possible, you may want to try something like this:
 }
 </pre>
 <p>
-The first option keeps all your Remote interfaces and their methods. The
-second one keeps all the implementations, along with their particular RMI
-constructors, if any.
+The first <code>-keep</code> option keeps all your Remote interfaces and their
+methods. The second one keeps all the implementations, along with their
+particular RMI constructors, if any.
+<p>
+The <code>Exceptions</code> attribute has to be kept too, because the RMI
+handling code performs introspection to check whether the method signatures
+are compatible.
 
 <a name="resourcefiles">&nbsp;</a>
 <h3>Processing resource files</h3>
@@ -796,7 +802,7 @@ f
 <p>
 Note that not all levels of obfuscation of package names may be acceptable for
 all code. Notably, you may have to take into account that your application may
-contain <a href="#resourcefiles">resource files<a> that have to be adapted.
+contain <a href="#resourcefiles">resource files</a> that have to be adapted.
 
 <a name="restructuring">&nbsp;</a>
 <h3>Restructuring the output archives</h3>

@@ -82,11 +82,18 @@ implements   ClassPoolVisitor,
         if (!hasSideEffects(programMethod) &&
             !NoSideEffectMethodMarker.hasNoSideEffects(programMethod))
         {
-            // Set the return value, in case the method doesn't have a code
-            // attribute (a native method or an abstract method).
-            hasSideEffects = (programMethod.getAccessFlags() & ClassConstants.INTERNAL_ACC_NATIVE) != 0;
+            // Initialize the return value.
+            hasSideEffects =
+                (programMethod.getAccessFlags() &
+                 (ClassConstants.INTERNAL_ACC_NATIVE |
+                  ClassConstants.INTERNAL_ACC_SYNCHRONIZED)) != 0;
 
-            programMethod.attributesAccept(programClass, this);
+            // Look further if the method hasn't been marked yet.
+            if (!hasSideEffects)
+            {
+                // Investigate the actual code.
+                programMethod.attributesAccept(programClass, this);
+            }
 
             // Mark the method depending on the return value.
             if (hasSideEffects)

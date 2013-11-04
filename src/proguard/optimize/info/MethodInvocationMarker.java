@@ -30,7 +30,8 @@ import proguard.classfile.util.SimplifiedVisitor;
 import proguard.classfile.visitor.MemberVisitor;
 
 /**
- * This InstructionVisitor marks all methods that are invoked.
+ * This InstructionVisitor counts the number of times methods are invoked from
+ * the instructions that are visited.
  *
  * @author Eric Lafortune
  */
@@ -93,6 +94,10 @@ implements   InstructionVisitor,
     }
 
 
+    /**
+     * Returns the number of times the given method was invoked by the
+     * instructions that were visited.
+     */
     public static int getInvocationCount(Method method)
     {
         MethodOptimizationInfo info = MethodOptimizationInfo.getMethodOptimizationInfo(method);

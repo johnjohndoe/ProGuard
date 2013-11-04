@@ -195,13 +195,11 @@ Should ProGuard crash while processing your application:
 
 <dt><a name="stackoverflowerror"><b>StackOverflowError</b></a></dt>
 
-<dd>This error may occur when optimizing very complex methods on Windows
-    (surprisingly, not so easily on Linux). You can always work around it by
-    using ProGuard's <code>-dontoptimize</code> option. In theory, increasing
-    the stack size of the Java virtual machine (with the usual
-    <code>-Xss</code> option) should help too. In practice however, the
-    <code>-Xss</code> setting doesn't have any effect on the main thread, due
-    to <a
+<dd>This error might occur when processing a large code base on Windows
+    (surprisingly, not so easily on Linux). In theory, increasing the stack
+    size of the Java virtual machine (with the usual <code>-Xss</code> option)
+    should help too. In practice however, the <code>-Xss</code> setting
+    doesn't have any effect on the main thread, due to <a
     href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4362291">Sun Bug
     #4362291</a>. As a result, this solution will only work when running
     ProGuard in a different thread, e.g. from its GUI.</dd>
@@ -338,12 +336,14 @@ might be several reasons:
     <b>NullPointerException</b></a></dt>
 
 <dd>Your processed code may be unable to find some resource files. ProGuard
-    currently simply copies resource files over from the input jars to the
-    output jar. Their names and contents remain unchanged. If a class looks
-    for a resource file in its directory, this will fail if the package name
-    of the class has changed. You should then keep the class name, with the
-    <code>-keepnames</code> option. Also note that directory entries in jar
-    files aren't copied at all.</dd>
+    simply copies resource files over from the input jars to the
+    output jars. Their names and contents remain unchanged, unless you specify
+    the options <code>-adaptresourcefilenames</code> and/or
+    <code>-adaptresourcefilecontents</code>.
+    <p>
+    Note that directory entries in jar files aren't copied at all. If you
+    refer to any directories from your code, you should add them
+    manually.</dd>
 
 <dt><a name="invalidjarfile"><b>Invalid or corrupt jarfile</b></a></dt>
 
@@ -379,18 +379,18 @@ might be several reasons:
 <dd>You may have forgotten to sign your program jar <i>after</i> having
     processed it with ProGuard.</dd>
 
-<dt><a name="classcastexception"><b>ClassCastException: class not an enum</b></a></dt>
+<dt><a name="classcastexception"><b>ClassCastException: class not an enum</b>
+    or <br><b>IllegalArgumentException: class not an enum type</b></a></dt>
 
-<dd>You are probably processing enumeration types and calling
-    <code>EnumSet.allOf</code>. You should then make sure you're preserving
-    the <code>values()</code> method of the enumeration type, as shown in the
-    examples.</dd>
+<dd>You should make sure you're preserving the special methods of enumeration
+    types, which the run-time environment calls by introspection. The required
+    options are shown in the examples.</dd>
 
 <dt><a name="arraystoreexception"><b>ArrayStoreException: sun.reflect.annotation.EnumConstantNotPresentExceptionProxy</b></a></dt>
 
 <dd>You are probably processing annotations involving enumerations. Again, you
-    should make sure you're preserving the <code>values()</code> method of the
-    enumeration type, as shown in the examples.</dd>
+    should make sure you're preserving the special methods of the enumeration
+    type, as shown in the examples.</dd>
 
 <dt><a name="nosuchfieldormethod"><b>Error: No Such Field or Method</b>,
     <b>Error verifying method</b> (in a Java Micro Edition emulator)</a></dt>

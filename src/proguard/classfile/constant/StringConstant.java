@@ -54,6 +54,14 @@ public class StringConstant extends Constant
      */
     public Member referencedMember;
 
+    /**
+     * An extra field pointing to the java.lang.String Clazz object.
+     * This field is typically filled out by the <code>{@link
+     * proguard.classfile.util.ClassReferenceInitializer
+     * ClassReferenceInitializer}</code>..
+     */
+    public Clazz javaLangStringClass;
+
 
     /**
      * Creates an uninitialized StringConstant.

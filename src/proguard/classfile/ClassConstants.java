@@ -190,8 +190,6 @@ public interface ClassConstants
     public static final String INTERNAL_METHOD_NAME_CLINIT = "<clinit>";
     public static final String INTERNAL_METHOD_TYPE_CLINIT = "()V";
 
-    public static final String INTERNAL_CLASS_NAME_JAVA_LANG_CLASS = "java/lang/Class";
-
     public static final String INTERNAL_METHOD_NAME_CLASS_FOR_NAME            = "forName";
     public static final String INTERNAL_METHOD_TYPE_CLASS_FOR_NAME            = "(Ljava/lang/String;)Ljava/lang/Class;";
     public static final String INTERNAL_METHOD_NAME_CLASS_GET_COMPONENT_TYPE  = "getComponentType";

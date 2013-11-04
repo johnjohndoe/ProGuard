@@ -127,7 +127,7 @@ public class DataEntryWriterFactory
         // Zip up jars, if necessary.
         DataEntryWriter jarWriter = dontWrap ?
             (DataEntryWriter)new ParentDataEntryWriter(writer) :
-            (DataEntryWriter)new JarWriter(writer, null, ProGuard.VERSION);
+            (DataEntryWriter)new JarWriter(writer);
 
         // Add a filter, if specified.
         DataEntryWriter filteredJarWriter = jarFilter != null?

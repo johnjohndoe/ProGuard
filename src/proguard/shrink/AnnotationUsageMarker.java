@@ -58,7 +58,7 @@ implements   AttributeVisitor,
 
 
     /**
-     * Creates a new InnerUsageMarker.
+     * Creates a new AnnotationUsageMarker.
      * @param usageMarker the usage marker that is used to mark the classes
      *                    and class members.
      */
@@ -109,18 +109,13 @@ implements   AttributeVisitor,
 
     public void visitAnnotationDefaultAttribute(Clazz clazz, Method method, AnnotationDefaultAttribute annotationDefaultAttribute)
     {
-        // Mark the necessary annotation information.
-        attributeUsed = false;
+        // Mark the necessary annotation information in any annotation elements.
         annotationDefaultAttribute.defaultValueAccept(clazz, this);
 
-        if (attributeUsed)
-        {
-            // We got a positive used flag, so some annotation is being used.
-            // Mark this attribute as being used as well.
-            usageMarker.markAsUsed(annotationDefaultAttribute);
+        // Always mark annotation defaults.
+        usageMarker.markAsUsed(annotationDefaultAttribute);
 
-            markConstant(clazz, annotationDefaultAttribute.u2attributeNameIndex);
-        }
+        markConstant(clazz, annotationDefaultAttribute.u2attributeNameIndex);
     }
 
 

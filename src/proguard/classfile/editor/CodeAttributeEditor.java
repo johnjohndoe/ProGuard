@@ -21,6 +21,7 @@
 package proguard.classfile.editor;
 
 import proguard.classfile.*;
+import proguard.classfile.visitor.ClassPrinter;
 import proguard.classfile.attribute.*;
 import proguard.classfile.attribute.preverification.*;
 import proguard.classfile.attribute.preverification.visitor.*;
@@ -246,6 +247,11 @@ implements   AttributeVisitor,
             System.err.println("  Class       = ["+clazz.getName()+"]");
             System.err.println("  Method      = ["+method.getName(clazz)+method.getDescriptor(clazz)+"]");
             System.err.println("  Exception   = ["+ex.getClass().getName()+"] ("+ex.getMessage()+")");
+
+            if (DEBUG)
+            {
+                method.accept(clazz, new ClassPrinter());
+            }
 
             throw ex;
         }

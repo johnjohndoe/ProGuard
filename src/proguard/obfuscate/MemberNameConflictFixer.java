@@ -117,14 +117,16 @@ public class MemberNameConflictFixer implements MemberVisitor
             descriptor = descriptor.substring(0, descriptor.indexOf(')')+1);
         }
 
-        // Get the name map, creating a new one if necessary.
+        // Get the name map.
         Map nameMap = MemberObfuscator.retrieveNameMap(descriptorMap, descriptor);
 
         // Get the member's new name.
         String newName = MemberObfuscator.newMemberName(member);
 
+        // Get the expected old name for this new name.
         String previousName = (String)nameMap.get(newName);
-        if (!name.equals(previousName))
+        if (previousName != null &&
+            !name.equals(previousName))
         {
             // There's a conflict! A member (with a given old name) in a
             // first namespace has received the same new name as this

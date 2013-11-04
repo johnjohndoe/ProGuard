@@ -934,7 +934,7 @@ implements   InstructionVisitor,
     public void visitStringConstant(Clazz clazz, StringConstant stringConstant)
     {
         cpValue = valueFactory.createReferenceValue(ClassConstants.INTERNAL_NAME_JAVA_LANG_STRING,
-                                                    null,
+                                                    stringConstant.javaLangStringClass, 
                                                     false);
     }
 
@@ -942,7 +942,7 @@ implements   InstructionVisitor,
     {
         cpValue = handleClassConstantAsClassValue ?
             valueFactory.createReferenceValue(ClassConstants.INTERNAL_NAME_JAVA_LANG_CLASS,
-                                              null,
+                                              classConstant.javaLangClassClass,
                                               false) :
             valueFactory.createReferenceValue(classConstant.getName(clazz),
                                               classConstant.referencedClass,

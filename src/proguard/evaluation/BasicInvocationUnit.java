@@ -338,8 +338,23 @@ implements   InvocationUnit,
     }
 
 
-    public void visitLibraryMember(LibraryClass libraryClass, LibraryMember libraryMember)
+    public void visitLibraryField(LibraryClass programClass, LibraryField programField)
     {
-        // Library members don't store the referenced classes.
+        returnTypeClass = programField.referencedClass;
     }
+
+
+    public void visitLibraryMethod(LibraryClass programClass, LibraryMethod programMethod)
+    {
+        Clazz[] referencedClasses = programMethod.referencedClasses;
+        if (referencedClasses != null)
+        {
+            returnTypeClass = referencedClasses[referencedClasses.length - 1];
+        }
+    }
+
+
+//    public void visitLibraryMember(LibraryClass libraryClass, LibraryMember libraryMember)
+//    {
+//    }
 }

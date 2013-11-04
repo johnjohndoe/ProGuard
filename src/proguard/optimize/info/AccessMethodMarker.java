@@ -135,6 +135,9 @@ implements   InstructionVisitor,
     }
 
 
+    /**
+     * Returns whether the given method accesses private class members.
+     */
     public static boolean accessesPrivateCode(Method method)
     {
         MethodOptimizationInfo info = MethodOptimizationInfo.getMethodOptimizationInfo(method);
@@ -152,6 +155,10 @@ implements   InstructionVisitor,
     }
 
 
+    /**
+     * Returns whether the given method accesses package visible classes or class
+     * members.
+     */
     public static boolean accessesPackageCode(Method method)
     {
         MethodOptimizationInfo info = MethodOptimizationInfo.getMethodOptimizationInfo(method);
@@ -169,6 +176,9 @@ implements   InstructionVisitor,
     }
 
 
+    /**
+     * Returns whether the given method accesses protected class members.
+     */
     public static boolean accessesProtectedCode(Method method)
     {
         MethodOptimizationInfo info = MethodOptimizationInfo.getMethodOptimizationInfo(method);

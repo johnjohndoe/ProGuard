@@ -94,8 +94,11 @@ implements   ClassVisitor,
         Clazz referencedClass = refConstant.referencedClass;
 
         // Is it refering to a class member in another class?
+        // The class member might be in another class, or
+        // it may be referenced through another class.
         if (referencedClass != null &&
-            !referencedClass.equals(clazz))
+            !referencedClass.equals(clazz) ||
+            !refConstant.getClassName(clazz).equals(clazz.getName()))
         {
             // The referenced class member can never be made private.
             refConstant.referencedMemberAccept(this);
@@ -141,6 +144,9 @@ implements   ClassVisitor,
     }
 
 
+    /**
+     * Returns whether the given field can be made private.
+     */
     public static boolean canBeMadePrivate(Field field)
     {
         FieldOptimizationInfo info = FieldOptimizationInfo.getFieldOptimizationInfo(field);
@@ -159,6 +165,9 @@ implements   ClassVisitor,
     }
 
 
+    /**
+     * Returns whether the given method can be made private.
+     */
     public static boolean canBeMadePrivate(Method method)
     {
         MethodOptimizationInfo info = MethodOptimizationInfo.getMethodOptimizationInfo(method);

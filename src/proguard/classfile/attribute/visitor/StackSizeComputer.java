@@ -21,6 +21,7 @@
 package proguard.classfile.attribute.visitor;
 
 import proguard.classfile.*;
+import proguard.classfile.visitor.ClassPrinter;
 import proguard.classfile.attribute.*;
 import proguard.classfile.instruction.*;
 import proguard.classfile.instruction.visitor.InstructionVisitor;
@@ -109,6 +110,11 @@ implements   AttributeVisitor,
             System.err.println("  Class       = ["+clazz.getName()+"]");
             System.err.println("  Method      = ["+method.getName(clazz)+method.getDescriptor(clazz)+"]");
             System.err.println("  Exception   = ["+ex.getClass().getName()+"] ("+ex.getMessage()+")");
+
+            if (DEBUG)
+            {
+                method.accept(clazz, new ClassPrinter());
+            }
 
             throw ex;
         }
@@ -319,9 +325,7 @@ implements   AttributeVisitor,
             }
 
             // Compute the instruction's effect on the stack size.
-            stackSizes[instructionOffset] =
-            stackSize += instruction.stackPushCount(clazz) -
-                         instruction.stackPopCount(clazz);
+            stackSize -= instruction.stackPopCount(clazz);
 
             if (stackSize < 0)
             {
@@ -331,6 +335,9 @@ implements   AttributeVisitor,
                                                    method.getName(clazz)+
                                                    method.getDescriptor(clazz)+"]");
             }
+
+            stackSizes[instructionOffset] =
+            stackSize += instruction.stackPushCount(clazz);
 
             // Remember the maximum stack size.
             if (maxStackSize < stackSize)

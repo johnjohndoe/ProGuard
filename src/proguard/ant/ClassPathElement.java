@@ -100,13 +100,13 @@ public class ClassPathElement extends Path
                 throw new BuildException("The <outjar> element must specify exactly one file or directory ["+fileNames.length+"]");
             }
         }
-        else
-        {
-            if (fileNames.length < 1)
-            {
-                throw new BuildException("The <injar> element must specify at least one file or directory");
-            }
-        }
+        //else
+        //{
+        //    if (fileNames.length < 1)
+        //    {
+        //        throw new BuildException("The <injar> element must specify at least one file or directory");
+        //    }
+        //}
 
         for (int index = 0; index < fileNames.length; index++)
         {

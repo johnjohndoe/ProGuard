@@ -40,7 +40,11 @@ extends      SimplifiedVisitor
 implements   AttributeVisitor,
              InstructionVisitor
 {
+    //*
     private static final boolean DEBUG = false;
+    /*/
+    private static       boolean DEBUG = true;
+    //*/
 
 
     private final InstructionVisitor  extraInstructionVisitor;
@@ -67,6 +71,10 @@ implements   AttributeVisitor,
 
     public void visitCodeAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute)
     {
+//        DEBUG =
+//            clazz.getName().equals("abc/Def") &&
+//            method.getName(clazz).equals("abc");
+
         // Mark all branch targets.
         branchTargetFinder.visitCodeAttribute(clazz, method, codeAttribute);
 
@@ -106,7 +114,7 @@ implements   AttributeVisitor,
             {
                 if (DEBUG)
                 {
-                    System.out.println("GotoCommonCodeReplacer: "+clazz.getName()+"."+method.getName(clazz)+" ("+commonCount+" instructions)");
+                    System.out.println("GotoCommonCodeReplacer: "+clazz.getName()+"."+method.getName(clazz)+" (["+(offset-commonCount)+"] - "+branchInstruction.toString(offset)+" -> "+targetOffset+")");
                 }
 
                 // Delete the common instructions.

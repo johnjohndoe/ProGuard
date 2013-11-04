@@ -23,6 +23,7 @@ package proguard.optimize.evaluation;
 import proguard.classfile.*;
 import proguard.classfile.attribute.*;
 import proguard.classfile.attribute.visitor.*;
+import proguard.classfile.constant.ClassConstant;
 import proguard.classfile.instruction.*;
 import proguard.classfile.util.*;
 import proguard.classfile.visitor.ClassPrinter;
@@ -166,6 +167,7 @@ implements   AttributeVisitor,
         // Find all instruction offsets,...
         codeAttribute.accept(clazz, method, branchTargetFinder);
 
+        // Start executing the first instruction block.
         evaluateInstructionBlock(clazz,
                                  method,
                                  codeAttribute,
@@ -456,6 +458,7 @@ implements   AttributeVisitor,
         if (isTraced(startPC, endPC))
         {
             int handlerPC = exceptionInfo.u2handlerPC;
+            int catchType = exceptionInfo.u2catchType;
 
             if (DEBUG) System.out.println("Partial evaluation of exception ["+startPC +","+endPC +"] -> ["+handlerPC+"]:");
 
@@ -479,13 +482,16 @@ implements   AttributeVisitor,
 
             // Initialize the the stack.
             //stack.push(valueFactory.createReference((ClassConstant)((ProgramClass)clazz).getConstant(exceptionInfo.u2catchType), false));
-            String catchType = exceptionInfo.u2catchType != 0 ?
-                 clazz.getClassName(exceptionInfo.u2catchType) :
+            String catchClassName = catchType != 0 ?
+                 clazz.getClassName(catchType) :
                  ClassConstants.INTERNAL_NAME_JAVA_LANG_THROWABLE;
 
-            // TODO: Get catch type class from class constant pool entry.
-            stack.push(valueFactory.createReferenceValue(catchType,
-                                                         null,
+            Clazz catchClass = catchType != 0 ?
+                ((ClassConstant)((ProgramClass)clazz).getConstant(catchType)).referencedClass :
+                null;
+
+            stack.push(valueFactory.createReferenceValue(catchClassName,
+                                                         catchClass,
                                                          false));
 
             int evaluationCount = evaluationCounts[handlerPC];
@@ -523,15 +529,73 @@ implements   AttributeVisitor,
     // Utility methods to evaluate instruction blocks.
 
     /**
+     * Pushes block of instructions to be executed on the given stack.
+     */
+    private void pushInstructionBlock(TracedVariables variables,
+                                      TracedStack     stack,
+                                      int             startOffset,
+                                      java.util.Stack instructionBlockStack)
+    {
+        instructionBlockStack.push(new MyInstructionBlock(variables,
+                                                          stack,
+                                                          startOffset));
+    }
+
+
+    /**
      * Evaluates a block of instructions, starting at the given offset and ending
      * at a branch instruction, a return instruction, or a throw instruction.
+     */
+    private void evaluateInstructionBlock(Clazz           clazz,
+                                          Method          method,
+                                          CodeAttribute   codeAttribute,
+                                          TracedVariables variables,
+                                          TracedStack     stack,
+                                          int             startOffset)
+    {
+        // We're now defining out own stack instead of more elegant recursion,
+        // in order to avoid stack overflow errors in the VM.
+        java.util.Stack instructionBlockStack = new java.util.Stack();
+
+        // Execute the initial instruction block.
+        evaluateInstructionBlock(clazz,
+                                 method,
+                                 codeAttribute,
+                                 variables,
+                                 stack,
+                                 startOffset,
+                                 instructionBlockStack);
+
+        // Execute all resulting instruction blocks on the execution stack.
+        while (!instructionBlockStack.empty())
+        {
+            MyInstructionBlock instructionBlock =
+                (MyInstructionBlock)instructionBlockStack.pop();
+
+            evaluateInstructionBlock(clazz,
+                                     method,
+                                     codeAttribute,
+                                     instructionBlock.variables,
+                                     instructionBlock.stack,
+                                     instructionBlock.startOffset,
+                                     instructionBlockStack);
+        }
+    }
+
+
+    /**
+     * Evaluates a block of instructions, starting at the given offset and ending
+     * at a branch instruction, a return instruction, or a throw instruction.
+     * Instruction blocks that are to be evaluated as a result are pushed on
+     * the given stack.
      */
     private void evaluateInstructionBlock(Clazz            clazz,
                                           Method           method,
                                           CodeAttribute    codeAttribute,
                                           TracedVariables  variables,
                                           TracedStack      stack,
-                                          int              startOffset)
+                                          int              startOffset,
+                                          java.util.Stack  instructionBlockStack)
     {
         byte[] code = codeAttribute.code;
 
@@ -779,17 +843,15 @@ implements   AttributeVisitor,
                 // Are there multiple branch targets?
                 if (branchTargetCount > 1)
                 {
-                    // Handle them recursively and exit from this code block.
+                    // Push them on the execution stack and exit from this block.
                     for (int index = 0; index < branchTargetCount; index++)
                     {
                         if (DEBUG) System.out.println("Alternative branch #"+index+" out of "+branchTargetCount+", from ["+instructionOffset+"] to ["+branchTargets.instructionOffset(index)+"]");
 
-                        evaluateInstructionBlock(clazz,
-                                                 method,
-                                                 codeAttribute,
-                                                 new TracedVariables(variables),
-                                                 new TracedStack(stack),
-                                                 branchTargets.instructionOffset(index));
+                        pushInstructionBlock(new TracedVariables(variables),
+                                             new TracedStack(stack),
+                                             branchTargets.instructionOffset(index),
+                                             instructionBlockStack);
                     }
 
                     break;
@@ -1013,6 +1075,24 @@ implements   AttributeVisitor,
         if (first)
         {
             generalizedVariables.reset(generalizedVariables.size());
+        }
+    }
+
+
+    private static class MyInstructionBlock
+    {
+        private TracedVariables variables;
+        private TracedStack     stack;
+        private int             startOffset;
+
+
+        private MyInstructionBlock(TracedVariables variables,
+                                   TracedStack     stack,
+                                   int             startOffset)
+        {
+            this.variables   = variables;
+            this.stack       = stack;
+            this.startOffset = startOffset;
         }
     }
 }

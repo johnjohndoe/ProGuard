@@ -66,6 +66,17 @@ implements   MemberVisitor
             // Is it a non-native, concrete method?
             else
             {
+                // Is the method not static, but synchronized, or can it have
+                // other implementations, or is it a class instance initializer?
+                if ((accessFlags & ClassConstants.INTERNAL_ACC_STATIC) == 0 &&
+                    ((accessFlags & ClassConstants.INTERNAL_ACC_SYNCHRONIZED) != 0 ||
+                     programClass.mayHaveImplementations(programMethod)            ||
+                     programMethod.getName(programClass).equals(ClassConstants.INTERNAL_METHOD_NAME_INIT)))
+                {
+                    // Mark the 'this' parameter.
+                    markParameterUsed(programMethod, 0);
+                }
+
                 // Figure out the local variables that are used by the code.
                 programMethod.attributesAccept(programClass, variableUsageMarker);
 
@@ -76,15 +87,6 @@ implements   MemberVisitor
                     {
                         markParameterUsed(programMethod, index);
                     }
-                }
-
-                // Can the method have other implementations, or is it a class
-                // instance initializer?
-                if (programClass.mayHaveImplementations(programMethod) ||
-                    programMethod.getName(programClass).equals(ClassConstants.INTERNAL_METHOD_NAME_INIT))
-                {
-                    // Mark the 'this' parameter.
-                    markParameterUsed(programMethod, 0);
                 }
             }
 

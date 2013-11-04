@@ -1330,15 +1330,9 @@ implements   AttributeVisitor,
         isNecessary[offset] = true;
 
         // Create a simple push instrucion.
-        byte replacementOpcode =
-            computationalType == Value.TYPE_INTEGER   ? InstructionConstants.OP_ICONST_0    :
-            computationalType == Value.TYPE_LONG      ? InstructionConstants.OP_LCONST_0    :
-            computationalType == Value.TYPE_FLOAT     ? InstructionConstants.OP_FCONST_0    :
-            computationalType == Value.TYPE_DOUBLE    ? InstructionConstants.OP_DCONST_0    :
-            computationalType == Value.TYPE_REFERENCE ? InstructionConstants.OP_ACONST_NULL :
-            InstructionConstants.OP_NOP;
 
-        Instruction replacementInstruction = new SimpleInstruction(replacementOpcode);
+        Instruction replacementInstruction =
+            new SimpleInstruction(pushOpcode(computationalType));
 
         // Insert the pop or push instruction.
         codeAttributeEditor.insertBeforeInstruction(offset,
@@ -1359,6 +1353,27 @@ implements   AttributeVisitor,
                 extraDeletedInstructionVisitor.visitSimpleInstruction(null, null, null, offset, null);
             }
         }
+    }
+
+
+    /**
+     * Returns the opcode of a push instruction corresponding to the given
+     * computational type.
+     * @param computationalType the computational type to be pushed on the stack.
+     */
+    private byte pushOpcode(int computationalType)
+    {
+        switch (computationalType)
+        {
+            case Value.TYPE_INTEGER:            return InstructionConstants.OP_ICONST_0;
+            case Value.TYPE_LONG:               return InstructionConstants.OP_LCONST_0;
+            case Value.TYPE_FLOAT:              return InstructionConstants.OP_FCONST_0;
+            case Value.TYPE_DOUBLE:             return InstructionConstants.OP_DCONST_0;
+            case Value.TYPE_REFERENCE:
+            case Value.TYPE_INSTRUCTION_OFFSET: return InstructionConstants.OP_ACONST_NULL;
+        }
+
+        throw new IllegalArgumentException("No push opcode for computational type ["+computationalType+"]");
     }
 
 
