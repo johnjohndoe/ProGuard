@@ -1,4 +1,4 @@
-/* $Id: ClassFileFinalizer.java,v 1.6 2004/12/19 21:03:13 eric Exp $
+/* $Id: ClassFileFinalizer.java,v 1.7 2004/12/30 16:49:08 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -71,16 +71,16 @@ public class ClassFileFinalizer
     {
         String name = programMethodInfo.getName(programClassFile);
 
-        // If the method is not final/abstract/private.
-        // and it is not an initialization method,
+        // If the method is not already private/static/final/abstract,
+        // and it is not a constructor,
         // and its class is final,
         //     or it is not being kept and it is not overridden,
         // then make it final.
-        if ((programMethodInfo.u2accessFlags & (ClassConstants.INTERNAL_ACC_FINAL    |
-                                                ClassConstants.INTERNAL_ACC_ABSTRACT |
-                                                ClassConstants.INTERNAL_ACC_PRIVATE)) == 0 &&
-            !name.equals(ClassConstants.INTERNAL_METHOD_NAME_CLINIT)                        &&
-            !name.equals(ClassConstants.INTERNAL_METHOD_NAME_INIT)                          &&
+        if ((programMethodInfo.u2accessFlags & (ClassConstants.INTERNAL_ACC_PRIVATE |
+                                                ClassConstants.INTERNAL_ACC_STATIC  |
+                                                ClassConstants.INTERNAL_ACC_FINAL   |
+                                                ClassConstants.INTERNAL_ACC_ABSTRACT)) == 0 &&
+            !name.equals(ClassConstants.INTERNAL_METHOD_NAME_INIT)                         &&
             ((programClassFile.u2accessFlags & ClassConstants.INTERNAL_ACC_FINAL) != 0 ||
              (!KeepMarker.isKept(programMethodInfo) &&
               (programClassFile.subClasses == null ||

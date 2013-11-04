@@ -1,8 +1,8 @@
-/* $Id: InnerUsageMarker.java,v 1.15 2004/12/11 16:35:23 eric Exp $
+/* $Id: InnerUsageMarker.java,v 1.18 2005/06/11 13:21:35 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -40,15 +40,31 @@ public class InnerUsageMarker
              AttrInfoVisitor,
              InnerClassesInfoVisitor
 {
+    private UsageMarker usageMarker;
+
+    // A field acting as a parameter for the class file visitor.
     private boolean markingAttributes = true;
+
+    // A field acting as a return parameter for several methods.
     private boolean used;
+
+
+    /**
+     * Creates a new InnerUsageMarker.
+     * @param usageMarker the usage marker that is used to mark the classes
+     *                    and class members.
+     */
+    public InnerUsageMarker(UsageMarker usageMarker)
+    {
+        this.usageMarker = usageMarker;
+    }
 
 
     // Implementations for ClassFileVisitor.
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
-        boolean classUsed = UsageMarker.isUsed(programClassFile);
+        boolean classUsed = usageMarker.isUsed(programClassFile);
 
         if (markingAttributes && classUsed)
         {
@@ -87,7 +103,7 @@ public class InnerUsageMarker
 
     public void visitClassCpInfo(ClassFile classFile, ClassCpInfo classCpInfo)
     {
-        boolean classUsed = UsageMarker.isUsed(classCpInfo);
+        boolean classUsed = usageMarker.isUsed(classCpInfo);
 
         if (!classUsed)
         {
@@ -100,7 +116,7 @@ public class InnerUsageMarker
             {
                 // The class is being used. Mark the ClassCpInfo as being used
                 // as well.
-                UsageMarker.markAsUsed(classCpInfo);
+                usageMarker.markAsUsed(classCpInfo);
 
                 markCpEntry(classFile, classCpInfo.u2nameIndex);
             }
@@ -113,9 +129,9 @@ public class InnerUsageMarker
 
     public void visitUtf8CpInfo(ClassFile classFile, Utf8CpInfo utf8CpInfo)
     {
-        if (!UsageMarker.isUsed(utf8CpInfo))
+        if (!usageMarker.isUsed(utf8CpInfo))
         {
-            UsageMarker.markAsUsed(utf8CpInfo);
+            usageMarker.markAsUsed(utf8CpInfo);
         }
     }
 
@@ -158,7 +174,7 @@ public class InnerUsageMarker
         {
             // We got a positive used flag, so some inner class is being used.
             // Mark this attribute as being used as well.
-            UsageMarker.markAsUsed(innerClassesAttrInfo);
+            usageMarker.markAsUsed(innerClassesAttrInfo);
 
             markCpEntry(classFile, innerClassesAttrInfo.u2attrNameIndex);
         }
@@ -169,7 +185,7 @@ public class InnerUsageMarker
 
     public void visitInnerClassesInfo(ClassFile classFile, InnerClassesInfo innerClassesInfo)
     {
-        boolean innerClassesInfoUsed = UsageMarker.isUsed(innerClassesInfo);
+        boolean innerClassesInfoUsed = usageMarker.isUsed(innerClassesInfo);
 
         if (!innerClassesInfoUsed)
         {
@@ -197,7 +213,7 @@ public class InnerUsageMarker
             // used, then mark this InnerClassesInfo as well.
             if (innerClassesInfoUsed)
             {
-                UsageMarker.markAsUsed(innerClassesInfo);
+                usageMarker.markAsUsed(innerClassesInfo);
 
                 if (u2innerNameIndex != 0)
                 {

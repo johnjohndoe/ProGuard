@@ -1,9 +1,9 @@
-/* $Id: LibraryClassFile.java,v 1.35 2004/12/11 16:35:23 eric Exp $
+/* $Id: LibraryClassFile.java,v 1.40 2005/06/11 13:21:35 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -278,46 +278,6 @@ public class LibraryClassFile implements ClassFile
     }
 
 
-    /**
-     * Returns the field with the given name and descriptor.
-     */
-    private LibraryFieldInfo findLibraryField(String name, String descriptor)
-    {
-        for (int i = 0; i < fields.length; i++)
-        {
-            LibraryFieldInfo field = fields[i];
-            if (field != null &&
-                (name       == null || field.getName(this).equals(name)) &&
-                (descriptor == null || field.getDescriptor(this).equals(descriptor)))
-            {
-                return field;
-            }
-        }
-
-        return null;
-    }
-
-
-    /**
-     * Returns the method with the given name and descriptor.
-     */
-    private LibraryMethodInfo findLibraryMethod(String name, String descriptor)
-    {
-        for (int i = 0; i < methods.length; i++)
-        {
-            LibraryMethodInfo method = methods[i];
-            if (method != null &&
-                (name       == null || method.getName(this).equals(name)) &&
-                (descriptor == null || method.getDescriptor(this).equals(descriptor)))
-            {
-                return method;
-            }
-        }
-
-        return null;
-    }
-
-
     // Implementations for ClassFile.
 
     public int getAccessFlags()
@@ -334,6 +294,11 @@ public class LibraryClassFile implements ClassFile
     {
         // This may be java/lang/Object, in which case there is no super.
         return superClassName;
+    }
+
+    public int getInterfaceCount()
+    {
+        return interfaceClasses.length;
     }
 
     public String getInterfaceName(int index)
@@ -421,7 +386,7 @@ public class LibraryClassFile implements ClassFile
         {
             for (int i = 0; i < interfaceClasses.length; i++)
             {
-                ClassFile interfaceClass = getInterface(i);
+                ClassFile interfaceClass = interfaceClasses[i];
                 if (interfaceClass != null &&
                     interfaceClass.implements_(classFile))
                 {
@@ -436,13 +401,35 @@ public class LibraryClassFile implements ClassFile
 
     public FieldInfo findField(String name, String descriptor)
     {
-        return findLibraryField(name, descriptor);
+        for (int i = 0; i < fields.length; i++)
+        {
+            FieldInfo field = fields[i];
+            if (field != null &&
+                (name       == null || field.getName(this).equals(name)) &&
+                (descriptor == null || field.getDescriptor(this).equals(descriptor)))
+            {
+                return field;
+            }
+        }
+
+        return null;
     }
 
 
     public MethodInfo findMethod(String name, String descriptor)
     {
-        return findLibraryMethod(name, descriptor);
+        for (int i = 0; i < methods.length; i++)
+        {
+            MethodInfo method = methods[i];
+            if (method != null &&
+                (name       == null || method.getName(this).equals(name)) &&
+                (descriptor == null || method.getDescriptor(this).equals(descriptor)))
+            {
+                return method;
+            }
+        }
+
+        return null;
     }
 
 
@@ -484,7 +471,7 @@ public class LibraryClassFile implements ClassFile
             {
                 for (int i = 0; i < interfaceClasses.length; i++)
                 {
-                    ClassFile interfaceClass = getInterface(i);
+                    ClassFile interfaceClass = interfaceClasses[i];
                     if (interfaceClass != null)
                     {
                         interfaceClass.hierarchyAccept(true,
@@ -521,10 +508,12 @@ public class LibraryClassFile implements ClassFile
         // This class doesn't keep references to its constant pool entries.
     }
 
+
     public void constantPoolEntryAccept(int index, CpInfoVisitor cpInfoVisitor)
     {
         // This class doesn't keep references to its constant pool entries.
     }
+
 
     public void fieldsAccept(MemberInfoVisitor memberInfoVisitor)
     {
@@ -537,14 +526,16 @@ public class LibraryClassFile implements ClassFile
         }
     }
 
+
     public void fieldAccept(String name, String descriptor, MemberInfoVisitor memberInfoVisitor)
     {
-        LibraryMemberInfo libraryMemberInfo = findLibraryField(name, descriptor);
-        if (libraryMemberInfo != null)
+        FieldInfo field = findField(name, descriptor);
+        if (field != null)
         {
-            libraryMemberInfo.accept(this, memberInfoVisitor);
+            field.accept(this, memberInfoVisitor);
         }
     }
+
 
     public void methodsAccept(MemberInfoVisitor memberInfoVisitor)
     {
@@ -557,14 +548,180 @@ public class LibraryClassFile implements ClassFile
         }
     }
 
+
     public void methodAccept(String name, String descriptor, MemberInfoVisitor memberInfoVisitor)
     {
-        LibraryMemberInfo libraryMemberInfo = findLibraryMethod(name, descriptor);
-        if (libraryMemberInfo != null)
+        MethodInfo method = findMethod(name, descriptor);
+        if (method != null)
         {
-            libraryMemberInfo.accept(this, memberInfoVisitor);
+            method.accept(this, memberInfoVisitor);
         }
     }
+
+
+    public boolean mayHaveImplementations(MethodInfo methodInfo)
+    {
+        return
+           (u2accessFlags & ClassConstants.INTERNAL_ACC_FINAL) == 0 &&
+           (methodInfo == null ||
+            ((methodInfo.getAccessFlags() & (ClassConstants.INTERNAL_ACC_PRIVATE |
+                                             ClassConstants.INTERNAL_ACC_STATIC  |
+                                             ClassConstants.INTERNAL_ACC_FINAL)) == 0 &&
+             !methodInfo.getName(this).equals(ClassConstants.INTERNAL_METHOD_NAME_INIT)));
+    }
+
+
+    private boolean isSpecial(MethodInfo methodInfo)
+    {
+        return
+            (methodInfo.getAccessFlags() & (ClassConstants.INTERNAL_ACC_PRIVATE |
+                                            ClassConstants.INTERNAL_ACC_STATIC)) != 0 ||
+            methodInfo.getName(this).equals(ClassConstants.INTERNAL_METHOD_NAME_INIT);
+    }
+
+
+    public void methodImplementationsAccept(MethodInfo        methodInfo,
+                                            boolean           visitThisMethod,
+                                            MemberInfoVisitor memberInfoVisitor)
+    {
+        methodImplementationsAccept(methodInfo.getName(this),
+                                    methodInfo.getDescriptor(this),
+                                    methodInfo,
+                                    visitThisMethod,
+                                    true,
+                                    true,
+                                    true,
+                                    memberInfoVisitor);
+    }
+
+
+    public void methodImplementationsAccept(String            name,
+                                            String            descriptor,
+                                            boolean           visitThisMethod,
+                                            MemberInfoVisitor memberInfoVisitor)
+    {
+        methodImplementationsAccept(name,
+                                    descriptor,
+                                    visitThisMethod,
+                                    true,
+                                    true,
+                                    true,
+                                    memberInfoVisitor);
+    }
+
+
+    public void methodImplementationsAccept(String            name,
+                                            String            descriptor,
+                                            boolean           visitThisMethod,
+                                            boolean           visitSpecialMethods,
+                                            boolean           visitSuperMethods,
+                                            boolean           visitOverridingMethods,
+                                            MemberInfoVisitor memberInfoVisitor)
+    {
+        methodImplementationsAccept(name,
+                                    descriptor,
+                                    findMethod(name, descriptor),
+                                    visitThisMethod,
+                                    visitSpecialMethods,
+                                    visitSuperMethods,
+                                    visitOverridingMethods,
+                                    memberInfoVisitor);
+    }
+
+
+    public void methodImplementationsAccept(String            name,
+                                            String            descriptor,
+                                            MethodInfo        methodInfo,
+                                            boolean           visitThisMethod,
+                                            boolean           visitSpecialMethods,
+                                            boolean           visitSuperMethods,
+                                            boolean           visitOverridingMethods,
+                                            MemberInfoVisitor memberInfoVisitor)
+    {
+        // Do we have the method in this class?
+        if (methodInfo != null)
+        {
+            // Is it a special method?
+            if (isSpecial(methodInfo))
+            {
+                // Visit the special method in this class, if allowed.
+                if (visitSpecialMethods)
+                {
+                    methodInfo.accept(this, memberInfoVisitor);
+
+                    // The method can't have any other implementations.
+                    return;
+                }
+            }
+            else
+            {
+                // Visit the method in this class, if allowed.
+                if (visitThisMethod)
+                {
+                    methodInfo.accept(this, memberInfoVisitor);
+                }
+
+                // We don't have to look in subclasses if there can't be
+                // any overriding implementations.
+                if (!mayHaveImplementations(methodInfo))
+                {
+                    visitOverridingMethods = false;
+                }
+
+                // We don't have to look in superclasses if we have a concrete
+                // implementation here.
+                if ((methodInfo.getAccessFlags() & ClassConstants.INTERNAL_ACC_ABSTRACT) == 0)
+                {
+                    visitSuperMethods = false;
+                }
+            }
+        }
+
+        // Then visit the method in its subclasses, recursively.
+        if (visitOverridingMethods)
+        {
+            // Go looking for implementations in all of the subclasses.
+            if (subClasses != null)
+            {
+                for (int i = 0; i < subClasses.length; i++)
+                {
+                    ClassFile subClass = subClasses[i];
+                    subClass.methodImplementationsAccept(name,
+                                                         descriptor,
+                                                         true,
+                                                         false,
+                                                         visitSuperMethods,
+                                                         true,
+                                                         memberInfoVisitor);
+                }
+            }
+
+            // We don't have to look in superclasses right away if we dont't
+            // have a concrete class here.
+            if ((u2accessFlags & (ClassConstants.INTERNAL_ACC_INTERFACE |
+                                  ClassConstants.INTERNAL_ACC_ABSTRACT)) != 0)
+            {
+                visitSuperMethods = false;
+            }
+        }
+
+        // Then visit the method in its superclass, recursively.
+        if (visitSuperMethods)
+        {
+            ClassFile superClass = getSuperClass();
+            if (superClass != null)
+            {
+                superClass.methodImplementationsAccept(name,
+                                                       descriptor,
+                                                       true,
+                                                       false,
+                                                       true,
+                                                       false,
+                                                       memberInfoVisitor);
+            }
+        }
+    }
+
 
     public void attributesAccept(AttrInfoVisitor attrInfoVisitor)
     {

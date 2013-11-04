@@ -1,8 +1,8 @@
-/* $Id: RuntimeParameterAnnotationsAttrInfo.java,v 1.2 2004/11/20 15:41:24 eric Exp $
+/* $Id: RuntimeParameterAnnotationsAttrInfo.java,v 1.5 2005/06/11 13:13:15 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by
@@ -32,10 +32,11 @@ import java.io.*;
  */
 public abstract class RuntimeParameterAnnotationsAttrInfo extends AttrInfo
 {
-    private static final int CONSTANT_FIELD_SIZE = 2;
+    private static final int CONSTANT_FIELD_SIZE1 = 1;
+    private static final int CONSTANT_FIELD_SIZE2 = 2;
 
 
-    //public int            u2numberOfParameters;
+    public int            u2numberOfParameters;
     //public int[]          u2numberOfAnnotations;
     public Annotation[][] parameterAnnotations;
 
@@ -50,15 +51,17 @@ public abstract class RuntimeParameterAnnotationsAttrInfo extends AttrInfo
      */
     public void annotationsAccept(ClassFile classFile, AnnotationVisitor annotationVisitor)
     {
-        for (int i = 0; i < parameterAnnotations.length; i++)
+        for (int parameterIndex = 0; parameterIndex < u2numberOfParameters; parameterIndex++)
         {
-            Annotation[] annotations = parameterAnnotations[i];
-            for (int j = 0; j < annotations.length; i++)
+            Annotation[] annotations = parameterAnnotations[parameterIndex];
+            int u2numberOfAnnotations = annotations.length;
+
+            for (int i = 0; i < u2numberOfAnnotations; i++)
             {
                 // We don't need double dispatching here, since there is only one
                 // type of Annotation.
                 //annotationVisitor.visitAnnotation(classFile, methodInfo, i, annotations[j]);
-                annotationVisitor.visitAnnotation(classFile, annotations[j]);
+                annotationVisitor.visitAnnotation(classFile, annotations[i]);
             }
         }
     }
@@ -68,16 +71,18 @@ public abstract class RuntimeParameterAnnotationsAttrInfo extends AttrInfo
 
     protected int getLength()
     {
-        int length = CONSTANT_FIELD_SIZE;
+        int length = CONSTANT_FIELD_SIZE1;
 
-        for (int i = 0; i < parameterAnnotations.length; i++)
+        for (int parameterIndex = 0; parameterIndex < u2numberOfParameters; parameterIndex++)
         {
-            length += CONSTANT_FIELD_SIZE;
+            Annotation[] annotations = parameterAnnotations[parameterIndex];
+            int u2numberOfAnnotations = annotations.length;
 
-            Annotation[] annotations = parameterAnnotations[i];
-            for (int j = 0; j < annotations.length; i++)
+            length += CONSTANT_FIELD_SIZE2;
+
+            for (int i = 0; i < u2numberOfAnnotations; i++)
             {
-                length += annotations[j].getLength();
+                length += annotations[i].getLength();
             }
         }
 
@@ -86,34 +91,38 @@ public abstract class RuntimeParameterAnnotationsAttrInfo extends AttrInfo
 
     protected void readInfo(DataInput din, ClassFile classFile) throws IOException
     {
-        int u2numberOfParameters = din.readUnsignedShort();
+        u2numberOfParameters = din.readUnsignedByte();
         parameterAnnotations = new Annotation[u2numberOfParameters][];
 
-        for (int i = 0; i < u2numberOfParameters; i++)
+        for (int parameterIndex = 0; parameterIndex < u2numberOfParameters; parameterIndex++)
         {
             int u2numberOfAnnotations = din.readUnsignedShort();
+
             Annotation[] annotations = new Annotation[u2numberOfAnnotations];
 
-            for (int j = 0; j < u2numberOfAnnotations; j++)
+            for (int i = 0; i < u2numberOfAnnotations; i++)
             {
-                annotations[j] = Annotation.create(din);
+                annotations[i] = Annotation.create(din);
             }
 
-            parameterAnnotations[i] = annotations;
+            parameterAnnotations[parameterIndex] = annotations;
         }
     }
 
     protected void writeInfo(DataOutput dout) throws IOException
     {
-        dout.writeShort(parameterAnnotations.length);
-        for (int i = 0; i < parameterAnnotations.length; i++)
-        {
-            Annotation[] annotations = parameterAnnotations[i];
+        dout.writeByte(u2numberOfParameters);
 
-            dout.writeShort(annotations.length);
-            for (int j = 0; j < annotations.length; i++)
+        for (int parameterIndex = 0; parameterIndex < u2numberOfParameters; parameterIndex++)
+        {
+            Annotation[] annotations = parameterAnnotations[parameterIndex];
+            int u2numberOfAnnotations = annotations.length;
+
+            dout.writeShort(u2numberOfAnnotations);
+
+            for (int i = 0; i < u2numberOfAnnotations; i++)
             {
-                annotations[j].write(dout);
+                annotations[i].write(dout);
             }
         }
     }

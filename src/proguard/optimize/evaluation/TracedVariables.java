@@ -1,8 +1,8 @@
-/* $Id: TracedVariables.java,v 1.7 2004/11/20 15:06:55 eric Exp $
+/* $Id: TracedVariables.java,v 1.9 2005/06/11 13:13:16 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -30,9 +30,8 @@ import proguard.optimize.evaluation.value.*;
  * additional information along with the actual variable values, for instance
  * to keep track of their origins.
  * <p>
- * In addition, a boolean initialization flag can be reset and retrieved,
- * indicating whether store operations on a variable may have initialized the
- * variable.
+ * In addition, an initialization index can be reset and retrieved, pointing
+ * to the most recent variable that has been initialized by a store operation.
  *
  * @author Eric Lafortune
  */
@@ -41,7 +40,7 @@ class TracedVariables extends Variables
     private Variables traceVariables;
     private Value     storeValue;
     private Value     traceValue;
-    private boolean   initialization;
+    private int       initializationIndex;
 
 
     public TracedVariables(int size)
@@ -85,16 +84,38 @@ class TracedVariables extends Variables
 
 
     /**
-     * Resets the initialization flag.
+     * Resets the initialization index.
      */
     public void resetInitialization()
     {
-        initialization = false;
+        initializationIndex = -1;
     }
 
-    public boolean wasInitialization()
+    public int getInitializationIndex()
     {
-        return initialization;
+        return initializationIndex;
+    }
+
+
+    /**
+     * Gets the specified trace Value from the variables, without disturbing them.
+     * @param index the variable index.
+     * @return the trace value at the specified position.
+     */
+    public Value getStoredTraceValue(int index)
+    {
+        return traceVariables.load(index);
+    }
+
+
+    /**
+     * Gets the specified trace Value from the variables, without disturbing them.
+     * @param index the variable index.
+     * @param value the trace value to set.
+     */
+    public void setStoredTraceValue(int index, Value value)
+    {
+        traceVariables.store(index, value);
     }
 
 
@@ -125,10 +146,11 @@ class TracedVariables extends Variables
     {
         // Is this store operation an initialization of the variable?
         Value previousValue = super.load(index);
-        initialization =
-            initialization        ||
-            previousValue == null ||
-            previousValue.computationalType() != value.computationalType();
+        if (previousValue == null ||
+            previousValue.computationalType() != value.computationalType())
+        {
+            initializationIndex = index;
+        }
 
         // Store the value itself in the variable.
         super.store(index, value);

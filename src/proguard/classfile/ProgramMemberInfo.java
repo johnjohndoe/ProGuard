@@ -1,9 +1,9 @@
-/* $Id: ProgramMemberInfo.java,v 1.27 2004/11/14 00:54:38 eric Exp $
+/* $Id: ProgramMemberInfo.java,v 1.29 2005/06/11 13:13:15 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -40,14 +40,6 @@ abstract public class ProgramMemberInfo implements MemberInfo
     public int        u2descriptorIndex;
     public int        u2attributesCount;
     public AttrInfo[] attributes;
-
-    /**
-     * An extra field pointing to the ClassFile objects referenced in the
-     * descriptor string. This field is filled out by the <code>{@link
-     * proguard.classfile.util.ClassFileReferenceInitializer ClassFileReferenceInitializer}</code>.
-     * References to primitive types are ignored.
-     */
-    public ClassFile[] referencedClassFiles;
 
     /**
      * An extra field in which visitors can store information.
@@ -124,19 +116,7 @@ abstract public class ProgramMemberInfo implements MemberInfo
      * Lets the ClassFile objects referenced in the descriptor string
      * accept the given visitor.
      */
-    public void referencedClassesAccept(ClassFileVisitor classFileVisitor)
-    {
-        if (referencedClassFiles != null)
-        {
-            for (int i = 0; i < referencedClassFiles.length; i++)
-            {
-                if (referencedClassFiles[i] != null)
-                {
-                    referencedClassFiles[i].accept(classFileVisitor);
-                }
-            }
-        }
-    }
+    public abstract void referencedClassesAccept(ClassFileVisitor classFileVisitor);
 
 
     /**
@@ -148,10 +128,13 @@ abstract public class ProgramMemberInfo implements MemberInfo
         u2nameIndex = din.readUnsignedShort();
         u2descriptorIndex = din.readUnsignedShort();
         u2attributesCount = din.readUnsignedShort();
-        attributes = new AttrInfo[u2attributesCount];
-        for (int i = 0; i < u2attributesCount; i++)
+        if (u2attributesCount > 0)
         {
-            attributes[i] = AttrInfo.create(din, cf);
+            attributes = new AttrInfo[u2attributesCount];
+            for (int i = 0; i < u2attributesCount; i++)
+            {
+                attributes[i] = AttrInfo.create(din, cf);
+            }
         }
     }
 

@@ -1,8 +1,8 @@
-/* $Id: ClassFileShrinker.java,v 1.25 2004/12/04 23:43:43 eric Exp $
+/* $Id: ClassFileShrinker.java,v 1.27 2005/06/11 13:13:16 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -41,18 +41,25 @@ public class ClassFileShrinker
              MemberInfoVisitor,
              AttrInfoVisitor
 {
-    private int[]                cpIndexMap;
+    private UsageMarker          usageMarker;
     private ConstantPoolRemapper constantPoolRemapper;
+    private int[]                cpIndexMap;
 
 
     /**
      * Creates a new ClassFileShrinker.
+    /**
+     * Creates a new InnerUsageMarker.
+     * @param usageMarker the usage marker that is used to mark the classes
+     *                    and class members.
      * @param codeLength an estimate of the maximum length of all the code that
      *                   will be edited.
      */
-    public ClassFileShrinker(int codeLength)
+    public ClassFileShrinker(UsageMarker usageMarker,
+                             int         codeLength)
     {
-        constantPoolRemapper = new ConstantPoolRemapper(codeLength);
+        this.usageMarker          = usageMarker;
+        this.constantPoolRemapper = new ConstantPoolRemapper(codeLength);
     }
 
 
@@ -186,7 +193,7 @@ public class ClassFileShrinker
         // a constructor of javax.swing.JList, but it is also referenced as a
         // dummy argument in a constructor of javax.swing.JList$ListSelectionHandler.
         if (enclosingMethodAttrInfo.referencedMethodInfo != null &&
-            !UsageMarker.isUsed(enclosingMethodAttrInfo.referencedMethodInfo))
+            !usageMarker.isUsed(enclosingMethodAttrInfo.referencedMethodInfo))
         {
             enclosingMethodAttrInfo.u2nameAndTypeIndex = 0;
 
@@ -232,7 +239,7 @@ public class ClassFileShrinker
             // Don't update the flag if this is the second half of a long entry.
             if (cpInfo != null)
             {
-                isUsed = UsageMarker.isUsed(cpInfo);
+                isUsed = usageMarker.isUsed(cpInfo);
             }
 
             if (isUsed)
@@ -256,14 +263,14 @@ public class ClassFileShrinker
      * from the given array.
      * @return the new number of indices.
      */
-    private static int shrinkCpIndexArray(CpInfo[] constantPool, int[] array, int length)
+    private int shrinkCpIndexArray(CpInfo[] constantPool, int[] array, int length)
     {
         int counter = 0;
 
         // Shift the used objects together.
         for (int index = 0; index < length; index++)
         {
-            if (UsageMarker.isUsed(constantPool[array[index]]))
+            if (usageMarker.isUsed(constantPool[array[index]]))
             {
                 array[counter++] = array[index];
             }
@@ -285,7 +292,7 @@ public class ClassFileShrinker
      * of the right size.
      * @return the new array.
      */
-    private static ClassFile[] shrinkToNewArray(ClassFile[] array)
+    private ClassFile[] shrinkToNewArray(ClassFile[] array)
     {
         if (array == null)
         {
@@ -317,14 +324,14 @@ public class ClassFileShrinker
      * from the given array.
      * @return the new number of VisitorAccepter objects.
      */
-    private static int shrinkArray(VisitorAccepter[] array, int length)
+    private int shrinkArray(VisitorAccepter[] array, int length)
     {
         int counter = 0;
 
         // Shift the used objects together.
         for (int index = 0; index < length; index++)
         {
-            if (UsageMarker.isUsed(array[index]))
+            if (usageMarker.isUsed(array[index]))
             {
                 array[counter++] = array[index];
             }

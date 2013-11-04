@@ -1,9 +1,9 @@
-/* $Id: ProgramMethodInfo.java,v 1.16 2004/10/23 16:53:01 eric Exp $
+/* $Id: ProgramMethodInfo.java,v 1.19 2005/06/11 13:21:35 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -35,6 +35,15 @@ import java.io.*;
 public class ProgramMethodInfo extends ProgramMemberInfo implements MethodInfo
 {
     /**
+     * An extra field pointing to the ClassFile objects referenced in the
+     * descriptor string. This field is filled out by the <code>{@link
+     * proguard.classfile.util.ClassFileReferenceInitializer ClassFileReferenceInitializer}</code>.
+     * References to primitive types are ignored.
+     */
+    public ClassFile[] referencedClassFiles;
+
+
+    /**
      * Creates a new ProgramMethodInfo from the file format data in the DataInput stream.
      *
      * @throws IOException if class file is corrupt or incomplete
@@ -65,6 +74,21 @@ public class ProgramMethodInfo extends ProgramMemberInfo implements MethodInfo
         for (int i = 0; i < u2attributesCount; i++)
         {
             attributes[i].accept(programClassFile, this, attrInfoVisitor);
+        }
+    }
+
+
+    public void referencedClassesAccept(ClassFileVisitor classFileVisitor)
+    {
+        if (referencedClassFiles != null)
+        {
+            for (int i = 0; i < referencedClassFiles.length; i++)
+            {
+                if (referencedClassFiles[i] != null)
+                {
+                    referencedClassFiles[i].accept(classFileVisitor);
+                }
+            }
         }
     }
 }

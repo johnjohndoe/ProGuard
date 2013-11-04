@@ -1,8 +1,8 @@
-/* $Id: StoreLoadReplacer.java,v 1.7 2004/11/20 15:06:55 eric Exp $
+/* $Id: StoreLoadReplacer.java,v 1.9 2005/06/11 13:13:16 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -21,10 +21,9 @@
 package proguard.optimize.peephole;
 
 import proguard.classfile.*;
-import proguard.classfile.attribute.*;
-import proguard.classfile.editor.*;
+import proguard.classfile.attribute.CodeAttrInfo;
+import proguard.classfile.editor.CodeAttrInfoEditor;
 import proguard.classfile.instruction.*;
-import proguard.classfile.visitor.*;
 
 /**
  * This InstructionVisitor replaces store/load instruction pairs by equivalent

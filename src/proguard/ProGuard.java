@@ -1,13 +1,14 @@
-/* $Id: ProGuard.java,v 1.84 2004/12/11 16:35:23 eric Exp $
+/* $Id: ProGuard.java,v 1.95 2005/06/11 13:21:35 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
  * Software Foundation; either version 2 of the License, or (at your option)
  * any later version.
+ *
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -29,11 +30,13 @@ import proguard.classfile.visitor.*;
 import proguard.io.*;
 import proguard.obfuscate.*;
 import proguard.optimize.*;
-import proguard.optimize.evaluation.*;
+import proguard.optimize.evaluation.PartialEvaluator;
 import proguard.optimize.peephole.*;
 import proguard.shrink.*;
+import proguard.util.*;
 
 import java.io.*;
+import java.util.*;
 
 
 /**
@@ -43,7 +46,7 @@ import java.io.*;
  */
 public class ProGuard
 {
-    public static final String VERSION = "ProGuard, version 3.2";
+    public static final String VERSION = "ProGuard, version 3.3";
 
     private Configuration configuration;
     private ClassPool     programClassPool = new ClassPool();
@@ -66,6 +69,8 @@ public class ProGuard
     public void execute() throws IOException
     {
         System.out.println(VERSION);
+
+        GPL.check();
 
         readInput();
 
@@ -93,7 +98,9 @@ public class ProGuard
             // Shrink again, if we may.
             if (configuration.shrink)
             {
-                configuration.printUsage = null;
+                // Don't print any usage this time around.
+                configuration.printUsage       = null;
+                configuration.whyAreYouKeeping = null;
 
                 shrink();
             }
@@ -185,6 +192,7 @@ public class ProGuard
             new ClassFileReader(isLibrary,
                                 configuration.skipNonPublicLibraryClasses,
                                 configuration.skipNonPublicLibraryClassMembers,
+                                configuration.note,
             new ClassPoolFiller(classPool, configuration.note)));
     }
 
@@ -241,7 +249,7 @@ public class ProGuard
 
             // Create the data entry pump.
             DirectoryPump directoryPump =
-                new DirectoryPump(new File(classPathEntry.getName()));
+                new DirectoryPump(classPathEntry.getFile());
 
             // Pump the data entries into the reader.
             directoryPump.pumpDataEntries(reader);
@@ -258,6 +266,13 @@ public class ProGuard
      */
     private void initialize() throws IOException
     {
+        if (configuration.verbose)
+        {
+            System.out.println("Initializing...");
+        }
+
+        int originalLibraryClassPoolSize = libraryClassPool.size();
+
         // Initialize the class hierarchy for program class files.
         ClassFileHierarchyInitializer classFileHierarchyInitializer =
             new ClassFileHierarchyInitializer(programClassPool,
@@ -266,7 +281,7 @@ public class ProGuard
 
         programClassPool.classFilesAccept(classFileHierarchyInitializer);
 
-        // Initialize the rest of the class hierarchy.
+        // Initialize the class hierarchy for library class files.
         ClassFileHierarchyInitializer classFileHierarchyInitializer2 =
             new ClassFileHierarchyInitializer(programClassPool,
                                               libraryClassPool,
@@ -274,16 +289,47 @@ public class ProGuard
 
         libraryClassPool.classFilesAccept(classFileHierarchyInitializer2);
 
-        // Initialize the other class references.
+        // Initialize the Class.forName and .class references.
+        ClassFileClassForNameReferenceInitializer classFileClassForNameReferenceInitializer =
+            new ClassFileClassForNameReferenceInitializer(programClassPool,
+                                                          configuration.note,
+                                                          createNoteExceptionMatcher(configuration.keep));
+
+        programClassPool.classFilesAccept(
+            new AllMethodVisitor(
+            new AllAttrInfoVisitor(
+            new AllInstructionVisitor(classFileClassForNameReferenceInitializer))));
+
+        // Initialize the class references from program class members and attributes.
         ClassFileReferenceInitializer classFileReferenceInitializer =
             new ClassFileReferenceInitializer(programClassPool,
                                               libraryClassPool,
-                                              configuration.warn,
-                                              configuration.note);
+                                              configuration.warn);
 
         programClassPool.classFilesAccept(classFileReferenceInitializer);
 
-        int noteCount = classFileReferenceInitializer.getNoteCount();
+        // Reinitialize the library class pool with only those library classes
+        // whose hierarchies are referenced by the program classes.
+        ClassPool newLibraryClassPool = new ClassPool();
+        programClassPool.classFilesAccept(
+            new AllCpInfoVisitor(
+            new ReferencedClassFileVisitor(
+            new LibraryClassFileFilter(
+            new ClassFileHierarchyTraveler(true, true, true, false,
+            new LibraryClassFileFilter(
+            new ClassPoolFiller(newLibraryClassPool, false)))))));
+
+        libraryClassPool = newLibraryClassPool;
+
+        // Initialize the class references from library class members.
+        ClassFileReferenceInitializer classFileReferenceInitializer2 =
+            new ClassFileReferenceInitializer(programClassPool,
+                                              libraryClassPool,
+                                              false);
+
+        libraryClassPool.classFilesAccept(classFileReferenceInitializer2);
+
+        int noteCount = classFileClassForNameReferenceInitializer.getNoteCount();
         if (noteCount > 0)
         {
             System.err.println("Note: there were " + noteCount +
@@ -322,29 +368,51 @@ public class ProGuard
         // Discard unused library classes.
         if (configuration.verbose)
         {
-                    System.out.println("Removing unused library classes...");
-                    System.out.println("    Original number of library classes: " + libraryClassPool.size());
-        }
-
-        // Reinitialize the library class pool with only those library classes
-        // whose hierarchies are referenced by the program classes.
-        ClassPool newLibraryClassPool = new ClassPool();
-        programClassPool.classFilesAccept(
-            new AllCpInfoVisitor(
-            new ReferencedClassFileVisitor(
-            new LibraryClassFileFilter(
-            new ClassFileHierarchyTraveler(true, true, true, false,
-            new LibraryClassFileFilter(
-            new ClassPoolFiller(newLibraryClassPool, false)))))));
-
-        libraryClassPool = newLibraryClassPool;
-
-        if (configuration.verbose)
-        {
-            System.out.println("    Final number of library classes:    " + libraryClassPool.size());
+            System.out.println("Removing unused library classes...");
+            System.out.println("  Original number of library classes: " + originalLibraryClassPoolSize);
+            System.out.println("  Final number of library classes:    " + libraryClassPool.size());
         }
     }
 
+
+    /**
+     * Extracts a list of exceptions for which not to print notes, from the
+     * keep configuration.
+     */
+    private ClassNameListMatcher createNoteExceptionMatcher(List noteExceptions)
+    {
+        if (noteExceptions != null)
+        {
+            List noteExceptionNames = new ArrayList(noteExceptions.size());
+            for (int index = 0; index < noteExceptions.size(); index++)
+            {
+                ClassSpecification classSpecification = (ClassSpecification)noteExceptions.get(index);
+                if (classSpecification.markClassFiles)
+                {
+                    // If the class itself is being kept, it's ok.
+                    String className = classSpecification.className;
+                    if (className != null)
+                    {
+                        noteExceptionNames.add(className);
+                    }
+
+                    // If all of its extensions are being kept, it's ok too.
+                    String extendsClassName = classSpecification.extendsClassName;
+                    if (extendsClassName != null)
+                    {
+                        noteExceptionNames.add(extendsClassName);
+                    }
+                }
+            }
+
+            if (noteExceptionNames.size() > 0)
+            {
+                return new ClassNameListMatcher(noteExceptionNames);
+            }
+        }
+
+        return null;
+    }
 
     /**
      * Prints out classes and class members that are used as seeds in the
@@ -363,7 +431,7 @@ public class ProGuard
             throw new IOException("You have to specify '-keep' options for the shrinking step.");
         }
 
-        PrintStream ps = configuration.printSeeds.length() > 0 ?
+        PrintStream ps = isFile(configuration.printSeeds) ?
             new PrintStream(new BufferedOutputStream(new FileOutputStream(configuration.printSeeds))) :
             System.out;
 
@@ -402,13 +470,17 @@ public class ProGuard
             throw new IOException("You have to specify '-keep' options for the shrinking step.");
         }
 
+        int originalProgramClassPoolSize = programClassPool.size();
+
         // Clean up any old visitor info.
-        ClassFileCleaner classFileCleaner = new ClassFileCleaner();
-        programClassPool.classFilesAccept(classFileCleaner);
-        libraryClassPool.classFilesAccept(classFileCleaner);
+        programClassPool.classFilesAccept(new ClassFileCleaner());
+        libraryClassPool.classFilesAccept(new ClassFileCleaner());
 
         // Create a visitor for marking the seeds.
-        UsageMarker usageMarker = new UsageMarker();
+        UsageMarker usageMarker = configuration.whyAreYouKeeping == null ?
+            new UsageMarker() :
+            new ShortestUsageMarker();
+
         ClassPoolVisitor classPoolvisitor =
             ClassSpecificationVisitorFactory.createClassPoolVisitor(configuration.keep,
                                                                     usageMarker,
@@ -418,27 +490,52 @@ public class ProGuard
         libraryClassPool.accept(classPoolvisitor);
 
         // Mark interfaces that have to be kept.
-        programClassPool.classFilesAccept(new InterfaceUsageMarker());
+        programClassPool.classFilesAccept(new InterfaceUsageMarker(usageMarker));
 
         // Mark the inner class information that has to be kept.
-        programClassPool.classFilesAccept(new InnerUsageMarker());
+        programClassPool.classFilesAccept(new InnerUsageMarker(usageMarker));
+
+        if (configuration.whyAreYouKeeping != null)
+        {
+            if (configuration.verbose)
+            {
+                System.out.println("Explaining why classes and class members are being kept...");
+            }
+
+            System.out.println();
+
+            // Create a visitor for explaining classes and class members.
+            ShortestUsagePrinter shortestUsagePrinter =
+                new ShortestUsagePrinter((ShortestUsageMarker)usageMarker,
+                                         configuration.verbose);
+
+            ClassPoolVisitor whyClassPoolvisitor =
+                ClassSpecificationVisitorFactory.createClassPoolVisitor(configuration.whyAreYouKeeping,
+                                                                        shortestUsagePrinter,
+                                                                        shortestUsagePrinter);
+
+            // Mark the seeds.
+            programClassPool.accept(whyClassPoolvisitor);
+            libraryClassPool.accept(whyClassPoolvisitor);
+        }
 
         if (configuration.printUsage != null)
         {
             if (configuration.verbose)
             {
                 System.out.println("Printing usage" +
-                                   (configuration.printUsage.length() > 0 ?
-                                       " to [" + configuration.printUsage + "]" :
+                                   (isFile(configuration.printUsage) ?
+                                       " to [" + configuration.printUsage.getAbsolutePath() + "]" :
                                        "..."));
             }
 
-            PrintStream ps = configuration.printUsage.length() > 0 ?
+            PrintStream ps = isFile(configuration.printUsage) ?
                 new PrintStream(new BufferedOutputStream(new FileOutputStream(configuration.printUsage))) :
                 System.out;
 
             // Print out items that will be removed.
-            programClassPool.classFilesAcceptAlphabetically(new UsagePrinter(true, ps));
+            programClassPool.classFilesAcceptAlphabetically(
+                new UsagePrinter(usageMarker, true, ps));
 
             if (ps != System.out)
             {
@@ -447,25 +544,21 @@ public class ProGuard
         }
 
         // Discard unused program classes.
-        if (configuration.verbose)
-        {
-            System.out.println("Removing unused program classes and class elements...");
-            System.out.println("    Original number of program classes: " + programClassPool.size());
-        }
-
         ClassPool newProgramClassPool = new ClassPool();
         programClassPool.classFilesAccept(
-            new UsedClassFileFilter(
+            new UsedClassFileFilter(usageMarker,
             new MultiClassFileVisitor(
             new ClassFileVisitor[] {
-                new ClassFileShrinker(1024),
+                new ClassFileShrinker(usageMarker, 1024),
                 new ClassPoolFiller(newProgramClassPool, false)
             })));
         programClassPool = newProgramClassPool;
 
         if (configuration.verbose)
         {
-            System.out.println("    Final number of program classes:    " + programClassPool.size());
+            System.out.println("Removing unused program classes and class elements...");
+            System.out.println("  Original number of program classes: " + originalProgramClassPoolSize);
+            System.out.println("  Final number of program classes:    " + programClassPool.size());
         }
 
         // Check if we have at least some output class files.
@@ -487,12 +580,18 @@ public class ProGuard
         }
 
         // Clean up any old visitor info.
-        ClassFileCleaner classFileCleaner = new ClassFileCleaner();
-        programClassPool.classFilesAccept(classFileCleaner);
-        libraryClassPool.classFilesAccept(classFileCleaner);
+        programClassPool.classFilesAccept(new ClassFileCleaner());
+        libraryClassPool.classFilesAccept(new ClassFileCleaner());
+
+        // Link all methods that should get the same optimization info.
+        programClassPool.classFilesAccept(new BottomClassFileFilter(
+                                          new MethodInfoLinker()));
 
         // Check if we have at least some keep commands.
-        if (configuration.keep == null)
+        if (configuration.keep         == null &&
+            configuration.keepNames    == null &&
+            configuration.applyMapping == null &&
+            configuration.printMapping == null)
         {
             throw new IOException("You have to specify '-keep' options for the optimization step.");
         }
@@ -500,23 +599,57 @@ public class ProGuard
         // Create a visitor for marking the seeds.
         KeepMarker keepMarker = new KeepMarker();
         ClassPoolVisitor classPoolvisitor =
-            ClassSpecificationVisitorFactory.createClassPoolVisitor(configuration.keep,
-                                                                    keepMarker,
-                                                                    keepMarker);
+            new MultiClassPoolVisitor(new ClassPoolVisitor[]
+            {
+                ClassSpecificationVisitorFactory.createClassPoolVisitor(configuration.keep,
+                                                                        keepMarker,
+                                                                        keepMarker),
+                ClassSpecificationVisitorFactory.createClassPoolVisitor(configuration.keepNames,
+                                                                        keepMarker,
+                                                                        keepMarker)
+            });
 
         // Mark the seeds.
         programClassPool.accept(classPoolvisitor);
         libraryClassPool.accept(classPoolvisitor);
 
+        // Attach some optimization info to all methods, so it can be filled
+        // out later.
+        programClassPool.classFilesAccept(new AllMethodVisitor(
+                                          new MethodOptimizationInfoSetter()));
+        libraryClassPool.classFilesAccept(new AllMethodVisitor(
+                                          new MethodOptimizationInfoSetter()));
+
+        // Mark all interfaces that have single implementations.
+        programClassPool.classFilesAccept(new SingleImplementationMarker(configuration.allowAccessModification));
+
         // Make class files and methods final, as far as possible.
         programClassPool.classFilesAccept(new ClassFileFinalizer());
 
-        // Mark all fields that are write-only.
-        programClassPool.classFilesAccept(
-            new AllMethodVisitor(
-            new AllAttrInfoVisitor(
-            new AllInstructionVisitor(
-            new WriteOnlyFieldMarker()))));
+        // Mark all fields that are write-only, and mark the used local variables.
+        programClassPool.classFilesAccept(new AllMethodVisitor(
+                                          new AllAttrInfoVisitor(
+                                          new AllInstructionVisitor(
+                                          new MultiInstructionVisitor(
+                                          new InstructionVisitor[]
+                                          {
+                                              new WriteOnlyFieldMarker(),
+                                              new VariableUsageMarker(),
+                                          })))));
+
+        // Mark all methods that can not be made private.
+        programClassPool.classFilesAccept(new NonPrivateMethodMarker());
+        libraryClassPool.classFilesAccept(new NonPrivateMethodMarker());
+
+        // Make all final and unmarked methods private.
+        programClassPool.classFilesAccept(new AllMethodVisitor(
+                                          new MethodPrivatizer()));
+
+        // Mark all used parameters, including the 'this' parameters.
+        programClassPool.classFilesAccept(new AllMethodVisitor(
+                                          new ParameterUsageMarker()));
+        libraryClassPool.classFilesAccept(new AllMethodVisitor(
+                                          new ParameterUsageMarker()));
 
         if (configuration.assumeNoSideEffects != null)
         {
@@ -535,21 +668,25 @@ public class ProGuard
         // Mark all methods that have side effects.
         programClassPool.accept(new SideEffectMethodMarker());
 
-        // Mark all interfaces that have single implementations.
-        programClassPool.classFilesAccept(new SingleImplementationMarker(configuration.allowAccessModification));
-
-        // Inline interfaces with single implementations.
-        // First update the references to classes and class members.
-        // Then update the class member descriptors.
-        programClassPool.classFilesAccept(new AllMethodVisitor(
-                                          new AllAttrInfoVisitor(
-                                          new SingleImplementationInliner())));
-        programClassPool.classFilesAccept(new AllMemberInfoVisitor(
-                                          new SingleImplementationInliner()));
-
         // Perform partial evaluation.
         programClassPool.classFilesAccept(new AllMethodVisitor(
                                           new PartialEvaluator()));
+
+        // Shrink the method parameters and make methods static.
+        programClassPool.classFilesAccept(new AllMethodVisitor(
+                                          new ParameterShrinker(1024, 64)));
+
+        // Inline interfaces with single implementations.
+        programClassPool.classFilesAccept(new SingleImplementationInliner());
+
+        // Restore the interface references from these single implementations.
+        programClassPool.classFilesAccept(new SingleImplementationFixer());
+
+        // Fix all references to class files.
+        programClassPool.classFilesAccept(new ClassFileReferenceFixer());
+
+        // Fix all references to class members.
+        programClassPool.classFilesAccept(new MemberReferenceFixer(1024));
 
         // Create a branch target marker and a code attribute editor that can
         // be reused for all code attributes.
@@ -564,6 +701,7 @@ public class ProGuard
         // - Replace store/load instruction pairs by dup/store instructions.
         // - Replace branches to return instructions by return instructions.
         // - Remove nop instructions.
+        // - Fix invocations of methods that have become private, static,...
         // - Inline simple getters and setters.
         // Finally apply all changes to the code.
         programClassPool.classFilesAccept(
@@ -583,6 +721,7 @@ public class ProGuard
                     new StoreLoadReplacer(branchTargetFinder, codeAttrInfoEditor),
                     new GotoReturnReplacer(codeAttrInfoEditor),
                     new NopRemover(codeAttrInfoEditor),
+                    new MethodInvocationFixer(codeAttrInfoEditor),
                     new GetterSetterInliner(codeAttrInfoEditor, configuration.allowAccessModification),
                 })),
                 codeAttrInfoEditor
@@ -601,20 +740,21 @@ public class ProGuard
         }
 
         // Check if we have at least some keep commands.
-        if (configuration.keep      == null &&
-            configuration.keepNames == null)
+        if (configuration.keep         == null &&
+            configuration.keepNames    == null &&
+            configuration.applyMapping == null &&
+            configuration.printMapping == null)
         {
             throw new IOException("You have to specify '-keep' options for the obfuscation step.");
         }
 
         // Clean up any old visitor info.
-        ClassFileCleaner classFileCleaner = new ClassFileCleaner();
-        programClassPool.classFilesAccept(classFileCleaner);
-        libraryClassPool.classFilesAccept(classFileCleaner);
+        programClassPool.classFilesAccept(new ClassFileCleaner());
+        libraryClassPool.classFilesAccept(new ClassFileCleaner());
 
-        // Link all class members that should get the same names.
+        // Link all methods that should get the same names.
         programClassPool.classFilesAccept(new BottomClassFileFilter(
-                                          new MemberInfoLinker()));
+                                          new MethodInfoLinker()));
 
         // Create a visitor for marking the seeds.
         NameMarker nameMarker = new NameMarker();
@@ -633,12 +773,17 @@ public class ProGuard
         programClassPool.accept(classPoolvisitor);
         libraryClassPool.accept(classPoolvisitor);
 
-        // Apply the mapping, if one has been specified.
+        // All library classes and library class members keep their names.
+        libraryClassPool.classFilesAccept(nameMarker);
+        libraryClassPool.classFilesAccept(new AllMemberInfoVisitor(nameMarker));
+
+        // Apply the mapping, if one has been specified. The mapping can
+        // override the names of library classes and of library class members.
         if (configuration.applyMapping != null)
         {
             if (configuration.verbose)
             {
-                System.out.println("Applying mapping [" + configuration.applyMapping + "]");
+                System.out.println("Applying mapping [" + configuration.applyMapping.getAbsolutePath() + "]");
             }
 
             MappingReader    reader = new MappingReader(configuration.applyMapping);
@@ -680,10 +825,92 @@ public class ProGuard
                                                                   configuration.defaultPackage,
                                                                   configuration.useMixedCaseClassNames));
 
-        // Come up with new names for all class members.
-        programClassPool.classFilesAccept(new BottomClassFileFilter(
-                                          new MemberInfoObfuscator(configuration.overloadAggressively,
-                                                                   configuration.obfuscationDictionary)));
+        NameFactory nameFactory = new SimpleNameFactory();
+
+        if (configuration.obfuscationDictionary != null)
+        {
+            nameFactory = new DictionaryNameFactory(configuration.obfuscationDictionary, nameFactory);
+        }
+
+        Map descriptorMap = new HashMap();
+
+        // Come up with new names for all non-private class members.
+        programClassPool.classFilesAccept(
+            new BottomClassFileFilter(
+            new MultiClassFileVisitor(new ClassFileVisitor[]
+            {
+                // Collect all non-private member names in this name space.
+                new ClassFileHierarchyTraveler(true, true, true, false,
+                new AllMemberInfoVisitor(
+                new MemberInfoAccessFilter(0, ClassConstants.INTERNAL_ACC_PRIVATE,
+                new MemberInfoNameCollector(configuration.overloadAggressively,
+                                            descriptorMap)))),
+
+                // Assign new names to all non-private members in this name space.
+                new ClassFileHierarchyTraveler(true, true, true, false,
+                new AllMemberInfoVisitor(
+                new MemberInfoAccessFilter(0, ClassConstants.INTERNAL_ACC_PRIVATE,
+                new MemberInfoObfuscator(configuration.overloadAggressively,
+                                         nameFactory,
+                                         descriptorMap)))),
+
+                // Clear the collected names.
+                new MapCleaner(descriptorMap)
+            })));
+
+        // Come up with new names for all private class members.
+        programClassPool.classFilesAccept(
+            new MultiClassFileVisitor(new ClassFileVisitor[]
+            {
+                // Collect all member names in this class.
+                new AllMemberInfoVisitor(
+                new MemberInfoNameCollector(configuration.overloadAggressively,
+                                            descriptorMap)),
+
+                // Collect all non-private member names higher up the hierarchy.
+                new ClassFileHierarchyTraveler(false, true, true, false,
+                new AllMemberInfoVisitor(
+                new MemberInfoAccessFilter(0, ClassConstants.INTERNAL_ACC_PRIVATE,
+                new MemberInfoNameCollector(configuration.overloadAggressively,
+                                            descriptorMap)))),
+
+                // Assign new names to all private members in this class.
+                new AllMemberInfoVisitor(
+                new MemberInfoAccessFilter(ClassConstants.INTERNAL_ACC_PRIVATE, 0,
+                new MemberInfoObfuscator(configuration.overloadAggressively,
+                                         nameFactory,
+                                         descriptorMap))),
+
+                // Clear the collected names.
+                new MapCleaner(descriptorMap)
+            }));
+
+        // Some class members may have ended up with conflicting names.
+        // Collect all special member names.
+        programClassPool.classFilesAccept(
+            new AllMemberInfoVisitor(
+            new MemberInfoSpecialNameFilter(
+            new MemberInfoNameCollector(configuration.overloadAggressively,
+                                        descriptorMap))));
+        libraryClassPool.classFilesAccept(
+            new AllMemberInfoVisitor(
+            new MemberInfoSpecialNameFilter(
+            new MemberInfoNameCollector(configuration.overloadAggressively,
+                                        descriptorMap))));
+
+        // Replace the conflicting member names with special, globally unique names.
+        programClassPool.classFilesAccept(
+            new AllMemberInfoVisitor(
+            new MemberInfoNameConflictFilter(
+            new MultiMemberInfoVisitor(new MemberInfoVisitor[]
+            {
+                new MemberInfoNameCleaner(),
+                new MemberInfoObfuscator(configuration.overloadAggressively,
+                                         new SpecialNameFactory(new SimpleNameFactory()),
+                                         descriptorMap),
+            }))));
+
+        descriptorMap.clear();
 
         // Print out the mapping, if requested.
         if (configuration.printMapping != null)
@@ -691,12 +918,12 @@ public class ProGuard
             if (configuration.verbose)
             {
                 System.out.println("Printing mapping" +
-                                   (configuration.printMapping.length() > 0 ?
-                                       " to [" + configuration.printMapping + "]" :
+                                   (isFile(configuration.printMapping) ?
+                                       " to [" + configuration.printMapping.getAbsolutePath() + "]" :
                                        "..."));
             }
 
-            PrintStream ps = configuration.printMapping.length() > 0 ?
+            PrintStream ps = isFile(configuration.printMapping) ?
                 new PrintStream(new BufferedOutputStream(new FileOutputStream(configuration.printMapping))) :
                 System.out;
 
@@ -709,9 +936,26 @@ public class ProGuard
             }
         }
 
-        // Actually apply these new names.
-        programClassPool.classFilesAccept(new ClassFileRenamer(configuration.defaultPackage != null,
-                                                               configuration.newSourceFileAttribute));
+        // Actually apply the new names.
+        programClassPool.classFilesAccept(new ClassFileRenamer());
+        libraryClassPool.classFilesAccept(new ClassFileRenamer());
+
+        // Update all references to these new names.
+        programClassPool.classFilesAccept(new ClassFileReferenceFixer());
+        libraryClassPool.classFilesAccept(new ClassFileReferenceFixer());
+        programClassPool.classFilesAccept(new MemberReferenceFixer(1024));
+
+        // Make package visible elements public, if necessary.
+        if (configuration.defaultPackage != null)
+        {
+            programClassPool.classFilesAccept(new ClassFileOpener());
+        }
+
+        // Rename the source file attributes, if requested.
+        if (configuration.newSourceFileAttribute != null)
+        {
+            programClassPool.classFilesAccept(new SourceFileRenamer(configuration.newSourceFileAttribute));
+        }
 
         // Mark NameAndType constant pool entries that have to be kept
         // and remove the other ones.
@@ -730,6 +974,7 @@ public class ProGuard
      */
     private void sortConstantPools()
     {
+        // TODO: Avoid duplicate constant pool entries.
         programClassPool.classFilesAccept(new ConstantPoolSorter(1024));
     }
 
@@ -778,7 +1023,7 @@ public class ProGuard
                     ClassPathEntry otherEntry = programJars.get(inIndex);
 
                     if (!otherEntry.isOutput() &&
-                        entry.getName().equals(otherEntry.getName()))
+                        entry.getFile().equals(otherEntry.getFile()))
                     {
                         throw new IOException("The output jar [" + entry.getName() +
                                               "] must be different from all input jars.");
@@ -849,7 +1094,7 @@ public class ProGuard
                                     new DataEntryCopier(writer));
 
             // Read and handle the specified input entries.
-            readInput("Copying resources from program ",
+            readInput("  Copying resources from program ",
                       classPath,
                       fromInputIndex,
                       fromOutputIndex,
@@ -873,21 +1118,30 @@ public class ProGuard
         if (configuration.verbose)
         {
             System.out.println("Printing classes" +
-                               (configuration.dump.length() > 0 ?
-                                   " to [" + configuration.dump + "]" :
+                               (isFile(configuration.dump) ?
+                                   " to [" + configuration.dump.getAbsolutePath() + "]" :
                                    "..."));
         }
 
-        PrintStream ps = configuration.dump.length() > 0 ?
+        PrintStream ps = isFile(configuration.dump) ?
             new PrintStream(new BufferedOutputStream(new FileOutputStream(configuration.dump))) :
             System.out;
 
         programClassPool.classFilesAccept(new ClassFilePrinter(ps));
 
-        if (configuration.dump.length() > 0)
+        if (isFile(configuration.dump))
         {
             ps.close();
         }
+    }
+
+
+    /**
+     * Returns whether the given file is actually a file, or just a placeholder
+     * for the standard output.
+     */
+    private boolean isFile(File file){
+        return file.getPath().length() > 0;
     }
 
 
@@ -909,11 +1163,19 @@ public class ProGuard
         {
             // Parse the options specified in the command line arguments.
             ConfigurationParser parser = new ConfigurationParser(args);
-            parser.parse(configuration);
 
-            // Execute ProGuard with these options.
-            ProGuard proGuard = new ProGuard(configuration);
-            proGuard.execute();
+            try
+            {
+                parser.parse(configuration);
+
+                // Execute ProGuard with these options.
+                ProGuard proGuard = new ProGuard(configuration);
+                proGuard.execute();
+            }
+            finally
+            {
+                parser.close();
+            }
         }
         catch (Exception ex)
         {

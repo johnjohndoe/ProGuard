@@ -1,8 +1,8 @@
-/* $Id: ArgumentWordReader.java,v 1.11 2004/08/15 12:39:30 eric Exp $
+/* $Id: ArgumentWordReader.java,v 1.14 2005/06/11 13:13:15 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -35,11 +35,23 @@ public class ArgumentWordReader extends WordReader
     private int      index = 0;
 
 
+//    /**
+//     * Creates a new ArgumentWordReader for the given arguments.
+//     */
+//    public ArgumentWordReader(String[] arguments)
+//    {
+//        this(arguments, null);
+//    }
+//
+//
     /**
-     * Creates a new ArgumentWordReader for the given arguments.
+     * Creates a new ArgumentWordReader for the given arguments, with the
+     * given base directory.
      */
-    public ArgumentWordReader(String[] arguments)
+    public ArgumentWordReader(String[] arguments, File baseDir)
     {
+        super(baseDir);
+
         this.arguments = arguments;
     }
 
@@ -65,18 +77,33 @@ public class ArgumentWordReader extends WordReader
      * the argument list.
      */
     public static void main(String[] args) {
+
         try
         {
-            WordReader reader = new ArgumentWordReader(args);
-            while (true)
-            {
-                String word = reader.nextWord();
-                if (word == null)
-                    System.exit(-1);
+            WordReader reader = new ArgumentWordReader(args, null);
 
-                System.err.println("["+word+"]");
+            try
+            {
+                while (true)
+                {
+                    String word = reader.nextWord();
+                    if (word == null)
+                        System.exit(-1);
+
+                    System.err.println("["+word+"]");
+                }
             }
-        } catch (Exception ex) {
+            catch (Exception ex)
+            {
+                ex.printStackTrace();
+            }
+            finally
+            {
+                reader.close();
+            }
+        }
+        catch (IOException ex)
+        {
             ex.printStackTrace();
         }
     }

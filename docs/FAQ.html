@@ -17,6 +17,8 @@
 <li><a href="#obfuscation">What is obfuscation?</a>
 <li><a href="#optimization">What kind of optimizations does <b>ProGuard</b>
     support?</a>
+<li><a href="#commercial">Can I use <b>ProGuard</b> to process my commercial
+    application?</a>
 <li><a href="#jdk1.4">Does <b>ProGuard</b> work with JDK1.4? JDK5.0?</a>
 <li><a href="#j2me">Does <b>ProGuard</b> work with J2ME?</a>
 <li><a href="#ant">Does <b>ProGuard</b> have support for Ant?</a>
@@ -63,18 +65,20 @@ Apart from removing unused classes, fields, and methods in the shrinking step,
 <b>ProGuard</b> can also perform optimizations at the bytecode level, inside
 methods:
 <ul>
-<li>Evaluating constant expressions.
-<li>Removing unnecessary computations.
-<li>Removing unnecessary field accesses.
-<li>Removing unnecessary method calls.
-<li>Removing unnecessary branches.
-<li>Removing unnecessary comparisons and instanceof tests.
-<li>Removing write-only fields.
+<li>Evaluate constant expressions.
+<li>Remove unnecessary field accesses.
+<li>Remove unnecessary method calls.
+<li>Remove unnecessary branches.
+<li>Remove unnecessary comparisons and instanceof tests.
+<li>Remove unused code.
+<li>Remove write-only fields.
+<li>Remove unused method parameters.
 <li>Various peephole optimizations like push/pop simplification.
-<li>Making classes and methods final when possible.
-<li>Inlining simple getters and setters when possible.
-<li>Replacing interfaces that have single implementations.
-<li>Optionally removing logging code.
+<li>Make classes static and final when possible.
+<li>Make methods private, static, and final when possible.
+<li>Inline simple getters and setters when possible.
+<li>Replace interfaces that have single implementations.
+<li>Optionally remove logging code.
 </ul>
 The positive effects of these optimizations will depend on your code and on
 the virtual machine on which the code is executed. Simple virtual machines may
@@ -83,6 +87,12 @@ At the very least, your bytecode may become a bit smaller.
 <p>
 A notable optimization that isn't supported yet is the inlining of constant
 fields that are not marked as final.
+
+<a name="commercial">&nbsp;</a>
+<h3>Can I use <b>ProGuard</b> to process my commercial application?</h3>
+Yes, you can. <b>ProGuard</b> itself is distributed under the GPL, but this
+doesn't affect the programs that you process. Your code remains yours, and
+its license can remain the same.
 
 <a name="jdk1.4">&nbsp;</a>
 <h3>Does <b>ProGuard</b> work with JDK1.4? JDK5.0?</h3>
@@ -170,7 +180,7 @@ Yes. You can specify your own obfuscation dictionary, such as a list of
 reserved key words, identifiers with foreign characters, random source files,
 or a text by Shakespeare. Note that this hardly improves the obfuscation.
 Decent decompilers can automatically replace reserved keywords, and the effect
-can fairly simply be undone by obfuscating again with simpler names.
+can be undone fairly easily, by obfuscating again with simpler names.
 
 <a name="stacktrace">&nbsp;</a>
 <h3>Can <b>ProGuard</b> reconstruct obfuscated stack traces?</h3>
@@ -184,7 +194,7 @@ Manual</a> for more details.
 
 <hr>
 <address>
-Copyright &copy; 2002-2004
+Copyright &copy; 2002-2005
 <a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>

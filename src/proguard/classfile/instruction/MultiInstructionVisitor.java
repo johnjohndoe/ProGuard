@@ -1,8 +1,8 @@
-/* $Id: MultiInstructionVisitor.java,v 1.3 2004/10/10 20:56:58 eric Exp $
+/* $Id: MultiInstructionVisitor.java,v 1.5 2005/06/11 13:13:15 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -90,49 +90,61 @@ public class MultiInstructionVisitor implements InstructionVisitor
 
     public void visitSimpleInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, SimpleInstruction simpleInstruction)
     {
+        simpleInstruction = this.simpleInstruction.copy(simpleInstruction);
+
         for (int index = 0; index < instructionVisitorCount; index++)
         {
-            instructionVisitors[index].visitSimpleInstruction(classFile, methodInfo, codeAttrInfo, offset, this.simpleInstruction.copy(simpleInstruction));
+            instructionVisitors[index].visitSimpleInstruction(classFile, methodInfo, codeAttrInfo, offset, simpleInstruction);
         }
     }
 
     public void visitVariableInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, VariableInstruction variableInstruction)
     {
+        variableInstruction = this.variableInstruction.copy(variableInstruction);
+
         for (int index = 0; index < instructionVisitorCount; index++)
         {
-            instructionVisitors[index].visitVariableInstruction(classFile, methodInfo, codeAttrInfo, offset, this.variableInstruction.copy(variableInstruction));
+            instructionVisitors[index].visitVariableInstruction(classFile, methodInfo, codeAttrInfo, offset, variableInstruction);
         }
     }
 
     public void visitCpInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, CpInstruction cpInstruction)
     {
+        cpInstruction = this.cpInstruction.copy(cpInstruction);
+
         for (int index = 0; index < instructionVisitorCount; index++)
         {
-            instructionVisitors[index].visitCpInstruction(classFile, methodInfo, codeAttrInfo, offset, this.cpInstruction.copy(cpInstruction));
+            instructionVisitors[index].visitCpInstruction(classFile, methodInfo, codeAttrInfo, offset, cpInstruction);
         }
     }
 
     public void visitBranchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, BranchInstruction branchInstruction)
     {
+        branchInstruction = this.branchInstruction.copy(branchInstruction);
+
         for (int index = 0; index < instructionVisitorCount; index++)
         {
-            instructionVisitors[index].visitBranchInstruction(classFile, methodInfo, codeAttrInfo, offset, this.branchInstruction.copy(branchInstruction));
+            instructionVisitors[index].visitBranchInstruction(classFile, methodInfo, codeAttrInfo, offset, branchInstruction);
         }
     }
 
     public void visitTableSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, TableSwitchInstruction tableSwitchInstruction)
     {
+        tableSwitchInstruction = this.tableSwitchInstruction.copy(tableSwitchInstruction);
+
         for (int index = 0; index < instructionVisitorCount; index++)
         {
-            instructionVisitors[index].visitTableSwitchInstruction(classFile, methodInfo, codeAttrInfo, offset, this.tableSwitchInstruction.copy(tableSwitchInstruction));
+            instructionVisitors[index].visitTableSwitchInstruction(classFile, methodInfo, codeAttrInfo, offset, tableSwitchInstruction);
         }
     }
 
     public void visitLookUpSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, LookUpSwitchInstruction lookUpSwitchInstruction)
     {
+        lookUpSwitchInstruction = this.lookUpSwitchInstruction.copy(lookUpSwitchInstruction);
+
         for (int index = 0; index < instructionVisitorCount; index++)
         {
-            instructionVisitors[index].visitLookUpSwitchInstruction(classFile, methodInfo, codeAttrInfo, offset, this.lookUpSwitchInstruction.copy(lookUpSwitchInstruction));
+            instructionVisitors[index].visitLookUpSwitchInstruction(classFile, methodInfo, codeAttrInfo, offset, lookUpSwitchInstruction);
         }
     }
 }

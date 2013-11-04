@@ -6,10 +6,12 @@
 #
 
 # Specify the input jars, output jars, and library jars.
-# We'll filter out the Ant and WTK classes, keeping everything else.
+# The input jars will be merged in a single output jar.
+# We'll filter out the Ant and WTK classes.
 
--injars  proguard.jar(!proguard/ant/**,!proguard/wtk/**)
--injars  retrace.jar
+-injars  ../lib/retrace.jar
+-injars  ../lib/proguard.jar(!META-INF/MANIFEST.MF,
+                             !proguard/ant/**,!proguard/wtk/**)
 -outjars retrace_out.jar
 
 -libraryjars <java.home>/lib/rt.jar

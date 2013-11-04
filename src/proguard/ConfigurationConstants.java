@@ -1,4 +1,4 @@
-/* $Id: ConfigurationConstants.java,v 1.10 2004/11/20 15:41:24 eric Exp $
+/* $Id: ConfigurationConstants.java,v 1.12 2005/06/11 14:50:16 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -30,6 +30,7 @@ class ConfigurationConstants
     public static final String OPTION_PREFIX                                     = "-";
     public static final String AT_DIRECTIVE                                      = "@";
     public static final String INCLUDE_DIRECTIVE                                 = "-include";
+    public static final String BASE_DIRECTORY_DIRECTIVE                          = "-basedirectory";
 
     public static final String INJARS_OPTION                                     = "-injars";
     public static final String OUTJARS_OPTION                                    = "-outjars";
@@ -46,6 +47,7 @@ class ConfigurationConstants
 
     public static final String DONT_SHRINK_OPTION                                = "-dontshrink";
     public static final String PRINT_USAGE_OPTION                                = "-printusage";
+    public static final String WHY_ARE_YOU_KEEPING_OPTION                        = "-whyareyoukeeping";
 
     public static final String DONT_OPTIMIZE_OPTION                              = "-dontoptimize";
     public static final String ASSUME_NO_SIDE_EFFECTS_OPTION                     = "-assumenosideeffects";

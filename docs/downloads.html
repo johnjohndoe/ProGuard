@@ -34,6 +34,28 @@ updates with sub-minor version numbers. These versions are typically released
 shortly after their parent versions, for applying emergency fixes.
 <p>
 
+<h3>Version 3.3</h3>
+<ul>
+<li>Extended optimizations: making methods private and static when possible,
+    making classes static when possible, removing unused parameters.
+<li>Made file names relative to the configuration files in which they are
+    specified. Added <code>-basedirectory</code> option.
+<li>Added <code>-whyareyoukeeping</code> option to get details on why given
+    classes and class members are being kept.
+<li>Added warnings for misplaced class files.
+<li>Improved printing of notes for Class.forName constructs.
+<li>Implemented '<code>assumenosideeffects</code>' nested element in Ant task.
+<li>Improved processing of annotations.
+<li>Fixed reading and writing of parameter annotations.
+<li>Fixed various optimization bugs.
+<li>Fixed wildcards not matching '-' character.
+<li>Fixed wildcard bug and checkbox bugs in GUI.
+<li>Setting file chooser defaults in GUI.
+<li>Leaving room for growBox in GUI on Mac OS X.
+<li>Properly closing configuration files.
+<li>Updated documentation and examples.
+</ul>
+
 <h3>Version 3.2</h3>
 <ul>
 <li>Fixed JDK5.0 processing bugs.
@@ -58,7 +80,7 @@ shortly after their parent versions, for applying emergency fixes.
 
 <h3>Version 3.0</h3>
 <ul>
-<li>Added bytecode optimization step, inbetween shrinking step and obfuscation
+<li>Added bytecode optimization step, between shrinking step and obfuscation
     step.
 <li>Generalized filtered recursive reading and writing of jars, wars, ears,
     zips, and directories.
@@ -213,7 +235,7 @@ shortly after their parent versions, for applying emergency fixes.
 
 <hr>
 <address>
-Copyright &copy; 2002-2004
+Copyright &copy; 2002-2005
 <a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 

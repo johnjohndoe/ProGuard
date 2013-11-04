@@ -1,8 +1,8 @@
-/* $Id: StackTrace.java,v 1.6 2004/08/15 12:39:30 eric Exp $
+/* $Id: StackTrace.java,v 1.8 2005/06/11 13:13:16 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -55,15 +55,15 @@ class StackTrace implements MappingProcessor
     /**
      * Reads the stack trace file.
      */
-    public void read(String stackTraceFileName) throws IOException
+    public void read(File stackTraceFile) throws IOException
     {
         LineNumberReader lineNumberReader = null;
 
         try
         {
-            Reader reader = stackTraceFileName == null ?
+            Reader reader = stackTraceFile == null ?
                 (Reader)new InputStreamReader(System.in) :
-                (Reader)new BufferedReader(new FileReader(stackTraceFileName));
+                (Reader)new BufferedReader(new FileReader(stackTraceFile));
 
             lineNumberReader = new LineNumberReader(reader);
 
@@ -96,7 +96,7 @@ class StackTrace implements MappingProcessor
         }
         finally
         {
-            if (stackTraceFileName != null &&
+            if (stackTraceFile != null &&
                 lineNumberReader != null)
             {
                 try

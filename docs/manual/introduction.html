@@ -81,7 +81,9 @@ midlets, etc.
 
 <li>In the <b>optimization step</b>, ProGuard further optimizes the code.
     Among other optimizations, classes and methods that are not entry points
-    can be made final, and some methods may be inlined.
+    can be made private, static, or final, unused parameters can be removed,
+    and some methods may be inlined.
+
 <li>In the <b>obfuscation step</b>, ProGuard renames classes and class members
     that are not entry points. In this entire process, keeping the entry
     points ensures that they can still be accessed by their original names.
@@ -109,7 +111,7 @@ accordingly.
 
 <hr>
 <address>
-Copyright &copy; 2002-2004
+Copyright &copy; 2002-2005
 <a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>

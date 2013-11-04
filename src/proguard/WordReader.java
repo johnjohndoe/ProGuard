@@ -1,8 +1,8 @@
-/* $Id: WordReader.java,v 1.15 2004/11/20 15:41:24 eric Exp $
+/* $Id: WordReader.java,v 1.20 2005/06/11 14:50:16 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -36,12 +36,49 @@ public abstract class WordReader
     private static final char COMMENT_CHARACTER = '#';
 
 
+    private File       baseDir;
     private WordReader includeWordReader;
     private String     currentLine;
     private int        currentLineLength;
     private int        currentIndex;
     private String     currentWord;
     private String     currentComments;
+
+
+    /**
+     * Creates a new WordReader with the given base directory.
+     */
+    protected WordReader(File baseDir)
+    {
+        this.baseDir = baseDir;
+    }
+
+
+    /**
+     * Sets the base directory of this reader.
+     */
+    public void setBaseDir(File baseDir)
+    {
+        if (includeWordReader != null)
+        {
+            includeWordReader.setBaseDir(baseDir);
+        }
+        else
+        {
+            this.baseDir = baseDir;
+        }
+    }
+
+
+    /**
+     * Returns the base directory of this reader, if any.
+     */
+    public File getBaseDir()
+    {
+        return includeWordReader != null ?
+            includeWordReader.getBaseDir() :
+            baseDir;
+    }
 
 
     /**
@@ -84,7 +121,8 @@ public abstract class WordReader
                 return currentWord;
             }
 
-            // Otherwise ditch the word reader.
+            // Otherwise close and ditch the word reader.
+            includeWordReader.close();
             includeWordReader = null;
         }
 
@@ -243,12 +281,28 @@ public abstract class WordReader
 
 
     /**
-     * Constructs a readable description of the current WordReader position.
+     * Returns a readable description of the current WordReader position.
      *
      * @return the description.
      */
     protected abstract String lineLocationDescription();
 
+
+    /**
+     * Closes the FileWordReader.
+     */
+    public void close() throws IOException
+    {
+        // Close and ditch the included word reader, if any.
+        if (includeWordReader != null)
+        {
+            includeWordReader.close();
+            includeWordReader = null;
+        }
+    }
+
+
+    // Small utility methods.
 
     private boolean isDelimiter(char character)
     {

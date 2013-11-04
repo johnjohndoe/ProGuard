@@ -1,8 +1,8 @@
-/* $Id: ClassFileClassForNameReferenceInitializer.java,v 1.14 2004/12/11 16:35:23 eric Exp $
+/* $Id: ClassFileClassForNameReferenceInitializer.java,v 1.15 2005/06/11 13:13:15 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -24,6 +24,10 @@ import proguard.classfile.*;
 import proguard.classfile.attribute.*;
 import proguard.classfile.instruction.*;
 import proguard.classfile.visitor.*;
+import proguard.util.ClassNameListMatcher;
+import proguard.ClassSpecification;
+
+import java.util.*;
 
 
 /**
@@ -41,15 +45,16 @@ import proguard.classfile.visitor.*;
  *
  * @author Eric Lafortune
  */
-class      ClassFileClassForNameReferenceInitializer
-implements InstructionVisitor,
-           CpInfoVisitor
+public class ClassFileClassForNameReferenceInitializer
+  implements InstructionVisitor,
+             CpInfoVisitor
 {
-    private ClassPool programClassPool;
-    private boolean   note;
+    private ClassPool            programClassPool;
+    private boolean              note;
+    private ClassNameListMatcher noteExceptionMatcher;
 
     // Counter for notes.
-    private int       noteCount;
+    private int noteCount;
 
     // Fields to remember the previous StringCpInfo and MethodRefCpInfo objects
     // while visiting all instructions (to find Class.forName, class$, and
@@ -67,19 +72,22 @@ implements InstructionVisitor,
      */
     public ClassFileClassForNameReferenceInitializer(ClassPool programClassPool)
     {
-        this(programClassPool, true);
+        this(programClassPool, true, null);
     }
 
 
     /**
      * Creates a new ClassFileClassForNameReferenceInitializer that optionally
-     * prints notes.
+     * prints notes, with optional class specifications for which never to
+     * print notes.
      */
-    public ClassFileClassForNameReferenceInitializer(ClassPool programClassPool,
-                                                     boolean   note)
+    public ClassFileClassForNameReferenceInitializer(ClassPool            programClassPool,
+                                                     boolean              note,
+                                                     ClassNameListMatcher noteExceptionMatcher)
     {
-        this.programClassPool = programClassPool;
-        this.note             = note;
+        this.programClassPool     = programClassPool;
+        this.note                 = note;
+        this.noteExceptionMatcher = noteExceptionMatcher;
     }
 
 
@@ -247,7 +255,9 @@ implements InstructionVisitor,
      */
     public void visitClassCpInfo(ClassFile classFile, ClassCpInfo classCpInfo)
     {
-        if (note)
+        if (note &&
+            (noteExceptionMatcher == null ||
+             !noteExceptionMatcher.matches(classCpInfo.getName(classFile))))
         {
             noteCount++;
             System.err.println("Note: " +

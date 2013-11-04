@@ -1,8 +1,8 @@
-/* $Id: GetterSetterInliner.java,v 1.14 2004/12/18 20:22:42 eric Exp $
+/* $Id: GetterSetterInliner.java,v 1.17 2005/06/11 13:13:16 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -39,21 +39,20 @@ implements   InstructionVisitor,
 {
     private static final String SETTER_RETURN_TYPE = "V";
 
-    private ConstantPoolEditor    constantPoolEditor  = new ConstantPoolEditor();
-    private MyGetterSetterChecker getterSetterChecker = new MyGetterSetterChecker();
-    private MemberFinder          memberFinder        = new MemberFinder();
+    private ConstantPoolEditor constantPoolEditor  = new ConstantPoolEditor();
+    private MemberInfoVisitor  getterSetterChecker = new AllAttrInfoVisitor(
+                                                     new MyGetterSetterChecker());
+    private MemberFinder       memberFinder        = new MemberFinder();
 
     private CodeAttrInfoEditor codeAttrInfoEditor;
     private boolean            allowAccessModification;
 
 
     // Return values of the getter/setter checker.
-    private byte        getFieldPutFieldOpcode;
-    private int         referencedClassIndex;
-    private int         referencedFieldIndex;
-    private ClassFile   referencedClassFile;
-    private MemberInfo  referencedFieldInfo;
-    private ClassFile[] typeReferencedClassFiles;
+    private byte       getFieldPutFieldOpcode;
+    private int        referencedFieldIndex;
+    private ClassFile  referencedClassFile;
+    private MemberInfo referencedFieldInfo;
 
 
     /**
@@ -91,7 +90,6 @@ implements   InstructionVisitor,
         {
             // Check if it's a getter or setter that can be inlined.
             getFieldPutFieldOpcode = 0;
-
             classFile.constantPoolEntryAccept(cpInstruction.cpIndex, this);
 
             // Do we have a getfield or putfield instruction to inline?
@@ -101,12 +99,11 @@ implements   InstructionVisitor,
                 int fieldrefCpInfoIndex = classFile.equals(referencedClassFile) ?
                     referencedFieldIndex :
                     constantPoolEditor.addFieldrefCpInfo((ProgramClassFile)classFile,
-                                                         referencedClassIndex,
+                                                         referencedClassFile.getName(),
                                                          referencedFieldInfo.getName(referencedClassFile),
                                                          referencedFieldInfo.getDescriptor(referencedClassFile),
                                                          referencedClassFile,
-                                                         referencedFieldInfo,
-                                                         typeReferencedClassFiles);
+                                                         referencedFieldInfo);
 
                 // Inline the getfield or putfield instruction.
                 Instruction replacementInstruction = new CpInstruction(getFieldPutFieldOpcode,
@@ -170,9 +167,6 @@ implements   InstructionVisitor,
             return;
         }
 
-        // Remember the constant pool index of the referenced class.
-        referencedClassIndex = methodrefCpInfo.u2classIndex;
-
         // Doesn't the field allow at least the same access as the getter or
         // setter?
         if (AccessUtil.accessLevel(referencedFieldInfo.getAccessFlags()) <
@@ -182,7 +176,7 @@ implements   InstructionVisitor,
             if (allowAccessModification)
             {
                 // Is the field access private, and is the field shadowed by
-                // a field in a subclass?
+                // a non-private field in a subclass?
                 if (AccessUtil.accessLevel(referencedFieldInfo.getAccessFlags()) == AccessUtil.PRIVATE &&
                     memberFinder.isShadowed(referencedClassFile, (FieldInfo)referencedFieldInfo))
                 {
@@ -213,25 +207,10 @@ implements   InstructionVisitor,
      * getter or setter.
      */
     private class MyGetterSetterChecker
-    implements    MemberInfoVisitor,
-                  AttrInfoVisitor,
+    implements    AttrInfoVisitor,
                   InstructionVisitor,
                   CpInfoVisitor
     {
-        // Implementations for MemberInfoVisitor.
-
-        public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo) {}
-
-        public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
-        {
-            programMethodInfo.attributesAccept(programClassFile, this);
-        }
-
-
-        public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo) {}
-        public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo) {}
-
-
         // Implementations for AttrInfoVisitor.
 
         public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo) {}
@@ -365,6 +344,7 @@ implements   InstructionVisitor,
         public void visitMethodrefCpInfo(ClassFile classFile, MethodrefCpInfo methodrefCpInfo) {}
         public void visitInterfaceMethodrefCpInfo(ClassFile classFile, InterfaceMethodrefCpInfo interfaceMethodrefCpInfo) {}
         public void visitClassCpInfo(ClassFile classFile, ClassCpInfo classCpInfo) {}
+        public void visitNameAndTypeCpInfo(ClassFile classFile, NameAndTypeCpInfo nameAndTypeCpInfo) {}
 
 
         public void visitFieldrefCpInfo(ClassFile classFile, FieldrefCpInfo fieldrefCpInfo)
@@ -372,16 +352,6 @@ implements   InstructionVisitor,
             // Remember the class file and the field.
             referencedClassFile = fieldrefCpInfo.referencedClassFile;
             referencedFieldInfo = fieldrefCpInfo.referencedMemberInfo;
-
-            // Retrieve the referenced class files.
-            classFile.constantPoolEntryAccept(fieldrefCpInfo.u2nameAndTypeIndex, this);
-        }
-
-
-        public void visitNameAndTypeCpInfo(ClassFile classFile, NameAndTypeCpInfo nameAndTypeCpInfo)
-        {
-            // Remember the referenced class files of the field.
-            typeReferencedClassFiles = nameAndTypeCpInfo.referencedClassFiles;
         }
     }
 }

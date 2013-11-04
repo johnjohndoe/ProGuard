@@ -1,8 +1,8 @@
-/* $Id: InterfaceUsageMarker.java,v 1.10 2004/12/11 16:35:23 eric Exp $
+/* $Id: InterfaceUsageMarker.java,v 1.13 2005/06/11 13:21:35 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -36,16 +36,29 @@ public class InterfaceUsageMarker
   implements ClassFileVisitor,
              CpInfoVisitor
 {
+    private UsageMarker usageMarker;
+
     // A field acting as a return parameter for several methods.
     private boolean used;
+
+
+    /**
+     * Creates a new InterfaceUsageMarker.
+     * @param usageMarker the usage marker that is used to mark the classes
+     *                    and class members.
+     */
+    public InterfaceUsageMarker(UsageMarker usageMarker)
+    {
+        this.usageMarker = usageMarker;
+    }
 
 
     // Implementations for ClassFileVisitor.
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
-        boolean classUsed         = UsageMarker.isUsed(programClassFile);
-        boolean classPossiblyUsed = UsageMarker.isPossiblyUsed(programClassFile);
+        boolean classUsed         = usageMarker.isUsed(programClassFile);
+        boolean classPossiblyUsed = usageMarker.isPossiblyUsed(programClassFile);
 
         if (classUsed || classPossiblyUsed)
         {
@@ -66,7 +79,7 @@ public class InterfaceUsageMarker
                 {
                     // At least one if this interface's interfaces is being used.
                     // Mark this interface as well.
-                    UsageMarker.markAsUsed(programClassFile);
+                    usageMarker.markAsUsed(programClassFile);
 
                     // Mark this interface's name.
                     markCpEntry(programClassFile, programClassFile.u2thisClass);
@@ -80,7 +93,7 @@ public class InterfaceUsageMarker
                 else
                 {
                     // Unmark this interface, so we don't bother looking at it again.
-                    UsageMarker.markAsUnused(programClassFile);
+                    usageMarker.markAsUnused(programClassFile);
                 }
             }
         }
@@ -112,7 +125,7 @@ public class InterfaceUsageMarker
 
     public void visitClassCpInfo(ClassFile classFile, ClassCpInfo classCpInfo)
     {
-        boolean classUsed = UsageMarker.isUsed(classCpInfo);
+        boolean classUsed = usageMarker.isUsed(classCpInfo);
 
         if (!classUsed)
         {
@@ -125,7 +138,7 @@ public class InterfaceUsageMarker
             {
                 // The class is being used. Mark the ClassCpInfo as being used
                 // as well.
-                UsageMarker.markAsUsed(classCpInfo);
+                usageMarker.markAsUsed(classCpInfo);
 
                 markCpEntry(classFile, classCpInfo.u2nameIndex);
             }
@@ -138,9 +151,9 @@ public class InterfaceUsageMarker
 
     public void visitUtf8CpInfo(ClassFile classFile, Utf8CpInfo utf8CpInfo)
     {
-        if (!UsageMarker.isUsed(utf8CpInfo))
+        if (!usageMarker.isUsed(utf8CpInfo))
         {
-            UsageMarker.markAsUsed(utf8CpInfo);
+            usageMarker.markAsUsed(utf8CpInfo);
         }
     }
 

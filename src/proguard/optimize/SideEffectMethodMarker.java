@@ -1,8 +1,8 @@
-/* $Id: SideEffectMethodMarker.java,v 1.3 2004/10/10 20:56:58 eric Exp $
+/* $Id: SideEffectMethodMarker.java,v 1.6 2005/06/11 13:13:16 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -39,10 +39,6 @@ public class SideEffectMethodMarker
              MemberInfoVisitor,
              AttrInfoVisitor
 {
-    // A visitor info flag to indicate that a MethodInfo object has side effects.
-    private static final Object SIDE_EFFECTS = new Object();
-
-
     // A reusable object for checking whether instructions have side effects.
     private SideEffectInstructionChecker sideEffectInstructionChecker = new SideEffectInstructionChecker(false);
 
@@ -99,7 +95,7 @@ public class SideEffectMethodMarker
             // Mark the method depending on the return value.
             if (hasSideEffects)
             {
-                markAsSideEffects(programMethodInfo);
+                markSideEffects(programMethodInfo);
 
                 newSideEffectCount++;
             }
@@ -157,16 +153,20 @@ public class SideEffectMethodMarker
 
     // Small utility methods.
 
-    public static void markAsSideEffects(VisitorAccepter visitorAccepter)
+    public static void markSideEffects(MethodInfo methodInfo)
     {
-        visitorAccepter.setVisitorInfo(SIDE_EFFECTS);
+        MethodOptimizationInfo info = MethodOptimizationInfo.getMethodOptimizationInfo(methodInfo);
+        if (info != null)
+        {
+            info.setSideEffects();
+        }
     }
 
 
-    public static boolean hasSideEffects(VisitorAccepter visitorAccepter)
+    public static boolean hasSideEffects(MethodInfo methodInfo)
     {
-        return visitorAccepter == null                          ||
-               visitorAccepter.getVisitorInfo() == SIDE_EFFECTS ||
-               KeepMarker.isKept(visitorAccepter);
+        MethodOptimizationInfo info = MethodOptimizationInfo.getMethodOptimizationInfo(methodInfo);
+        return info == null ||
+               info.hasSideEffects();
     }
 }

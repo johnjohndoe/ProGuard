@@ -1,8 +1,8 @@
-/* $Id: ClassUtil.java,v 1.21 2004/08/15 12:39:30 eric Exp $
+/* $Id: ClassUtil.java,v 1.25 2005/06/11 13:13:15 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -190,6 +190,21 @@ public class ClassUtil
 
 
     /**
+     * Returns whether the given internal type is a primitive Category 2 type.
+     * @param internalType the internal type,
+     *                     e.g. "<code>L</code>".
+     * @return <code>true</code> if the given type is a Category 2 type,
+     *         <code>false</code> otherwise.
+     */
+    public static boolean isInternalCategory2Type(String internalType)
+    {
+        return internalType.length() == 1 &&
+               (internalType.charAt(0) == ClassConstants.INTERNAL_TYPE_LONG ||
+                internalType.charAt(0) == ClassConstants.INTERNAL_TYPE_DOUBLE);
+    }
+
+
+    /**
      * Returns whether the given internal type is a plain class type
      * (not an array type).
      * @param internalType the internal type,
@@ -236,14 +251,14 @@ public class ClassUtil
 
 
     /**
-     * Returns the internal class name of any given internal type.
-     * The returned class name for primitive array types is
-     * "<code>java/lang/Object</code>".
+     * Returns the internal class name of any given internal type, disregarding
+     * array prefixes.
      * @param internalClassType the internal class type,
      *                          e.g. "<code>Ljava/lang/Object;</code>" or
      *                               "<code>[[I</code>".
      * @return the internal class name,
-     *                          e.g. "<code>java/lang/Object</code>".
+     *                          e.g. "<code>java/lang/Object</code>" or
+     *                               <code>null</code>.
      */
     public static String internalClassNameFromType(String internalClassType)
     {
@@ -259,7 +274,7 @@ public class ClassUtil
             }
             else
             {
-                internalClassType = ClassConstants.INTERNAL_NAME_JAVA_LANG_OBJECT;
+                internalClassType = null;//ClassConstants.INTERNAL_NAME_JAVA_LANG_OBJECT;
             }
         }
 
@@ -480,6 +495,8 @@ public class ClassUtil
                                 ClassConstants.EXTERNAL_TYPE_LONG        :
             internalTypeChar == ClassConstants.INTERNAL_TYPE_DOUBLE      ?
                                 ClassConstants.EXTERNAL_TYPE_DOUBLE      :
+            internalTypeChar == '%'                                      ?
+                                "%"                                      :
             internalTypeChar == ClassConstants.INTERNAL_TYPE_CLASS_START ?
                                 externalClassName(internalType.substring(1, internalType.indexOf(ClassConstants.INTERNAL_TYPE_CLASS_END))) :
                                 null;

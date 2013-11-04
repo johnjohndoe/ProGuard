@@ -1,9 +1,9 @@
-/* $Id: ClassFile.java,v 1.20 2004/12/11 16:35:23 eric Exp $
+/* $Id: ClassFile.java,v 1.25 2005/06/11 13:21:35 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -49,6 +49,11 @@ public interface ClassFile extends VisitorAccepter
      * null if this class represents java.lang.Object.
      */
     public String getSuperName();
+
+    /**
+     * Returns the number of interfaces that this class implements.
+     */
+    public int getInterfaceCount();
 
     /**
      * Returns the full internal name of the interface at the given index of
@@ -180,6 +185,95 @@ public interface ClassFile extends VisitorAccepter
      * Lets the given member info visitor visit the specified method.
      */
     public void methodAccept(String name, String descriptor, MemberInfoVisitor memberInfoVisitor);
+
+    /**
+     * Returns whether the given method may possibly have implementing or
+     * overriding methods down the class hierarchy. This can only be true
+     * if the class is not final, and the method is not private, static, or
+     * final, or a constructor.
+     * @param methodInfo the method that may have implementations.
+     * @return whether it may have implementations.
+     */
+    public boolean mayHaveImplementations(MethodInfo methodInfo);
+
+    /**
+     * Lets the given member info visitor visit all concrete implementations of
+     * the specified method in the class hierarchy.
+     * @param methodInfo        the method that may have concrete implementations.
+     * @param visitThisMethod   specifies whether to visit the method in
+     *                          this class.
+     * @param memberInfoVisitor the <code>MemberInfoVisitor</code> that will
+     *                          visit the method hierarchy.
+     */
+    public void methodImplementationsAccept(MethodInfo        methodInfo,
+                                            boolean           visitThisMethod,
+                                            MemberInfoVisitor memberInfoVisitor);
+
+    /**
+     * Lets the given member info visitor visit all concrete implementations of
+     * the specified method in the class hierarchy.
+     * @param name              the method name.
+     * @param type              the method descriptor.
+     * @param visitThisMethod   specifies whether to visit the method in
+     *                          this class.
+     * @param memberInfoVisitor the <code>MemberInfoVisitor</code> that will
+     *                          visit the method hierarchy.
+     */
+    public void methodImplementationsAccept(String            name,
+                                            String            type,
+                                            boolean           visitThisMethod,
+                                            MemberInfoVisitor memberInfoVisitor);
+
+    /**
+     * Lets the given member info visitor visit all concrete implementations of
+     * the specified method in the class hierarchy.
+     * @param name                   the method name.
+     * @param type                   the method descriptor.
+     * @param visitThisMethod        specifies whether to visit the method in
+     *                               this class.
+     * @param visitSuperMethods      specifies whether to visit the method in
+     *                               the super classes.
+     * @param visitInterfaceMethods  specifies whether to visit the method in
+     *                               the interfaces.
+     * @param visitOverridingMethods specifies whether to visit the method in
+     *                               the subclasses.
+     * @param visitSpecialMethods    specifies whether to visit special methods.
+     * @param memberInfoVisitor      the <code>MemberInfoVisitor</code> that
+     *                               will visit the method hierarchy.
+     */
+    public void methodImplementationsAccept(String            name,
+                                            String            descriptor,
+                                            boolean           visitThisMethod,
+                                            boolean           visitSpecialMethods,
+                                            boolean           visitSuperMethods,
+                                            boolean           visitOverridingMethods,
+                                            MemberInfoVisitor memberInfoVisitor);
+    /**
+     * Lets the given member info visitor visit all concrete implementations of
+     * the specified method in the class hierarchy.
+     * @param name                   the method name.
+     * @param type                   the method descriptor.
+     * @param methodInfo             the method itself, if present.
+     * @param visitThisMethod        specifies whether to visit the method in
+     *                               this class.
+     * @param visitSuperMethods      specifies whether to visit the method in
+     *                               the super classes.
+     * @param visitInterfaceMethods  specifies whether to visit the method in
+     *                               the interfaces.
+     * @param visitOverridingMethods specifies whether to visit the method in
+     *                               the subclasses.
+     * @param visitSpecialMethods    specifies whether to visit special methods.
+     * @param memberInfoVisitor      the <code>MemberInfoVisitor</code> that
+     *                               will visit the method hierarchy.
+     */
+    public void methodImplementationsAccept(String            name,
+                                            String            descriptor,
+                                            MethodInfo        methodInfo,
+                                            boolean           visitThisMethod,
+                                            boolean           visitSuperMethods,
+                                            boolean           visitOverridingMethods,
+                                            boolean           visitSpecialMethods,
+                                            MemberInfoVisitor memberInfoVisitor);
 
     /**
      * Lets the given attribute info visitor visit all attributes of this class.

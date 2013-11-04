@@ -11,7 +11,7 @@
 # We'll read all jars from the lib directory, process them, and write the
 # processed jars to a new out directory.
 
--injars  lib
+-injars  ../lib
 -outjars out
 
 # You may have to adapt the paths below.

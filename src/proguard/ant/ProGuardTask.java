@@ -1,8 +1,8 @@
-/* $Id: ProGuardTask.java,v 1.28 2004/11/20 15:08:57 eric Exp $
+/* $Id: ProGuardTask.java,v 1.32 2005/06/11 13:21:35 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -39,14 +39,22 @@ public class ProGuardTask extends ConfigurationTask
     {
         try
         {
-            ConfigurationParser parser = new ConfigurationParser(configurationFile.getPath());
-            parser.parse(configuration);
+            ConfigurationParser parser = new ConfigurationParser(configurationFile);
+
+            try
+            {
+                parser.parse(configuration);
+            }
+            catch (ParseException ex)
+            {
+                throw new BuildException(ex.getMessage());
+            }
+            finally
+            {
+                parser.close();
+            }
         }
         catch (IOException ex)
-        {
-            throw new BuildException(ex.getMessage());
-        }
-        catch (ParseException ex)
         {
             throw new BuildException(ex.getMessage());
         }
@@ -76,7 +84,7 @@ public class ProGuardTask extends ConfigurationTask
 
     public void setPrintseeds(File printSeeds)
     {
-        configuration.printSeeds = optionalFileName(printSeeds);
+        configuration.printSeeds = optionalFile(printSeeds);
     }
 
 
@@ -88,7 +96,7 @@ public class ProGuardTask extends ConfigurationTask
 
     public void setPrintusage(File printUsage)
     {
-        configuration.printUsage = optionalFileName(printUsage);
+        configuration.printUsage = optionalFile(printUsage);
     }
 
 
@@ -112,19 +120,19 @@ public class ProGuardTask extends ConfigurationTask
 
     public void setPrintmapping(File printMapping)
     {
-        configuration.printMapping = optionalFileName(printMapping);
+        configuration.printMapping = optionalFile(printMapping);
     }
 
 
-    public void setApplymapping(String applyMapping)
+    public void setApplymapping(File applyMapping)
     {
-        configuration.applyMapping = applyMapping;
+        configuration.applyMapping = resolvedFile(applyMapping);
     }
 
 
     public void setObfuscationdictionary(File obfuscationDictionary)
     {
-        configuration.obfuscationDictionary = obfuscationDictionary.getName();
+        configuration.obfuscationDictionary = resolvedFile(obfuscationDictionary);
     }
 
 
@@ -178,7 +186,7 @@ public class ProGuardTask extends ConfigurationTask
 
     public void setDump(File dump)
     {
-        configuration.dump = optionalFileName(dump);
+        configuration.dump = optionalFile(dump);
     }
 
 
@@ -200,7 +208,12 @@ public class ProGuardTask extends ConfigurationTask
 
     // Small utility methods.
 
-    private String optionalFileName(File file)
+    /**
+     * Returns a file that is properly resolved with respect to the project
+     * directory, or <code>null</code> or empty if its name is actually a
+     * boolean flag.
+     */
+    private File optionalFile(File file)
     {
         String fileName = file.getName();
 
@@ -210,7 +223,19 @@ public class ProGuardTask extends ConfigurationTask
             fileName.equalsIgnoreCase("off")    ? null :
             fileName.equalsIgnoreCase("true")  ||
             fileName.equalsIgnoreCase("yes")   ||
-            fileName.equalsIgnoreCase("on")     ? ""   :
-                                                  file.getPath();
+            fileName.equalsIgnoreCase("on")     ? new File("")   :
+                                                  resolvedFile(file);
+    }
+
+
+    /**
+     * Returns a file that is properly resolved with respect to the project
+     * directory.
+     */
+    private File resolvedFile(File file)
+    {
+        return file.isAbsolute() ? file :
+                                   new File(getProject().getBaseDir(),
+                                            file.getName());
     }
 }

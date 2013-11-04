@@ -1,8 +1,8 @@
-/* $Id: MappingPrinter.java,v 1.15 2004/08/15 12:39:30 eric Exp $
+/* $Id: MappingPrinter.java,v 1.18 2005/06/11 13:21:35 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -41,9 +41,6 @@ public class MappingPrinter
 {
     private PrintStream ps;
 
-    // A field to remember the class name, if a header is needed for class members.
-    private String className;
-
 
     /**
      * Creates a new MappingPrinter that prints to <code>System.out</code>.
@@ -68,19 +65,13 @@ public class MappingPrinter
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
-        className = programClassFile.getName();
+        String name    = programClassFile.getName();
+        String newName = ClassFileObfuscator.newClassName(programClassFile);
 
-        String newClassName = ClassFileObfuscator.newClassName(programClassFile);
-
-        if (newClassName != null)
-        {
-            ps.println(ClassUtil.externalClassName(className) +
-                       " -> " +
-                       ClassUtil.externalClassName(newClassName) +
-                       ":");
-
-            className = null;
-        }
+        ps.println(ClassUtil.externalClassName(name) +
+                   " -> " +
+                   ClassUtil.externalClassName(newName) +
+                   ":");
 
         // Print out the class members.
         programClassFile.fieldsAccept(this);
@@ -97,41 +88,44 @@ public class MappingPrinter
 
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {
-        String newMemberName = MemberInfoObfuscator.newMemberName(programFieldInfo);
-
-        if (newMemberName != null)
+        String newName = MemberInfoObfuscator.newMemberName(programFieldInfo);
+        if (newName != null)
         {
-            printClassNameHeader();
-
             ps.println("    " +
-                       lineNumberRange(programClassFile, programFieldInfo) +
+                       //lineNumberRange(programClassFile, programFieldInfo) +
                        ClassUtil.externalFullFieldDescription(
                            0,
                            programFieldInfo.getName(programClassFile),
                            programFieldInfo.getDescriptor(programClassFile)) +
                        " -> " +
-                       newMemberName);
+                       newName);
         }
     }
 
 
     public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
     {
-      String newMemberName = MemberInfoObfuscator.newMemberName(programMethodInfo);
-
-      if (newMemberName != null)
+        // Special cases: <clinit> and <init> are always kept unchanged.
+        // We can ignore them here.
+        String name = programMethodInfo.getName(programClassFile);
+        if (name.equals(ClassConstants.INTERNAL_METHOD_NAME_CLINIT) ||
+            name.equals(ClassConstants.INTERNAL_METHOD_NAME_INIT))
         {
-            printClassNameHeader();
+            return;
+        }
 
+        String newName = MemberInfoObfuscator.newMemberName(programMethodInfo);
+        if (newName != null)
+        {
             ps.println("    " +
                        lineNumberRange(programClassFile, programMethodInfo) +
                        ClassUtil.externalFullMethodDescription(
-                       programClassFile.getName(),
-                       0,
-                       programMethodInfo.getName(programClassFile),
-                       programMethodInfo.getDescriptor(programClassFile)) +
+                           programClassFile.getName(),
+                           0,
+                           programMethodInfo.getName(programClassFile),
+                           programMethodInfo.getDescriptor(programClassFile)) +
                        " -> " +
-                       newMemberName);
+                       newName);
         }
     }
 
@@ -141,20 +135,6 @@ public class MappingPrinter
 
 
     // Small utility methods.
-
-    /**
-     * Prints the class name field. The field is then cleared, so it is not
-     * printed again.
-     */
-    private void printClassNameHeader()
-    {
-        if (className != null)
-        {
-            ps.println(ClassUtil.externalClassName(className) + ":");
-            className = null;
-        }
-    }
-
 
     /**
      * Returns the line number range of the given class member, followed by a

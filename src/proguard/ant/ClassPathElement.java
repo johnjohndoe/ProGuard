@@ -1,8 +1,8 @@
-/* $Id: ClassPathElement.java,v 1.7 2004/12/18 20:21:11 eric Exp $
+/* $Id: ClassPathElement.java,v 1.9 2005/06/11 13:13:15 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -60,8 +60,8 @@ public class ClassPathElement extends Path
      */
     public void appendClassPathEntriesTo(ClassPath classPath, boolean output)
     {
-        String   basePath = "";
-        String[] files;
+        File     baseDir = getProject().getBaseDir();
+        String[] fileNames;
 
         if (isReference())
         {
@@ -74,7 +74,7 @@ public class ClassPathElement extends Path
                 Path path = (Path)referencedObject;
 
                 // Get the names of the files in the referenced path.
-                files = path.list();
+                fileNames = path.list();
             }
             else if (referencedObject instanceof AbstractFileSet)
             {
@@ -82,8 +82,8 @@ public class ClassPathElement extends Path
 
                 // Get the names of the existing input files in the referenced file set.
                 DirectoryScanner scanner = fileSet.getDirectoryScanner(getProject());
-                basePath = scanner.getBasedir().getPath() + File.separator;
-                files    = scanner.getIncludedFiles();
+                baseDir   = scanner.getBasedir();
+                fileNames = scanner.getIncludedFiles();
             }
             else
             {
@@ -93,14 +93,19 @@ public class ClassPathElement extends Path
         else
         {
             // Get the names of the files in this path.
-            files = list();
+            fileNames = list();
         }
 
-        for (int index = 0; index < files.length; index++)
+        for (int index = 0; index < fileNames.length; index++)
         {
             // Create a new class path entry, with the proper file name and
             // any filters.
-            ClassPathEntry entry = new ClassPathEntry(basePath + files[index], output);
+            String fileName = fileNames[index];
+            File   file     = new File(fileName);
+
+            ClassPathEntry entry =
+                new ClassPathEntry(file.isAbsolute() ? file : new File(baseDir, fileName),
+                                   output);
             entry.setFilter(filter);
             entry.setJarFilter(jarFilter);
             entry.setWarFilter(warFilter);

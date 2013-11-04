@@ -44,7 +44,18 @@ ProGuard may print out some notes and non-fatal warnings:
     switch off these notes by specifying the <code>-dontnote</code>
     option.</dd>
 
-<dt><a name="duplicatezipentry"><b>Warning: can't write resource... Duplicate zip entry</b></a></dt>
+<dt><a name="unexpectedclass"><b>Note: class file ... unexpectedly contains class ...</b></a></dt>
+
+<dd>The given class file contains a definition for the given class, but the
+    directory name of the file doesn't correspond to the package name of the
+    class. ProGuard will accept the class definition, but the current
+    implementation will not write out the processed version. Please make sure
+    your input classes are packaged correctly. Notably, class files that are
+    in the <code>WEB-INF/classes</code> directory in a war should be packaged
+    in a jar and put in the <code>WEB-INF/lib</code> directory. You can switch
+    off these notes by specifying the <code>-dontnote</code> option.</dd>
+
+<dt><a name="duplicatezipentry"><b>Warning: can't write resource ... Duplicate zip entry</b></a></dt>
 
 <dd>Your input jars contain multiple resource files with the same name.
     ProGuard continues copying the resource files as usual, skipping any files
@@ -74,7 +85,10 @@ some more serious warnings:
     <code>java.util.zip.ZipConstants</code>, which is used as an interface
     class in some public classes, even though it is only package visible (in
     this case, the warning could also be ignored, because the class is not a
-    fundamental part of the class hierarchy).
+    fundamental part of the class hierarchNotably,
+    class files that are in the <code>WEB-INF/classes</code> directory in a
+    war should be packaged in a jar and put in the <code>WEB-INF/lib</code>
+    directory.y).
     <p>
     If you're missing a library and you're absolutely sure it isn't used
     anyway, you can try your luck with the <code>-ignorewarnings</code>
@@ -87,6 +101,15 @@ some more serious warnings:
     get recompiled properly, or some class file was left behind after its
     source file was removed. Try removing all class files, recompiling them,
     zipping them up, and running ProGuard again.
+    <p>
+    If the class member that is reported as missing is actually implemented in
+    a non-public library class, you should specify the
+    <code>-dontskipnonpubliclibraryclasses</code> option. A common example is
+    the method <code>setLength(int)</code> in the public class
+    <code>java.lang.StringBuilder</code>. This method is actually defined in
+    the package visible superclass
+    <code>java.lang.AbstractStringBuilder</code>, which ProGuard ignores by
+    default.
     <p>
     If your program classes reside in the same packages as library classes,
     and refer to their package visible class members, then you should specify
@@ -161,7 +184,14 @@ might be several reasons:
     tools often let class files with similar lower-case and upper-case names
     overwrite each other. If you really can't switch to a different operating
     system, you could consider using ProGuard's
-    <code>-dontusemixedcaseclassnames</code> option.</dd>
+    <code>-dontusemixedcaseclassnames</code> option.
+    <p>
+    Also, you should make sure your class files are in directories that
+    correspond to their package names. ProGuard will read misplaced class
+    files, but it will currently not write their processed versions. Notably,
+    class files that are in the <code>WEB-INF/classes</code> directory in a
+    war should be packaged in a jar and put in the <code>WEB-INF/lib</code>
+    directory.</dd>
 
 <dt><a name="notkept"><b>Classes or class members not being kept</b></a></dt>
 
@@ -220,6 +250,15 @@ might be several reasons:
     forgotten to preverify your program jar <i>after</i> having processed it
     with ProGuard.</dd>
 
+<dt><a name="failingmidlets"><b>Failing midlets in J2ME</b></a></dt>
+
+<dd>If your midlet simply won't start, you might try using the
+    <code>-dontusemixedcaseclassnames</code> option. Even if it has been
+    properly processed and then preverified on a case-sensitive file system,
+    the device itself might not like the mixed-case class names. Notably, the
+    Nokia N-Gage emulator works fine, but the actual device seems to exhibit
+    this problem.</dd>
+
 <dt><a name="securityexception"><b>SecurityException: SHA1 digest error</b></a></dt>
 
 <dd>You may have forgotten to sign your program jar <i>after</i> having
@@ -235,6 +274,14 @@ might be several reasons:
     you're using the J2ME WTK plugin, you can adapt the configuration
     <code>proguard/wtk/default.pro</code> that's inside the
     <code>proguard.jar</code>.</dd>
+
+<dt><a name="compilererror"><b>CompilerError: duplicate addition</b></a></dt>
+
+<dd>You are probably compiling or running some code that has been obfuscated
+    with the <code>-overloadaggressively</code> option. This option triggers a
+    bug in <code>sun.tools.java.MethodSet.add</code> in Sun's JDK 1.2.2, which
+    is used for (dynamic) compilation. You should then not use this
+    option.</dd>
 
 <dt><a name="classformaterror"><b>ClassFormatError: repetitive field name/signature</b></a></dt>
 
@@ -257,12 +304,20 @@ might be several reasons:
     please report it, preferably with the simplest example on which you can
     find ProGuard to fail.</dd>
 
+<dt><a name="verifyerror"><b>VerifyError: Unable to pop operand off an empty
+    stack</b></a></dt>
+
+<dd>Verification errors when executing a program are almost certainly the
+    result of a bug in the optimization step of ProGuard. Make sure you are
+    using the latest version. You should be able to work around the problem by
+    using the <code>-dontoptimize</code> option. Please report it, preferably
+    with the simplest example on which you can find ProGuard to fail.</dd>
+
 </dl>
-<p>
 
 <hr>
 <address>
-Copyright &copy; 2002-2004
+Copyright &copy; 2002-2005
 <a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>

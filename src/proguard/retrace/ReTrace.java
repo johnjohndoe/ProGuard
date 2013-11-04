@@ -1,8 +1,8 @@
-/* $Id: ReTrace.java,v 1.7 2004/08/15 12:39:30 eric Exp $
+/* $Id: ReTrace.java,v 1.10 2005/06/11 13:21:35 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -20,7 +20,7 @@
  */
 package proguard.retrace;
 
-import java.io.IOException;
+import java.io.*;
 
 import proguard.obfuscate.MappingReader;
 
@@ -38,41 +38,40 @@ public class ReTrace
 
     // The class settings.
     private boolean verbose;
-    private String  mappingFileName;
-    private String  stackTraceFileName;
+    private File    mappingFile;
+    private File    stackTraceFile;
 
 
     /**
      * Creates a new ReTrace object to process stack traces on the standard
      * input, based on the given mapping file name.
-     * @param verbose         specifies whether the de-obfuscated stack trace
-     *                        should be verbose.
-     * @param mappingFileName the mapping file that was written out by ProGuard.
+     * @param verbose     specifies whether the de-obfuscated stack trace
+     *                    should be verbose.
+     * @param mappingFile the mapping file that was written out by ProGuard.
      */
     public ReTrace(boolean verbose,
-                   String  mappingFileName)
+                   File    mappingFile)
     {
-        this(verbose, mappingFileName, null);
+        this(verbose, mappingFile, null);
     }
 
 
     /**
      * Creates a new ReTrace object to process a stack trace from the given file,
      * based on the given mapping file name.
-     * @param verbose            specifies whether the de-obfuscated stack trace
-     *                           should be verbose.
-     * @param mappingFileName    the mapping file that was written out by
-     *                           ProGuard.
-     * @param stackTraceFileName the name of the file that contains the stack
-     *                           trace.
+     * @param verbose        specifies whether the de-obfuscated stack trace
+     *                       should be verbose.
+     * @param mappingFile    the mapping file that was written out by ProGuard.
+     * @param stackTraceFile the optional name of the file that contains the
+     *                       stack trace.
      */
     public ReTrace(boolean verbose,
-                   String  mappingFileName,
-                   String  stackTraceFileName)
+                   File    mappingFile,
+                   File    stackTraceFile)
     {
-        this.verbose            = verbose;
-        this.mappingFileName    = mappingFileName;
-        this.stackTraceFileName = stackTraceFileName;
+        this.verbose        = verbose;
+        this.mappingFile    = mappingFile;
+        this.stackTraceFile = stackTraceFile;
     }
 
 
@@ -82,10 +81,10 @@ public class ReTrace
     public void execute() throws IOException
     {
         StackTrace stackTrace = new StackTrace(verbose);
-        MappingReader reader = new MappingReader(mappingFileName);
+        MappingReader reader = new MappingReader(mappingFile);
 
         // Read the obfuscated stack trace.
-        stackTrace.read(stackTraceFileName);
+        stackTrace.read(stackTraceFile);
 
         // Resolve the obfuscated stack trace by means of the mapping file.
         reader.pump(stackTrace);
@@ -121,14 +120,13 @@ public class ReTrace
             }
         }
 
-        String mappingFileName    = args[argumentIndex++];
-        String stackTraceFileName = argumentIndex < args.length ?
-            args[argumentIndex++] :
+        File mappingFile    = new File(args[argumentIndex++]);
+        File stackTraceFile = argumentIndex < args.length ?
+            new File(args[argumentIndex++]) :
             null;
 
-        ReTrace reTrace = new ReTrace(verbose,
-                                      mappingFileName,
-                                      stackTraceFileName);
+        ReTrace reTrace = new ReTrace(verbose, mappingFile, stackTraceFile);
+
         try
         {
             // Execute ReTrace with its given settings.

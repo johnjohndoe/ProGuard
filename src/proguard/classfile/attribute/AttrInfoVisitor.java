@@ -1,8 +1,8 @@
-/* $Id: AttrInfoVisitor.java,v 1.1 2004/10/10 21:10:04 eric Exp $
+/* $Id: AttrInfoVisitor.java,v 1.3 2005/06/11 13:13:15 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -21,7 +21,6 @@
 package proguard.classfile.attribute;
 
 import proguard.classfile.*;
-import proguard.classfile.attribute.*;
 import proguard.classfile.attribute.annotation.*;
 
 /**

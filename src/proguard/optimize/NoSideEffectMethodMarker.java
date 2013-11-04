@@ -1,8 +1,8 @@
-/* $Id: NoSideEffectMethodMarker.java,v 1.2 2004/08/15 12:39:30 eric Exp $
+/* $Id: NoSideEffectMethodMarker.java,v 1.5 2005/06/11 13:13:16 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -35,18 +35,13 @@ import proguard.classfile.visitor.*;
 public class NoSideEffectMethodMarker
   implements MemberInfoVisitor
 {
-    // A visitor info flag to indicate that a MethodInfo object doesn't have
-    // anyside effects.
-    private static final Object NO_SIDE_EFFECTS = new Object();
-
-
     // Implementations for MemberInfoVisitor.
 
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo) {}
 
     public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
     {
-        markAsNoSideEffects(programMethodInfo);
+        markNoSideEffects(programMethodInfo);
     }
 
 
@@ -54,21 +49,26 @@ public class NoSideEffectMethodMarker
 
     public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo)
     {
-        markAsNoSideEffects(libraryMethodInfo);
+        markNoSideEffects(libraryMethodInfo);
     }
 
 
     // Small utility methods.
 
-    public static void markAsNoSideEffects(VisitorAccepter visitorAccepter)
+    public static void markNoSideEffects(MethodInfo methodInfo)
     {
-        visitorAccepter.setVisitorInfo(NO_SIDE_EFFECTS);
+        MethodOptimizationInfo info = MethodOptimizationInfo.getMethodOptimizationInfo(methodInfo);
+        if (info != null)
+        {
+            info.setNoSideEffects();
+        }
     }
 
 
-    public static boolean hasNoSideEffects(VisitorAccepter visitorAccepter)
+    public static boolean hasNoSideEffects(MethodInfo methodInfo)
     {
-        return visitorAccepter != null &&
-               visitorAccepter.getVisitorInfo() == NO_SIDE_EFFECTS;
+        MethodOptimizationInfo info = MethodOptimizationInfo.getMethodOptimizationInfo(methodInfo);
+        return info != null &&
+               info.hasNoSideEffects();
     }
 }

@@ -1,8 +1,8 @@
-/* $Id: ConstantPoolRemapper.java,v 1.9 2004/11/20 15:41:24 eric Exp $
+/* $Id: ConstantPoolRemapper.java,v 1.11 2005/06/11 13:13:15 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -542,27 +542,16 @@ public class ConstantPoolRemapper
 
     public void visitCpInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, CpInstruction cpInstruction)
     {
-        // Remap the instruction, and get the old and the new instruction length.
-        int oldLength = cpInstruction.length(offset);
-
-        cpInstruction.cpIndex = remapCpIndex(cpInstruction.cpIndex);
-        cpInstruction.shrink();
-
-        int newLength = cpInstruction.length(offset);
-
-        // Is the code length changing?
-        if (newLength != oldLength ||
-            codeAttrInfoEditor.isModified())
+        // Is the new constant pool index different from the original one?
+        int newCpIndex = remapCpIndex(cpInstruction.cpIndex);
+        if (newCpIndex != cpInstruction.cpIndex)
         {
-            // We have to go through the code attribute editor.
+            // Replace the instruction.
             cpInstruction = new CpInstruction().copy(cpInstruction);
+            cpInstruction.cpIndex = newCpIndex;
+            cpInstruction.shrink();
 
             codeAttrInfoEditor.replaceInstruction(offset, cpInstruction);
-        }
-        else
-        {
-            // We can write the instruction directly.
-            cpInstruction.write(codeAttrInfo, offset);
         }
     }
 

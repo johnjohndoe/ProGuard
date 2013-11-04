@@ -81,9 +81,9 @@ Some minor syntactical changes are required in order to conform with the XML
 standard.
 <p>
 
-Firstly, the <code>#</code> chararacter cannot be used for comments in an XML
+Firstly, the <code>#</code> character cannot be used for comments in an XML
 file. Comments must be enclosed by an opening <code>&lt;!--</code> and a
-closing <code>--&gt;</code>. All occurrences of the <code>#</code> chararacter
+closing <code>--&gt;</code>. All occurrences of the <code>#</code> character
 can be removed.
 <p>
 
@@ -263,6 +263,14 @@ elements:
     all of the specified class members are present (after the shrinking
     step).</dd>
 
+<dt><code><b>&lt;whyareyoukeeping</b></code>
+    <a href="#classspecification"><i>class_specification</i></a>
+    <code><b>&gt;</b></code>
+    <a href="#classmemberspecification"><i>class_member_specifications</i></a>
+    <code><b>&lt;/whyareyoukeeping&gt;</b></code></dt>
+<dd>Print details on why the given classes and class members are being kept in
+    the shrinking step.</dd>
+
 <dt><code><b>&lt;assumenosideeffects</b></code>
     <a href="#classspecification"><i>class_specification</i></a>
     <code><b>&gt;</b></code>
@@ -410,7 +418,7 @@ attributes:
 
 <hr>
 <address>
-Copyright &copy; 2002-2004
+Copyright &copy; 2002-2005
 <a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>

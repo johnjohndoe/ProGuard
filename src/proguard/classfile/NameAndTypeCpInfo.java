@@ -1,9 +1,9 @@
-/* $Id: NameAndTypeCpInfo.java,v 1.19 2004/10/23 16:53:01 eric Exp $
+/* $Id: NameAndTypeCpInfo.java,v 1.21 2005/06/11 13:13:15 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -36,14 +36,6 @@ public class NameAndTypeCpInfo extends CpInfo implements Cloneable
     public int u2nameIndex;
     public int u2descriptorIndex;
 
-    /**
-     * An extra field pointing to the ClassFile objects referenced in the
-     * descriptor string. This field is filled out by the <code>{@link
-     * proguard.classfile.util.ClassFileReferenceInitializer ClassFileReferenceInitializer}</code>.
-     * References to primitive types are ignored.
-     */
-    public ClassFile[] referencedClassFiles;
-
 
     protected NameAndTypeCpInfo()
     {
@@ -52,19 +44,15 @@ public class NameAndTypeCpInfo extends CpInfo implements Cloneable
 
     /**
      * Creates a new NameAndTypeCpInfo with the given name and type indices.
-     * @param u2nameIndex          the index of the name in the constant pool.
-     * @param u2descriptorIndex    the index of the descriptor in the constant
-     *                             pool.
-     * @param referencedClassFiles the list of class files referenced in the
-     *                             descriptor string.
+     * @param u2nameIndex       the index of the name in the constant pool.
+     * @param u2descriptorIndex the index of the descriptor in the constant
+     *                          pool.
      */
-    public NameAndTypeCpInfo(int         u2nameIndex,
-                             int         u2descriptorIndex,
-                             ClassFile[] referencedClassFiles)
+    public NameAndTypeCpInfo(int u2nameIndex,
+                             int u2descriptorIndex)
     {
-        this.u2nameIndex          = u2nameIndex;
-        this.u2descriptorIndex    = u2descriptorIndex;
-        this.referencedClassFiles = referencedClassFiles;
+        this.u2nameIndex       = u2nameIndex;
+        this.u2descriptorIndex = u2descriptorIndex;
     }
 
 
@@ -139,24 +127,5 @@ public class NameAndTypeCpInfo extends CpInfo implements Cloneable
     public void accept(ClassFile classFile, CpInfoVisitor cpInfoVisitor)
     {
         cpInfoVisitor.visitNameAndTypeCpInfo(classFile, this);
-    }
-
-
-    /**
-     * Lets the ClassFile objects referenced in the descriptor string
-     * accept the given visitor.
-     */
-    public void referencedClassesAccept(ClassFileVisitor classFileVisitor)
-    {
-        if (referencedClassFiles != null)
-        {
-            for (int i = 0; i < referencedClassFiles.length; i++)
-            {
-                if (referencedClassFiles[i] != null)
-                {
-                    referencedClassFiles[i].accept(classFileVisitor);
-                }
-            }
-        }
     }
 }

@@ -1,8 +1,8 @@
-/* $Id: DescriptorClassEnumeration.java,v 1.10 2004/11/26 22:53:15 eric Exp $
+/* $Id: DescriptorClassEnumeration.java,v 1.12 2005/06/11 13:21:35 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -74,12 +74,12 @@ public class DescriptorClassEnumeration
         while (nextClassNameStartIndex() >= 0)
         {
             count++;
-            
+
             nextClassNameEndIndex();
         }
 
         index = 0;
-        
+
         return count;
     }
 
@@ -109,19 +109,19 @@ public class DescriptorClassEnumeration
     {
         int classNameStartIndex = nextClassNameStartIndex() + 1;
         int classNameEndIndex   = nextClassNameEndIndex();
-        
+
         return descriptor.substring(classNameStartIndex, classNameEndIndex);
     }
-    
-    
+
+
     private int nextClassNameStartIndex()
     {
         index = descriptor.indexOf(ClassConstants.INTERNAL_TYPE_CLASS_START, index);
-        
+
         return index;
     }
-    
-    
+
+
     private int nextClassNameEndIndex()
     {
         while (++index < descriptor.length())
@@ -133,7 +133,7 @@ public class DescriptorClassEnumeration
                 return index;
             }
         }
-        
+
         throw new IllegalArgumentException("Missing class name terminator in descriptor ["+descriptor+"]");
     }
 

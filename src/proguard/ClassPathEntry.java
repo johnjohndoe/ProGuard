@@ -1,8 +1,8 @@
-/* $Id: ClassPathEntry.java,v 1.8 2004/08/15 12:39:30 eric Exp $
+/* $Id: ClassPathEntry.java,v 1.10 2005/06/11 13:13:15 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -20,6 +20,8 @@
  */
 package proguard;
 
+import java.io.*;
+
 
 /**
  * This class represents an entry from a class path: a jar, a war, a zip, an
@@ -31,7 +33,7 @@ package proguard;
  */
 public class ClassPathEntry
 {
-    private String  name;
+    private File    file;
     private boolean output;
     private String  filter;
     private String  jarFilter;
@@ -43,21 +45,38 @@ public class ClassPathEntry
     /**
      * Creates a new ClassPathEntry with the given name and type.
      */
-    public ClassPathEntry(String name, boolean isOutput)
+    public ClassPathEntry(File file, boolean isOutput)
     {
-        this.name   = name;
+        this.file   = file;
         this.output = isOutput;
     }
 
 
+    /**
+     * Returns the path name of the entry.
+     */
     public String getName()
     {
-        return name;
+        try
+        {
+            return file.getCanonicalPath();
+        }
+        catch (IOException ex)
+        {
+            return file.getPath();
+        }
     }
 
-    public void setName(String name)
+
+    public File getFile()
     {
-        this.name = name;
+        return file;
+    }
+
+
+    public void setFile(File file)
+    {
+        this.file = file;
     }
 
 
@@ -130,7 +149,7 @@ public class ClassPathEntry
 
     public String toString()
     {
-        String string = name;
+        String string = getName();
 
         if (filter    != null ||
             jarFilter != null ||

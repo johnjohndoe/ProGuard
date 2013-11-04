@@ -1,8 +1,8 @@
-/* $Id: ElementValue.java,v 1.4 2004/11/27 10:09:26 eric Exp $
+/* $Id: ElementValue.java,v 1.6 2005/06/11 13:13:15 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by
@@ -103,6 +103,15 @@ public abstract class ElementValue implements VisitorAccepter
     {
         dout.writeByte(u1tag);
         writeInfo(dout);
+    }
+
+
+    /**
+     * Returns the element name.
+     */
+    public String getMethodName(ClassFile classFile)
+    {
+        return classFile.getCpString(u2elementName);
     }
 
 

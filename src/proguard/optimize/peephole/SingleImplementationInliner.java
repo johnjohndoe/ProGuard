@@ -1,8 +1,8 @@
-/* $Id: SingleImplementationInliner.java,v 1.7 2004/12/11 16:35:23 eric Exp $
+/* $Id: SingleImplementationInliner.java,v 1.9 2005/06/11 13:13:16 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -23,66 +23,141 @@ package proguard.optimize.peephole;
 import proguard.classfile.*;
 import proguard.classfile.attribute.*;
 import proguard.classfile.attribute.annotation.*;
-import proguard.classfile.editor.*;
-import proguard.classfile.instruction.*;
-import proguard.classfile.util.*;
+import proguard.classfile.editor.ClassFileReferenceFixer;
 import proguard.classfile.visitor.*;
 
 /**
- * This MemberInfoVisitor and AttrInfoVisitor replaces all references to
- * interfaces that have single implementations by references to those
- * implementations.
+ * This ClassFileVisitor replaces all references to interfaces that have single
+ * implementations by references to those implementations. The names will then
+ * have to be fixed, based on the new references.
  *
+ * @see SingleImplementationFixer
+ * @see ClassFileReferenceFixer
  * @author Eric Lafortune
  */
 public class SingleImplementationInliner
-implements   MemberInfoVisitor,
-             AttrInfoVisitor,
-             InstructionVisitor,
+implements   ClassFileVisitor,
              CpInfoVisitor,
+             MemberInfoVisitor,
+             AttrInfoVisitor,
              LocalVariableInfoVisitor,
-             LocalVariableTypeInfoVisitor
+             LocalVariableTypeInfoVisitor,
+             AnnotationVisitor,
+             ElementValueVisitor
 {
-    private MemberFinder memberFinder = new MemberFinder();
+    // Implementations for ClassFileVisitor.
 
-    private ConstantPoolEditor constantPoolEditor = new ConstantPoolEditor();
-    private CodeAttrInfoEditor codeAttrInfoEditor = new CodeAttrInfoEditor(1024);
+    public void visitProgramClassFile(ProgramClassFile programClassFile)
+    {
+        // Update the constant pool.
+        programClassFile.constantPoolEntriesAccept(this);
+
+        // Update the class members.
+        programClassFile.fieldsAccept(this);
+        programClassFile.methodsAccept(this);
+
+        // Update the attributes.
+        programClassFile.attributesAccept(this);
+    }
 
 
-    // Return values of the single implementation inliner.
-    private int       cpIndex;
-    private ClassFile singleImplementationClassFile;
+    public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
+    {
+    }
+
+
+    // Implementations for CpInfoVisitor.
+
+    public void visitIntegerCpInfo(ClassFile classFile, IntegerCpInfo integerCpInfo) {}
+    public void visitLongCpInfo(ClassFile classFile, LongCpInfo longCpInfo) {}
+    public void visitFloatCpInfo(ClassFile classFile, FloatCpInfo floatCpInfo) {}
+    public void visitDoubleCpInfo(ClassFile classFile, DoubleCpInfo doubleCpInfo) {}
+    public void visitUtf8CpInfo(ClassFile classFile, Utf8CpInfo utf8CpInfo) {}
+    public void visitFieldrefCpInfo(ClassFile classFile, FieldrefCpInfo fieldrefCpInfo) {}
+    public void visitMethodrefCpInfo(ClassFile classFile, MethodrefCpInfo methodrefCpInfo) {}
+    public void visitNameAndTypeCpInfo(ClassFile classFile, NameAndTypeCpInfo nameAndTypeCpInfo) {}
+
+
+    public void visitStringCpInfo(ClassFile classFile, StringCpInfo stringCpInfo)
+    {
+        // Update the referenced class file if it is an interface with a single
+        // implementation.
+        ClassFile singleImplementationClassFile =
+            SingleImplementationMarker.singleImplementation(stringCpInfo.referencedClassFile);
+
+        if (singleImplementationClassFile != null)
+        {
+            stringCpInfo.referencedClassFile = singleImplementationClassFile;
+        }
+    }
+
+
+    public void visitInterfaceMethodrefCpInfo(ClassFile classFile, InterfaceMethodrefCpInfo interfaceMethodrefCpInfo)
+    {
+        // Update the referenced interface if it has a single implementation.
+        ClassFile singleImplementationClassFile =
+            SingleImplementationMarker.singleImplementation(interfaceMethodrefCpInfo.referencedClassFile);
+
+        if (singleImplementationClassFile != null)
+        {
+            // We know the single implementation contains the method.
+
+            String name = interfaceMethodrefCpInfo.getName(classFile);
+            String type = interfaceMethodrefCpInfo.getType(classFile);
+
+            MemberInfo referencedMemberInfo =
+                singleImplementationClassFile.findMethod(name, type);
+
+            if (referencedMemberInfo != null)
+            {
+                interfaceMethodrefCpInfo.referencedClassFile  = singleImplementationClassFile;
+                interfaceMethodrefCpInfo.referencedMemberInfo = referencedMemberInfo;
+            }
+        }
+    }
+
+
+    public void visitClassCpInfo(ClassFile classFile, ClassCpInfo classCpInfo)
+    {
+        // Update the referenced class file if it is an interface with a single
+        // implementation.
+        ClassFile singleImplementationClassFile =
+            SingleImplementationMarker.singleImplementation(classCpInfo.referencedClassFile);
+
+        if (singleImplementationClassFile != null)
+        {
+            classCpInfo.referencedClassFile = singleImplementationClassFile;
+        }
+    }
 
 
     // Implementations for MemberInfoVisitor.
 
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {
-        visitMemberInfo(programClassFile, programFieldInfo);
+        // Update the referenced class file if the type is an interface with a
+        // single implementation.
+        ClassFile singleImplementationClassFile =
+            SingleImplementationMarker.singleImplementation(programFieldInfo.referencedClassFile);
+
+        if (singleImplementationClassFile != null)
+        {
+            programFieldInfo.referencedClassFile = singleImplementationClassFile;
+        }
+
+        // Update the attributes.
+        programFieldInfo.attributesAccept(programClassFile, this);
     }
+
 
     public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
     {
-        visitMemberInfo(programClassFile, programMethodInfo);
-    }
+        // Update the referenced class files if the descriptor contains
+        // interfaces with single implementations.
+        updateReferencedClassFiles(programMethodInfo.referencedClassFiles);
 
-    private void visitMemberInfo(ProgramClassFile programClassFile, ProgramMemberInfo programMemberInfo)
-    {
-        // Update the member info if any of its referenced classes
-        // is an interface with a single implementation.
-        ClassFile[] referencedClassFiles =
-            updateReferencedClassFiles(programMemberInfo.referencedClassFiles);
-
-        // Update the descriptor if necessary.
-        if (referencedClassFiles != null)
-        {
-            programMemberInfo.u2descriptorIndex =
-                constantPoolEditor.addUtf8CpInfo(programClassFile,
-                                                 newDescriptor(programMemberInfo.getDescriptor(programClassFile),
-                                                               referencedClassFiles));
-
-            programMemberInfo.referencedClassFiles = referencedClassFiles;
-        }
+        // Update the attributes.
+        programMethodInfo.attributesAccept(programClassFile, this);
     }
 
 
@@ -106,268 +181,64 @@ implements   MemberInfoVisitor,
 
     public void visitCodeAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo)
     {
-        // Reset the code changes.
-        codeAttrInfoEditor.reset(codeAttrInfo.u4codeLength);
-
-        // Update the instructions that refer to interfaces with a single
-        // implementation.
-        codeAttrInfo.instructionsAccept(classFile, methodInfo, this);
-
-        // Apply the code changes.
-        codeAttrInfoEditor.visitCodeAttrInfo(classFile, methodInfo, codeAttrInfo);
-
-        //codeAttrInfo.attributesAccept(classFile, methodInfo, this);
+        // Update the referenced class files of the local variables.
+        codeAttrInfo.attributesAccept(classFile, methodInfo, this);
     }
 
 
     public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo)
     {
-        // Rename the types of the local variables.
+        // Update the referenced class files of the local variables.
         localVariableTableAttrInfo.localVariablesAccept(classFile, methodInfo, codeAttrInfo, this);
     }
 
 
     public void visitLocalVariableTypeTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeTableAttrInfo localVariableTypeTableAttrInfo)
     {
-        // Rename the signatures of the local variables.
+        // Update the referenced class files of the local variable types.
         localVariableTypeTableAttrInfo.localVariablesAccept(classFile, methodInfo, codeAttrInfo, this);
     }
 
 
     public void visitSignatureAttrInfo(ClassFile classFile, SignatureAttrInfo signatureAttrInfo)
     {
-        // TODO: Update signature attribute.
+        // Update the referenced class files.
+        updateReferencedClassFiles(signatureAttrInfo.referencedClassFiles);
     }
 
 
     public void visitRuntimeVisibleAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleAnnotationsAttrInfo runtimeVisibleAnnotationsAttrInfo)
     {
-        // TODO: Update runtime visible annotation attribute.
-
-        //runtimeVisibleAnnotationsAttrInfo.annotationsAccept(classFile, this);
+        // Update the annotations.
+        runtimeVisibleAnnotationsAttrInfo.annotationsAccept(classFile, this);
     }
 
 
     public void visitRuntimeInvisibleAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleAnnotationsAttrInfo runtimeInvisibleAnnotationsAttrInfo)
     {
-        // TODO: Update runtime invisible annotation attribute.
-
-        //runtimeInvisibleAnnotationsAttrInfo.annotationsAccept(classFile, this);
+        // Update the annotations.
+        runtimeInvisibleAnnotationsAttrInfo.annotationsAccept(classFile, this);
     }
 
 
     public void visitRuntimeVisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeVisibleParameterAnnotationsAttrInfo runtimeVisibleParameterAnnotationsAttrInfo)
     {
-        // TODO: Update runtime visible parameter annotation attribute.
-
-        //runtimeVisibleParameterAnnotationsAttrInfo.annotationsAccept(classFile, this);
+        // Update the annotations.
+        runtimeVisibleParameterAnnotationsAttrInfo.annotationsAccept(classFile, this);
     }
 
 
     public void visitRuntimeInvisibleParameterAnnotationAttrInfo(ClassFile classFile, RuntimeInvisibleParameterAnnotationsAttrInfo runtimeInvisibleParameterAnnotationsAttrInfo)
     {
-        // TODO: Update runtime invisible parameter annotation attribute.
-
-        //runtimeInvisibleParameterAnnotationsAttrInfo.annotationsAccept(classFile, this);
+        // Update the annotations.
+        runtimeInvisibleParameterAnnotationsAttrInfo.annotationsAccept(classFile, this);
     }
 
 
     public void visitAnnotationDefaultAttrInfo(ClassFile classFile, AnnotationDefaultAttrInfo annotationDefaultAttrInfo)
     {
-        // TODO: Update annotation default attribute.
-
-        //annotationDefaultAttrInfo.defaultValueAccept(classFile, this);
-    }
-
-
-    // Implementations for InstructionVisitor.
-
-    public void visitSimpleInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, SimpleInstruction simpleInstruction) {}
-    public void visitVariableInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, VariableInstruction variableInstruction) {}
-    public void visitBranchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, BranchInstruction branchInstruction) {}
-    public void visitTableSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, TableSwitchInstruction tableSwitchInstruction) {}
-    public void visitLookUpSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, LookUpSwitchInstruction lookUpSwitchInstruction) {}
-
-
-    public void visitCpInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, CpInstruction cpInstruction)
-    {
-        cpIndex = 0;
-        classFile.constantPoolEntryAccept(cpInstruction.cpIndex, this);
-
-        if (cpIndex != 0)
-        {
-            byte opcode = cpInstruction.opcode;
-
-            // Does this instruction now invoke a single implementation?
-            if (opcode == InstructionConstants.OP_INVOKEINTERFACE &&
-                singleImplementationClassFile != null)
-            {
-                // Replace the interface invocation by an ordinary invocation.
-                opcode = InstructionConstants.OP_INVOKEVIRTUAL;
-            }
-
-            // Replace the instruction by an updated instruction.
-            Instruction replacementInstruction = new CpInstruction(opcode,
-                                                                   cpIndex,
-                                                                   cpInstruction.constant).shrink();
-
-            codeAttrInfoEditor.replaceInstruction(offset, replacementInstruction);
-        }
-    }
-
-
-    // Implementations for CpInfoVisitor.
-
-    public void visitIntegerCpInfo(ClassFile classFile, IntegerCpInfo integerCpInfo) {}
-    public void visitLongCpInfo(ClassFile classFile, LongCpInfo longCpInfo) {}
-    public void visitFloatCpInfo(ClassFile classFile, FloatCpInfo floatCpInfo) {}
-    public void visitDoubleCpInfo(ClassFile classFile, DoubleCpInfo doubleCpInfo) {}
-    public void visitUtf8CpInfo(ClassFile classFile, Utf8CpInfo utf8CpInfo) {}
-
-
-    public void visitStringCpInfo(ClassFile classFile, StringCpInfo stringCpInfo)
-    {
-        // Create a new string entry if its referenced class is an interface with
-        // a single implementation.
-        singleImplementationClassFile =
-            SingleImplementationMarker.singleImplementation(stringCpInfo.referencedClassFile);
-
-        if (singleImplementationClassFile != null)
-        {
-            // Create a new string entry.
-            cpIndex = constantPoolEditor.addStringCpInfo((ProgramClassFile)classFile,
-                                                         singleImplementationClassFile.getName(),
-                                                         singleImplementationClassFile);
-        }
-    }
-
-
-    public void visitFieldrefCpInfo(ClassFile classFile, FieldrefCpInfo fieldrefCpInfo)
-    {
-        // Create a new field reference entry if its type has changed.
-        cpIndex = 0;
-        classFile.constantPoolEntryAccept(fieldrefCpInfo.getNameAndTypeIndex(), this);
-        int nameAndTypeIndex = cpIndex;
-
-        if (nameAndTypeIndex != 0)
-        {
-            // Create a new field reference entry.
-            cpIndex = constantPoolEditor.addFieldrefCpInfo((ProgramClassFile)classFile,
-                                                           fieldrefCpInfo.getClassIndex(),
-                                                           nameAndTypeIndex,
-                                                           fieldrefCpInfo.referencedClassFile,
-                                                           fieldrefCpInfo.referencedMemberInfo);
-        }
-    }
-
-
-    public void visitMethodrefCpInfo(ClassFile classFile, MethodrefCpInfo methodrefCpInfo)
-    {
-        // Create a new method reference entry if its type has changed.
-        cpIndex = 0;
-        classFile.constantPoolEntryAccept(methodrefCpInfo.getNameAndTypeIndex(), this);
-        int nameAndTypeIndex = cpIndex;
-
-        if (nameAndTypeIndex != 0)
-        {
-            // Create a new method reference entry.
-            cpIndex = constantPoolEditor.addMethodrefCpInfo((ProgramClassFile)classFile,
-                                                            methodrefCpInfo.getClassIndex(),
-                                                            nameAndTypeIndex,
-                                                            methodrefCpInfo.referencedClassFile,
-                                                            methodrefCpInfo.referencedMemberInfo);
-        }
-    }
-
-
-    public void visitInterfaceMethodrefCpInfo(ClassFile classFile, InterfaceMethodrefCpInfo interfaceMethodrefCpInfo)
-    {
-        // Create a new ordinary method reference entry, if its referenced class
-        // is an interface with a single implementation, or a a new interface
-        // method reference entry, if its type has changed.
-        cpIndex = 0;
-        classFile.constantPoolEntryAccept(interfaceMethodrefCpInfo.getClassIndex(), this);
-        int classIndex = cpIndex;
-
-        cpIndex = 0;
-        classFile.constantPoolEntryAccept(interfaceMethodrefCpInfo.getNameAndTypeIndex(), this);
-        int nameAndTypeIndex = cpIndex;
-
-        if (classIndex != 0)
-        {
-            if (nameAndTypeIndex == 0)
-            {
-                nameAndTypeIndex = interfaceMethodrefCpInfo.getNameAndTypeIndex();
-            }
-
-            // See if we can find the referenced method.
-            ClassFile referencedClassFile = singleImplementationClassFile;
-
-            String name = interfaceMethodrefCpInfo.getName(classFile);
-            String type = interfaceMethodrefCpInfo.getType(classFile);
-
-            // See if we can find the referenced class membver somewhere in the
-            // hierarchy.
-            MethodInfo referencedMethodInfo = memberFinder.findMethod(referencedClassFile,
-                                                                      name,
-                                                                      type);
-            referencedClassFile             = memberFinder.correspondingClassFile();
-
-            // Create an ordinary method reference entry.
-            cpIndex = constantPoolEditor.addMethodrefCpInfo((ProgramClassFile)classFile,
-                                                            classIndex,
-                                                            nameAndTypeIndex,
-                                                            referencedClassFile,
-                                                            referencedMethodInfo);
-        }
-        else if (nameAndTypeIndex != 0)
-        {
-            classIndex = interfaceMethodrefCpInfo.getClassIndex();
-
-            // Create an interface method reference entry.
-            cpIndex = constantPoolEditor.addInterfaceMethodrefCpInfo((ProgramClassFile)classFile,
-                                                                     classIndex,
-                                                                     nameAndTypeIndex,
-                                                                     interfaceMethodrefCpInfo.referencedClassFile,
-                                                                     interfaceMethodrefCpInfo.referencedMemberInfo);
-        }
-    }
-
-
-    public void visitClassCpInfo(ClassFile classFile, ClassCpInfo classCpInfo)
-    {
-        // Create a new class entry if its referenced class is an interface with
-        // a single implementation.
-        singleImplementationClassFile =
-            SingleImplementationMarker.singleImplementation(classCpInfo.referencedClassFile);
-
-        if (singleImplementationClassFile != null)
-        {
-            // Create a new class entry.
-            cpIndex = constantPoolEditor.addClassCpInfo((ProgramClassFile)classFile,
-                                                        newClassName(classCpInfo.getName(classFile),
-                                                                     singleImplementationClassFile),
-                                                        singleImplementationClassFile);
-        }
-    }
-
-
-    public void visitNameAndTypeCpInfo(ClassFile classFile, NameAndTypeCpInfo nameAndTypeCpInfo)
-    {
-        // Create a new name and type entry if any of the referenced classes of
-        // its type is an interface with a single implementation.
-        ClassFile[] referencedClassFiles =
-            updateReferencedClassFiles(nameAndTypeCpInfo.referencedClassFiles);
-
-        if (referencedClassFiles != null)
-        {
-            // Create a new name and type entry.
-            cpIndex = constantPoolEditor.addNameAndTypeCpInfo((ProgramClassFile)classFile,
-                                                              nameAndTypeCpInfo.getName(classFile),
-                                                              newDescriptor(nameAndTypeCpInfo.getType(classFile),
-                                                                            referencedClassFiles),
-                                                              referencedClassFiles);
-        }
+        // Update the annotation.
+        annotationDefaultAttrInfo.defaultValueAccept(classFile, this);
     }
 
 
@@ -375,19 +246,14 @@ implements   MemberInfoVisitor,
 
     public void visitLocalVariableInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableInfo localVariableInfo)
     {
-        // Create a new type entry if its referenced class is an interface with
-        // a single implementation.
+        // Update the referenced class file if it is an interface with a single
+        // implementation.
         ClassFile singleImplementationClassFile =
             SingleImplementationMarker.singleImplementation(localVariableInfo.referencedClassFile);
 
-        // Update the type if necessary.
         if (singleImplementationClassFile != null)
         {
-            // Refer to a new Utf8 entry.
-            localVariableInfo.u2descriptorIndex =
-                constantPoolEditor.addUtf8CpInfo((ProgramClassFile)classFile,
-                                                 newClassName(classFile.getCpString(localVariableInfo.u2descriptorIndex),
-                                                              singleImplementationClassFile));
+            localVariableInfo.referencedClassFile = singleImplementationClassFile;
         }
     }
 
@@ -396,139 +262,81 @@ implements   MemberInfoVisitor,
 
     public void visitLocalVariableTypeInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTypeInfo localVariableTypeInfo)
     {
-        // Create a new signature entry if any of the referenced classes of
-        // its type is an interface with a single implementation.
-        ClassFile[] referencedClassFiles =
-            updateReferencedClassFiles(localVariableTypeInfo.referencedClassFiles);
+        // Update the referenced class files.
+        updateReferencedClassFiles(localVariableTypeInfo.referencedClassFiles);
+    }
 
-        // Update the signature if necessary.
-        if (referencedClassFiles != null)
-        {
-            localVariableTypeInfo.u2signatureIndex =
-                constantPoolEditor.addUtf8CpInfo((ProgramClassFile)classFile,
-                                                 newDescriptor(classFile.getCpString(localVariableTypeInfo.u2signatureIndex),
-                                                               referencedClassFiles));
-        }
+
+    // Implementations for AnnotationVisitor.
+
+    public void visitAnnotation(ClassFile classFile, Annotation annotation)
+    {
+        // Update the referenced class files.
+        updateReferencedClassFiles(annotation.referencedClassFiles);
+
+        // Update the element values.
+        annotation.elementValuesAccept(classFile, this);
+    }
+
+
+    // Implementations for ElementValueVisitor.
+
+    public void visitConstantElementValue(ClassFile classFile, Annotation annotation, ConstantElementValue constantElementValue)
+    {
+    }
+
+
+    public void visitEnumConstantElementValue(ClassFile classFile, Annotation annotation, EnumConstantElementValue enumConstantElementValue)
+    {
+        // Update the referenced class files.
+        updateReferencedClassFiles(enumConstantElementValue.referencedClassFiles);
+    }
+
+
+    public void visitClassElementValue(ClassFile classFile, Annotation annotation, ClassElementValue classElementValue)
+    {
+        // Update the referenced class files.
+        updateReferencedClassFiles(classElementValue.referencedClassFiles);
+    }
+
+
+    public void visitAnnotationElementValue(ClassFile classFile, Annotation annotation, AnnotationElementValue annotationElementValue)
+    {
+        // Update the annotation.
+        annotationElementValue.annotationAccept(classFile, this);
+    }
+
+
+    public void visitArrayElementValue(ClassFile classFile, Annotation annotation, ArrayElementValue arrayElementValue)
+    {
+        // Update the element values.
+        arrayElementValue.elementValuesAccept(classFile, annotation, this);
     }
 
 
     // Small utility methods.
 
     /**
-     * Updates the given array of referenced class files, if the refer to an
-     * interface with a single implementation. Returns a new array if it
-     * needed to be updated, or <code>null</code> otherwise.
+     * Updates the given array of referenced class files, replacing references
+     * to a interfaces with single implementations by these implementations.
      */
-    private ClassFile[] updateReferencedClassFiles(ClassFile[] referencedClassFiles)
+    private void updateReferencedClassFiles(ClassFile[] referencedClassFiles)
     {
-        ClassFile[] newReferencedClassFiles = null;
-
-        // Check all referenced classes.
-        if (referencedClassFiles != null &&
-            referencedClassFilesChanged(referencedClassFiles))
+        // Update all referenced classes.
+        if (referencedClassFiles != null)
         {
-            // Create a new array to copy the elements.
-            newReferencedClassFiles = new ClassFile[referencedClassFiles.length];
-
-            // Update all referenced classes.
             for (int index = 0; index < referencedClassFiles.length; index++)
             {
-                ClassFile referencedClassFile = referencedClassFiles[index];
-
                 // See if we have is an interface with a single implementation.
                 ClassFile singleImplementationClassFile =
-                    SingleImplementationMarker.singleImplementation(referencedClassFile);
+                    SingleImplementationMarker.singleImplementation(referencedClassFiles[index]);
 
                 // Update or copy the referenced class file.
-                newReferencedClassFiles[index] = singleImplementationClassFile != null ?
-                    singleImplementationClassFile :
-                    referencedClassFile;
+                if (singleImplementationClassFile != null)
+                {
+                    referencedClassFiles[index] = singleImplementationClassFile;
+                }
             }
         }
-
-        return newReferencedClassFiles;
-    }
-
-
-    private boolean referencedClassFilesChanged(ClassFile[] referencedClassFiles)
-    {
-        // Check all referenced classes.
-        for (int index = 0; index < referencedClassFiles.length; index++)
-        {
-            // See if we have is an interface with a single implementation.
-            if (SingleImplementationMarker.singleImplementation(referencedClassFiles[index]) != null)
-            {
-                // We've found an element that needs to be updated.
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-
-    /**
-     * Returns the new descriptor based on the given descriptor and the new
-     * names of the given referenced class files.
-     */
-    private String newDescriptor(String      descriptor,
-                                 ClassFile[] referencedClassFiles)
-    {
-        // Unravel and reconstruct the class elements of the descriptor.
-        DescriptorClassEnumeration descriptorClassEnumeration =
-            new DescriptorClassEnumeration(descriptor);
-
-        String newDescriptor = descriptorClassEnumeration.nextFluff();
-
-        int index = 0;
-        while (descriptorClassEnumeration.hasMoreClassNames())
-        {
-            String className = descriptorClassEnumeration.nextClassName();
-            String fluff     = descriptorClassEnumeration.nextFluff();
-
-            String newClassName = newClassName(className,
-                                               referencedClassFiles[index++]);
-
-            // Fall back on the original class name if there is no new name.
-            if (newClassName == null)
-            {
-                newClassName = className;
-            }
-
-            newDescriptor = newDescriptor + newClassName + fluff;
-        }
-
-        return newDescriptor;
-    }
-
-
-    /**
-     * Returns the new class name based on the given class name and the new
-     * name of the given referenced class file. Class names of array types
-     * are handled properly.
-     */
-    private String newClassName(String    className,
-                                ClassFile referencedClassFile)
-    {
-        // If there is no new class name, the descriptor doesn't change.
-        if (referencedClassFile == null)
-        {
-            return className;
-        }
-
-        // Reconstruct the class name.
-        String newClassName = referencedClassFile.getName();
-
-        // Is it an array type?
-        if (className.charAt(0) == ClassConstants.INTERNAL_TYPE_ARRAY)
-        {
-            // Add the array prefixes and suffix "[L...;".
-            newClassName =
-                 className.substring(0, className.indexOf(ClassConstants.INTERNAL_TYPE_CLASS_START)+1) +
-                 newClassName +
-                 ClassConstants.INTERNAL_TYPE_CLASS_END;
-        }
-
-        return newClassName;
     }
 }

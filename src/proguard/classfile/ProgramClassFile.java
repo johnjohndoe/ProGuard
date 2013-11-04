@@ -1,9 +1,9 @@
-/* $Id: ProgramClassFile.java,v 1.32 2004/12/11 16:35:23 eric Exp $
+/* $Id: ProgramClassFile.java,v 1.37 2005/06/11 13:21:35 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -127,34 +127,46 @@ public class ProgramClassFile implements ClassFile
 
         // Read the interfaces.
         u2interfacesCount = din.readUnsignedShort();
-        u2interfaces      = new int[u2interfacesCount];
-        for (int i = 0; i < u2interfacesCount; i++)
+        if (u2interfacesCount > 0)
         {
-            u2interfaces[i] = din.readUnsignedShort();
+            u2interfaces = new int[u2interfacesCount];
+            for (int i = 0; i < u2interfacesCount; i++)
+            {
+                u2interfaces[i] = din.readUnsignedShort();
+            }
         }
 
         // Read the fields.
         u2fieldsCount = din.readUnsignedShort();
-        fields        = new ProgramFieldInfo[u2fieldsCount];
-        for (int i = 0; i < u2fieldsCount; i++)
+        if (u2fieldsCount > 0)
         {
-            fields[i] = ProgramFieldInfo.create(din, this);
+            fields = new ProgramFieldInfo[u2fieldsCount];
+            for (int i = 0; i < u2fieldsCount; i++)
+            {
+                fields[i] = ProgramFieldInfo.create(din, this);
+            }
         }
 
         // Read the methods.
         u2methodsCount = din.readUnsignedShort();
-        methods        = new ProgramMethodInfo[u2methodsCount];
-        for (int i = 0; i < u2methodsCount; i++)
+        if (u2methodsCount > 0)
         {
-            methods[i] = ProgramMethodInfo.create(din, this);
+            methods = new ProgramMethodInfo[u2methodsCount];
+            for (int i = 0; i < u2methodsCount; i++)
+            {
+                methods[i] = ProgramMethodInfo.create(din, this);
+            }
         }
 
         // Read the attributes.
         u2attributesCount = din.readUnsignedShort();
-        attributes        = new AttrInfo[u2attributesCount];
-        for (int i = 0; i < u2attributesCount; i++)
+        if (u2attributesCount > 0)
         {
-            attributes[i] = AttrInfo.create(din, this);
+            attributes = new AttrInfo[u2attributesCount];
+            for (int i = 0; i < u2attributesCount; i++)
+            {
+                attributes[i] = AttrInfo.create(din, this);
+            }
         }
     }
 
@@ -212,44 +224,6 @@ public class ProgramClassFile implements ClassFile
 
 
     /**
-     * Returns the field with the given name and descriptor.
-     */
-    ProgramFieldInfo findProgramField(String name, String descriptor)
-    {
-        for (int i = 0; i < u2fieldsCount; i++)
-        {
-            ProgramFieldInfo field = fields[i];
-            if ((name       == null || field.getName(this).equals(name)) &&
-                (descriptor == null || field.getDescriptor(this).equals(descriptor)))
-            {
-                return field;
-            }
-        }
-
-        return null;
-    }
-
-
-    /**
-     * Returns the method with the given name and descriptor.
-     */
-    ProgramMethodInfo findProgramMethod(String name, String descriptor)
-    {
-        for (int i = 0; i < u2methodsCount; i++)
-        {
-            ProgramMethodInfo method = methods[i];
-            if ((name       == null || method.getName(this).equals(name)) &&
-                (descriptor == null || method.getDescriptor(this).equals(descriptor)))
-            {
-                return method;
-            }
-        }
-
-        return null;
-    }
-
-
-    /**
      * Returns the attribute specified by the given name.
      */
     AttrInfo getAttribute(String name)
@@ -282,6 +256,11 @@ public class ProgramClassFile implements ClassFile
     public String getSuperName()
     {
         return u2superClass == 0 ? null : getCpClassNameString(u2superClass);
+    }
+
+    public int getInterfaceCount()
+    {
+        return u2interfacesCount;
     }
 
     public String getInterfaceName(int index)
@@ -386,13 +365,33 @@ public class ProgramClassFile implements ClassFile
 
     public FieldInfo findField(String name, String descriptor)
     {
-        return findProgramField(name, descriptor);
+        for (int i = 0; i < u2fieldsCount; i++)
+        {
+            FieldInfo field = fields[i];
+            if ((name       == null || field.getName(this).equals(name)) &&
+                (descriptor == null || field.getDescriptor(this).equals(descriptor)))
+            {
+                return field;
+            }
+        }
+
+        return null;
     }
 
 
     public MethodInfo findMethod(String name, String descriptor)
     {
-        return findProgramMethod(name, descriptor);
+        for (int i = 0; i < u2methodsCount; i++)
+        {
+            MethodInfo method = methods[i];
+            if ((name       == null || method.getName(this).equals(name)) &&
+                (descriptor == null || method.getDescriptor(this).equals(descriptor)))
+            {
+                return method;
+            }
+        }
+
+        return null;
     }
 
 
@@ -475,10 +474,12 @@ public class ProgramClassFile implements ClassFile
         }
     }
 
+
     public void constantPoolEntryAccept(int index, CpInfoVisitor cpInfoVisitor)
     {
         constantPool[index].accept(this, cpInfoVisitor);
     }
+
 
     public void fieldsAccept(MemberInfoVisitor memberInfoVisitor)
     {
@@ -488,14 +489,16 @@ public class ProgramClassFile implements ClassFile
         }
     }
 
+
     public void fieldAccept(String name, String descriptor, MemberInfoVisitor memberInfoVisitor)
     {
-        ProgramFieldInfo field = findProgramField(name, descriptor);
+        FieldInfo field = findField(name, descriptor);
         if (field != null)
         {
             field.accept(this, memberInfoVisitor);
         }
     }
+
 
     public void methodsAccept(MemberInfoVisitor memberInfoVisitor)
     {
@@ -505,14 +508,180 @@ public class ProgramClassFile implements ClassFile
         }
     }
 
+
     public void methodAccept(String name, String descriptor, MemberInfoVisitor memberInfoVisitor)
     {
-        ProgramMethodInfo method = findProgramMethod(name, descriptor);
+        MethodInfo method = findMethod(name, descriptor);
         if (method != null)
         {
             method.accept(this, memberInfoVisitor);
         }
     }
+
+
+    public boolean mayHaveImplementations(MethodInfo methodInfo)
+    {
+        return
+           (u2accessFlags & ClassConstants.INTERNAL_ACC_FINAL) == 0 &&
+           (methodInfo == null ||
+            ((methodInfo.getAccessFlags() & (ClassConstants.INTERNAL_ACC_PRIVATE |
+                                             ClassConstants.INTERNAL_ACC_STATIC  |
+                                             ClassConstants.INTERNAL_ACC_FINAL)) == 0 &&
+             !methodInfo.getName(this).equals(ClassConstants.INTERNAL_METHOD_NAME_INIT)));
+    }
+
+
+    private boolean isSpecial(MethodInfo methodInfo)
+    {
+        return
+            (methodInfo.getAccessFlags() & (ClassConstants.INTERNAL_ACC_PRIVATE |
+                                            ClassConstants.INTERNAL_ACC_STATIC)) != 0 ||
+            methodInfo.getName(this).equals(ClassConstants.INTERNAL_METHOD_NAME_INIT);
+    }
+
+
+    public void methodImplementationsAccept(MethodInfo        methodInfo,
+                                            boolean           visitThisMethod,
+                                            MemberInfoVisitor memberInfoVisitor)
+    {
+        methodImplementationsAccept(methodInfo.getName(this),
+                                    methodInfo.getDescriptor(this),
+                                    methodInfo,
+                                    visitThisMethod,
+                                    true,
+                                    true,
+                                    true,
+                                    memberInfoVisitor);
+    }
+
+
+    public void methodImplementationsAccept(String            name,
+                                            String            descriptor,
+                                            boolean           visitThisMethod,
+                                            MemberInfoVisitor memberInfoVisitor)
+    {
+        methodImplementationsAccept(name,
+                                    descriptor,
+                                    visitThisMethod,
+                                    true,
+                                    true,
+                                    true,
+                                    memberInfoVisitor);
+    }
+
+
+    public void methodImplementationsAccept(String            name,
+                                            String            descriptor,
+                                            boolean           visitThisMethod,
+                                            boolean           visitSpecialMethods,
+                                            boolean           visitSuperMethods,
+                                            boolean           visitOverridingMethods,
+                                            MemberInfoVisitor memberInfoVisitor)
+    {
+        methodImplementationsAccept(name,
+                                    descriptor,
+                                    findMethod(name, descriptor),
+                                    visitThisMethod,
+                                    visitSpecialMethods,
+                                    visitSuperMethods,
+                                    visitOverridingMethods,
+                                    memberInfoVisitor);
+    }
+
+
+    public void methodImplementationsAccept(String            name,
+                                            String            descriptor,
+                                            MethodInfo        methodInfo,
+                                            boolean           visitThisMethod,
+                                            boolean           visitSpecialMethods,
+                                            boolean           visitSuperMethods,
+                                            boolean           visitOverridingMethods,
+                                            MemberInfoVisitor memberInfoVisitor)
+    {
+        // Do we have the method in this class?
+        if (methodInfo != null)
+        {
+            // Is it a special method?
+            if (isSpecial(methodInfo))
+            {
+                // Visit the special method in this class, if allowed.
+                if (visitSpecialMethods)
+                {
+                    methodInfo.accept(this, memberInfoVisitor);
+
+                    // The method can't have any other implementations.
+                    return;
+                }
+            }
+            else
+            {
+                // Visit the method in this class, if allowed.
+                if (visitThisMethod)
+                {
+                    methodInfo.accept(this, memberInfoVisitor);
+                }
+
+                // We don't have to look in subclasses if there can't be
+                // any overriding implementations.
+                if (!mayHaveImplementations(methodInfo))
+                {
+                    visitOverridingMethods = false;
+                }
+
+                // We don't have to look in superclasses if we have a concrete
+                // implementation here.
+                if ((methodInfo.getAccessFlags() & ClassConstants.INTERNAL_ACC_ABSTRACT) == 0)
+                {
+                    visitSuperMethods = false;
+                }
+            }
+        }
+
+        // Then visit the method in its subclasses, recursively.
+        if (visitOverridingMethods)
+        {
+            // Go looking for implementations in all of the subclasses.
+            if (subClasses != null)
+            {
+                for (int i = 0; i < subClasses.length; i++)
+                {
+                    ClassFile subClass = subClasses[i];
+                    subClass.methodImplementationsAccept(name,
+                                                         descriptor,
+                                                         true,
+                                                         false,
+                                                         visitSuperMethods,
+                                                         true,
+                                                         memberInfoVisitor);
+                }
+            }
+
+            // We don't have to look in superclasses right away if we dont't
+            // have a concrete class here.
+            if ((u2accessFlags & (ClassConstants.INTERNAL_ACC_INTERFACE |
+                                  ClassConstants.INTERNAL_ACC_ABSTRACT)) != 0)
+            {
+                visitSuperMethods = false;
+            }
+        }
+
+        // Then visit the method in its superclass, recursively.
+        if (visitSuperMethods)
+        {
+            ClassFile superClass = getSuperClass();
+            if (superClass != null)
+            {
+                superClass.methodImplementationsAccept(name,
+                                                       descriptor,
+                                                       true,
+                                                       false,
+                                                       true,
+                                                       false,
+                                                       memberInfoVisitor);
+            }
+        }
+    }
+
 
     public void attributesAccept(AttrInfoVisitor attrInfoVisitor)
     {

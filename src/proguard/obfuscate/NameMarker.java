@@ -1,8 +1,8 @@
-/* $Id: NameMarker.java,v 1.14 2004/08/15 12:39:30 eric Exp $
+/* $Id: NameMarker.java,v 1.16 2005/06/11 13:13:16 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -42,37 +42,76 @@ public class NameMarker
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
-        // Make sure the class name will be kept.
-        ClassFileObfuscator.setNewClassName(programClassFile,
-                                            programClassFile.getName());
+        keepClassName(programClassFile);
     }
 
 
-    public void visitLibraryClassFile(LibraryClassFile libraryClassFile) {}
+    public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
+    {
+        keepClassName(libraryClassFile);
+    }
 
 
     // Implementations for MemberInfoVisitor.
 
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {
-        visitMemberInfo(programClassFile, programFieldInfo);
+        keepFieldName(programClassFile, programFieldInfo);
     }
 
 
     public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
     {
-        visitMemberInfo(programClassFile, programMethodInfo);
+        keepMethodName(programClassFile, programMethodInfo);
     }
 
 
-    private void visitMemberInfo(ProgramClassFile programClassFile, ProgramMemberInfo programMemberInfo)
+    public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo)
     {
-        // Make sure the class member name will be kept.
-        MemberInfoObfuscator.setNewMemberName(programMemberInfo,
-                                              programMemberInfo.getName(programClassFile));
+        keepFieldName(libraryClassFile, libraryFieldInfo);
     }
 
 
-    public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo) {}
-    public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo) {}
+    public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo)
+    {
+        keepMethodName(libraryClassFile, libraryMethodInfo);
+    }
+
+
+    // Small utility method.
+
+    /**
+     * Ensures the name of the given class name will be kept.
+     */
+    public void keepClassName(ClassFile classFile)
+    {
+        ClassFileObfuscator.setNewClassName(classFile,
+                                            classFile.getName());
+    }
+
+
+    /**
+     * Ensures the name of the given field name will be kept.
+     */
+    private void keepFieldName(ClassFile classFile, FieldInfo fieldInfo)
+    {
+        MemberInfoObfuscator.setFixedNewMemberName(fieldInfo,
+                                                   fieldInfo.getName(classFile));
+    }
+
+
+    /**
+     * Ensures the name of the given method name will be kept.
+     */
+    private void keepMethodName(ClassFile classFile, MethodInfo methodInfo)
+    {
+        String name = methodInfo.getName(classFile);
+
+        if (!name.equals(ClassConstants.INTERNAL_METHOD_NAME_CLINIT) &&
+            !name.equals(ClassConstants.INTERNAL_METHOD_NAME_INIT))
+        {
+            MemberInfoObfuscator.setFixedNewMemberName(methodInfo,
+                                                       methodInfo.getName(classFile));
+        }
+    }
 }

@@ -1,8 +1,8 @@
-/* $Id: UsagePrinter.java,v 1.16 2004/08/15 12:39:30 eric Exp $
+/* $Id: UsagePrinter.java,v 1.19 2005/06/11 13:21:35 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -39,6 +39,7 @@ public class UsagePrinter
   implements ClassFileVisitor,
              MemberInfoVisitor
 {
+    private UsageMarker usageMarker;
     private boolean     printUnusedItems;
     private PrintStream ps;
 
@@ -48,23 +49,31 @@ public class UsagePrinter
 
     /**
      * Creates a new UsagePrinter that prints to <code>System.out</code>.
+     * @param usageMarker    the usage marker that was used to mark the classes
+     *                       and class members.
      * @param printUsedItems a flag that indicates whether only unused items
-     * should be printed, or alternatively, only used items.
+     *                       should be printed, or alternatively, only used items.
      */
-    public UsagePrinter(boolean printUnusedItems)
+    public UsagePrinter(UsageMarker usageMarker,
+                        boolean     printUnusedItems)
     {
-        this(printUnusedItems, System.out);
+        this(usageMarker, printUnusedItems, System.out);
     }
 
 
     /**
      * Creates a new UsagePrinter that prints to the given stream.
+     * @param usageMarker    the usage marker that was used to mark the classes
+     *                       and class members.
      * @param printUsedItems a flag that indicates whether only unused items
-     * should be printed, or alternatively, only used items.
+     *                       should be printed, or alternatively, only used items.
      * @param printStream the stream to which to print
      */
-    public UsagePrinter(boolean printUnusedItems, PrintStream printStream)
+    public UsagePrinter(UsageMarker usageMarker,
+                        boolean     printUnusedItems,
+                        PrintStream printStream)
     {
+        this.usageMarker      = usageMarker;
         this.printUnusedItems = printUnusedItems;
         this.ps               = printStream;
     }
@@ -74,7 +83,7 @@ public class UsagePrinter
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
-        if (UsageMarker.isUsed(programClassFile))
+        if (usageMarker.isUsed(programClassFile))
         {
             if (printUnusedItems)
             {
@@ -109,7 +118,7 @@ public class UsagePrinter
 
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {
-        if (UsageMarker.isUsed(programFieldInfo) ^ printUnusedItems)
+        if (usageMarker.isUsed(programFieldInfo) ^ printUnusedItems)
         {
             printClassNameHeader();
 
@@ -125,7 +134,7 @@ public class UsagePrinter
 
     public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
     {
-        if (UsageMarker.isUsed(programMethodInfo) ^ printUnusedItems)
+        if (usageMarker.isUsed(programMethodInfo) ^ printUnusedItems)
         {
             printClassNameHeader();
 

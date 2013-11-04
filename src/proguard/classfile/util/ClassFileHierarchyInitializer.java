@@ -1,8 +1,8 @@
-/* $Id: ClassFileHierarchyInitializer.java,v 1.10 2004/12/11 16:35:23 eric Exp $
+/* $Id: ClassFileHierarchyInitializer.java,v 1.11 2005/06/11 13:13:15 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -73,8 +73,8 @@ public class ClassFileHierarchyInitializer
      * can't be found.
      */
     public ClassFileHierarchyInitializer(ClassPool programClassPool,
-                                ClassPool libraryClassPool,
-                                boolean   warn)
+                                         ClassPool libraryClassPool,
+                                         boolean   warn)
     {
         this.programClassPool = programClassPool;
         this.libraryClassPool = libraryClassPool;

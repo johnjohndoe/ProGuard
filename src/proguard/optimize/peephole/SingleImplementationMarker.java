@@ -1,8 +1,8 @@
-/* $Id: SingleImplementationMarker.java,v 1.3 2004/11/20 15:41:24 eric Exp $
+/* $Id: SingleImplementationMarker.java,v 1.6 2005/06/11 13:21:35 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -36,9 +36,7 @@ import proguard.optimize.*;
 public class SingleImplementationMarker
 implements   ClassFileVisitor
 {
-    // A visitor info flag to indicate that a ClassFile object is the single
-    // implementation of an interface.
-    private static final Object SINGLE_IMPLEMENTATION = new Object();
+    private static final boolean DEBUG = false;
 
 
     private boolean allowAccessModification;
@@ -93,10 +91,17 @@ implements   ClassFileVisitor
             singleImplementationAccessFlags = singleImplementationClassFile.getAccessFlags();
         }
 
-        // The single implementation must not be abstract.
-        else if ((singleImplementationAccessFlags & ClassConstants.INTERNAL_ACC_ABSTRACT) != 0)
+        // The single implementation must contain all non-static methods of this
+        // interface, so invocations can easily be diverted.
+        for (int index = 0; index < programClassFile.u2methodsCount; index++)
         {
-            return;
+            MethodInfo method = programClassFile.methods[index];
+            if ((method.getAccessFlags() & ClassConstants.INTERNAL_ACC_STATIC) == 0 &&
+                singleImplementationClassFile.findMethod(method.getName(programClassFile),
+                                                         method.getDescriptor(programClassFile)) == null)
+            {
+                return;
+            }
         }
 
         // Doesn't the implementation have at least the same access as the
@@ -120,6 +125,11 @@ implements   ClassFileVisitor
             }
         }
 
+        if (DEBUG)
+        {
+            System.out.println("Single implementation of ["+programClassFile.getName()+"]: ["+singleImplementationClassFile.getName()+"]");
+        }
+
         // Mark the interface and its single implementation.
         markSingleImplementation(programClassFile, singleImplementationClassFile);
     }
@@ -137,9 +147,6 @@ implements   ClassFileVisitor
 
         // The interface has a single implementation.
         visitorAccepter.setVisitorInfo(singleImplementation);
-
-        // The class is a single implementation.
-        singleImplementation.setVisitorInfo(SINGLE_IMPLEMENTATION);
     }
 
 
@@ -149,12 +156,5 @@ implements   ClassFileVisitor
                visitorAccepter.getVisitorInfo() instanceof ClassFile ?
                    (ClassFile)visitorAccepter.getVisitorInfo() :
                    null;
-    }
-
-
-    public static boolean isSingleImplementation(VisitorAccepter visitorAccepter)
-    {
-        return visitorAccepter != null &&
-               visitorAccepter.getVisitorInfo() == SINGLE_IMPLEMENTATION;
     }
 }

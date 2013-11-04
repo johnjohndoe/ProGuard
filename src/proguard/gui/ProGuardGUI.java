@@ -1,8 +1,8 @@
-/* $Id: ProGuardGUI.java,v 1.27 2004/11/20 15:08:57 eric Exp $
+/* $Id: ProGuardGUI.java,v 1.33 2005/06/11 13:13:15 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -21,10 +21,9 @@
 package proguard.gui;
 
 import proguard.*;
-import proguard.optimize.NoSideEffectMethodMarker;
-import proguard.util.*;
-import proguard.classfile.util.*;
+import proguard.classfile.util.ClassUtil;
 import proguard.gui.splash.*;
+import proguard.util.ListUtil;
 
 import javax.swing.*;
 import javax.swing.border.*;
@@ -80,6 +79,8 @@ public class ProGuardGUI extends JFrame
     private JCheckBox[]          boilerplateNoSideEffectMethodCheckBoxes;
 
     private ClassSpecificationsPanel additionalNoSideEffectsPanel = new ClassSpecificationsPanel(this, false);
+
+    private ClassSpecificationsPanel whyAreYouKeepingPanel = new ClassSpecificationsPanel(this, false);
 
     private JCheckBox shrinkCheckBox                           = new JCheckBox(msg("shrink"));
     private JCheckBox printUsageCheckBox                       = new JCheckBox(msg("printUsage"));
@@ -204,16 +205,18 @@ public class ProGuardGUI extends JFrame
         lastBottomButtonConstraints.ipadx     = bottomButtonConstraints.ipadx;
         lastBottomButtonConstraints.ipady     = bottomButtonConstraints.ipady;
 
+        // Leave room for a growBox on Mac OS X.
+        if (System.getProperty("os.name").toLowerCase().startsWith("mac os x"))
+        {
+            lastBottomButtonConstraints.insets = new Insets(2, 2, 4, 6 + 16);
+        }
+
         GridBagLayout layout = new GridBagLayout();
 
         configurationChooser.addChoosableFileFilter(
             new ExtensionFileFilter(msg("proExtension"), new String[] { ".pro" }));
 
         // Create the opening panel.
-        //JLabel titleLabel = new JLabel("ProGuard", JLabel.CENTER);
-        //titleLabel.setFont(new Font("serif", Font.BOLD, 40));
-        //titleLabel.setForeground(Color.gray);
-
         Font font = new Font("sansserif", Font.BOLD, 50);
         Color fontColor = Color.white;
 
@@ -386,8 +389,8 @@ public class ProGuardGUI extends JFrame
         optimizationPanel.add(additionalNoSideEffectsPanel, stretchPanelConstraints);
 
         // Create the options panel.
-        JButton printSeedsBrowseButton   = createBrowseButton(printSeedsTextField,
-                                                              msg("selectSeedsFile"));
+        JButton printSeedsBrowseButton = createBrowseButton(printSeedsTextField,
+                                                            msg("selectSeedsFile"));
 
         JPanel consistencyPanel = new JPanel(layout);
         addBorder(consistencyPanel, "consistencyAndCorrectness");
@@ -415,6 +418,9 @@ public class ProGuardGUI extends JFrame
         JPanel optionsPanel = new JPanel(layout);
 
         optionsPanel.add(consistencyPanel,  panelConstraints);
+
+        addBorder(whyAreYouKeepingPanel, "whyAreYouKeeping");
+        optionsPanel.add(whyAreYouKeepingPanel, stretchPanelConstraints);
 
         // Create the process panel.
         consoleTextArea.setOpaque(false);
@@ -563,19 +569,27 @@ public class ProGuardGUI extends JFrame
             ConfigurationParser parser = new ConfigurationParser(
                 this.getClass().getResource(BOILERPLATE_CONFIGURATION));
             Configuration configuration = new Configuration();
-            parser.parse(configuration);
 
-            // We're interested in the keep options.
-            boilerplateKeep = new ClassSpecification[configuration.keep.size()];
-            configuration.keep.toArray(boilerplateKeep);
+            try
+            {
+                parser.parse(configuration);
 
-            // We're interested in the keep names options.
-            boilerplateKeepNames = new ClassSpecification[configuration.keepNames.size()];
-            configuration.keepNames.toArray(boilerplateKeepNames);
+                // We're interested in the keep options.
+                boilerplateKeep = new ClassSpecification[configuration.keep.size()];
+                configuration.keep.toArray(boilerplateKeep);
 
-            // We're interested in the side effects options.
-            boilerplateNoSideEffectMethods = new ClassSpecification[configuration.assumeNoSideEffects.size()];
-            configuration.assumeNoSideEffects.toArray(boilerplateNoSideEffectMethods);
+                // We're interested in the keep names options.
+                boilerplateKeepNames = new ClassSpecification[configuration.keepNames.size()];
+                configuration.keepNames.toArray(boilerplateKeepNames);
+
+                // We're interested in the side effects options.
+                boilerplateNoSideEffectMethods = new ClassSpecification[configuration.assumeNoSideEffects.size()];
+                configuration.assumeNoSideEffects.toArray(boilerplateNoSideEffectMethods);
+            }
+            finally
+            {
+                parser.close();
+            }
         }
         catch (Exception ex)
         {
@@ -815,6 +829,9 @@ public class ProGuardGUI extends JFrame
         // options have been removed from the list.
         additionalNoSideEffectsPanel.setClassSpecifications(configuration.assumeNoSideEffects);
 
+        // Set up the "why are you keeping" options.
+        whyAreYouKeepingPanel.setClassSpecifications(configuration.whyAreYouKeeping);
+
         // Set up the other options.
         shrinkCheckBox                          .setSelected(configuration.shrink);
         printUsageCheckBox                      .setSelected(configuration.printUsage != null);
@@ -825,9 +842,9 @@ public class ProGuardGUI extends JFrame
         obfuscateCheckBox                       .setSelected(configuration.obfuscate);
         printMappingCheckBox                    .setSelected(configuration.printMapping != null);
         applyMappingCheckBox                    .setSelected(configuration.applyMapping != null);
-        obfuscationDictionaryCheckBox           .setSelected(configuration.defaultPackage != null);
+        obfuscationDictionaryCheckBox           .setSelected(configuration.obfuscationDictionary != null);
         overloadAggressivelyCheckBox            .setSelected(configuration.overloadAggressively);
-        defaultPackageCheckBox                  .setSelected(configuration.obfuscationDictionary != null);
+        defaultPackageCheckBox                  .setSelected(configuration.defaultPackage != null);
         useMixedCaseClassNamesCheckBox          .setSelected(configuration.useMixedCaseClassNames);
         keepAttributesCheckBox                  .setSelected(configuration.keepAttributes != null);
         newSourceFileAttributeCheckBox          .setSelected(configuration.newSourceFileAttribute != null);
@@ -840,18 +857,18 @@ public class ProGuardGUI extends JFrame
         skipNonPublicLibraryClassesCheckBox     .setSelected(configuration.skipNonPublicLibraryClasses);
         skipNonPublicLibraryClassMembersCheckBox.setSelected(configuration.skipNonPublicLibraryClassMembers);
 
-        printUsageTextField                     .setText(configuration.printUsage);
-        printMappingTextField                   .setText(configuration.printMapping);
-        applyMappingTextField                   .setText(configuration.applyMapping);
-        obfuscationDictionaryTextField          .setText(configuration.obfuscationDictionary);
+        printUsageTextField                     .setText(fileName(configuration.printUsage));
+        printMappingTextField                   .setText(fileName(configuration.printMapping));
+        applyMappingTextField                   .setText(fileName(configuration.applyMapping));
+        obfuscationDictionaryTextField          .setText(fileName(configuration.obfuscationDictionary));
         defaultPackageTextField                 .setText(configuration.defaultPackage);
         keepAttributesTextField                 .setText(configuration.keepAttributes         == null ? KEEP_ATTRIBUTE_DEFAULT : ListUtil.commaSeparatedString(configuration.keepAttributes));
         newSourceFileAttributeTextField         .setText(configuration.newSourceFileAttribute == null ? SOURCE_FILE_ATTRIBUTE_DEFAULT : configuration.newSourceFileAttribute);
-        printSeedsTextField                     .setText(configuration.printSeeds);
+        printSeedsTextField                     .setText(fileName(configuration.printSeeds));
 
         if (configuration.printMapping != null)
         {
-            reTraceMappingTextField.setText(configuration.printMapping);
+            reTraceMappingTextField.setText(fileName(configuration.printMapping));
         }
     }
 
@@ -946,24 +963,28 @@ public class ProGuardGUI extends JFrame
         }
 
 
+        // Collect the "why are you keeping" options.
+        configuration.whyAreYouKeeping = whyAreYouKeepingPanel.getClassSpecifications();
+
+
         // Get the other options.
         configuration.shrink                           = shrinkCheckBox                          .isSelected();
-        configuration.printUsage                       = printUsageCheckBox                      .isSelected() ? printUsageTextField                                .getText() : null;
+        configuration.printUsage                       = printUsageCheckBox                      .isSelected() ? new File(printUsageTextField                       .getText()) : null;
 
         configuration.optimize                         = optimizeCheckBox                        .isSelected();
         configuration.allowAccessModification          = allowAccessModificationCheckBox         .isSelected();
 
         configuration.obfuscate                        = obfuscateCheckBox                       .isSelected();
-        configuration.printMapping                     = printMappingCheckBox                    .isSelected() ? printMappingTextField                              .getText() : null;
-        configuration.applyMapping                     = applyMappingCheckBox                    .isSelected() ? applyMappingTextField                              .getText() : null;
-        configuration.obfuscationDictionary            = obfuscationDictionaryCheckBox           .isSelected() ? obfuscationDictionaryTextField                     .getText()  : null;
+        configuration.printMapping                     = printMappingCheckBox                    .isSelected() ? new File(printMappingTextField                     .getText()) : null;
+        configuration.applyMapping                     = applyMappingCheckBox                    .isSelected() ? new File(applyMappingTextField                     .getText()) : null;
+        configuration.obfuscationDictionary            = obfuscationDictionaryCheckBox           .isSelected() ? new File(obfuscationDictionaryTextField            .getText()) : null;
         configuration.overloadAggressively             = overloadAggressivelyCheckBox            .isSelected();
-        configuration.defaultPackage                   = defaultPackageCheckBox                  .isSelected() ? defaultPackageTextField                            .getText()  : null;
+        configuration.defaultPackage                   = defaultPackageCheckBox                  .isSelected() ?          defaultPackageTextField                   .getText()  : null;
         configuration.useMixedCaseClassNames           = useMixedCaseClassNamesCheckBox          .isSelected();
         configuration.keepAttributes                   = keepAttributesCheckBox                  .isSelected() ? ListUtil.commaSeparatedList(keepAttributesTextField.getText()) : null;
-        configuration.newSourceFileAttribute           = newSourceFileAttributeCheckBox          .isSelected() ? newSourceFileAttributeTextField                    .getText()  : null;
+        configuration.newSourceFileAttribute           = newSourceFileAttributeCheckBox          .isSelected() ?          newSourceFileAttributeTextField           .getText()  : null;
 
-        configuration.printSeeds                       = printSeedsCheckBox                      .isSelected() ? printSeedsTextField                                .getText() : null;
+        configuration.printSeeds                       = printSeedsCheckBox                      .isSelected() ? new File(printSeedsTextField                       .getText()) : null;
         configuration.verbose                          = verboseCheckBox                         .isSelected();
         configuration.note                             = noteCheckBox                            .isSelected();
         configuration.warn                             = warnCheckBox                            .isSelected();
@@ -1081,29 +1102,41 @@ public class ProGuardGUI extends JFrame
     /**
      * Loads the given ProGuard configuration into the GUI.
      */
-    private void loadConfiguration(String fileName)
+    private void loadConfiguration(File file)
     {
+        // Set the default directory and file in the file choosers.
+        configurationChooser.setSelectedFile(file.getAbsoluteFile());
+        fileChooser.setCurrentDirectory(file.getAbsoluteFile().getParentFile());
+
         try
         {
             // Parse the configuration file.
-            ConfigurationParser parser = new ConfigurationParser(fileName);
+            ConfigurationParser parser = new ConfigurationParser(file);
             Configuration configuration = new Configuration();
-            parser.parse(configuration);
 
-            // Let the GUI reflect the configuration.
-            setProGuardConfiguration(configuration);
+            try
+            {
+                parser.parse(configuration);
+
+                // Let the GUI reflect the configuration.
+                setProGuardConfiguration(configuration);
+            }
+            catch (ParseException ex)
+            {
+                JOptionPane.showMessageDialog(getContentPane(),
+                                              msg("cantParseConfigurationFile", file.getPath()),
+                                              msg("warning"),
+                                              JOptionPane.ERROR_MESSAGE);
+            }
+            finally
+            {
+                parser.close();
+            }
         }
         catch (IOException ex)
         {
             JOptionPane.showMessageDialog(getContentPane(),
-                                          msg("cantOpenConfigurationFile", fileName),
-                                          msg("warning"),
-                                          JOptionPane.ERROR_MESSAGE);
-        }
-        catch (ParseException ex)
-        {
-            JOptionPane.showMessageDialog(getContentPane(),
-                                          msg("cantParseConfigurationFile", fileName),
+                                          msg("cantOpenConfigurationFile", file.getPath()),
                                           msg("warning"),
                                           JOptionPane.ERROR_MESSAGE);
         }
@@ -1120,22 +1153,30 @@ public class ProGuardGUI extends JFrame
             // Parse the configuration file.
             ConfigurationParser parser = new ConfigurationParser(url);
             Configuration configuration = new Configuration();
-            parser.parse(configuration);
 
-            // Let the GUI reflect the configuration.
-            setProGuardConfiguration(configuration);
+            try
+            {
+                parser.parse(configuration);
+
+                // Let the GUI reflect the configuration.
+                setProGuardConfiguration(configuration);
+            }
+            catch (ParseException ex)
+            {
+                JOptionPane.showMessageDialog(getContentPane(),
+                                              msg("cantParseConfigurationFile", url),
+                                              msg("warning"),
+                                              JOptionPane.ERROR_MESSAGE);
+            }
+            finally
+            {
+                parser.close();
+            }
         }
         catch (IOException ex)
         {
             JOptionPane.showMessageDialog(getContentPane(),
                                           msg("cantOpenConfigurationFile", url),
-                                          msg("warning"),
-                                          JOptionPane.ERROR_MESSAGE);
-        }
-        catch (ParseException ex)
-        {
-            JOptionPane.showMessageDialog(getContentPane(),
-                                          msg("cantParseConfigurationFile", url),
                                           msg("warning"),
                                           JOptionPane.ERROR_MESSAGE);
         }
@@ -1145,19 +1186,19 @@ public class ProGuardGUI extends JFrame
     /**
      * Saves the current ProGuard configuration to the given file.
      */
-    private void saveConfiguration(String fileName)
+    private void saveConfiguration(File file)
     {
         try
         {
             // Save the configuration file.
-            ConfigurationWriter writer = new ConfigurationWriter(fileName);
+            ConfigurationWriter writer = new ConfigurationWriter(file);
             writer.write(getProGuardConfiguration());
             writer.close();
         }
         catch (Exception ex)
         {
             JOptionPane.showMessageDialog(getContentPane(),
-                                          msg("cantSaveConfigurationFile", fileName),
+                                          msg("cantSaveConfigurationFile", file.getPath()),
                                           msg("warning"),
                                           JOptionPane.ERROR_MESSAGE);
         }
@@ -1204,10 +1245,7 @@ public class ProGuardGUI extends JFrame
             int returnValue = configurationChooser.showOpenDialog(ProGuardGUI.this);
             if (returnValue == JFileChooser.APPROVE_OPTION)
             {
-                File selectedFile = configurationChooser.getSelectedFile();
-                String fileName = selectedFile.getPath();
-
-                loadConfiguration(fileName);
+                loadConfiguration(configurationChooser.getSelectedFile());
             }
         }
     }
@@ -1226,10 +1264,7 @@ public class ProGuardGUI extends JFrame
             int returnVal = configurationChooser.showSaveDialog(ProGuardGUI.this);
             if (returnVal == JFileChooser.APPROVE_OPTION)
             {
-                File selectedFile = configurationChooser.getSelectedFile();
-                String fileName = selectedFile.getPath();
-
-                saveConfiguration(fileName);
+                saveConfiguration(configurationChooser.getSelectedFile());
             }
         }
     }
@@ -1339,7 +1374,7 @@ public class ProGuardGUI extends JFrame
                 systemOutRedirected = true;
 
                 boolean verbose            = reTraceVerboseCheckBox.isSelected();
-                String  retraceMappingFile = reTraceMappingTextField.getText();
+                File    retraceMappingFile = new File(reTraceMappingTextField.getText());
                 String  stackTrace         = stackTraceTextArea.getText();
 
                 // Create the ReTrace runnable.
@@ -1356,6 +1391,14 @@ public class ProGuardGUI extends JFrame
 
 
     // Small utility methods.
+
+    /**
+     * Returns the file name of the given file, if any.
+     */
+    private String fileName(File file)
+    {
+        return file == null ? "" : file.getAbsolutePath();
+    }
 
     /**
      * Returns the message from the GUI resources that corresponds to the given
@@ -1408,7 +1451,7 @@ public class ProGuardGUI extends JFrame
         // Load an initial configuration, if specified.
         if (argIndex < args.length)
         {
-            gui.loadConfiguration(args[argIndex]);
+            gui.loadConfiguration(new File(args[argIndex]));
             argIndex++;
         }
 

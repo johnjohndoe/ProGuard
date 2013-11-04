@@ -1,4 +1,4 @@
-/* $Id: ClassConstants.java,v 1.24 2004/12/19 21:03:54 eric Exp $
+/* $Id: ClassConstants.java,v 1.25 2005/05/22 00:30:30 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -39,54 +39,54 @@ public interface ClassConstants
     public static final int MAJOR_VERSION_MAX = 49;
     public static final int MINOR_VERSION_MAX = 0;
 
-    public static final int    INTERNAL_ACC_PUBLIC       = 0x0001;
-    public static final int    INTERNAL_ACC_PRIVATE      = 0x0002;
-    public static final int    INTERNAL_ACC_PROTECTED    = 0x0004;
-    public static final int    INTERNAL_ACC_STATIC       = 0x0008;
-    public static final int    INTERNAL_ACC_FINAL        = 0x0010;
-    public static final int    INTERNAL_ACC_SUPER        = 0x0020;
-    public static final int    INTERNAL_ACC_SYNCHRONIZED = 0x0020;
-    public static final int    INTERNAL_ACC_VOLATILE     = 0x0040;
-    public static final int    INTERNAL_ACC_TRANSIENT    = 0x0080;
-    public static final int    INTERNAL_ACC_BRIDGE       = 0x0040;
-    public static final int    INTERNAL_ACC_VARARGS      = 0x0080;
-    public static final int    INTERNAL_ACC_NATIVE       = 0x0100;
-    public static final int    INTERNAL_ACC_INTERFACE    = 0x0200;
-    public static final int    INTERNAL_ACC_ABSTRACT     = 0x0400;
-    public static final int    INTERNAL_ACC_STRICT       = 0x0800;
-    public static final int    INTERNAL_ACC_SYNTHETIC    = 0x1000;
-    public static final int    INTERNAL_ACC_ANNOTATTION  = 0x2000;
-    public static final int    INTERNAL_ACC_ENUM         = 0x4000;
+    public static final int INTERNAL_ACC_PUBLIC       = 0x0001;
+    public static final int INTERNAL_ACC_PRIVATE      = 0x0002;
+    public static final int INTERNAL_ACC_PROTECTED    = 0x0004;
+    public static final int INTERNAL_ACC_STATIC       = 0x0008;
+    public static final int INTERNAL_ACC_FINAL        = 0x0010;
+    public static final int INTERNAL_ACC_SUPER        = 0x0020;
+    public static final int INTERNAL_ACC_SYNCHRONIZED = 0x0020;
+    public static final int INTERNAL_ACC_VOLATILE     = 0x0040;
+    public static final int INTERNAL_ACC_TRANSIENT    = 0x0080;
+    public static final int INTERNAL_ACC_BRIDGE       = 0x0040;
+    public static final int INTERNAL_ACC_VARARGS      = 0x0080;
+    public static final int INTERNAL_ACC_NATIVE       = 0x0100;
+    public static final int INTERNAL_ACC_INTERFACE    = 0x0200;
+    public static final int INTERNAL_ACC_ABSTRACT     = 0x0400;
+    public static final int INTERNAL_ACC_STRICT       = 0x0800;
+    public static final int INTERNAL_ACC_SYNTHETIC    = 0x1000;
+    public static final int INTERNAL_ACC_ANNOTATTION  = 0x2000;
+    public static final int INTERNAL_ACC_ENUM         = 0x4000;
 
-    public static final int    VALID_INTERNAL_ACC_CLASS  = INTERNAL_ACC_PUBLIC       |
-                                                           INTERNAL_ACC_FINAL        |
-                                                           INTERNAL_ACC_SUPER        |
-                                                           INTERNAL_ACC_INTERFACE    |
-                                                           INTERNAL_ACC_ABSTRACT     |
-                                                           INTERNAL_ACC_SYNTHETIC    |
-                                                           INTERNAL_ACC_ANNOTATTION  |
-                                                           INTERNAL_ACC_ENUM;
-    public static final int    VALID_INTERNAL_ACC_FIELD  = INTERNAL_ACC_PUBLIC       |
-                                                           INTERNAL_ACC_PRIVATE      |
-                                                           INTERNAL_ACC_PROTECTED    |
-                                                           INTERNAL_ACC_STATIC       |
-                                                           INTERNAL_ACC_FINAL        |
-                                                           INTERNAL_ACC_VOLATILE     |
-                                                           INTERNAL_ACC_TRANSIENT    |
-                                                           INTERNAL_ACC_SYNTHETIC    |
-                                                           INTERNAL_ACC_ENUM;
-    public static final int    VALID_INTERNAL_ACC_METHOD = INTERNAL_ACC_PUBLIC       |
-                                                           INTERNAL_ACC_PRIVATE      |
-                                                           INTERNAL_ACC_PROTECTED    |
-                                                           INTERNAL_ACC_STATIC       |
-                                                           INTERNAL_ACC_FINAL        |
-                                                           INTERNAL_ACC_SYNCHRONIZED |
-                                                           INTERNAL_ACC_BRIDGE       |
-                                                           INTERNAL_ACC_VARARGS      |
-                                                           INTERNAL_ACC_NATIVE       |
-                                                           INTERNAL_ACC_ABSTRACT     |
-                                                           INTERNAL_ACC_STRICT       |
-                                                           INTERNAL_ACC_SYNTHETIC;
+    public static final int VALID_INTERNAL_ACC_CLASS  = INTERNAL_ACC_PUBLIC       |
+                                                        INTERNAL_ACC_FINAL        |
+                                                        INTERNAL_ACC_SUPER        |
+                                                        INTERNAL_ACC_INTERFACE    |
+                                                        INTERNAL_ACC_ABSTRACT     |
+                                                        INTERNAL_ACC_SYNTHETIC    |
+                                                        INTERNAL_ACC_ANNOTATTION  |
+                                                        INTERNAL_ACC_ENUM;
+    public static final int VALID_INTERNAL_ACC_FIELD  = INTERNAL_ACC_PUBLIC       |
+                                                        INTERNAL_ACC_PRIVATE      |
+                                                        INTERNAL_ACC_PROTECTED    |
+                                                        INTERNAL_ACC_STATIC       |
+                                                        INTERNAL_ACC_FINAL        |
+                                                        INTERNAL_ACC_VOLATILE     |
+                                                        INTERNAL_ACC_TRANSIENT    |
+                                                        INTERNAL_ACC_SYNTHETIC    |
+                                                        INTERNAL_ACC_ENUM;
+    public static final int VALID_INTERNAL_ACC_METHOD = INTERNAL_ACC_PUBLIC       |
+                                                        INTERNAL_ACC_PRIVATE      |
+                                                        INTERNAL_ACC_PROTECTED    |
+                                                        INTERNAL_ACC_STATIC       |
+                                                        INTERNAL_ACC_FINAL        |
+                                                        INTERNAL_ACC_SYNCHRONIZED |
+                                                        INTERNAL_ACC_BRIDGE       |
+                                                        INTERNAL_ACC_VARARGS      |
+                                                        INTERNAL_ACC_NATIVE       |
+                                                        INTERNAL_ACC_ABSTRACT     |
+                                                        INTERNAL_ACC_STRICT       |
+                                                        INTERNAL_ACC_SYNTHETIC;
 
     public static final String EXTERNAL_ACC_PUBLIC       = "public";
     public static final String EXTERNAL_ACC_PRIVATE      = "private";

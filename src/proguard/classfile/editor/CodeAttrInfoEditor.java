@@ -1,8 +1,8 @@
-/* $Id: CodeAttrInfoEditor.java,v 1.9 2004/10/10 20:56:58 eric Exp $
+/* $Id: CodeAttrInfoEditor.java,v 1.13 2005/06/11 13:21:35 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -42,7 +42,10 @@ public class CodeAttrInfoEditor
 {
     private int              codeLength;
     private boolean          modified;
+    private boolean          inserted;
+
     /*private*/public Instruction[]    preInsertions;
+    /*private*/public Instruction[]    replacements;
     /*private*/public Instruction[]    postInsertions;
     private boolean[]        deleted;
 
@@ -61,6 +64,7 @@ public class CodeAttrInfoEditor
         this.codeLength = codeLength;
 
         preInsertions    = new Instruction[codeLength];
+        replacements     = new Instruction[codeLength];
         postInsertions   = new Instruction[codeLength];
         deleted          = new boolean[codeLength];
 
@@ -80,6 +84,7 @@ public class CodeAttrInfoEditor
         if (preInsertions.length < codeLength)
         {
             preInsertions  = new Instruction[codeLength];
+            replacements   = new Instruction[codeLength];
             postInsertions = new Instruction[codeLength];
             deleted        = new boolean[codeLength];
         }
@@ -88,38 +93,14 @@ public class CodeAttrInfoEditor
             for (int index = 0; index < codeLength; index++)
             {
                 preInsertions[index]  = null;
+                replacements[index]   = null;
                 postInsertions[index] = null;
                 deleted[index]        = false;
             }
         }
 
         modified = false;
-    }
-
-
-    /**
-     * Remembers to replace the instruction at the given offset by the given
-     * instruction.
-     * @param instructionOffset the offset of the instruction to be replaced.
-     * @param instruction       the new instruction.
-     */
-    public void replaceInstruction(int instructionOffset, Instruction instruction)
-    {
-        deleteInstruction(instructionOffset);
-        insertBeforeInstruction(instructionOffset, instruction);
-    }
-
-
-    /**
-     * Remembers to replace the instruction at the given offset by the given
-     * instruction.
-     * @param instructionOffset the offset of the instruction to be replaced.
-     * @param instruction       the new instruction.
-     */
-    public void replaceInstruction2(int instructionOffset, Instruction instruction)
-    {
-        deleteInstruction(instructionOffset);
-        insertAfterInstruction(instructionOffset, instruction);
+        inserted = false;
     }
 
 
@@ -138,6 +119,27 @@ public class CodeAttrInfoEditor
         }
 
         preInsertions[instructionOffset] = instruction;
+
+        modified = true;
+        inserted = true;
+    }
+
+
+    /**
+     * Remembers to replace the instruction at the given offset by the given
+     * instruction.
+     * @param instructionOffset the offset of the instruction to be replaced.
+     * @param instruction       the new instruction.
+     */
+    public void replaceInstruction(int instructionOffset, Instruction instruction)
+    {
+        if (instructionOffset < 0 ||
+            instructionOffset >= codeLength)
+        {
+            throw new IllegalArgumentException("Invalid instruction offset ["+instructionOffset+"] in code with length ["+codeLength+"]");
+        }
+
+        replacements[instructionOffset] = instruction;
 
         modified = true;
     }
@@ -160,6 +162,7 @@ public class CodeAttrInfoEditor
         postInsertions[instructionOffset] = instruction;
 
         modified = true;
+        inserted = true;
     }
 
 
@@ -178,6 +181,7 @@ public class CodeAttrInfoEditor
         deleted[instructionOffset] = true;
 
         modified = true;
+        inserted = true;
     }
 
 
@@ -188,6 +192,7 @@ public class CodeAttrInfoEditor
     public boolean isModified(int instructionOffset)
     {
         return preInsertions[instructionOffset]  != null ||
+               replacements[instructionOffset]   != null ||
                postInsertions[instructionOffset] != null ||
                deleted[instructionOffset];
 
@@ -230,22 +235,31 @@ public class CodeAttrInfoEditor
             return;
         }
 
-        // Move and remap the instructions.
-        codeAttrInfo.u4codeLength =
-            moveInstructions(classFile, methodInfo, codeAttrInfo);
+        // Check if we can perform a faster simple replacement of instructions.
+        if (canPerformSimpleReplacements(codeAttrInfo))
+        {
+            // Simply overwrite the instructions.
+            performSimpleReplacements(codeAttrInfo);
+        }
+        else
+        {
+            // Move and remap the instructions.
+            codeAttrInfo.u4codeLength =
+                moveInstructions(classFile, methodInfo, codeAttrInfo);
 
-        // Remap the exception table.
-        codeAttrInfo.exceptionsAccept(classFile, methodInfo, this);
+            // Remap the exception table.
+            codeAttrInfo.exceptionsAccept(classFile, methodInfo, this);
 
-        // Remap  the line number table and the local variable table.
-        codeAttrInfo.attributesAccept(classFile, methodInfo, this);
+            // Remap  the line number table and the local variable table.
+            codeAttrInfo.attributesAccept(classFile, methodInfo, this);
 
-        // Remove exceptions with empty code blocks.
-        codeAttrInfo.u2exceptionTableLength =
-             removeEmptyExceptions(codeAttrInfo.exceptionTable,
-                                   codeAttrInfo.u2exceptionTableLength);
+            // Remove exceptions with empty code blocks.
+            codeAttrInfo.u2exceptionTableLength =
+                 removeEmptyExceptions(codeAttrInfo.exceptionTable,
+                                       codeAttrInfo.u2exceptionTableLength);
+        }
 
-        // Update maximum stack size.
+        // Update the maximum stack size.
         stackSizeUpdater.visitCodeAttrInfo(classFile, methodInfo, codeAttrInfo);
     }
 
@@ -381,6 +395,65 @@ public class CodeAttrInfoEditor
     // Small utility methods.
 
     /**
+     * Checks if it is possible to modifies the given code without having to
+     * update any offsets.
+     *
+     * @param codeAttrInfo the code to be changed.
+     * @return the new code length.
+     */
+    private boolean canPerformSimpleReplacements(CodeAttrInfo codeAttrInfo)
+    {
+        if (inserted)
+        {
+            return false;
+        }
+
+        byte[] code       = codeAttrInfo.code;
+        int    codeLength = codeAttrInfo.u4codeLength;
+
+        // Go over all replacement instructions.
+        for (int offset = 0; offset < codeLength; offset++)
+        {
+            // Check if the replacement instruction, if any, has a different
+            // length than the original instruction.
+            Instruction replacementInstruction = replacements[offset];
+            if (replacementInstruction != null &&
+                replacementInstruction.length(offset) !=
+                    InstructionFactory.create(code, offset).length(offset))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+
+    /**
+     * Modifies the given code without updating any offsets.
+     *
+     * @param codeAttrInfo the code to be changed.
+     */
+    private void performSimpleReplacements(CodeAttrInfo codeAttrInfo)
+    {
+        byte[] code       = codeAttrInfo.code;
+        int    codeLength = codeAttrInfo.u4codeLength;
+
+        // Go over all replacement instructions.
+        for (int offset = 0; offset < codeLength; offset++)
+        {
+            // Overwrite the original instruction with the replacement
+            // instruction if any.
+            Instruction replacementInstruction = replacements[offset];
+            if (replacementInstruction != null)
+            {
+                replacementInstruction.write(codeAttrInfo, offset);
+            }
+        }
+    }
+
+
+    /**
      * Modifies the given code based on the previously specified changes.
      *
      * @param classFile    the class file of the code to be changed.
@@ -475,8 +548,14 @@ public class CodeAttrInfoEditor
             newOffset += preInstruction.length(newOffset);
         }
 
-        // Account for the current instruction, if it shouldn't be deleted.
-        if (!deleted[oldOffset] )
+        // Account for the replacement instruction, or for the current
+        // instruction, if it shouldn't be  deleted.
+        Instruction replacementInstruction = replacements[oldOffset];
+        if (replacementInstruction != null)
+        {
+            newOffset += replacementInstruction.length(newOffset);
+        }
+        else if (!deleted[oldOffset])
         {
             // Note that the instruction's length may change at its new offset,
             // e.g. if it is a switch instruction.
@@ -516,8 +595,18 @@ public class CodeAttrInfoEditor
             newOffset += preInstruction.length(newOffset);
         }
 
-        // Remap and insert the current instruction, if it shouldn't be deleted.
-        if (!deleted[oldOffset])
+        // Remap and insert the replacment instruction, or the current
+        // instruction, if it shouldn't be deleted.
+        Instruction replacementInstruction = replacements[oldOffset];
+        if (replacementInstruction != null)
+        {
+            replacementInstruction.accept(classFile, methodInfo, codeAttrInfo, oldOffset, this);
+
+            replacementInstruction.write(codeAttrInfo, newOffset);
+
+            newOffset += replacementInstruction.length(newOffset);
+        }
+        else if (!deleted[oldOffset])
         {
             instruction.accept(classFile, methodInfo, codeAttrInfo, oldOffset, this);
 

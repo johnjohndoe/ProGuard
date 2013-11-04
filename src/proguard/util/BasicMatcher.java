@@ -1,4 +1,4 @@
-/* $Id: BasicMatcher.java,v 1.6 2004/08/15 12:39:30 eric Exp $
+/* $Id: BasicMatcher.java,v 1.7 2005/05/22 00:23:31 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -67,12 +67,12 @@ public class BasicMatcher implements StringMatcher
 
     /**
      * Creates a new BasicMatcher.
-     * @param regularExpression the regular expression against which strings
-     *                          will be matched.
-     * @param wildcardCharacters an optional extra list of wildcard matching
-     *                           characters.
-     * @param wildcardCharacters an optional extra list of extended wildcard
-     *                           matching characters.
+     * @param regularExpression          the regular expression against which
+     *                                   strings will be matched.
+     * @param wildcardCharacters         an optional extra list of wildcard
+     *                                   matching characters.
+     * @param extendedWildcardCharacters an optional extra list of extended
+     *                                   wildcard matching characters.
      */
     public BasicMatcher(String regularExpression,
                         char[] wildcardCharacters,

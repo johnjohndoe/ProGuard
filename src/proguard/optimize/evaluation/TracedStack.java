@@ -1,8 +1,8 @@
-/* $Id: TracedStack.java,v 1.7 2004/11/20 15:06:55 eric Exp $
+/* $Id: TracedStack.java,v 1.9 2005/06/11 13:13:16 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -83,6 +83,7 @@ class TracedStack extends Stack
      * Gets the specified trace Value from the stack, without disturbing it.
      * @param index the index of the stack element, counting from the bottom
      *              of the stack.
+     * @return the trace value at the specified position.
      */
     public Value getBottomTraceValue(int index)
     {
@@ -91,13 +92,38 @@ class TracedStack extends Stack
 
 
     /**
+     * Sets the specified trace Value on the stack, without disturbing it.
+     * @param index the index of the stack element, counting from the bottom
+     *              of the stack.
+     * @param value the trace value to set.
+     */
+    public void setBottomTraceValue(int index, Value value)
+    {
+        traceStack.setBottom(index, value);
+    }
+
+
+    /**
      * Gets the specified trace Value from the stack, without disturbing it.
      * @param index the index of the stack element, counting from the top
      *              of the stack.
+     * @return the trace value at the specified position.
      */
     public Value getTopTraceValue(int index)
     {
         return traceStack.getTop(index);
+    }
+
+
+    /**
+     * Sets the specified trace Value on the stack, without disturbing it.
+     * @param index the index of the stack element, counting from the top
+     *              of the stack.
+     * @param value the trace value to set.
+     */
+    public void setTopTraceValue(int index, Value value)
+    {
+        traceStack.setTop(index, value);
     }
 
 

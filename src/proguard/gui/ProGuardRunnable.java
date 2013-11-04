@@ -1,8 +1,8 @@
-/* $Id: ProGuardRunnable.java,v 1.5 2004/08/15 12:39:30 eric Exp $
+/* $Id: ProGuardRunnable.java,v 1.7 2005/06/11 13:13:15 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -83,9 +83,14 @@ class ProGuardRunnable implements Runnable
 
             // Run it.
             proGuard.execute();
+
+            // Print out the completion message.
+            System.out.println("Processing completed successfully");
         }
         catch (Exception ex)
         {
+            //ex.printStackTrace();
+
             // Print out the exception message.
             System.out.println(ex.getMessage());
 

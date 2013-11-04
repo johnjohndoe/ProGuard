@@ -1,8 +1,8 @@
-/* $Id: ReTraceRunnable.java,v 1.6 2004/08/21 21:36:03 eric Exp $
+/* $Id: ReTraceRunnable.java,v 1.8 2005/06/11 13:13:15 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -39,7 +39,7 @@ class ReTraceRunnable implements Runnable
 {
     private JTextArea consoleTextArea;
     private boolean   verbose;
-    private String    retraceMappingFile;
+    private File      mappingFile;
     private String    stackTrace;
 
 
@@ -48,17 +48,17 @@ class ReTraceRunnable implements Runnable
      * @param consoleTextArea the text area to send the console output to.
      * @param verbose         specifies whether the de-obfuscated stack trace
      *                        should be verbose.
-     * @param mappingFileName the mapping file that was written out by ProGuard.
+     * @param mappingFile     the mapping file that was written out by ProGuard.
      */
     public ReTraceRunnable(JTextArea consoleTextArea,
                            boolean   verbose,
-                           String    retraceMappingFile,
+                           File      mappingFile,
                            String    stackTrace)
     {
-        this.consoleTextArea    = consoleTextArea;
-        this.verbose            = verbose;
-        this.retraceMappingFile = retraceMappingFile;
-        this.stackTrace         = stackTrace;
+        this.consoleTextArea  = consoleTextArea;
+        this.verbose          = verbose;
+        this.mappingFile      = mappingFile;
+        this.stackTrace       = stackTrace;
     }
 
 
@@ -89,7 +89,7 @@ class ReTraceRunnable implements Runnable
         {
             // Create a new ProGuard object with the GUI's configuration.
             ReTrace reTrace = new ReTrace(verbose,
-                                          retraceMappingFile);
+                                          mappingFile);
 
             // Run it.
             reTrace.execute();

@@ -1,9 +1,9 @@
-/* $Id: LibraryMethodInfo.java,v 1.14 2004/10/23 16:53:00 eric Exp $
+/* $Id: LibraryMethodInfo.java,v 1.15 2005/06/11 13:13:15 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -33,6 +33,13 @@ import java.io.*;
  */
 public class LibraryMethodInfo extends LibraryMemberInfo implements MethodInfo
 {
+    /**
+     * An extra field pointing to the ClassFile objects referenced in the
+     * descriptor string. This field is filled out by the <code>{@link
+     * proguard.classfile.util.ClassFileReferenceInitializer ClassFileReferenceInitializer}</code>.
+     * References to primitive types are ignored.
+     */
+    public ClassFile[] referencedClassFiles;
 
 
     /**
@@ -47,6 +54,12 @@ public class LibraryMethodInfo extends LibraryMemberInfo implements MethodInfo
         return mi;
     }
 
+
+    protected LibraryMethodInfo()
+    {
+    }
+
+
     /**
      * Accepts the given visitor.
      */
@@ -54,7 +67,4 @@ public class LibraryMethodInfo extends LibraryMemberInfo implements MethodInfo
     {
         memberInfoVisitor.visitLibraryMethodInfo(libraryClassFile, this);
     }
-
-
-    protected LibraryMethodInfo() {}
 }

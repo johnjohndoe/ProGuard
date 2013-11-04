@@ -1,4 +1,4 @@
-/* $Id: KeepMarker.java,v 1.4 2004/08/15 12:39:30 eric Exp $
+/* $Id: KeepMarker.java,v 1.6 2005/06/05 15:54:09 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -21,6 +21,7 @@
 package proguard.optimize;
 
 import proguard.classfile.*;
+import proguard.classfile.util.MethodInfoLinker;
 import proguard.classfile.visitor.*;
 
 
@@ -43,7 +44,6 @@ public class KeepMarker
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
-        // Make sure the class will be kept.
         markAsKept(programClassFile);
     }
 
@@ -55,20 +55,13 @@ public class KeepMarker
 
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {
-        visitMemberInfo(programClassFile, programFieldInfo);
+        markAsKept(programFieldInfo);
     }
 
 
     public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
     {
-        visitMemberInfo(programClassFile, programMethodInfo);
-    }
-
-
-    private void visitMemberInfo(ProgramClassFile programClassFile, ProgramMemberInfo programMemberInfo)
-    {
-        // Make sure the class member will be kept.
-        markAsKept(programMemberInfo);
+        markAsKept(MethodInfoLinker.lastMethodInfo(programMethodInfo));
     }
 
 
@@ -86,7 +79,6 @@ public class KeepMarker
 
     public static boolean isKept(VisitorAccepter visitorAccepter)
     {
-        return visitorAccepter == null                          ||
-               visitorAccepter.getVisitorInfo() == KEPT;
+        return MethodInfoLinker.lastVisitorAccepter(visitorAccepter).getVisitorInfo() == KEPT;
     }
 }

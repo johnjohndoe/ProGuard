@@ -1,9 +1,9 @@
-/* $Id: ClassPool.java,v 1.16 2004/10/23 16:53:00 eric Exp $
+/* $Id: ClassPool.java,v 1.18 2005/06/11 13:13:15 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -115,7 +115,14 @@ public class ClassPool
         while (iterator.hasNext())
         {
             ClassFile classFile = (ClassFile)iterator.next();
+try{
             classFile.accept(classFileVisitor);
+}catch (RuntimeException ex) {
+    System.out.println("Runtime exception while processing class file ["+classFile.getName()+"]");
+    throw ex;
+}catch (Error er) {
+    System.out.println("Runtime error while processing class file ["+classFile.getName()+"]");
+    throw er;}
         }
     }
 

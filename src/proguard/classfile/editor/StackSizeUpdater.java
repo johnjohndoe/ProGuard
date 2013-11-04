@@ -1,8 +1,8 @@
-/* $Id: StackSizeUpdater.java,v 1.12 2004/11/20 15:41:24 eric Exp $
+/* $Id: StackSizeUpdater.java,v 1.13 2005/06/11 13:13:15 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -21,6 +21,7 @@
 package proguard.classfile.editor;
 
 import proguard.classfile.*;
+import proguard.classfile.util.ClassUtil;
 import proguard.classfile.attribute.*;
 import proguard.classfile.attribute.annotation.*;
 import proguard.classfile.instruction.*;
@@ -90,6 +91,15 @@ implements AttrInfoVisitor,
 //        DEBUG =
 //            classFile.getName().equals("abc/Def") &&
 //            methodInfo.getName(classFile).equals("abc");
+
+        if (DEBUG)
+        {
+            System.out.println("Class "+ClassUtil.externalClassName(classFile.getName()));
+            System.out.println("Method "+ClassUtil.externalFullMethodDescription(classFile.getName(),
+                                                                                 0,
+                                                                                 methodInfo.getName(classFile),
+                                                                                 methodInfo.getDescriptor(classFile)));
+        }
 
         // Try to reuse the previous array.
         int codeLength = codeAttrInfo.u4codeLength;

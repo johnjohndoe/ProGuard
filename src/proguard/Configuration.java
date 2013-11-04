@@ -1,8 +1,8 @@
-/* $Id: Configuration.java,v 1.14 2004/11/20 15:41:24 eric Exp $
+/* $Id: Configuration.java,v 1.17 2005/06/11 13:13:15 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -21,6 +21,7 @@
 package proguard;
 
 import java.util.*;
+import java.io.File;
 
 
 /**
@@ -76,10 +77,10 @@ public class Configuration
     public List      keepNames;
 
     /**
-     * An optional output file name for listing the kept seeds.
-     * An empty string means the standard output.
+     * An optional output file for listing the kept seeds.
+     * An empty file name means the standard output.
      */
-    public String    printSeeds;
+    public File      printSeeds;
 
     ///////////////////////////////////////////////////////////////////////////
     // Shrinking options.
@@ -91,10 +92,16 @@ public class Configuration
     public boolean   shrink                      = true;
 
     /**
-     * An optional output file name for listing the unused classes and class
-     * members. An empty string means the standard output.
+     * An optional output file for listing the unused classes and class
+     * members. An empty file name means the standard output.
      */
-    public String    printUsage;
+    public File      printUsage;
+
+    /**
+     * A list of {@link ClassSpecification} instances, for which an explanation
+     * is to be printed, why they are kept in the shrinking step.
+     */
+    public List      whyAreYouKeeping;
 
     ///////////////////////////////////////////////////////////////////////////
     // Optimization options.
@@ -126,20 +133,20 @@ public class Configuration
     public boolean   obfuscate                   = true;
 
     /**
-     * An optional output file name for listing the obfuscation mapping.
-     * An empty string means the standard output.
+     * An optional output file for listing the obfuscation mapping.
+     * An empty file name means the standard output.
      */
-    public String    printMapping;
+    public File      printMapping;
 
     /**
-     * An optional input file name for reading an obfuscation mapping.
+     * An optional input file for reading an obfuscation mapping.
      */
-    public String    applyMapping;
+    public File      applyMapping;
 
     /**
      * An optional name of a file containing obfuscated class member names.
      */
-    public String    obfuscationDictionary;
+    public File      obfuscationDictionary;
 
     /**
      * Specifies whether to apply aggressive name overloading on class members.
@@ -195,8 +202,8 @@ public class Configuration
     public boolean   ignoreWarnings              = false;
 
     /**
-     * An optional output file name for printing out the processed code in a
-     * more or less readable form. An empty string means the standard output.
+     * An optional output file for printing out the processed code in a more
+     * or less readable form. An empty file name means the standard output.
      */
-    public String    dump;
+    public File      dump;
 }

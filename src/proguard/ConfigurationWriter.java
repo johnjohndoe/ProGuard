@@ -1,8 +1,8 @@
-/* $Id: ConfigurationWriter.java,v 1.13 2004/11/20 15:41:24 eric Exp $
+/* $Id: ConfigurationWriter.java,v 1.16 2005/06/11 13:13:15 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -49,6 +49,13 @@ public class ConfigurationWriter
         ConfigurationConstants.KEEP_CLASSES_WITH_MEMBERS_OPTION
     };
 
+    private static final String[] WHY_ARE_YOU_KEEPING_OPTIONS = new String[]
+    {
+        ConfigurationConstants.WHY_ARE_YOU_KEEPING_OPTION,
+        ConfigurationConstants.WHY_ARE_YOU_KEEPING_OPTION,
+        ConfigurationConstants.WHY_ARE_YOU_KEEPING_OPTION
+    };
+
     private static final String[] ASSUME_NO_SIDE_EFFECT_OPTIONS = new String[]
     {
         ConfigurationConstants.ASSUME_NO_SIDE_EFFECTS_OPTION,
@@ -58,14 +65,17 @@ public class ConfigurationWriter
 
 
     private PrintWriter writer;
+    private File        baseDir;
 
 
     /**
      * Creates a new ConfigurationWriter for the given file name.
      */
-    public ConfigurationWriter(String configurationFile) throws IOException
+    public ConfigurationWriter(File configurationFile) throws IOException
     {
         this(new PrintWriter(new FileWriter(configurationFile)));
+
+        baseDir = configurationFile.getParentFile();
     }
 
 
@@ -143,6 +153,9 @@ public class ConfigurationWriter
         writeOption(ConfigurationConstants.PRINT_SEEDS_OPTION,                                configuration.printSeeds);
         writer.println();
 
+        // Write the "why are you keeping" options.
+        writeOptions(WHY_ARE_YOU_KEEPING_OPTIONS, configuration.whyAreYouKeeping);
+
         // Write the keep options.
         writeOptions(KEEP_OPTIONS, configuration.keep);
 
@@ -167,7 +180,7 @@ public class ConfigurationWriter
                      outputEntryOptionName :
                      inputEntryOptionName;
 
-                writer.print(optionName + " " + quotedString(entry.getName()));
+                writer.print(optionName + " " + relativeFileName(entry.getFile()));
 
                 // Append the filters, if any.
                 boolean filtered = false;
@@ -230,6 +243,22 @@ public class ConfigurationWriter
     }
 
 
+    private void writeOption(String optionName, File file)
+    {
+        if (file != null)
+        {
+            if (file.getPath().length() > 0)
+            {
+                writer.println(optionName + " " + relativeFileName(file));
+            }
+            else
+            {
+                writer.println(optionName);
+            }
+        }
+    }
+
+
     private void writeOptions(String[] optionNames,
                               List     classSpecifications)
     {
@@ -237,8 +266,7 @@ public class ConfigurationWriter
         {
             for (int index = 0; index < classSpecifications.size(); index++)
             {
-                writeOption(optionNames,
-                                              (ClassSpecification)classSpecifications.get(index));
+                writeOption(optionNames, (ClassSpecification)classSpecifications.get(index));
             }
         }
     }
@@ -391,12 +419,43 @@ public class ConfigurationWriter
     }
 
 
+    /**
+     * Returns a relative file name of the given file, if possible.
+     * The file name is also quoted, if necessary.
+     */
+    private String relativeFileName(File file)
+    {
+        String fileName = file.getAbsolutePath();
+
+        // See if we can convert the file name into a relative file name.
+        if (baseDir != null)
+        {
+            String baseDirName = baseDir.getAbsolutePath() + File.separator;
+            if (fileName.startsWith(baseDirName))
+            {
+                fileName = fileName.substring(baseDirName.length());
+            }
+        }
+
+        return quotedString(fileName);
+    }
+
+
+    /**
+     * Returns a quoted version of the given string, if necessary.
+     */
     private String quotedString(String string)
     {
-        return
-            string.length()     == 0 ||
-            string.indexOf(' ') >= 0  ? ("'" + string + "'") :
-                                        (      string      );
+        return string.length()     == 0 ||
+               string.indexOf(' ') >= 0 ||
+               string.indexOf('@') >= 0 ||
+               string.indexOf('{') >= 0 ||
+               string.indexOf('}') >= 0 ||
+               string.indexOf('(') >= 0 ||
+               string.indexOf(')') >= 0 ||
+               string.indexOf(':') >= 0 ||
+               string.indexOf(';') >= 0  ? ("'" + string + "'") :
+                                           (      string      );
     }
 
 
@@ -406,7 +465,7 @@ public class ConfigurationWriter
     public static void main(String[] args) {
         try
         {
-            ConfigurationWriter writer = new ConfigurationWriter(args[0]);
+            ConfigurationWriter writer = new ConfigurationWriter(new File(args[0]));
 
             writer.write(new Configuration());
         }

@@ -1,4 +1,4 @@
-/* $Id: FileNameMatcher.java,v 1.5 2004/08/15 12:39:30 eric Exp $
+/* $Id: FileNameMatcher.java,v 1.6 2005/04/17 15:32:36 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -41,6 +41,7 @@ public class FileNameMatcher extends BasicMatcher
     private static final char[] FILE_NAME_CHARACTERS = new char[]
     {
         ' ',
+        '-',
         '.'
     };
 

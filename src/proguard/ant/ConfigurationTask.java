@@ -1,8 +1,8 @@
-/* $Id: ConfigurationTask.java,v 1.3 2004/10/31 16:28:32 eric Exp $
+/* $Id: ConfigurationTask.java,v 1.7 2005/06/11 13:13:15 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -141,6 +141,24 @@ public class ConfigurationTask extends Task
     }
 
 
+    public void addConfiguredWhyareyoukeeping(ClassSpecificationElement classSpecificationElement)
+    {
+        configuration.whyAreYouKeeping = extendClassSpecifications(configuration.whyAreYouKeeping,
+                                                                   classSpecificationElement,
+                                                                   true,
+                                                                   false);
+    }
+
+
+    public void addConfiguredAssumenosideeffects(ClassSpecificationElement classSpecificationElement)
+    {
+        configuration.assumeNoSideEffects = extendClassSpecifications(configuration.assumeNoSideEffects,
+                                                                      classSpecificationElement,
+                                                                      false,
+                                                                      false);
+    }
+
+
     public void addConfiguredKeepattribute(KeepAttributeElement keepAttributeElement)
     {
         configuration.keepAttributes = extendAttributes(configuration.keepAttributes,
@@ -161,14 +179,24 @@ public class ConfigurationTask extends Task
         try
         {
             String arg = getProject().replaceProperties(text);
-            ConfigurationParser parser = new ConfigurationParser(new String[] { arg });
-            parser.parse(configuration);
+
+            ConfigurationParser parser = new ConfigurationParser(new String[] { arg },
+                                                                 getProject().getBaseDir());
+
+            try
+            {
+                parser.parse(configuration);
+            }
+            catch (ParseException ex)
+            {
+                throw new BuildException(ex.getMessage());
+            }
+            finally
+            {
+                parser.close();
+            }
         }
         catch (IOException ex)
-        {
-            throw new BuildException(ex.getMessage());
-        }
-        catch (ParseException ex)
         {
             throw new BuildException(ex.getMessage());
         }

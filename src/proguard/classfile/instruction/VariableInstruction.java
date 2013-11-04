@@ -1,8 +1,8 @@
-/* $Id: VariableInstruction.java,v 1.17 2004/10/10 20:56:58 eric Exp $
+/* $Id: VariableInstruction.java,v 1.20 2005/06/11 13:21:35 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -94,6 +94,51 @@ public class VariableInstruction extends Instruction
 
     public Instruction shrink()
     {
+        switch (opcode)
+        {
+            case InstructionConstants.OP_ILOAD_0:
+            case InstructionConstants.OP_ILOAD_1:
+            case InstructionConstants.OP_ILOAD_2:
+            case InstructionConstants.OP_ILOAD_3: opcode = InstructionConstants.OP_ILOAD; break;
+            case InstructionConstants.OP_LLOAD_0:
+            case InstructionConstants.OP_LLOAD_1:
+            case InstructionConstants.OP_LLOAD_2:
+            case InstructionConstants.OP_LLOAD_3: opcode = InstructionConstants.OP_LLOAD; break;
+            case InstructionConstants.OP_FLOAD_0:
+            case InstructionConstants.OP_FLOAD_1:
+            case InstructionConstants.OP_FLOAD_2:
+            case InstructionConstants.OP_FLOAD_3: opcode = InstructionConstants.OP_FLOAD; break;
+            case InstructionConstants.OP_DLOAD_0:
+            case InstructionConstants.OP_DLOAD_1:
+            case InstructionConstants.OP_DLOAD_2:
+            case InstructionConstants.OP_DLOAD_3: opcode = InstructionConstants.OP_DLOAD; break;
+            case InstructionConstants.OP_ALOAD_0:
+            case InstructionConstants.OP_ALOAD_1:
+            case InstructionConstants.OP_ALOAD_2:
+            case InstructionConstants.OP_ALOAD_3: opcode = InstructionConstants.OP_ALOAD; break;
+
+            case InstructionConstants.OP_ISTORE_0:
+            case InstructionConstants.OP_ISTORE_1:
+            case InstructionConstants.OP_ISTORE_2:
+            case InstructionConstants.OP_ISTORE_3: opcode = InstructionConstants.OP_ISTORE; break;
+            case InstructionConstants.OP_LSTORE_0:
+            case InstructionConstants.OP_LSTORE_1:
+            case InstructionConstants.OP_LSTORE_2:
+            case InstructionConstants.OP_LSTORE_3: opcode = InstructionConstants.OP_LSTORE; break;
+            case InstructionConstants.OP_FSTORE_0:
+            case InstructionConstants.OP_FSTORE_1:
+            case InstructionConstants.OP_FSTORE_2:
+            case InstructionConstants.OP_FSTORE_3: opcode = InstructionConstants.OP_FSTORE; break;
+            case InstructionConstants.OP_DSTORE_0:
+            case InstructionConstants.OP_DSTORE_1:
+            case InstructionConstants.OP_DSTORE_2:
+            case InstructionConstants.OP_DSTORE_3: opcode = InstructionConstants.OP_DSTORE; break;
+            case InstructionConstants.OP_ASTORE_0:
+            case InstructionConstants.OP_ASTORE_1:
+            case InstructionConstants.OP_ASTORE_2:
+            case InstructionConstants.OP_ASTORE_3: opcode = InstructionConstants.OP_ASTORE; break;
+        }
+
         // Is this instruction pointing to a variable with index from 0 to 3?
         if (variableIndex <= 3)
         {

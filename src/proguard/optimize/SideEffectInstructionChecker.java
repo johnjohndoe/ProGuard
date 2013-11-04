@@ -1,8 +1,8 @@
-/* $Id: SideEffectInstructionChecker.java,v 1.8 2004/12/11 20:10:10 eric Exp $
+/* $Id: SideEffectInstructionChecker.java,v 1.12 2005/06/11 13:13:16 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -41,9 +41,8 @@ public class SideEffectInstructionChecker
 {
     private boolean includeReturnInstructions;
 
-    // Parameters and values for visitor methods.
+    // A return value for the visitor methods.
     private boolean hasSideEffects;
-    private boolean virtual;
 
 
     public SideEffectInstructionChecker(boolean includeReturnInstructions)
@@ -91,8 +90,8 @@ public class SideEffectInstructionChecker
               opcode == InstructionConstants.OP_FRETURN ||
               opcode == InstructionConstants.OP_DRETURN ||
               opcode == InstructionConstants.OP_ARETURN ||
-              opcode == InstructionConstants.OP_RETURN))) {
-
+              opcode == InstructionConstants.OP_RETURN)))
+        {
             // These instructions always cause a side effect.
             hasSideEffects = true;
         }
@@ -119,23 +118,14 @@ public class SideEffectInstructionChecker
 
         // Check for instructions that might cause side effects.
         if      (opcode == InstructionConstants.OP_PUTSTATIC     ||
-                 opcode == InstructionConstants.OP_PUTFIELD)
-        {
-            // Check if the field is write-only.
-            classFile.constantPoolEntryAccept(cpInstruction.cpIndex, this);
-        }
-        else if (opcode == InstructionConstants.OP_INVOKESPECIAL ||
-                 opcode == InstructionConstants.OP_INVOKESTATIC)
-        {
-            // Check if the invoked method is causing any side effects.
-            virtual = false;
-            classFile.constantPoolEntryAccept(cpInstruction.cpIndex, this);
-        }
-        else if (opcode == InstructionConstants.OP_INVOKEVIRTUAL ||
+                 opcode == InstructionConstants.OP_PUTFIELD      ||
+                 opcode == InstructionConstants.OP_INVOKEVIRTUAL ||
+                 opcode == InstructionConstants.OP_INVOKESPECIAL ||
+                 opcode == InstructionConstants.OP_INVOKESTATIC  ||
                  opcode == InstructionConstants.OP_INVOKEINTERFACE)
         {
-            // Check if the invoked method is causing any side effects.
-            virtual = true;
+            // Check if the field is write-only, or if the invoked method is
+            // causing any side effects.
             classFile.constantPoolEntryAccept(cpInstruction.cpIndex, this);
         }
     }
@@ -161,8 +151,10 @@ public class SideEffectInstructionChecker
 
     public void visitInterfaceMethodrefCpInfo(ClassFile classFile, InterfaceMethodrefCpInfo interfaceMethodrefCpInfo)
     {
+        MemberInfo referencedMemberInfo = interfaceMethodrefCpInfo.referencedMemberInfo;
+
         // Do we have a reference to the interface method?
-        if (interfaceMethodrefCpInfo.referencedMemberInfo == null)
+        if (referencedMemberInfo == null)
         {
             // We'll have to assume the unknown interface method has side effects.
             hasSideEffects = true;
@@ -172,24 +164,16 @@ public class SideEffectInstructionChecker
             // First check the referenced interface method itself.
             interfaceMethodrefCpInfo.referencedMemberInfoAccept(this);
 
-            // If the result isn't conclusive, check up and down the hierarchy.
+            // If the result isn't conclusive, check down the hierarchy.
             if (!hasSideEffects)
             {
-                String name = interfaceMethodrefCpInfo.getName(classFile);
-                String type = interfaceMethodrefCpInfo.getType(classFile);
+                ClassFile  referencedClassFile  = interfaceMethodrefCpInfo.referencedClassFile;
+                MethodInfo referencedMethodInfo = (MethodInfo)referencedMemberInfo;
 
                 // Check all implementations of the method.
-                // First go to  all concrete classes of the interface.
-                // From there, travel up and down the class hierarchy to check
-                // the method.
-                //
-                // This way, we're also catching retro-fitted interfaces, where
-                // a class's implementation of an interface method is hiding
-                // higher up its class hierarchy.
-                interfaceMethodrefCpInfo.referencedClassAccept(
-                    new ConcreteClassFileDownTraveler(
-                    new ClassFileHierarchyTraveler(true, true, false, true,
-                    new NamedMethodVisitor(name, type, this))));
+                referencedClassFile.methodImplementationsAccept(referencedMethodInfo,
+                                                                false,
+                                                                this);
             }
         }
     }
@@ -197,8 +181,10 @@ public class SideEffectInstructionChecker
 
     public void visitMethodrefCpInfo(ClassFile classFile, MethodrefCpInfo methodrefCpInfo)
     {
+        MemberInfo referencedMemberInfo = methodrefCpInfo.referencedMemberInfo;
+
         // Do we have a reference to the method?
-        if (methodrefCpInfo.referencedMemberInfo == null)
+        if (referencedMemberInfo == null)
         {
             // We'll have to assume the unknown method has side effects.
             hasSideEffects = true;
@@ -209,17 +195,16 @@ public class SideEffectInstructionChecker
             methodrefCpInfo.referencedMemberInfoAccept(this);
 
             // If the result isn't conclusive, check down the hierarchy.
-            if (!hasSideEffects &&
-                virtual)
+            if (!hasSideEffects)
             {
-                String name = methodrefCpInfo.getName(classFile);
-                String type = methodrefCpInfo.getType(classFile);
+                ClassFile  referencedClassFile  = methodrefCpInfo.referencedClassFile;
+                MethodInfo referencedMethodInfo = (MethodInfo)referencedMemberInfo;
 
-                // Check all overriding implementations of the method,
-                // down the class hierarchy.
-                methodrefCpInfo.referencedClassAccept(
-                    new ClassFileHierarchyTraveler(false, false, false, true,
-                    new NamedMethodVisitor(name, type, this)));
+                // Check all other implementations of the method in the class
+                // hierarchy.
+                referencedClassFile.methodImplementationsAccept(referencedMethodInfo,
+                                                                false,
+                                                                this);
             }
         }
     }

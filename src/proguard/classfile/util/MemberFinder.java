@@ -1,8 +1,8 @@
-/* $Id: MemberFinder.java,v 1.4 2004/12/18 20:22:42 eric Exp $
+/* $Id: MemberFinder.java,v 1.7 2005/06/11 13:21:35 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -21,8 +21,6 @@
 package proguard.classfile.util;
 
 import proguard.classfile.*;
-import proguard.classfile.attribute.*;
-import proguard.classfile.attribute.annotation.*;
 import proguard.classfile.visitor.*;
 
 
@@ -51,7 +49,7 @@ public class MemberFinder
         return (FieldInfo)findMember(classFile, name, descriptor, true);
     }
 
-    
+
     /**
      * Finds the method with the given name and descriptor in the given
      * class file or its hierarchy.
@@ -60,8 +58,8 @@ public class MemberFinder
     {
         return (MethodInfo)findMember(classFile, name, descriptor, false);
     }
-    
-    
+
+
     /**
      * Finds the class member with the given name and descriptor in the given
      * class file or its hierarchy.
@@ -98,11 +96,11 @@ public class MemberFinder
             {
             }
         }
-        
+
         return memberInfo;
     }
 
-    
+
     /**
      * Returns the corresponding class file of the most recently found class
      * member.
@@ -111,8 +109,8 @@ public class MemberFinder
     {
         return classFile;
     }
-    
-    
+
+
     /**
      * Returns whether the given method is overridden anywhere down the class
      * hierarchy.
@@ -177,14 +175,14 @@ public class MemberFinder
 //    {
 //        visitClassFile(programClassFile);
 //    }
-//    
-//    
+//
+//
 //    public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
 //    {
 //        visitClassFile(libraryClassFile);
 //    }
-//    
-//    
+//
+//
 //    private void visitClassFile(ClassFile classFile)
 //    {
 //        if (memberInfo == null)
@@ -192,15 +190,15 @@ public class MemberFinder
 //            memberInfo = isField ?
 //                (MemberInfo)classFile.findField(name, descriptor) :
 //                (MemberInfo)classFile.findMethod(name, descriptor);
-//                
+//
 //            if (memberInfo != null)
 //            {
 //                this.classFile = classFile;
 //            }
 //        }
 //    }
-    
-    
+
+
     // Implementations for MemberInfoVisitor.
 
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
@@ -230,7 +228,7 @@ public class MemberFinder
     {
         this.classFile  = classFile;
         this.memberInfo = memberInfo;
-        
+
         throw MEMBER_FOUND;
     }
 }

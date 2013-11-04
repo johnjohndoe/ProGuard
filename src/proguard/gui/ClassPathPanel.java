@@ -1,8 +1,8 @@
-/* $Id: ClassPathPanel.java,v 1.14 2004/08/21 21:35:28 eric Exp $
+/* $Id: ClassPathPanel.java,v 1.16 2005/06/11 13:13:15 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -129,7 +129,7 @@ class ClassPathPanel extends ListPanel
 
                     isOutput = entry.isOutput();
 
-                    selectedFiles[index] = new File(entry.getName());
+                    selectedFiles[index] = entry.getFile();
                 }
 
                 chooser.setDialogTitle(GUIResources.getMessage("chooseJars"));
@@ -248,7 +248,7 @@ class ClassPathPanel extends ListPanel
         ClassPathEntry[] entries = new ClassPathEntry[files.length];
         for (int index = 0; index < entries.length; index++)
         {
-            entries[index] = new ClassPathEntry(files[index].toString(), isOutput);
+            entries[index] = new ClassPathEntry(files[index], isOutput);
         }
         return entries;
     }
@@ -381,7 +381,7 @@ class ClassPathPanel extends ListPanel
 
             // Make the font color red if this is an input file that can't be read.
             if (!(inputAndOutput && entry.isOutput()) &&
-                !new File(entry.getName()).canRead())
+                !entry.getFile().canRead())
             {
                 jarNameLabel.setForeground(Color.red);
             }

@@ -8,7 +8,7 @@
 # Specify the input jars, output jars, and library jars.
 # We'll filter out the Ant and WTK classes, keeping everything else.
 
--injars  proguard.jar(!proguard/ant/**,!proguard/wtk/**)
+-injars  ../lib/proguard.jar(!proguard/ant/**,!proguard/wtk/**)
 -outjars proguard_out.jar
 
 -libraryjars <java.home>/lib/rt.jar

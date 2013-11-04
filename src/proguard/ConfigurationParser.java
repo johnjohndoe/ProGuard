@@ -1,8 +1,8 @@
-/* $Id: ConfigurationParser.java,v 1.19 2004/12/18 20:22:13 eric Exp $
+/* $Id: ConfigurationParser.java,v 1.24 2005/06/11 14:50:16 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -20,13 +20,13 @@
  */
 package proguard;
 
-import proguard.classfile.*;
-import proguard.classfile.util.*;
-import proguard.util.*;
+import proguard.classfile.ClassConstants;
+import proguard.classfile.util.ClassUtil;
+import proguard.util.ListUtil;
 
 import java.io.*;
-import java.net.URL;
 import java.util.*;
+import java.net.URL;
 
 
 /**
@@ -47,17 +47,30 @@ public class ConfigurationParser
      */
     public ConfigurationParser(String[] args) throws IOException
     {
-        reader = new ArgumentWordReader(args);
+        this(args, null);
+    }
+
+
+    /**
+     * Creates a new ConfigurationParser for the given String arguments,
+     * with the given base directory.
+     */
+    public ConfigurationParser(String[] args,
+                               File     baseDir) throws IOException
+    {
+        reader = new ArgumentWordReader(args, baseDir);
+
         readNextWord();
     }
 
 
     /**
-     * Creates a new ConfigurationParser for the given file name.
+     * Creates a new ConfigurationParser for the given file.
      */
-    public ConfigurationParser(String fileName) throws IOException
+    public ConfigurationParser(File file) throws IOException
     {
-        reader = new FileWordReader(fileName);
+        reader = new FileWordReader(file);
+
         readNextWord();
     }
 
@@ -68,6 +81,7 @@ public class ConfigurationParser
     public ConfigurationParser(URL url) throws IOException
     {
         reader = new FileWordReader(url);
+
         readNextWord();
     }
 
@@ -79,7 +93,8 @@ public class ConfigurationParser
      *                        a syntax error.
      * @throws IOException if an IO error occurs while reading a configuration.
      */
-    public void parse(Configuration configuration) throws ParseException, IOException
+    public void parse(Configuration configuration)
+    throws ParseException, IOException
     {
         while (nextWord != null)
         {
@@ -88,6 +103,7 @@ public class ConfigurationParser
             // First include directives.
             if      (ConfigurationConstants.AT_DIRECTIVE                                     .startsWith(nextWord) ||
                      ConfigurationConstants.INCLUDE_DIRECTIVE                                .startsWith(nextWord)) parseIncludeArgument();
+            else if (ConfigurationConstants.BASE_DIRECTORY_DIRECTIVE                         .startsWith(nextWord)) parseBaseDirectoryArgument();
 
             // Then configuration options with or without arguments.
             else if (ConfigurationConstants.INJARS_OPTION                                    .startsWith(nextWord)) configuration.programJars                      = parseClassPathArgument(configuration.programJars, false);
@@ -103,19 +119,20 @@ public class ConfigurationParser
             else if (ConfigurationConstants.KEEP_NAMES_OPTION                                .startsWith(nextWord)) configuration.keepNames                        = parseClassSpecificationArguments(configuration.keepNames, true,  false);
             else if (ConfigurationConstants.KEEP_CLASS_MEMBER_NAMES_OPTION                   .startsWith(nextWord)) configuration.keepNames                        = parseClassSpecificationArguments(configuration.keepNames, false, false);
             else if (ConfigurationConstants.KEEP_CLASSES_WITH_MEMBER_NAMES_OPTION            .startsWith(nextWord)) configuration.keepNames                        = parseClassSpecificationArguments(configuration.keepNames, false, true);
-            else if (ConfigurationConstants.PRINT_SEEDS_OPTION                               .startsWith(nextWord)) configuration.printSeeds                       = parseOptionalArgument();
+            else if (ConfigurationConstants.PRINT_SEEDS_OPTION                               .startsWith(nextWord)) configuration.printSeeds                       = parseOptionalFile();
 
             else if (ConfigurationConstants.DONT_SHRINK_OPTION                               .startsWith(nextWord)) configuration.shrink                           = parseNoArgument(false);
-            else if (ConfigurationConstants.PRINT_USAGE_OPTION                               .startsWith(nextWord)) configuration.printUsage                       = parseOptionalArgument();
+            else if (ConfigurationConstants.PRINT_USAGE_OPTION                               .startsWith(nextWord)) configuration.printUsage                       = parseOptionalFile();
+            else if (ConfigurationConstants.WHY_ARE_YOU_KEEPING_OPTION                       .startsWith(nextWord)) configuration.whyAreYouKeeping                 = parseClassSpecificationArguments(configuration.whyAreYouKeeping, true, false);
 
             else if (ConfigurationConstants.DONT_OPTIMIZE_OPTION                             .startsWith(nextWord)) configuration.optimize                         = parseNoArgument(false);
             else if (ConfigurationConstants.ASSUME_NO_SIDE_EFFECTS_OPTION                    .startsWith(nextWord)) configuration.assumeNoSideEffects              = parseClassSpecificationArguments(configuration.assumeNoSideEffects, false, false);
             else if (ConfigurationConstants.ALLOW_ACCESS_MODIFICATION_OPTION                 .startsWith(nextWord)) configuration.allowAccessModification          = parseNoArgument(true);
 
             else if (ConfigurationConstants.DONT_OBFUSCATE_OPTION                            .startsWith(nextWord)) configuration.obfuscate                        = parseNoArgument(false);
-            else if (ConfigurationConstants.PRINT_MAPPING_OPTION                             .startsWith(nextWord)) configuration.printMapping                     = parseOptionalArgument();
-            else if (ConfigurationConstants.APPLY_MAPPING_OPTION                             .startsWith(nextWord)) configuration.applyMapping                     = parseOptionalArgument();
-            else if (ConfigurationConstants.OBFUSCATION_DICTIONARY_OPTION                    .startsWith(nextWord)) configuration.obfuscationDictionary            = parseObfuscationDictionaryArgument();
+            else if (ConfigurationConstants.PRINT_MAPPING_OPTION                             .startsWith(nextWord)) configuration.printMapping                     = parseOptionalFile();
+            else if (ConfigurationConstants.APPLY_MAPPING_OPTION                             .startsWith(nextWord)) configuration.applyMapping                     = parseFile();
+            else if (ConfigurationConstants.OBFUSCATION_DICTIONARY_OPTION                    .startsWith(nextWord)) configuration.obfuscationDictionary            = parseFile();
             else if (ConfigurationConstants.OVERLOAD_AGGRESSIVELY_OPTION                     .startsWith(nextWord)) configuration.overloadAggressively             = parseNoArgument(true);
             else if (ConfigurationConstants.DEFAULT_PACKAGE_OPTION                           .startsWith(nextWord)) configuration.defaultPackage                   = ClassUtil.internalClassName(parseOptionalArgument());
             else if (ConfigurationConstants.DONT_USE_MIXED_CASE_CLASS_NAMES_OPTION           .startsWith(nextWord)) configuration.useMixedCaseClassNames           = parseNoArgument(false);
@@ -126,7 +143,7 @@ public class ConfigurationParser
             else if (ConfigurationConstants.DONT_NOTE_OPTION                                 .startsWith(nextWord)) configuration.note                             = parseNoArgument(false);
             else if (ConfigurationConstants.DONT_WARN_OPTION                                 .startsWith(nextWord)) configuration.warn                             = parseNoArgument(false);
             else if (ConfigurationConstants.IGNORE_WARNINGS_OPTION                           .startsWith(nextWord)) configuration.ignoreWarnings                   = parseNoArgument(true);
-            else if (ConfigurationConstants.DUMP_OPTION                                      .startsWith(nextWord)) configuration.dump                             = parseOptionalArgument();
+            else if (ConfigurationConstants.DUMP_OPTION                                      .startsWith(nextWord)) configuration.dump                             = parseOptionalFile();
             else
             {
                 throw new ParseException("Unknown configuration " + reader.locationDescription());
@@ -135,13 +152,37 @@ public class ConfigurationParser
     }
 
 
-    private void parseIncludeArgument()
-    throws ParseException, IOException
+
+    /**
+     * Closes the configuration.
+     * @throws IOException if an IO error occurs while closing the configuration.
+     */
+    public void close() throws IOException
+    {
+        if (reader != null)
+        {
+            reader.close();
+        }
+    }
+
+
+    private void parseIncludeArgument() throws ParseException, IOException
     {
         // Read the configuation file name.
         readNextWord("configuration file name");
 
-        reader.includeWordReader(new FileWordReader(replaceSystemProperties(nextWord)));
+        reader.includeWordReader(new FileWordReader(file(nextWord)));
+
+        readNextWord();
+    }
+
+
+    private void parseBaseDirectoryArgument() throws ParseException, IOException
+    {
+        // Read the base directory name.
+        readNextWord("base directory name");
+
+        reader.setBaseDir(file(nextWord));
 
         readNextWord();
     }
@@ -163,8 +204,7 @@ public class ConfigurationParser
             readNextWord("jar or directory name");
 
             // Create a new class path entry.
-            ClassPathEntry entry = new ClassPathEntry(replaceSystemProperties(nextWord),
-                                                      isOutput);
+            ClassPathEntry entry = new ClassPathEntry(file(nextWord), isOutput);
 
             // Read the opening parenthesis or the separator, if any.
             readNextWord();
@@ -286,26 +326,48 @@ public class ConfigurationParser
     }
 
 
-    private String parseObfuscationDictionaryArgument()
+    private File parseFile()
     throws ParseException, IOException
     {
-        // Read the obfsucation dictionary name.
-        readNextWord("obfuscation dictionary name");
+        // Read the obligatory file name.
+        readNextWord("file name");
 
-        String obfuscationDictionary = replaceSystemProperties(nextWord);
+        // Make sure the file is properly resolved.
+        File file = file(nextWord);
 
         readNextWord();
 
-        return obfuscationDictionary;
+        return file;
     }
 
 
-    private String parseOptionalArgument()
-    throws IOException
+    private File parseOptionalFile()
+    throws ParseException, IOException
     {
+        // Read the optional file name.
         readNextWord();
 
         // Didn't the user specify a file name?
+        if (configurationEnd())
+        {
+            return new File("");
+        }
+
+        // Make sure the file is properly resolved.
+        File file = file(nextWord);
+
+        readNextWord();
+
+        return file;
+    }
+
+
+    private String parseOptionalArgument() throws IOException
+    {
+        // Read the optional argument.
+        readNextWord();
+
+        // Didn't the user specify an argument?
         if (configurationEnd())
         {
             return "";
@@ -319,8 +381,7 @@ public class ConfigurationParser
     }
 
 
-    private boolean parseNoArgument(boolean value)
-    throws IOException
+    private boolean parseNoArgument(boolean value) throws IOException
     {
         readNextWord();
 
@@ -463,7 +524,8 @@ public class ConfigurationParser
 
 
     private boolean parseClassMemberSpecificationArguments(String             externalClassName,
-                                                           ClassSpecification classSpecification) throws ParseException, IOException
+                                                           ClassSpecification classSpecification)
+    throws ParseException, IOException
     {
         // Parse the class member access modifiers, if any.
         int requiredSetMemberAccessFlags   = 0;
@@ -746,11 +808,37 @@ public class ConfigurationParser
 
 
     /**
+     * Creates a properly resolved File, based on the given word.
+     */
+    private File file(String word) throws ParseException
+    {
+        String fileName = replaceSystemProperties(word);
+        File   file     = new File(fileName);
+
+        // Try to get an absolute file.
+        if (!file.isAbsolute())
+        {
+            file = new File(reader.getBaseDir(), fileName);
+        }
+
+        // Try to get a canonical representation.
+        try
+        {
+            file = file.getCanonicalFile();
+        }
+        catch (IOException ex)
+        {
+        }
+
+        return file;
+    }
+
+
+    /**
      * Replaces any system properties in the given word by their values
      * (e.g. the substring "<java.home>" is replaced by its value).
      */
-    private String replaceSystemProperties(String word)
-    throws ParseException
+    private String replaceSystemProperties(String word) throws ParseException
     {
         int fromIndex = 0;
         while (true)
@@ -805,8 +893,7 @@ public class ConfigurationParser
     /**
      * Reads the next word of the configuration in the 'nextWord' field.
      */
-    private void readNextWord()
-    throws IOException
+    private void readNextWord() throws IOException
     {
         nextWord = reader.nextWord();
     }
@@ -904,14 +991,26 @@ public class ConfigurationParser
     /**
      * A main method for testing configuration parsing.
      */
-    public static void main(String[] args) {
+    public static void main(String[] args)
+    {
         try
         {
             ConfigurationParser parser = new ConfigurationParser(args);
 
-            parser.parse(new Configuration());
+            try
+            {
+                parser.parse(new Configuration());
+            }
+            catch (ParseException ex)
+            {
+                ex.printStackTrace();
+            }
+            finally
+            {
+                parser.close();
+            }
         }
-        catch (Exception ex)
+        catch (IOException ex)
         {
             ex.printStackTrace();
         }

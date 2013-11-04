@@ -1,9 +1,9 @@
-/* $Id: ProgramFieldInfo.java,v 1.16 2004/10/23 16:53:01 eric Exp $
+/* $Id: ProgramFieldInfo.java,v 1.18 2005/06/11 13:13:15 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
- * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2005 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -35,6 +35,15 @@ import java.io.*;
 public class ProgramFieldInfo extends ProgramMemberInfo implements FieldInfo
 {
     /**
+     * An extra field pointing to the ClassFile object referenced in the
+     * descriptor string. This field is filled out by the <code>{@link
+     * proguard.classfile.util.ClassFileReferenceInitializer ClassFileReferenceInitializer}</code>.
+     * References to primitive types are ignored.
+     */
+    public ClassFile referencedClassFile;
+
+
+    /**
      * Creates a new ProgramFieldInfo from the file format data in the DataInput stream.
      *
      * @throws IOException if class file is corrupt or incomplete
@@ -65,6 +74,15 @@ public class ProgramFieldInfo extends ProgramMemberInfo implements FieldInfo
         for (int i = 0; i < u2attributesCount; i++)
         {
             attributes[i].accept(programClassFile, this, attrInfoVisitor);
+        }
+    }
+
+
+    public void referencedClassesAccept(ClassFileVisitor classFileVisitor)
+    {
+        if (referencedClassFile != null)
+        {
+            referencedClassFile.accept(classFileVisitor);
         }
     }
 }

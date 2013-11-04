@@ -17,7 +17,7 @@
     <!-- Specify the input jars, output jars, and library jars. -->
 
     <injar  file="lib/proguard.jar" />
-    <outjar file="proguard_out.jar" />
+    <outjar file="examples/ant/proguard_out.jar" />
 
     <libraryjar file="${java.home}/lib/rt.jar" />
     <libraryjar file="/usr/local/java/ant1.6.2/lib/ant.jar" />

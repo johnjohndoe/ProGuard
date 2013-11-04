@@ -342,6 +342,10 @@ ensure that:
 Note the use of <code>-keepclasseswithmembernames</code>. We don't want to
 preserve all classes or all native methods; we just want to keep the relevant
 names from being obfuscated.
+<p>
+ProGuard doesn't have your native code, so it can't automatically preserve the
+classes or class members that are invoked by the native code. These are entry
+points, which you'll have to specify explicitly.
 
 <a name="enumerations">&nbsp;</a>
 <h3>Processing enumeration classes</h3>
@@ -677,7 +681,7 @@ processing the input jar at all.
 
 <hr>
 <address>
-Copyright &copy; 2002-2004
+Copyright &copy; 2002-2005
 <a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>
