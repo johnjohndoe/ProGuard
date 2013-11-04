@@ -21,7 +21,6 @@
 package proguard.optimize;
 
 import proguard.classfile.*;
-import proguard.classfile.instruction.*;
 import proguard.classfile.visitor.*;
 
 /**

@@ -21,9 +21,8 @@
 package proguard.optimize.peephole;
 
 import proguard.classfile.*;
-import proguard.classfile.instruction.*;
 import proguard.classfile.util.AccessUtil;
-import proguard.classfile.visitor.*;
+import proguard.classfile.visitor.MemberInfoVisitor;
 import proguard.optimize.NonPrivateMethodMarker;
 
 /**
@@ -44,9 +43,8 @@ public class MethodPrivatizer
     {
         int accessFlags = programMethodInfo.getAccessFlags();
 
-        // Is the method final and unmarked.
-        if ((accessFlags & ClassConstants.INTERNAL_ACC_PRIVATE) == 0 &&
-            NonPrivateMethodMarker.canBeMadePrivate(programMethodInfo))
+        // Is the method unmarked?
+        if (NonPrivateMethodMarker.canBeMadePrivate(programMethodInfo))
         {
             // Make the method private.
             programMethodInfo.u2accessFlags =

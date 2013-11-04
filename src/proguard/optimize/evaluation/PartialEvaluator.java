@@ -438,8 +438,7 @@ implements   MemberInfoVisitor,
         index = codeLength - 1;
         do
         {
-            if (isTraced(index) &&
-                !isNecessary[index])
+            if (isTraced(index))
             {
                 // Make sure the stack is always consistent at this offset.
                 fixStackConsistency(classFile,
@@ -945,99 +944,90 @@ implements   MemberInfoVisitor,
                                      CodeAttrInfo codeAttrInfo,
                                      int          index)
     {
-        // Is the unnecessary instruction popping values (but not a dup/swap
-        // instruction)?
-        Instruction popInstruction = InstructionFactory.create(codeAttrInfo.code,
-                                                               index);
-        byte popOpcode = popInstruction.opcode;
+        // See if we have any values pushed on the stack that we aren't using.
+        InstructionOffsetValue traceOffsetValue = unusedTraceValues[index];
 
-        int popCount = popInstruction.stackPopCount(classFile);
-        if (popCount > 0) // &&
-            //popOpcode != InstructionConstants.OP_DUP     &&
-            //popOpcode != InstructionConstants.OP_DUP_X1  &&
-            //popOpcode != InstructionConstants.OP_DUP_X2  &&
-            //popOpcode != InstructionConstants.OP_DUP2    &&
-            //popOpcode != InstructionConstants.OP_DUP2_X1 &&
-            //popOpcode != InstructionConstants.OP_DUP2_X2 &&
-            //popOpcode != InstructionConstants.OP_SWAP)
+        // This includes all values if the popping instruction isn't necessary at all.
+        boolean isNotNecessary = !isNecessary[index];
+        if (isNotNecessary)
         {
-            // Check the instructions on which it depends.
-            InstructionOffsetValue traceOffsetValue =
-                stackTraceValues[index].generalize(unusedTraceValues[index]).instructionOffsetValue();
-if (DEBUG_ANALYSIS) System.out.println("PartialEvaluator.fixStackConsistency at "+index+": pop count = "+popCount+" instructions = "+traceOffsetValue.instructionOffsetCount());
+            traceOffsetValue = traceOffsetValue.generalize(stackTraceValues[index]).instructionOffsetValue();
+        }
 
-            // Can we perform the popping at the instruction's offset itself?
-            if (popCount <= 6                                 &&
-                traceOffsetValue.instructionOffsetCount() > 0 &&
-                isAllNecessary(traceOffsetValue))
+        // Do we have any pushing instructions?
+        if (traceOffsetValue.instructionOffsetCount() > 0)
+        {
+            // Is this instruction really popping any values?
+            // Note that dup instructions have a pop count of 0.
+            // Also note that method invocations have their original pop counts,
+            // including any unused parameters.
+            Instruction popInstruction = InstructionFactory.create(codeAttrInfo.code,
+                                                                   index);
+            int popCount = popInstruction.stackPopCount(classFile);
+            if (popCount > 0)
             {
-if (DEBUG_ANALYSIS) System.out.println("PartialEvaluator.fixStackConsistency: all necessary");
-                // Pop the value or values at the instruction's offset itself.
-                if (popOpcode == InstructionConstants.OP_POP ||
-                    popOpcode == InstructionConstants.OP_POP2)
+                // Can we pop all values at the popping instruction?
+                if (isNotNecessary &&
+                    popCount <= 6  &&
+                    isAllNecessary(traceOffsetValue))
                 {
-                    if (DEBUG_ANALYSIS) System.out.println("  Popping value again at "+popInstruction.toString(index)+" (pushed at all "+traceOffsetValue.instructionOffsetCount()+" offsets)");
-
-                    // Simply mark pop and pop2 instructions.
-                    isNecessary[index] = true;
-                }
-                else
-                {
-                    if (DEBUG_ANALYSIS) System.out.println("  Popping value instead of "+popInstruction.toString(index)+" (pushed at all "+traceOffsetValue.instructionOffsetCount()+" offsets)");
-
-                    // Make sure the pushed value is popped again,
-                    // right before this instruction.
-                    decreaseStackSize(index, popCount, true, true);
-                }
-            }
-            //else if (popCount == (popInstruction.isCategory2() ? 4 : 2) &&
-            //         traceOffsetCount == 2                              &&
-            //         isAnyNecessary(traceOffsetValue))
-            //{
-            //    if (DEBUG_ANALYSIS) System.out.println("  Popping single value instead of "+popInstruction.toString(index)+" (pushed at some of "+traceOffsetValue.instructionOffsetCount()+" offsets)");
-            //
-            //    // Make sure the single pushed value is popped again,
-            //    // right before this instruction.
-            //    decreaseStackSize(index, popCount / 2, true, true);
-            //}
-            else if (isAnyNecessary(traceOffsetValue))
-            {
-if (DEBUG_ANALYSIS) System.out.println("PartialEvaluator.fixStackConsistency: some necessary");
-                // Pop the values right after the pushing instructions.
-                if (DEBUG_ANALYSIS) System.out.println("  Popping value somewhere before "+index+" (pushed at some of "+traceOffsetValue.instructionOffsetCount()+" offsets):");
-
-                // Go over all stack pushing instructions.
-                int traceOffsetCount = traceOffsetValue.instructionOffsetCount();
-                for (int traceOffsetIndex = 0; traceOffsetIndex < traceOffsetCount; traceOffsetIndex++)
-                {
-                    // Has the push instruction been marked?
-                    int pushInstructionOffset = traceOffsetValue.instructionOffset(traceOffsetIndex);
-                    if (isNecessary[pushInstructionOffset])
+                    // Is the popping instruction a simple pop or pop2 instruction?
+                    byte popOpcode = popInstruction.opcode;
+                    if (popOpcode == InstructionConstants.OP_POP ||
+                        popOpcode == InstructionConstants.OP_POP2)
                     {
-                        Instruction pushInstruction = InstructionFactory.create(codeAttrInfo.code,
-                                                                                pushInstructionOffset);
+                        if (DEBUG_ANALYSIS) System.out.println("  Popping value again at "+popInstruction.toString(index)+" (pushed at all "+traceOffsetValue.instructionOffsetCount()+" offsets)");
 
-                        int lastOffset = lastPopInstructionOffset(pushInstructionOffset,
-                                                                  index,
-                                                                  pushInstructionOffset);
+                        // Simply mark the pop or pop2 instruction.
+                        this.isNecessary[index] = true;
+                    }
+                    else
+                    {
+                        if (DEBUG_ANALYSIS) System.out.println("  Popping value instead of "+popInstruction.toString(index)+" (pushed at all "+traceOffsetValue.instructionOffsetCount()+" offsets)");
 
-                        if (DEBUG_ANALYSIS) System.out.println("    Popping value right after "+lastOffset+", due to push at "+pushInstructionOffset);
+                        // Make sure the pushed value is popped again,
+                        // right before this instruction.
+                        decreaseStackSize(index, popCount, true, isNotNecessary);
+                    }
+                }
+                else if (isAnyNecessary(traceOffsetValue))
+                {
+                    // Pop the values right after the pushing instructions.
+                    if (DEBUG_ANALYSIS) System.out.println("  Popping value somewhere before "+index+" (pushed at some of "+traceOffsetValue.instructionOffsetCount()+" offsets):");
 
-                        // Make sure the pushed value is popped again.
-                        if (lastOffset == AT_METHOD_ENTRY)
+                    // Go over all stack pushing instructions.
+                    int traceOffsetCount = traceOffsetValue.instructionOffsetCount();
+                    for (int traceOffsetIndex = 0; traceOffsetIndex < traceOffsetCount; traceOffsetIndex++)
+                    {
+                        // Has the push instruction been marked?
+                        int pushInstructionOffset = traceOffsetValue.instructionOffset(traceOffsetIndex);
+                        if (this.isNecessary[pushInstructionOffset])
                         {
-                            // Pop it right at the beginning of the method.
-                            decreaseStackSize(0,
-                                              pushInstruction.stackPushCount(classFile),
-                                              true, false);
-                        }
-                        else
-                        {
-                            // Pop it right after the instruction that pushes it
-                            // (or after the dup instruction that still uses it).
-                            decreaseStackSize(lastOffset,
-                                              pushInstruction.stackPushCount(classFile),
-                                              false, false);
+                            Instruction pushInstruction = InstructionFactory.create(codeAttrInfo.code,
+                                                                                    pushInstructionOffset);
+
+                            int lastOffset = lastPopInstructionOffset(pushInstructionOffset,
+                                                                      index,
+                                                                      pushInstructionOffset);
+
+                            if (DEBUG_ANALYSIS) System.out.println("    Popping value right after "+lastOffset+", due to push at "+pushInstructionOffset);
+
+                            // Make sure the pushed value is popped again.
+                            if (lastOffset == AT_METHOD_ENTRY)
+                            {
+                                // Pop it right at the beginning of the method.
+                                decreaseStackSize(0,
+                                                  pushInstruction.stackPushCount(classFile),
+                                                  true, false);
+                            }
+                            else
+                            {
+                                // Pop it right after the instruction that pushes it
+                                // (or after the dup instruction that still uses it).
+                                decreaseStackSize(lastOffset,
+                                                  pushInstruction.stackPushCount(classFile),
+                                                  false, false);
+                            }
                         }
                     }
                 }
@@ -1541,7 +1531,7 @@ if (DEBUG_ANALYSIS) System.out.println("PartialEvaluator.fixStackConsistency: so
                 }
                 if (unusedTraceValues[instructionOffset].instructionOffsetCount() > 0)
                 {
-                    System.out.println("     no longer needs information from instructions setting stack: "+stackTraceValues[instructionOffset]);
+                    System.out.println("     no longer needs information from instructions setting stack: "+unusedTraceValues[instructionOffset]);
                 }
                 if (branchTargetValues[instructionOffset] != null)
                 {
@@ -2071,11 +2061,11 @@ if (DEBUG_ANALYSIS) System.out.println("PartialEvaluator.fixStackConsistency: so
     private boolean isAllNecessary(InstructionOffsetValue traceValue)
     {
         int traceCount = traceValue.instructionOffsetCount();
-if (DEBUG_ANALYSIS) System.out.println("PartialEvaluator.isAllNecessary: count = "+traceCount);
+
         for (int traceIndex = 0; traceIndex < traceCount; traceIndex++)
         {
             int index = traceValue.instructionOffset(traceIndex);
-if (DEBUG_ANALYSIS) System.out.println("PartialEvaluator.isAllNecessary:   "+index+": necessary = "+isNecessary[index]+", modified = "+codeAttrInfoEditor.isModified(index));
+
             if (index != AT_METHOD_ENTRY &&
                 (!isNecessary[index] ||
                  codeAttrInfoEditor.isModified(index)))

@@ -46,7 +46,7 @@ import java.util.*;
  */
 public class ProGuard
 {
-    public static final String VERSION = "ProGuard, version 3.3.1";
+    public static final String VERSION = "ProGuard, version 3.3.2";
 
     private Configuration configuration;
     private ClassPool     programClassPool = new ClassPool();
@@ -642,9 +642,11 @@ public class ProGuard
         programClassPool.classFilesAccept(new NonPrivateMethodMarker());
         libraryClassPool.classFilesAccept(new NonPrivateMethodMarker());
 
-        // Make all final and unmarked methods private.
-        programClassPool.classFilesAccept(new AllMethodVisitor(
-                                          new MethodPrivatizer()));
+        // Make all non-private and unmarked methods in final classes private.
+        programClassPool.classFilesAccept(new ClassFileAccessFilter(ClassConstants.INTERNAL_ACC_FINAL, 0,
+                                          new AllMethodVisitor(
+                                          new MemberInfoAccessFilter(0, ClassConstants.INTERNAL_ACC_PRIVATE,
+                                          new MethodPrivatizer()))));
 
         // Mark all used parameters, including the 'this' parameters.
         programClassPool.classFilesAccept(new AllMethodVisitor(
