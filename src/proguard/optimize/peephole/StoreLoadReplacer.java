@@ -1,4 +1,4 @@
-/* $Id: StoreLoadReplacer.java,v 1.9 2005/06/11 13:13:16 eric Exp $
+/* $Id: StoreLoadReplacer.java,v 1.11 2005/07/31 18:50:05 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -39,21 +39,41 @@ public class StoreLoadReplacer implements InstructionVisitor
 
     private BranchTargetFinder branchTargetFinder;
     private CodeAttrInfoEditor codeAttrInfoEditor;
+    private InstructionVisitor extraInstructionVisitor;
 
 
     /**
      * Creates a new StoreLoadReplacer.
-     * @param branchTargetFinder a branch target finder that has been
-     *                           initialized to indicate branch targets
-     *                           in the visited code.
-     * @param codeAttrInfoEditor a code editor that can be used for
-     *                           accumulating changes to the code.
+     * @param branchTargetFinder      a branch target finder that has been
+     *                                initialized to indicate branch targets
+     *                                in the visited code.
+     * @param codeAttrInfoEditor      a code editor that can be used for
+     *                                accumulating changes to the code.
      */
     public StoreLoadReplacer(BranchTargetFinder branchTargetFinder,
                              CodeAttrInfoEditor codeAttrInfoEditor)
     {
-        this.branchTargetFinder = branchTargetFinder;
-        this.codeAttrInfoEditor = codeAttrInfoEditor;
+        this(branchTargetFinder, codeAttrInfoEditor, null);
+    }
+
+
+    /**
+     * Creates a new StoreLoadReplacer.
+     * @param branchTargetFinder      a branch target finder that has been
+     *                                initialized to indicate branch targets
+     *                                in the visited code.
+     * @param codeAttrInfoEditor      a code editor that can be used for
+     *                                accumulating changes to the code.
+     * @param extraInstructionVisitor an optional extra visitor for all replaced
+     *                                store instructions.
+     */
+    public StoreLoadReplacer(BranchTargetFinder branchTargetFinder,
+                             CodeAttrInfoEditor codeAttrInfoEditor,
+                             InstructionVisitor extraInstructionVisitor)
+    {
+        this.branchTargetFinder      = branchTargetFinder;
+        this.codeAttrInfoEditor      = codeAttrInfoEditor;
+        this.extraInstructionVisitor = extraInstructionVisitor;
     }
 
 
@@ -79,7 +99,7 @@ public class StoreLoadReplacer implements InstructionVisitor
 
             if (!codeAttrInfoEditor.isModified(offset)     &&
                 !codeAttrInfoEditor.isModified(nextOffset) &&
-                !branchTargetFinder.isBranchTarget(nextOffset))
+                !branchTargetFinder.isTarget(nextOffset))
             {
                 // Is the next instruction a corresponding load instruction?
                 Instruction nextInstruction = InstructionFactory.create(codeAttrInfo.code,
@@ -107,6 +127,12 @@ public class StoreLoadReplacer implements InstructionVisitor
 
                         codeAttrInfoEditor.replaceInstruction(nextOffset,
                                                               storeInstruction);
+        
+                        // Visit the instruction, if required.
+                        if (extraInstructionVisitor != null)
+                        {
+                            extraInstructionVisitor.visitVariableInstruction(classFile, methodInfo, codeAttrInfo, offset, variableInstruction);
+                        }
                     }
                 }
             }

@@ -34,6 +34,22 @@ updates with sub-minor version numbers. These versions are typically released
 shortly after their parent versions, for applying emergency fixes.
 <p>
 
+<h3>Version 3.4</h3>
+<ul>
+<li>Extended optimizations: removing duplicate code within methods.
+<li>Extended regular expressions for class names to comma-separated lists.
+<li>Now automatically keeping arguments of specified methods.
+<li>Added verbose statistics for optimizations.
+<li>Added boilerplate Number optimizations in GUI.
+<li>Fixed <code>Class.forName</code> detection.
+<li>Fixed incremental obfuscation bug.
+<li>Fixed optimization bug causing stack verification errors.
+<li>Fixed optimization bugs related to removal of unused parameters.
+<li>Fixed exception when optimizing code with many local variables.
+<li>Fixed exception when saving configuration with initializers in GUI.
+<li>Updated documentation and examples.
+</ul>
+
 <h3>Version 3.3</h3>
 <ul>
 <li>Extended optimizations: making methods private and static when possible,
@@ -43,7 +59,7 @@ shortly after their parent versions, for applying emergency fixes.
 <li>Added <code>-whyareyoukeeping</code> option to get details on why given
     classes and class members are being kept.
 <li>Added warnings for misplaced class files.
-<li>Improved printing of notes for Class.forName constructs.
+<li>Improved printing of notes for <code>Class.forName</code> constructs.
 <li>Implemented '<code>assumenosideeffects</code>' nested element in Ant task.
 <li>Improved processing of annotations.
 <li>Fixed reading and writing of parameter annotations.
@@ -180,7 +196,8 @@ shortly after their parent versions, for applying emergency fixes.
 <li>Added option to obfuscate using lower-case class names only.
 <li>Added better option for obfuscating native methods.
 <li>Added option not to ignore non-public library classes.
-<li>Added automatic .class detection for classes compiled with Jikes.
+<li>Added automatic <code>.class</code> detection for classes compiled with
+    Jikes.
 <li>Updated documentation and examples.
 </ul>
 

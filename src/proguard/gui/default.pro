@@ -23,14 +23,14 @@
 # Remove - System method calls. Remove all invocations of System
 # methods without side effects whose return values are not used.
 -assumenosideeffects public class java.lang.System {
-    public static native long currentTimeMillis();
+    public static long currentTimeMillis();
     static java.lang.Class getCallerClass();
-    public static native int identityHashCode(java.lang.Object);
+    public static int identityHashCode(java.lang.Object);
     public static java.lang.SecurityManager getSecurityManager();
     public static java.util.Properties getProperties();
     public static java.lang.String getProperty(java.lang.String);
     public static java.lang.String getenv(java.lang.String);
-    public static native java.lang.String mapLibraryName(java.lang.String);
+    public static java.lang.String mapLibraryName(java.lang.String);
     public static java.lang.String getProperty(java.lang.String,java.lang.String);
 }
 
@@ -81,6 +81,130 @@
     public static double hypot(double, double);
     public static double expm1(double);
     public static double log1p(double);
+}
+
+# Remove - Number method calls. Remove all invocations of Number
+# methods without side effects whose return values are not used.
+-assumenosideeffects public class java.lang.* extends java.lang.Number {
+    public static java.lang.String toString(byte);
+    public static java.lang.Byte valueOf(byte);
+    public static byte parseByte(java.lang.String);
+    public static byte parseByte(java.lang.String,int);
+    public static java.lang.Byte valueOf(java.lang.String,int);
+    public static java.lang.Byte valueOf(java.lang.String);
+    public static java.lang.Byte decode(java.lang.String);
+    public int compareTo(java.lang.Byte);
+
+    public static java.lang.String toString(short);
+    public static short parseShort(java.lang.String);
+    public static short parseShort(java.lang.String,int);
+    public static java.lang.Short valueOf(java.lang.String,int);
+    public static java.lang.Short valueOf(java.lang.String);
+    public static java.lang.Short valueOf(short);
+    public static java.lang.Short decode(java.lang.String);
+    public static short reverseBytes(short);
+    public int compareTo(java.lang.Short);
+
+    public static java.lang.String toString(int,int);
+    public static java.lang.String toHexString(int);
+    public static java.lang.String toOctalString(int);
+    public static java.lang.String toBinaryString(int);
+    public static java.lang.String toString(int);
+    public static int parseInt(java.lang.String,int);
+    public static int parseInt(java.lang.String);
+    public static java.lang.Integer valueOf(java.lang.String,int);
+    public static java.lang.Integer valueOf(java.lang.String);
+    public static java.lang.Integer valueOf(int);
+    public static java.lang.Integer getInteger(java.lang.String);
+    public static java.lang.Integer getInteger(java.lang.String,int);
+    public static java.lang.Integer getInteger(java.lang.String,java.lang.Integer);
+    public static java.lang.Integer decode(java.lang.String);
+    public static int highestOneBit(int);
+    public static int lowestOneBit(int);
+    public static int numberOfLeadingZeros(int);
+    public static int numberOfTrailingZeros(int);
+    public static int bitCount(int);
+    public static int rotateLeft(int,int);
+    public static int rotateRight(int,int);
+    public static int reverse(int);
+    public static int signum(int);
+    public static int reverseBytes(int);
+    public int compareTo(java.lang.Integer);
+
+    public static java.lang.String toString(long,int);
+    public static java.lang.String toHexString(long);
+    public static java.lang.String toOctalString(long);
+    public static java.lang.String toBinaryString(long);
+    public static java.lang.String toString(long);
+    public static long parseLong(java.lang.String,int);
+    public static long parseLong(java.lang.String);
+    public static java.lang.Long valueOf(java.lang.String,int);
+    public static java.lang.Long valueOf(java.lang.String);
+    public static java.lang.Long valueOf(long);
+    public static java.lang.Long decode(java.lang.String);
+    public static java.lang.Long getLong(java.lang.String);
+    public static java.lang.Long getLong(java.lang.String,long);
+    public static java.lang.Long getLong(java.lang.String,java.lang.Long);
+    public static long highestOneBit(long);
+    public static long lowestOneBit(long);
+    public static int numberOfLeadingZeros(long);
+    public static int numberOfTrailingZeros(long);
+    public static int bitCount(long);
+    public static long rotateLeft(long,int);
+    public static long rotateRight(long,int);
+    public static long reverse(long);
+    public static int signum(long);
+    public static long reverseBytes(long);
+    public int compareTo(java.lang.Long);
+
+    public static java.lang.String toString(float);
+    public static java.lang.String toHexString(float);
+    public static java.lang.Float valueOf(java.lang.String);
+    public static java.lang.Float valueOf(float);
+    public static float parseFloat(java.lang.String);
+    public static boolean isNaN(float);
+    public static boolean isInfinite(float);
+    public static int floatToIntBits(float);
+    public static int floatToRawIntBits(float);
+    public static float intBitsToFloat(int);
+    public static int compare(float,float);
+    public boolean isNaN();
+    public boolean isInfinite();
+    public int compareTo(java.lang.Float);
+
+    public static java.lang.String toString(double);
+    public static java.lang.String toHexString(double);
+    public static java.lang.Double valueOf(java.lang.String);
+    public static java.lang.Double valueOf(double);
+    public static double parseDouble(java.lang.String);
+    public static boolean isNaN(double);
+    public static boolean isInfinite(double);
+    public static long doubleToLongBits(double);
+    public static long doubleToRawLongBits(double);
+    public static double longBitsToDouble(long);
+    public static int compare(double,double);
+    public boolean isNaN();
+    public boolean isInfinite();
+    public int compareTo(java.lang.Double);
+
+    public <init>(byte);
+    public <init>(short);
+    public <init>(int);
+    public <init>(long);
+    public <init>(float);
+    public <init>(double);
+    public <init>(java.lang.String);
+    public byte byteValue();
+    public short shortValue();
+    public int intValue();
+    public long longValue();
+    public float floatValue();
+    public double doubleValue();
+
+    public int compareTo(java.lang.Object);
+    public boolean equals(java.lang.Object);
+    public int hashCode();
+    public java.lang.String toString();
 }
 
 # Remove - String method calls. Remove all invocations of String
@@ -150,7 +274,6 @@
     public java.lang.String toUpperCase(java.util.Locale);
     public java.lang.String trim();
 }
-
 
 # Remove - StringBuffer method calls. Remove all invocations of
 # StringBuffer methods without side effects whose return values are not used.

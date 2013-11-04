@@ -138,6 +138,14 @@ Should ProGuard crash while processing your application:
     packages and classes. Remember that only classes or interfaces that are
     extended or implemented by classes in your input jars are required.</dd>
 
+<dt><a name="stackoverflowerror"><b>StackOverflowError</b></a></dt>
+
+<dd>You can try increasing the stack size of the Java virtual machine (with
+    the usual <code>-Xss</code> option). This error also seems to occur
+    occasionally when optimizing complex methods on Windows (surprisingly, not
+    on Linux). You can then work around it by using ProGuard's
+    <code>-dontoptimize</code> option.</dd>
+
 <dt><a name="otherwise"><b>Otherwise...</b></a></dt>
 
 <dd>Maybe your class files are corrupt. See if recompiling them and trying
@@ -263,6 +271,13 @@ might be several reasons:
 
 <dd>You may have forgotten to sign your program jar <i>after</i> having
     processed it with ProGuard.</dd>
+
+<dt><a name="arraystoreexception"><b>ArrayStoreException: sun.reflect.annotation.EnumConstantNotPresentExceptionProxy</b></a></dt>
+
+<dd>You are probably processing annotations involving enumerations. You should
+    then preserve the <code>values()</code> method of the enumeration type, as
+    shown in the examples.</dd>
+
 
 <dt><a name="nosuchfieldormethod"><b>Error: No Such Field or Method</b>,
     <b>Error verifying method</b> (in J2ME emulator)</a></dt>

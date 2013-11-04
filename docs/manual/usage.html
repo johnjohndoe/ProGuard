@@ -14,9 +14,10 @@ To run ProGuard, just type:
 <p class="code">
 <code><b>java -jar proguard.jar </b></code><i>options</i> ...
 </p>
-Options can also be put in one or more configuration files. Typically, you'll
-put most options in a configuration file (say, <code>myconfig.pro</code>), and
-just call:
+You can find the ProGuard jar in the <code>lib</code> directory of the
+ProGuard distribution. Options can also be put in one or more configuration
+files. Typically, you'll put most options in a configuration file (say,
+<code>myconfig.pro</code>), and just call:
 <p class="code">
 <code><b>java -jar proguard.jar @myconfig.pro</b></code>
 </p>
@@ -780,6 +781,11 @@ files.
 
 </table>
 
+    For additional flexibility, class names can actually be comma-separated
+    lists of class names, with optional <code><b>!</b></code> negators, just
+    like file name filters. This notation doesn't look very Java-like, so it
+    should be used with moderation.
+    <p>
     For convenience and for backward compatibility, the class name
     <code><b>*</b></code> refers to any class, irrespective of its package.
     <p>

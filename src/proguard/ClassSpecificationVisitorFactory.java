@@ -1,4 +1,4 @@
-/* $Id: ClassSpecificationVisitorFactory.java,v 1.5 2004/12/11 16:35:23 eric Exp $
+/* $Id: ClassSpecificationVisitorFactory.java,v 1.6 2005/08/21 20:25:33 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -31,7 +31,7 @@ import java.util.*;
  *
  * @author Eric Lafortune
  */
-class ClassSpecificationVisitorFactory
+public class ClassSpecificationVisitorFactory
 {
     /**
      * Creates a new ClassPoolVisitor to efficiently travel to the specified

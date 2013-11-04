@@ -1,4 +1,4 @@
-/* $Id: NonPrivateMethodMarker.java,v 1.6 2005/06/11 13:21:35 eric Exp $
+/* $Id: NonPrivateMethodMarker.java,v 1.7 2005/07/10 11:08:57 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *

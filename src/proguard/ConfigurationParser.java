@@ -1,4 +1,4 @@
-/* $Id: ConfigurationParser.java,v 1.24 2005/06/11 14:50:16 eric Exp $
+/* $Id: ConfigurationParser.java,v 1.25 2005/08/21 20:25:33 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -220,7 +220,9 @@ public class ConfigurationParser
                 do
                 {
                     // Read the filter.
-                    filters[counter++] = ListUtil.commaSeparatedString(parseCommaSeparatedList(false, true));
+                    filters[counter++] =
+                        ListUtil.commaSeparatedString(
+                        parseCommaSeparatedList("filter", true, false, true));
                 }
                 while (counter < filters.length &&
                        ConfigurationConstants.SEPARATOR_KEYWORD.equals(nextWord));
@@ -465,17 +467,17 @@ public class ConfigurationParser
             }
         }
 
-        readNextWord("class name or interface name");
-        checkJavaIdentifier("class name or interface name");
+       // Parse the class name part.
+        String externalClassName =
+            ListUtil.commaSeparatedString(
+            parseCommaSeparatedList("class name or interface name",
+                                    false, true, false));
 
-        // Parse the class name part. For backward compatibility, allow a
-        // single "*" wildcard to match any class.
-        String externalClassName = nextWord;
+        // For backward compatibility, allow a single "*" wildcard to match any
+        // class.
         String className = ConfigurationConstants.ANY_CLASS_KEYWORD.equals(externalClassName) ?
             null :
             ClassUtil.internalClassName(externalClassName);
-
-        readNextWord();
 
         String extendsClassName = null;
 
@@ -485,11 +487,11 @@ public class ConfigurationParser
             if (ConfigurationConstants.IMPLEMENTS_KEYWORD.equals(nextWord) ||
                 ConfigurationConstants.EXTENDS_KEYWORD.equals(nextWord))
             {
-                readNextWord("class name or interface name");
-                checkJavaIdentifier("class name or interface name");
-                extendsClassName = ClassUtil.internalClassName(nextWord);
-
-                readNextWord();
+                extendsClassName =
+                    ClassUtil.internalClassName(
+                    ListUtil.commaSeparatedString(
+                    parseCommaSeparatedList("class name or interface name",
+                                            false, true, false)));
             }
         }
 
@@ -649,7 +651,7 @@ public class ConfigurationParser
         else
         {
             // Make sure we have a proper type.
-            checkJavaIdentifier("class member type");
+            checkJavaIdentifier("java type");
             String type = nextWord;
 
             readNextWord("class member name");
@@ -711,7 +713,7 @@ public class ConfigurationParser
                 // Parse the method arguments.
                 String descriptor =
                     ClassUtil.internalMethodDescriptor(type,
-                                                       parseCommaSeparatedList(true, false));
+                                                       parseCommaSeparatedList("argument", true, true, false));
 
                 if (!ConfigurationConstants.CLOSE_ARGUMENTS_KEYWORD.equals(nextWord))
                 {
@@ -750,10 +752,13 @@ public class ConfigurationParser
 
 
     /**
-     * Reads a comma-separated list of java identifiers or of file names,
-     * optionally ending after the closing parenthesis.
+     * Reads a comma-separated list of java identifiers or of file names. If an
+     * empty list is allowed, the reading will end after a closing parenthesis
+     * or semi-colon.
      */
-    private List parseCommaSeparatedList(boolean checkJavaIdentifiers,
+    private List parseCommaSeparatedList(String  expectedDescription,
+                                         boolean allowEmptyList,
+                                         boolean checkJavaIdentifiers,
                                          boolean replaceSystemProperties)
     throws ParseException, IOException
     {
@@ -762,9 +767,10 @@ public class ConfigurationParser
         while (true)
         {
             // Read an argument.
-            readNextWord("argument");
+            readNextWord(expectedDescription);
 
-            if (arguments.size() == 0 &&
+            if (allowEmptyList        &&
+                arguments.size() == 0 &&
                 (ConfigurationConstants.CLOSE_ARGUMENTS_KEYWORD.equals(nextWord) ||
                  ConfigurationConstants.SEPARATOR_KEYWORD.equals(nextWord)))
             {
@@ -773,7 +779,7 @@ public class ConfigurationParser
 
             if (checkJavaIdentifiers)
             {
-                checkJavaIdentifier("argument type");
+                checkJavaIdentifier("java type");
             }
 
             if (replaceSystemProperties)
@@ -783,11 +789,19 @@ public class ConfigurationParser
 
             arguments.add(nextWord);
 
-            // Read a comma (or a closing parenthesis, or a different word).
-            readNextWord("separating '" + ConfigurationConstants.ARGUMENT_SEPARATOR_KEYWORD +
-                         "' or closing '" + ConfigurationConstants.CLOSE_ARGUMENTS_KEYWORD +
-                         "'");
-
+            if (allowEmptyList)
+            {
+                // Read a comma (or a closing parenthesis, or a different word).
+                readNextWord("separating '" + ConfigurationConstants.ARGUMENT_SEPARATOR_KEYWORD +
+                             "' or closing '" + ConfigurationConstants.CLOSE_ARGUMENTS_KEYWORD +
+                             "'");
+            }
+            else
+            {
+                // Read a comma (or a different word).
+                readNextWord();
+            }
+            
             if (!ConfigurationConstants.ARGUMENT_SEPARATOR_KEYWORD.equals(nextWord))
             {
                 break;
@@ -940,6 +954,7 @@ public class ConfigurationParser
                   c == ']' ||
                   c == '<' ||
                   c == '>' ||
+                  c == '!' ||
                   c == '*' ||
                   c == '?' ||
                   c == '%'))

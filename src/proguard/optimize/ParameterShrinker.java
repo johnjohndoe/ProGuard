@@ -1,4 +1,4 @@
-/* $Id: ParameterShrinker.java,v 1.4 2005/06/25 22:04:04 eric Exp $
+/* $Id: ParameterShrinker.java,v 1.6 2005/08/06 10:27:43 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -42,8 +42,11 @@ public class ParameterShrinker
     private static final boolean DEBUG = false;
 
 
-    private ConstantPoolEditor constantPoolEditor = new ConstantPoolEditor();
+    private MemberInfoVisitor extraParameterMemberInfoVisitor;
+    private MemberInfoVisitor extraStaticMemberInfoVisitor;
+
     private VariableEditor     variableEditor;
+    private ConstantPoolEditor constantPoolEditor = new ConstantPoolEditor();
 
     // A parameter for the parameter annotation visiting methods.
     private MethodInfo methodInfo;
@@ -58,7 +61,30 @@ public class ParameterShrinker
      */
     public ParameterShrinker(int codeLength, int maxLocals)
     {
-        variableEditor = new VariableEditor(codeLength, maxLocals);
+        this(codeLength, maxLocals, null, null);
+    }
+
+
+    /**
+     * Creates a new ParameterShrinker.
+     * @param codeLength an estimate of the maximum length of all the code
+     *                   that will be edited.
+     * @param maxLocals  an estimate of the maximum length of all the local
+     *                   variable frames that will be edited.
+     * @param extraParameterMemberInfoVisitor an optional extra visitor for all
+     *                                        methods whose parameters have been
+     *                                        simplified.
+     * @param extraStaticMemberInfoVisitor    an optional extra visitor for all
+     *                                        methods that have been made static.
+     */
+    public ParameterShrinker(int codeLength, int maxLocals,
+                             MemberInfoVisitor extraParameterMemberInfoVisitor,
+                             MemberInfoVisitor extraStaticMemberInfoVisitor)
+    {
+        this.variableEditor = new VariableEditor(codeLength, maxLocals);
+
+        this.extraParameterMemberInfoVisitor = extraParameterMemberInfoVisitor;
+        this.extraStaticMemberInfoVisitor    = extraStaticMemberInfoVisitor;
     }
 
 
@@ -107,6 +133,12 @@ public class ParameterShrinker
             // Update the descriptor.
             programMethodInfo.u2descriptorIndex =
                 constantPoolEditor.addUtf8CpInfo(programClassFile, newDescriptor);
+
+            // Visit the method, if required.
+            if (extraParameterMemberInfoVisitor != null)
+            {
+                extraParameterMemberInfoVisitor.visitProgramMethodInfo(programClassFile, programMethodInfo);
+            }
         }
 
         // Delete unused variables from the local variable frame.
@@ -141,6 +173,12 @@ public class ParameterShrinker
             programMethodInfo.u2accessFlags =
                 (accessFlags & ~ClassConstants.INTERNAL_ACC_FINAL) |
                 ClassConstants.INTERNAL_ACC_STATIC;
+
+            // Visit the method, if required.
+            if (extraStaticMemberInfoVisitor != null)
+            {
+                extraStaticMemberInfoVisitor.visitProgramMethodInfo(programClassFile, programMethodInfo);
+            }
         }
     }
 
@@ -211,15 +249,12 @@ public class ParameterShrinker
         while (internalTypeEnumeration.hasMoreTypes())
         {
             String type = internalTypeEnumeration.nextType();
-            if (ClassUtil.isInternalClassType(type))
+            if (VariableUsageMarker.isVariableUsed(methodInfo, parameterIndex))
             {
-                if (VariableUsageMarker.isVariableUsed(methodInfo, parameterIndex))
-                {
-                    annotations[newAnnotationIndex++] = annotations[annotationIndex];
-                }
-
-                annotationIndex++;
+                annotations[newAnnotationIndex++] = annotations[annotationIndex];
             }
+
+            annotationIndex++;
 
             parameterIndex += ClassUtil.isInternalCategory2Type(type) ? 2 : 1;
         }
@@ -286,18 +321,23 @@ public class ParameterShrinker
             int parameterIndex =
                 (methodInfo.getAccessFlags() & ClassConstants.INTERNAL_ACC_STATIC) != 0 ?
                     0 : 1;
-    
+
             int referencedClassFileIndex    = 0;
             int newReferencedClassFileIndex = 0;
-    
+
             // Go over the parameters.
             String descriptor = methodInfo.getDescriptor(classFile);
             InternalTypeEnumeration internalTypeEnumeration =
                 new InternalTypeEnumeration(descriptor);
-    
+
             while (internalTypeEnumeration.hasMoreTypes())
             {
                 String type = internalTypeEnumeration.nextType();
+                if (ClassUtil.isInternalArrayType(type))
+                {
+                    type = ClassUtil.internalTypeFromArrayType(type);
+                }
+
                 if (ClassUtil.isInternalClassType(type))
                 {
                     if (VariableUsageMarker.isVariableUsed(methodInfo, parameterIndex))
@@ -305,13 +345,28 @@ public class ParameterShrinker
                         referencedClassFiles[newReferencedClassFileIndex++] =
                             referencedClassFiles[referencedClassFileIndex];
                     }
-    
+
                     referencedClassFileIndex++;
                 }
-    
+
                 parameterIndex += ClassUtil.isInternalCategory2Type(type) ? 2 : 1;
             }
-    
+
+            // Also look at the return value.
+            String type = internalTypeEnumeration.returnType();
+            if (ClassUtil.isInternalArrayType(type))
+            {
+                type = ClassUtil.internalTypeFromArrayType(type);
+            }
+
+            if (ClassUtil.isInternalClassType(type))
+            {
+                referencedClassFiles[newReferencedClassFileIndex++] =
+                    referencedClassFiles[referencedClassFileIndex];
+
+                referencedClassFileIndex++;
+            }
+
             // Clear the unused entries.
             while (newReferencedClassFileIndex < referencedClassFileIndex)
             {

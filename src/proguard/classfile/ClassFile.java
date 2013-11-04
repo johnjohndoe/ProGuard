@@ -228,13 +228,13 @@ public interface ClassFile extends VisitorAccepter
      * Lets the given member info visitor visit all concrete implementations of
      * the specified method in the class hierarchy.
      * @param name                   the method name.
-     * @param type                   the method descriptor.
+     * @param descriptor             the method descriptor.
      * @param visitThisMethod        specifies whether to visit the method in
      *                               this class.
+     * @param visitSpecialMethods    specifies whether to visit the special
+     *                               initializer methods.
      * @param visitSuperMethods      specifies whether to visit the method in
      *                               the super classes.
-     * @param visitInterfaceMethods  specifies whether to visit the method in
-     *                               the interfaces.
      * @param visitOverridingMethods specifies whether to visit the method in
      *                               the subclasses.
      * @param visitSpecialMethods    specifies whether to visit special methods.
@@ -252,14 +252,14 @@ public interface ClassFile extends VisitorAccepter
      * Lets the given member info visitor visit all concrete implementations of
      * the specified method in the class hierarchy.
      * @param name                   the method name.
-     * @param type                   the method descriptor.
+     * @param descriptor             the method descriptor.
      * @param methodInfo             the method itself, if present.
      * @param visitThisMethod        specifies whether to visit the method in
      *                               this class.
+     * @param visitSpecialMethods    specifies whether to visit the method in
+     *                               the interfaces.
      * @param visitSuperMethods      specifies whether to visit the method in
      *                               the super classes.
-     * @param visitInterfaceMethods  specifies whether to visit the method in
-     *                               the interfaces.
      * @param visitOverridingMethods specifies whether to visit the method in
      *                               the subclasses.
      * @param visitSpecialMethods    specifies whether to visit special methods.

@@ -1,4 +1,4 @@
-/* $Id: ClassMemberSpecificationsPanel.java,v 1.6 2005/06/11 13:13:15 eric Exp $
+/* $Id: ClassMemberSpecificationsPanel.java,v 1.7 2005/08/21 19:28:04 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -22,6 +22,7 @@ package proguard.gui;
 
 import proguard.*;
 import proguard.classfile.util.ClassUtil;
+import proguard.classfile.ClassConstants;
 
 import java.awt.Component;
 import java.awt.event.*;
@@ -226,10 +227,17 @@ class ClassMemberSpecificationsPanel extends ListPanel
             MyClassMemberSpecificationWrapper wrapper = (MyClassMemberSpecificationWrapper)value;
 
             ClassMemberSpecification option = wrapper.classMemberSpecification;
-            String name = option.name;
+            String name       = option.name;
+            String descriptor = option.descriptor;
+
+            if (name == null)
+            {
+                name = "*";
+            }
+
             label.setText(wrapper.isField ?
-                (name == null ? "<fields>"  : ClassUtil.externalFullFieldDescription(0, option.name, option.descriptor)) :
-                (name == null ? "<methods>" : ClassUtil.externalFullMethodDescription("<init>", 0, option.name, option.descriptor)));
+                (descriptor == null ? "<fields>"  : ClassUtil.externalFullFieldDescription(0, name, descriptor)) :
+                (descriptor == null ? "<methods>" : ClassUtil.externalFullMethodDescription(ClassConstants.INTERNAL_METHOD_NAME_INIT, 0, name, descriptor)));
 
             if (isSelected)
             {
@@ -259,7 +267,7 @@ class ClassMemberSpecificationsPanel extends ListPanel
         public boolean                  isField;
 
         public MyClassMemberSpecificationWrapper(ClassMemberSpecification classMemberSpecification,
-                                              boolean               isField)
+                                                 boolean                  isField)
         {
             this.classMemberSpecification = classMemberSpecification;
             this.isField                  = isField;

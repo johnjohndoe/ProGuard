@@ -1,4 +1,4 @@
-/* $Id: CodeAttrInfoEditor.java,v 1.13 2005/06/11 13:21:35 eric Exp $
+/* $Id: CodeAttrInfoEditor.java,v 1.14 2005/10/22 11:55:29 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -195,7 +195,6 @@ public class CodeAttrInfoEditor
                replacements[instructionOffset]   != null ||
                postInsertions[instructionOffset] != null ||
                deleted[instructionOffset];
-
     }
 
 

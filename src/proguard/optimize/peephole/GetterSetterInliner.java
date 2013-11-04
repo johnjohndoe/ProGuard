@@ -1,4 +1,4 @@
-/* $Id: GetterSetterInliner.java,v 1.17 2005/06/11 13:13:16 eric Exp $
+/* $Id: GetterSetterInliner.java,v 1.18 2005/07/31 18:50:05 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -44,8 +44,9 @@ implements   InstructionVisitor,
                                                      new MyGetterSetterChecker());
     private MemberFinder       memberFinder        = new MemberFinder();
 
-    private CodeAttrInfoEditor codeAttrInfoEditor;
     private boolean            allowAccessModification;
+    private CodeAttrInfoEditor codeAttrInfoEditor;
+    private InstructionVisitor extraInstructionVisitor;
 
 
     // Return values of the getter/setter checker.
@@ -57,17 +58,36 @@ implements   InstructionVisitor,
 
     /**
      * Creates a new GetterSetterInliner.
-     * @param codeAttrInfoEditor a code editor that can be used for
-     *                           accumulating changes to the code.
      * @param allowAccessModification indicates whether the access modifiers of
      *                                a field can be changed in order to inline
      *                                its getter or setter.
+     * @param codeAttrInfoEditor      a code editor that can be used for
+     *                                accumulating changes to the code.
      */
-    public GetterSetterInliner(CodeAttrInfoEditor codeAttrInfoEditor,
-                               boolean            allowAccessModification)
+    public GetterSetterInliner(boolean            allowAccessModification,
+                               CodeAttrInfoEditor codeAttrInfoEditor)
     {
-        this.codeAttrInfoEditor      = codeAttrInfoEditor;
+        this(allowAccessModification, codeAttrInfoEditor, null);
+    }
+
+
+    /**
+     * Creates a new GetterSetterInliner.
+     * @param allowAccessModification indicates whether the access modifiers of
+     *                                a field can be changed in order to inline
+     *                                its getter or setter.
+     * @param codeAttrInfoEditor      a code editor that can be used for
+     *                                accumulating changes to the code.
+     * @param extraInstructionVisitor an optional extra visitor for all replaced
+     *                                store instructions.
+     */
+    public GetterSetterInliner(boolean            allowAccessModification,
+                               CodeAttrInfoEditor codeAttrInfoEditor,
+                               InstructionVisitor extraInstructionVisitor)
+    {
         this.allowAccessModification = allowAccessModification;
+        this.codeAttrInfoEditor      = codeAttrInfoEditor;
+        this.extraInstructionVisitor = extraInstructionVisitor;
     }
 
 
@@ -110,6 +130,12 @@ implements   InstructionVisitor,
                                                                        fieldrefCpInfoIndex).shrink();
 
                 codeAttrInfoEditor.replaceInstruction(offset, replacementInstruction);
+        
+                // Visit the instruction, if required.
+                if (extraInstructionVisitor != null)
+                {
+                    extraInstructionVisitor.visitCpInstruction(classFile, methodInfo, codeAttrInfo, offset, cpInstruction);
+                }
             }
         }
     }

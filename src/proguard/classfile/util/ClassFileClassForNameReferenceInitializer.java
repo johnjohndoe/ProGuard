@@ -1,4 +1,4 @@
-/* $Id: ClassFileClassForNameReferenceInitializer.java,v 1.16 2005/06/25 22:07:51 eric Exp $
+/* $Id: ClassFileClassForNameReferenceInitializer.java,v 1.17 2005/07/17 14:47:15 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -104,14 +104,37 @@ public class ClassFileClassForNameReferenceInitializer
 
     // Implementations for InstructionVisitor.
 
-    public void visitSimpleInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, SimpleInstruction simpleInstruction) {}
-    public void visitBranchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, BranchInstruction branchInstruction) {}
-    public void visitTableSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, TableSwitchInstruction tableSwitchInstruction) {}
-    public void visitLookUpSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, LookUpSwitchInstruction lookUpSwitchInstruction) {}
-
-
+    public void visitSimpleInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, SimpleInstruction simpleInstruction)
+    {
+        // Nothing interesting; just forget any stored indices.
+        clearConstantPoolIndices();
+    }
+    
+    
+    public void visitBranchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, BranchInstruction branchInstruction)
+    {
+        // Nothing interesting; just forget any stored indices.
+        clearConstantPoolIndices();
+    }
+    
+    
+    public void visitTableSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, TableSwitchInstruction tableSwitchInstruction)
+    {
+        // Nothing interesting; just forget any stored indices.
+        clearConstantPoolIndices();
+    }
+    
+    
+    public void visitLookUpSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, LookUpSwitchInstruction lookUpSwitchInstruction)
+    {
+        // Nothing interesting; just forget any stored indices.
+        clearConstantPoolIndices();
+    }
+    
+    
     public void visitVariableInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, VariableInstruction variableInstruction)
     {
+
         // Just ignore generic instructions and reset the constant pool indices.
         switch (variableInstruction.opcode)
         {
@@ -148,6 +171,11 @@ public class ClassFileClassForNameReferenceInitializer
                     // class$(String, boolean).
                     ldcStringCpIndex = currentCpIndex;
                 }
+                else
+                {
+                    ldcStringCpIndex = -1;
+                }
+
                 invokestaticMethodRefCpIndex  = -1;
                 invokevirtualMethodRefCpIndex = -1;
                 break;
@@ -210,16 +238,13 @@ public class ClassFileClassForNameReferenceInitializer
                     }
                 }
 
-                ldcStringCpIndex              = -1;
-                invokestaticMethodRefCpIndex  = -1;
-                invokevirtualMethodRefCpIndex = -1;
+                // We've handled the special case; forget about the indices.
+                clearConstantPoolIndices();
                 break;
 
             default:
-                // Nothing interesting; just forget about previous indices.
-                ldcStringCpIndex              = -1;
-                invokestaticMethodRefCpIndex  = -1;
-                invokevirtualMethodRefCpIndex = -1;
+                // Nothing interesting; just forget any stored indices.
+                clearConstantPoolIndices();
                 break;
         }
     }
@@ -270,6 +295,19 @@ public class ClassFileClassForNameReferenceInitializer
     }
 
 
+    // Small utility methods.
+    
+    /**
+     * Clears all references to the constant pool.
+     */
+    private void clearConstantPoolIndices()
+    {
+        ldcStringCpIndex              = -1;
+        invokestaticMethodRefCpIndex  = -1;
+        invokevirtualMethodRefCpIndex = -1;
+    }
+    
+    
     /**
      * Returns the class with the given name, either for the program class pool
      * or from the library class pool, or <code>null</code> if it can't be found.

@@ -1,4 +1,4 @@
-/* $Id: GPL.java,v 1.3 2005/06/25 22:04:40 eric Exp $
+/* $Id: GPL.java,v 1.5 2005/09/11 22:14:13 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -162,8 +162,10 @@ public class GPL
                packageName.startsWith("proguard")             ||
                packageName.startsWith("org.apache.tools.ant") ||
                packageName.startsWith("org.eclipse")          ||
+               packageName.startsWith("org.netbeans")         ||
                packageName.startsWith("com.sun.kvem")         ||
-               packageName.startsWith("jg.j2me.builder");
+               packageName.startsWith("jg.j2me")              ||
+               packageName.startsWith("jg.common");
     }
 
 

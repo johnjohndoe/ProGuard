@@ -34,8 +34,9 @@ easily avoided or resolved:
     library classes</b> while reading library jars. If any of them are
     extended by public library classes, and then extended again by input
     classes, ProGuard will complain it can't find them. In that case, you'll
-    have to use the <code>-dontskipnonpubliclibraryclasses</code> option. The
-    graphical user interface has a checkbox for this setting.
+    have to use the <code>-dontskipnonpubliclibraryclasses</code> option, and
+    maybe even the <code>-dontskipnonpubliclibraryclassmembers</code> option.
+    The graphical user interface has checkboxes for these settings.
     <p>
 
 <li>For best results, ProGuard's optimization algorithms assume that the
@@ -73,6 +74,14 @@ easily avoided or resolved:
     "<code>-keep class MyKeepInterface</code>". In any case, creating a proper
     configuration file seems a cleaner solution than using such an obfuscation
     marker interface.
+    <p>
+
+<li>When obfuscating, ProGuard will write out class files named
+    "<code>a.class</code>", "<code>b.class</code>", etc. If there is a large
+    numbers of classes in the same package, it may also write out
+    <b>"<code>aux.class</code>"</b>. Windows doesn't allow creating files with
+    this reserved name (among a few other names), so it's generally better to
+    write the output to a jar, in order to avoid such problems.
     <p>
 
 <li>ProGuard's obfuscation process currently doesn't follow the <b>naming

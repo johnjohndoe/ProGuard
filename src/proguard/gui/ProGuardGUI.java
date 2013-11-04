@@ -1,4 +1,4 @@
-/* $Id: ProGuardGUI.java,v 1.34 2005/06/25 22:08:57 eric Exp $
+/* $Id: ProGuardGUI.java,v 1.35 2005/08/21 20:25:33 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -891,9 +891,8 @@ public class ProGuardGUI extends JFrame
         {
             if (boilerplateKeepCheckBoxes[index].isSelected())
             {
-                addClassSpecifications(keep,
-                                       boilerplateKeep[index],
-                                       boilerplateKeepTextFields[index].getText());
+                keep.add(classSpecification(boilerplateKeep[index],
+                                            boilerplateKeepTextFields[index].getText()));
             }
         }
 
@@ -918,9 +917,8 @@ public class ProGuardGUI extends JFrame
         {
             if (boilerplateKeepNamesCheckBoxes[index].isSelected())
             {
-                addClassSpecifications(keepNames,
-                                       boilerplateKeepNames[index],
-                                       boilerplateKeepNamesTextFields[index].getText());
+                keepNames.add(classSpecification(boilerplateKeepNames[index],
+                                                 boilerplateKeepNamesTextFields[index].getText()));
             }
         }
 
@@ -997,9 +995,9 @@ public class ProGuardGUI extends JFrame
 
 
     /**
-     * Looks in the given list for a ProGuard option that is identical to the
-     * given template. Returns true if it found, and removes the matching option
-     * as a side effect.
+     * Looks in the given list for a class specification that is identical to
+     * the given template. Returns true if it is found, and removes the matching
+     * class specification as a side effect.
      */
     private boolean findClassSpecification(ClassSpecification classSpecificationTemplate,
                                            List                classSpecifications)
@@ -1025,9 +1023,10 @@ public class ProGuardGUI extends JFrame
 
 
     /**
-     * Looks in the given list for ProGuard options that match the given template.
-     * Returns a comma-separated string of class file names from matching options,
-     * and removes the matching options as a side effect.
+     * Looks in the given list for class specifications that match the given
+     * template. Returns a comma-separated string of class file names from
+     * matching class specifications, and removes the matching class
+     * specifications as a side effect.
      */
     private String findMatchingClassSpecifications(ClassSpecification classSpecificationTemplate,
                                                    List                classSpecifications)
@@ -1067,8 +1066,10 @@ public class ProGuardGUI extends JFrame
 
 
     /**
-     * Adds ProGuard options to the given list, based on the given option
-     * template and the comma-separated list of class names to be filled in.
+     * Adds class specifications to the given list, based on the given template
+     * and the comma-separated list of class names to be filled in.
+     * @deprecated Add a single class specification using
+     *             #classSpecification(ClassSpecification,String).
      */
     private void addClassSpecifications(List               classSpecifications,
                                         ClassSpecification classSpecificationTemplate,
@@ -1080,20 +1081,32 @@ public class ProGuardGUI extends JFrame
         {
             String className = (String)classNames.get(index);
 
-            // Create a copy of the template.
-            ClassSpecification classSpecification =
-                (ClassSpecification)classSpecificationTemplate.clone();
-
-            // Set the class name in the copy.
-            classSpecification.className =
-                className.equals("") ||
-                className.equals("*") ?
-                    null :
-                    ClassUtil.internalClassName(className);
-
-            // Add the copy to the list.
-            classSpecifications.add(classSpecification);
+            // Add a modified copy of the template to the list.
+            classSpecifications.add(classSpecification(classSpecificationTemplate, className));
         }
+    }
+
+
+    /**
+     * Returns a class specification, based on the given template and the class
+     * name to be filled in.
+     */
+    private ClassSpecification classSpecification(ClassSpecification classSpecificationTemplate,
+                                                  String             className)
+    {
+        // Create a copy of the template.
+        ClassSpecification classSpecification =
+            (ClassSpecification)classSpecificationTemplate.clone();
+
+        // Set the class name in the copy.
+        classSpecification.className =
+            className.equals("") ||
+            className.equals("*") ?
+                null :
+                ClassUtil.internalClassName(className);
+
+        // Return the modified copy.
+        return classSpecification;
     }
 
 

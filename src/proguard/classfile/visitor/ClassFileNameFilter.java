@@ -1,4 +1,4 @@
-/* $Id: ClassFileNameFilter.java,v 1.9 2005/06/11 13:13:15 eric Exp $
+/* $Id: ClassFileNameFilter.java,v 1.10 2005/08/21 20:25:33 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -33,8 +33,8 @@ import proguard.util.*;
  */
 public class ClassFileNameFilter implements ClassFileVisitor
 {
-    private ClassFileVisitor         classFileVisitor;
-    private StringMatcher regularExpressionMatcher;
+    private ClassFileVisitor classFileVisitor;
+    private StringMatcher    regularExpressionMatcher;
 
 
     /**
@@ -48,7 +48,7 @@ public class ClassFileNameFilter implements ClassFileVisitor
                                String           regularExpression)
     {
         this.classFileVisitor         = classFileVisitor;
-        this.regularExpressionMatcher = new ClassNameMatcher(regularExpression);
+        this.regularExpressionMatcher = new ClassNameListMatcher(regularExpression);
     }
 
 

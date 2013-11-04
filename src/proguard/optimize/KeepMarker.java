@@ -1,4 +1,4 @@
-/* $Id: KeepMarker.java,v 1.6 2005/06/05 15:54:09 eric Exp $
+/* $Id: KeepMarker.java,v 1.7 2005/08/13 20:57:55 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -56,12 +56,18 @@ public class KeepMarker
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {
         markAsKept(programFieldInfo);
+
+        // Mark the classes referenced in the descriptor string.
+        programFieldInfo.referencedClassesAccept(this);
     }
 
 
     public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
     {
         markAsKept(MethodInfoLinker.lastMethodInfo(programMethodInfo));
+
+        // Mark the classes referenced in the descriptor string.
+        programMethodInfo.referencedClassesAccept(this);
     }
 
 

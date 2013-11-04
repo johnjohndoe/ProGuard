@@ -1,4 +1,4 @@
-/* $Id: TracedVariables.java,v 1.9 2005/06/11 13:13:16 eric Exp $
+/* $Id: TracedVariables.java,v 1.10 2005/10/22 11:55:29 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -23,12 +23,13 @@ package proguard.optimize.evaluation;
 import proguard.optimize.evaluation.value.*;
 
 /**
- * This Variables class saves a given store Value along with each Value it
- * stores, and at the same time generalizes a given trace Value with the store
- * Value of each Value it loads. The store Value and the trace Value can be set;
- * the generalized trace Value can be retrieved. The object is to store
- * additional information along with the actual variable values, for instance
- * to keep track of their origins.
+ * This Variables class saves additional information with variables, to keep track
+ * of their origins.
+ * <p>
+ * The Variables class stores a given producer Value along with each Value it
+ * stores. It then generalizes a given collected Value with the producer Value
+ * of each Value it loads. The producer Value and the initial collected Value
+ * can be set; the generalized collected Value can be retrieved.
  * <p>
  * In addition, an initialization index can be reset and retrieved, pointing
  * to the most recent variable that has been initialized by a store operation.
@@ -37,9 +38,10 @@ import proguard.optimize.evaluation.value.*;
  */
 class TracedVariables extends Variables
 {
-    private Variables traceVariables;
-    private Value     storeValue;
-    private Value     traceValue;
+    private Value     producerValue;
+    private Value     collectedProducerValue;
+    private Variables producerVariables;
+//  private Variables consumerVariables;
     private int       initializationIndex;
 
 
@@ -47,7 +49,7 @@ class TracedVariables extends Variables
     {
         super(size);
 
-        traceVariables = new Variables(size);
+        producerVariables = new Variables(size);
     }
 
 
@@ -55,16 +57,16 @@ class TracedVariables extends Variables
     {
         super(tracedVariables);
 
-        traceVariables = new Variables(tracedVariables.traceVariables);
+        producerVariables = new Variables(tracedVariables.producerVariables);
     }
 
 
     /**
      * Sets the Value that will be stored along with all store instructions.
      */
-    public void setStoreValue(Value storeValue)
+    public void setProducerValue(Value producerValue)
     {
-        this.storeValue = storeValue;
+        this.producerValue = producerValue;
     }
 
 
@@ -72,14 +74,14 @@ class TracedVariables extends Variables
      * Sets the initial Value with which all values stored along with load
      * instructions will be generalized.
      */
-    public void setTraceValue(Value traceValue)
+    public void setCollectedProducerValue(Value collectedProducerValue)
     {
-        this.traceValue = traceValue;
+        this.collectedProducerValue = collectedProducerValue;
     }
 
-    public Value getTraceValue()
+    public Value getCollectedProducerValue()
     {
-        return traceValue;
+        return collectedProducerValue;
     }
 
 
@@ -104,7 +106,7 @@ class TracedVariables extends Variables
      */
     public Value getStoredTraceValue(int index)
     {
-        return traceVariables.load(index);
+        return producerVariables.load(index);
     }
 
 
@@ -115,7 +117,7 @@ class TracedVariables extends Variables
      */
     public void setStoredTraceValue(int index, Value value)
     {
-        traceVariables.store(index, value);
+        producerVariables.store(index, value);
     }
 
 
@@ -125,21 +127,21 @@ class TracedVariables extends Variables
     {
         super.reset(size);
 
-        traceVariables.reset(size);
+        producerVariables.reset(size);
     }
 
     public void initialize(TracedVariables other)
     {
         super.initialize(other);
 
-        traceVariables.initialize(other.traceVariables);
+        producerVariables.initialize(other.producerVariables);
     }
 
     public boolean generalize(TracedVariables other)
     {
         return
             super.generalize(other) |
-            traceVariables.generalize(other.traceVariables);
+            producerVariables.generalize(other.producerVariables);
     }
 
     public void store(int index, Value value)
@@ -156,15 +158,15 @@ class TracedVariables extends Variables
         super.store(index, value);
 
         // Store the store value in its trace variable.
-        traceVariables.store(index, storeValue);
+        producerVariables.store(index, producerValue);
     }
 
     public Value load(int index)
     {
         // Load and accumulate the store value of the variable.
-        if (traceValue != null)
+        if (collectedProducerValue != null)
         {
-            traceValue = traceValue.generalize(traceVariables.load(index));
+            collectedProducerValue = collectedProducerValue.generalize(producerVariables.load(index));
         }
 
         // Return the value itself.
@@ -183,13 +185,13 @@ class TracedVariables extends Variables
 
         TracedVariables other = (TracedVariables)object;
 
-        return super.equals(object) && this.traceVariables.equals(other.traceVariables);
+        return super.equals(object) && this.producerVariables.equals(other.producerVariables);
     }
 
 
     public int hashCode()
     {
-        return super.hashCode() ^ traceVariables.hashCode();
+        return super.hashCode() ^ producerVariables.hashCode();
     }
 
 
@@ -200,7 +202,7 @@ class TracedVariables extends Variables
         for (int index = 0; index < this.size(); index++)
         {
             Value value       = this.values[index];
-            Value tracedValue = traceVariables.values[index];
+            Value tracedValue = producerVariables.values[index];
             buffer = buffer.append('[')
                            .append(tracedValue == null ? "empty" : tracedValue.toString())
                            .append('>')

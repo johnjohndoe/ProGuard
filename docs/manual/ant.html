@@ -29,7 +29,7 @@ Please make sure the class path is set correctly for your system.
 <p>
 
 There are three ways to configure the ProGuard task: using an external
-configuration file, using embedded ProGuard configuration options, and using
+configuration file, using embedded ProGuard configuration options, or using
 the equivalent XML configuration tags. These three ways can be combined,
 depending on practical circumstances and personal preference.
 <p>
@@ -98,10 +98,12 @@ have to be encoded as <code>&amp;lt;</code> and <code>&amp;gt;</code>.
 <h3>3. XML configuration tags</h3>
 
 If you really prefer a full-blown XML configuration, you can replace the
-ProGuard configuration options by the equivalent XML configuration tags. The
-remainder of this page presents the supported tags. For a more extensive
-discussion of their meaning, please refer to the traditional <a
-href="usage.html">Usage</a> section.
+ProGuard configuration options by XML configuration tags. The resulting
+configuration will be equivalent, but much more verbose and difficult to read,
+as XML goes. The remainder of this page presents the supported tags. For a
+more extensive discussion of their meaning, please refer to the traditional <a
+href="usage.html">Usage</a> section. You can find some sample configuration
+files in the <code>examples/ant</code> directory of the ProGuard distribution.
 <p>
 
 <a name="proguard">&nbsp;</a>

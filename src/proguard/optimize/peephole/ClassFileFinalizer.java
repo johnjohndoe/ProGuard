@@ -1,4 +1,4 @@
-/* $Id: ClassFileFinalizer.java,v 1.7 2004/12/30 16:49:08 eric Exp $
+/* $Id: ClassFileFinalizer.java,v 1.8 2005/07/31 18:50:05 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -27,7 +27,7 @@ import proguard.optimize.*;
 
 /**
  * This <code>ClassFileVisitor</code> and <code>MemberInfoVisitor</code>
- * makes the class files it visits, and their class members, final, if possible.
+ * makes the class files it visits, and their methods, final, if possible.
  *
  * @author Eric Lafortune
  */
@@ -35,9 +35,36 @@ public class ClassFileFinalizer
   implements ClassFileVisitor,
              MemberInfoVisitor
 {
+    private ClassFileVisitor  extraClassFileVisitor;
+    private MemberInfoVisitor extraMemberInfoVisitor;
+
     private MemberFinder memberFinder = new MemberFinder();
 
 
+    /**
+     * Creates a new ClassFileFinalizer.
+     */
+    public ClassFileFinalizer()
+    {
+        this(null, null);
+    }
+
+    
+    /**
+     * Creates a new ClassFileFinalizer.
+     * @param extraClassFileVisitor  an optional extra visitor for all finalized
+     *                               class files.
+     * @param extraMemberInfoVisitor an optional extra visitor for all finalized
+     *                               methods.
+     */
+    public ClassFileFinalizer(ClassFileVisitor  extraClassFileVisitor,
+                              MemberInfoVisitor extraMemberInfoVisitor)
+    {
+        this.extraClassFileVisitor  = extraClassFileVisitor;
+        this.extraMemberInfoVisitor = extraMemberInfoVisitor;
+    }
+
+        
     // Implementations for ClassFileVisitor.
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
@@ -52,6 +79,12 @@ public class ClassFileFinalizer
             programClassFile.subClasses == null)
         {
             programClassFile.u2accessFlags |= ClassConstants.INTERNAL_ACC_FINAL;
+
+            // Visit the class file, if required.
+            if (extraClassFileVisitor != null)
+            {
+                extraClassFileVisitor.visitProgramClassFile(programClassFile);
+            }
         }
 
         // Check all methods.
@@ -87,6 +120,12 @@ public class ClassFileFinalizer
                !memberFinder.isOverriden(programClassFile, programMethodInfo)))))
         {
             programMethodInfo.u2accessFlags |= ClassConstants.INTERNAL_ACC_FINAL;
+
+            // Visit the method, if required.
+            if (extraMemberInfoVisitor != null)
+            {
+                extraMemberInfoVisitor.visitProgramMethodInfo(programClassFile, programMethodInfo);
+            }
         }
     }
 

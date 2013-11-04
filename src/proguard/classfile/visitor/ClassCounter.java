@@ -1,4 +1,4 @@
-/* $Id: Category2Value.java,v 1.4 2005/10/22 11:55:29 eric Exp $
+/* $Id: ClassCounter.java,v 1.1 2005/07/31 18:50:05 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -18,24 +18,40 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
-package proguard.optimize.evaluation.value;
+package proguard.classfile.visitor;
+
+import proguard.classfile.*;
+import proguard.classfile.visitor.*;
 
 /**
- * This abstract class represents a partially evaluated Category 2 value.
- *
+ * This ClassFileVisitor counts the number of classes that has been visited.
+ * 
  * @author Eric Lafortune
  */
-public abstract class Category2Value extends Value
+public class ClassCounter implements ClassFileVisitor
 {
-    // Implementations for Value.
-
-    public final Category2Value category2Value()
+    private int count;
+    
+    
+    /**
+     * Returns the number of classes that has been visited so far.
+     */
+    public int getCount()
     {
-        return this;
+        return count++;
+    }
+    
+    
+    // Implementations for ClassFileVisitor.
+
+    public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
+    {
+        count++;
     }
 
-    public final boolean isCategory2()
+    
+    public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
-        return true;
+        count++;
     }
 }

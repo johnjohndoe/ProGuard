@@ -1,4 +1,4 @@
-/* $Id: TracedStack.java,v 1.9 2005/06/11 13:13:16 eric Exp $
+/* $Id: TracedStack.java,v 1.10 2005/10/22 11:55:29 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -23,27 +23,35 @@ package proguard.optimize.evaluation;
 import proguard.optimize.evaluation.value.*;
 
 /**
- * This Stack saves a given store Value along with each Value it stores, and
- * at the same time generalizes a given trace Value with the store Value of
- * each Value it loads. The store Value and the trace Value can be set; the
- * generalized trace Value can be retrieved. The object is to store additional
- * information along with the actual stack values, for instance to keep track
- * of their origins.
+ * This Stack saves additional information with stack elements, to keep track
+ * of their origins and destionations.
+ * <p>
+ * The stack stores a given producer Value along with each Value it stores.
+ * It then generalizes a given collected Value with the producer Value
+ * of each Value it loads. The producer Value and the initial collected Value
+ * can be set; the generalized collected Value can be retrieved.
+ * <p>
+ * The stack also stores an empty consumer Value along with each Value it
+ * stores. It then generalizes and updates this consumer Value with the
+ * given producer Value each time the Value is loaded from the stack. The
+ * generalized consumer Value of each stack element can be retrieved.
  *
  * @author Eric Lafortune
  */
 class TracedStack extends Stack
 {
-    private Stack traceStack;
-    private Value storeValue;
-    private Value traceValue;
+    private Value producerValue;
+    private Value collectedProducerValue;
+    private Stack producerStack;
+    private Stack consumerStack;
 
 
     public TracedStack(int maxSize)
     {
         super(maxSize);
 
-        traceStack = new Stack(maxSize);
+        producerStack = new Stack(maxSize);
+        consumerStack = new Stack(maxSize);
     }
 
 
@@ -51,16 +59,18 @@ class TracedStack extends Stack
     {
         super(tracedStack);
 
-        traceStack = new Stack(tracedStack.traceStack);
+        producerStack = new Stack(tracedStack.producerStack);
+        consumerStack = new Stack(tracedStack.consumerStack);
     }
 
 
     /**
-     * Sets the Value that will be stored along with all store instructions.
+     * Sets the Value that will be stored along with all push and pop
+     * instructions.
      */
-    public void setStoreValue(Value storeValue)
+    public void setProducerValue(Value producerValue)
     {
-        this.storeValue = storeValue;
+        this.producerValue = producerValue;
     }
 
 
@@ -68,62 +78,99 @@ class TracedStack extends Stack
      * Sets the initial Value with which all values stored along with load
      * instructions will be generalized.
      */
-    public void setTraceValue(Value traceValue)
+    public void setCollectedProducerValue(Value collectedProducerValue)
     {
-        this.traceValue = traceValue;
+        this.collectedProducerValue = collectedProducerValue;
     }
 
-    public Value getTraceValue()
+
+    public Value getCollectedProducerValue()
     {
-        return traceValue;
+        return collectedProducerValue;
     }
 
 
     /**
-     * Gets the specified trace Value from the stack, without disturbing it.
+     * Gets the specified producer Value from the stack, without disturbing it.
      * @param index the index of the stack element, counting from the bottom
      *              of the stack.
-     * @return the trace value at the specified position.
+     * @return the producer value at the specified position.
      */
-    public Value getBottomTraceValue(int index)
+    public Value getBottomProducerValue(int index)
     {
-        return traceStack.getBottom(index);
+        return producerStack.getBottom(index);
     }
 
 
     /**
-     * Sets the specified trace Value on the stack, without disturbing it.
+     * Sets the specified producer Value on the stack, without disturbing it.
      * @param index the index of the stack element, counting from the bottom
      *              of the stack.
-     * @param value the trace value to set.
+     * @param value the producer value to set.
      */
-    public void setBottomTraceValue(int index, Value value)
+    public void setBottomProducerValue(int index, Value value)
     {
-        traceStack.setBottom(index, value);
+        producerStack.setBottom(index, value);
     }
 
 
     /**
-     * Gets the specified trace Value from the stack, without disturbing it.
+     * Gets the specified producer Value from the stack, without disturbing it.
      * @param index the index of the stack element, counting from the top
      *              of the stack.
-     * @return the trace value at the specified position.
+     * @return the producer value at the specified position.
      */
-    public Value getTopTraceValue(int index)
+    public Value getTopProducerValue(int index)
     {
-        return traceStack.getTop(index);
+        return producerStack.getTop(index);
     }
 
 
     /**
-     * Sets the specified trace Value on the stack, without disturbing it.
+     * Sets the specified producer Value on the stack, without disturbing it.
      * @param index the index of the stack element, counting from the top
      *              of the stack.
-     * @param value the trace value to set.
+     * @param value the producer value to set.
      */
-    public void setTopTraceValue(int index, Value value)
+    public void setTopProducerValue(int index, Value value)
     {
-        traceStack.setTop(index, value);
+        producerStack.setTop(index, value);
+    }
+
+
+    /**
+     * Gets the specified consumer Value from the stack, without disturbing it.
+     * @param index the index of the stack element, counting from the bottom of
+     *              the stack.
+     * @return the consumer value at the specified position.
+     */
+    public Value getBottomConsumerValue(int index)
+    {
+        return ((MutableValue)consumerStack.getBottom(index)).getContainedValue();
+    }
+
+    /**
+     * Gets the specified consumer Value from the stack, without disturbing it.
+     * @param index the index of the stack element, counting from the top of the
+     *              stack.
+     * @return the consumer value at the specified position.
+     */
+    public Value getTopConsumerValue(int index)
+    {
+        return ((MutableValue)consumerStack.getTop(index)).getContainedValue();
+    }
+
+
+    /**
+     * Sets the specified consumer Value on the stack, without disturbing it.
+     * @param index the index of the stack element, counting from the top
+     *              of the stack.
+     * @param value the consumer value to set.
+     */
+    public void setTopConsumerValue(int index, Value value)
+    {
+        ((MutableValue)consumerStack.getTop(index)).setContainedValue(value);
+        consumerStack.setTop(index, new MutableValue());
     }
 
 
@@ -133,28 +180,32 @@ class TracedStack extends Stack
     {
         super.reset(size);
 
-        traceStack.reset(size);
+        producerStack.reset(size);
+        consumerStack.reset(size);
     }
 
     public void copy(TracedStack other)
     {
         super.copy(other);
 
-        traceStack.copy(other.traceStack);
+        producerStack.copy(other.producerStack);
+        consumerStack.copy(other.consumerStack);
     }
 
     public boolean generalize(TracedStack other)
     {
         return
             super.generalize(other) |
-            traceStack.generalize(other.traceStack);
+            producerStack.generalize(other.producerStack) |
+            consumerStack.generalize(other.consumerStack);
     }
 
     public void clear()
     {
         super.clear();
 
-        traceStack.clear();
+        producerStack.clear();
+        consumerStack.clear();
     }
 
     public void push(Value value)
@@ -204,100 +255,105 @@ class TracedStack extends Stack
     {
         super.dup();
 
-        // For now, we're letting all stack values that are somehow involved
-        // depend on this instruction.
-        Value tracePopValue = tracePop();
+        producerGeneralize(0);
+        producerStack.dup();
 
-        tracePush();
-        traceStack.push(tracePopValue);
+        consumerPop();
+        consumerPush();
+        consumerPush();
     }
 
     public void dup_x1()
     {
         super.dup_x1();
 
-        // Let the duplicated value depend on this instruction.
-        Value tracePopValue  = tracePop();
-        Value traceSkipValue = traceStack.pop();
+        producerGeneralize(0);
+        producerStack.dup_x1();
 
-        tracePush();
-        traceStack.push(traceSkipValue);
-        traceStack.push(tracePopValue);
+        consumerPop();
+        consumerPush();
+        consumerStack.swap();
+        consumerPush();
     }
 
     public void dup_x2()
     {
         super.dup_x2();
 
-        // Let the duplicated value depend on this instruction.
-        Value tracePopValue   = tracePop();
-        Value traceSkipValue1 = traceStack.pop();
-        Value traceSkipValue2 = traceStack.pop();
+        producerGeneralize(0);
+        producerStack.dup_x2();
 
-        tracePush();
-        traceStack.push(traceSkipValue2);
-        traceStack.push(traceSkipValue1);
-        traceStack.push(tracePopValue);
+        consumerPop();
+        consumerPush();
+        consumerStack.dup_x2();
+        consumerStack.pop();
+        consumerPush();
     }
 
     public void dup2()
     {
         super.dup2();
 
-        // Let the duplicated value depend on this instruction.
-        Value tracePopValue1  = tracePop();
-        Value tracePopValue2  = tracePop();
+        producerGeneralize(0);
+        producerGeneralize(1);
+        producerStack.dup2();
 
-        tracePush();
-        tracePush();
-        traceStack.push(tracePopValue2);
-        traceStack.push(tracePopValue1);
+        consumerPop();
+        consumerPop();
+        consumerPush();
+        consumerPush();
+        consumerPush();
+        consumerPush();
     }
 
     public void dup2_x1()
     {
         super.dup2_x1();
 
-        // Let the duplicated value depend on this instruction.
-        Value tracePopValue1 = tracePop();
-        Value tracePopValue2 = tracePop();
-        Value traceSkipValue = traceStack.pop();
+        producerGeneralize(0);
+        producerGeneralize(1);
+        producerStack.dup2_x1();
 
-        tracePush();
-        tracePush();
-        traceStack.push(traceSkipValue);
-        traceStack.push(tracePopValue2);
-        traceStack.push(tracePopValue1);
+        consumerPop();
+        consumerPop();
+        consumerPush();
+        consumerPush();
+        consumerStack.dup2_x1();
+        consumerStack.pop2();
+        consumerPush();
+        consumerPush();
     }
 
     public void dup2_x2()
     {
         super.dup2_x2();
 
-        // Let the duplicated value depend on this instruction.
-        Value tracePopValue1  = tracePop();
-        Value tracePopValue2  = tracePop();
-        Value traceSkipValue1 = traceStack.pop();
-        Value traceSkipValue2 = traceStack.pop();
+        producerGeneralize(0);
+        producerGeneralize(1);
+        producerStack.dup2_x2();
 
-        tracePush();
-        tracePush();
-        traceStack.push(traceSkipValue2);
-        traceStack.push(traceSkipValue1);
-        traceStack.push(tracePopValue2);
-        traceStack.push(tracePopValue1);
+        consumerPop();
+        consumerPop();
+        consumerPush();
+        consumerPush();
+        consumerStack.dup2_x2();
+        consumerStack.pop2();
+        consumerPush();
+        consumerPush();
     }
 
     public void swap()
     {
         super.swap();
 
-        // Let one of the swapped values depend on this instruction.
-        tracePop();
-        Value traceSwapValue = traceStack.pop();
+        producerGeneralize(0);
+        producerGeneralize(1);
+        producerStack.swap();
 
-        tracePush();
-        traceStack.push(traceSwapValue);
+        consumerPop();
+        consumerPop();
+        consumerPush();
+        consumerPush();
     }
 
 
@@ -312,13 +368,17 @@ class TracedStack extends Stack
 
         TracedStack other = (TracedStack)object;
 
-        return super.equals(object) && this.traceStack.equals(other.traceStack);
+        return super.equals(object) &&
+               this.producerStack.equals(other.producerStack) &&
+               this.consumerStack.equals(other.consumerStack);
     }
 
 
     public int hashCode()
     {
-        return super.hashCode() ^ traceStack.hashCode();
+        return super.hashCode() ^
+               producerStack.hashCode() ^
+               consumerStack.hashCode();
     }
 
 
@@ -328,12 +388,15 @@ class TracedStack extends Stack
 
         for (int index = 0; index < this.size(); index++)
         {
-            Value value       = this.values[index];
-            Value tracedValue = traceStack.values[index];
+            Value value         = this.values[index];
+            Value producerValue = producerStack.values[index];
+            Value consumerValue = consumerStack.values[index];
             buffer = buffer.append('[')
-                           .append(tracedValue == null ? "empty" : tracedValue.toString())
+                           .append(producerValue == null ? "empty" : producerValue.toString())
                            .append('>')
-                           .append(value       == null ? "empty" : value.toString())
+                           .append(value         == null ? "empty" : value.toString())
+                           .append('>')
+                           .append(consumerValue == null ? "empty" : consumerValue.toString())
                            .append(']');
         }
 
@@ -345,18 +408,156 @@ class TracedStack extends Stack
 
     private void tracePush()
     {
-        traceStack.push(storeValue);
+        producerPush();
+        consumerPush();
     }
 
 
-    private Value tracePop()
+    private void producerPush()
     {
-        Value popTraceValue = traceStack.pop();
-        if (traceValue != null)
+        producerStack.push(producerValue);
+    }
+
+
+    private void consumerPush()
+    {
+        consumerStack.push(new MutableValue());
+    }
+
+
+    private void tracePop()
+    {
+        producerPop();
+        consumerPop();
+    }
+
+
+    private void producerPop()
+    {
+        Value popProducerValue = producerStack.pop();
+        producerGeneralize(popProducerValue);
+    }
+
+
+    private void consumerPop()
+    {
+        MutableValue popConsumerValue = (MutableValue)consumerStack.pop();
+        popConsumerValue.generalizeContainedValue(producerValue);
+    }
+
+
+    private void producerGeneralize(int index)
+    {
+        // We're not remembering the producers for dup/swap calls.
+        producerGeneralize(producerStack.getTop(index));
+    }
+
+
+    private void producerGeneralize(Value producerValue)
+    {
+        if (collectedProducerValue != null)
         {
-            traceValue = traceValue.generalize(popTraceValue);
+            collectedProducerValue = collectedProducerValue.generalize(producerValue);
+        }
+    }
+
+
+    /**
+     * This Value is a mutable wrapper for other Value instances.
+     * Its generalization method affects the Value itself as a side-effect.
+     */
+    private static class MutableValue extends Category1Value
+    {
+        Value containedValue;
+
+
+        public void generalizeContainedValue(Value containedValue)
+        {
+            MutableValue lastMutableValue  = lastMutableValue();
+            Value        lastContainedValue= lastMutableValue.containedValue;
+
+            lastMutableValue.containedValue =
+                lastContainedValue == null ? containedValue :
+                                             containedValue.generalize(lastContainedValue);
         }
 
-        return popTraceValue;
+
+        public void setContainedValue(Value value)
+        {
+            lastMutableValue().containedValue = value;
+        }
+
+
+        public Value getContainedValue()
+        {
+            return lastMutableValue().containedValue;
+        }
+
+
+        // Implementations for Value.
+
+        public Value generalize(Value other)
+        {
+            MutableValue otherMutableValue = (MutableValue)other;
+
+            MutableValue thisLastMutableValue  = this.lastMutableValue();
+            MutableValue otherLastMutableValue = otherMutableValue.lastMutableValue();
+
+            Value thisLastContainedValue  = thisLastMutableValue.containedValue;
+            Value otherLastContainedValue = otherLastMutableValue.containedValue;
+
+            if (thisLastMutableValue != otherLastMutableValue)
+            {
+                otherLastMutableValue.containedValue = thisLastMutableValue;
+            }
+
+            thisLastMutableValue.containedValue =
+                thisLastContainedValue  == null ? otherLastContainedValue :
+                otherLastContainedValue == null ? thisLastContainedValue  :
+                                                  thisLastContainedValue.generalize(otherLastContainedValue);
+            return thisLastMutableValue;
+        }
+
+
+        public int computationalType()
+        {
+            return 0;
+        }
+
+
+        // Implementations for Object.
+
+//        public boolean equals(Object other)
+//        {
+//            return this.getClass() == other.getClass() &&
+//                   this.lastMutableValue() == ((MutableValue)other).lastMutableValue();
+//        }
+//
+//
+//        public int hashCode()
+//        {
+//            return lastMutableValue().containedValue.hashCode();
+//        }
+
+
+        public String toString()
+        {
+            return containedValue == null ? "none" : containedValue.toString();
+        }
+
+
+        // Small utility methods.
+
+        public MutableValue lastMutableValue()
+        {
+            MutableValue mutableValue = this;
+
+            while (mutableValue.containedValue instanceof MutableValue)
+            {
+                mutableValue = (MutableValue)mutableValue.containedValue;
+            }
+
+            return mutableValue;
+        }
     }
 }

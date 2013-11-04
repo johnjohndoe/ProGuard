@@ -1,4 +1,4 @@
-/* $Id: ConfigurationWriter.java,v 1.17 2005/06/25 22:09:48 eric Exp $
+/* $Id: ConfigurationWriter.java,v 1.18 2005/08/21 19:28:48 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -307,7 +307,7 @@ public class ConfigurationWriter
         // Write out the class name.
         writer.print(classSpecification.className != null ?
             ClassUtil.externalClassName(classSpecification.className) :
-            "*");
+            ConfigurationConstants.ANY_CLASS_KEYWORD);
 
         // Write out the extends template, if any.
         if (classSpecification.extendsClassName != null)
@@ -322,8 +322,7 @@ public class ConfigurationWriter
             writer.println(" {");
 
             writeFieldSpecification( classSpecification.fieldSpecifications);
-            writeMethodSpecification(classSpecification.methodSpecifications,
-                                   classSpecification.className);
+            writeMethodSpecification(classSpecification.methodSpecifications);
             writer.println("}");
         }
         else
@@ -374,11 +373,18 @@ public class ConfigurationWriter
                 writer.print(ClassUtil.externalFieldAccessFlags(classMemberSpecification.requiredSetAccessFlags));
 
                 // Write out the field name and descriptor.
-                writer.print(classMemberSpecification.name       != null ||
-                             classMemberSpecification.descriptor != null ?
+                String name       = classMemberSpecification.name;
+                String descriptor = classMemberSpecification.descriptor;
+                
+                if (name == null)
+                {
+                    name = ConfigurationConstants.ANY_CLASS_MEMBER_KEYWORD;
+                }
+    
+                writer.print(descriptor != null ?
                     ClassUtil.externalFullFieldDescription(0,
-                                                           classMemberSpecification.name,
-                                                           classMemberSpecification.descriptor) :
+                                                           name,
+                                                           descriptor) :
                     ConfigurationConstants.ANY_FIELD_KEYWORD);
 
                 writer.println(";");
@@ -387,7 +393,7 @@ public class ConfigurationWriter
     }
 
 
-    private void writeMethodSpecification(List classMemberSpecifications, String className)
+    private void writeMethodSpecification(List classMemberSpecifications)
     {
         if (classMemberSpecifications != null)
         {
@@ -405,12 +411,19 @@ public class ConfigurationWriter
                 writer.print(ClassUtil.externalMethodAccessFlags(classMemberSpecification.requiredSetAccessFlags));
 
                 // Write out the method name and descriptor.
-                writer.print(classMemberSpecification.name       != null ||
-                             classMemberSpecification.descriptor != null ?
-                    ClassUtil.externalFullMethodDescription(className,
+                String name       = classMemberSpecification.name;
+                String descriptor = classMemberSpecification.descriptor;
+                
+                if (name == null)
+                {
+                    name = ConfigurationConstants.ANY_CLASS_MEMBER_KEYWORD;
+                }
+    
+                writer.print(descriptor != null ?
+                    ClassUtil.externalFullMethodDescription(ClassConstants.INTERNAL_METHOD_NAME_INIT,
                                                             0,
-                                                            classMemberSpecification.name,
-                                                            classMemberSpecification.descriptor) :
+                                                            name,
+                                                            descriptor) :
                     ConfigurationConstants.ANY_METHOD_KEYWORD);
 
                 writer.println(";");

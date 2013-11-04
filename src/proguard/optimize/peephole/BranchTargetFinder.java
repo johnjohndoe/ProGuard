@@ -1,4 +1,4 @@
-/* $Id: BranchTargetFinder.java,v 1.6 2005/06/11 13:13:16 eric Exp $
+/* $Id: BranchTargetFinder.java,v 1.8 2005/08/13 20:59:45 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -27,17 +27,29 @@ import proguard.classfile.instruction.*;
 import proguard.classfile.visitor.*;
 
 /**
- * This AttrInfoVisitor finds all branch targets in the CodeAttrInfo objects
- * that it visits.
+ * This AttrInfoVisitor finds all instruction offsets, branch targets, and
+ * exception targets in the CodeAttrInfo objects that it visits.
  *
  * @author Eric Lafortune
  */
 public class BranchTargetFinder
 implements   AttrInfoVisitor,
              InstructionVisitor,
-             ExceptionInfoVisitor
+             ExceptionInfoVisitor,
+             CpInfoVisitor
 {
-    private boolean[] isBranchTarget;
+    private static final byte INSTRUCTION       =  1;
+    private static final byte BRANCH_ORIGIN     =  2;
+    private static final byte BRANCH_TARGET     =  4;
+    private static final byte INITIALIZER       =  8;
+    private static final byte EXCEPTION_START   = 16;
+    private static final byte EXCEPTION_END     = 32;
+    private static final byte EXCEPTION_HANDLER = 64;
+
+
+    private byte[] instructionMarks;
+
+    private boolean isInitializer;
 
 
     /**
@@ -47,7 +59,41 @@ implements   AttrInfoVisitor,
      */
     public BranchTargetFinder(int codeLength)
     {
-        isBranchTarget = new boolean[codeLength + 1];
+        instructionMarks = new byte[codeLength + 1];
+    }
+
+
+    /**
+     * Returns whether there is an instruction at the given offset in the
+     * CodeAttrInfo that was visited most recently.
+     */
+    public boolean isInstruction(int offset)
+    {
+        return (instructionMarks[offset] & INSTRUCTION) != 0;
+    }
+
+
+    /**
+     * Returns whether the instruction at the given offset is the target of a
+     * branch instruction or an exception in the CodeAttrInfo that was visited
+     * most recently.
+     */
+    public boolean isTarget(int offset)
+    {
+        return (instructionMarks[offset] & (BRANCH_TARGET   |
+                                            EXCEPTION_START |
+                                            EXCEPTION_END   |
+                                            EXCEPTION_HANDLER)) != 0;
+    }
+
+
+    /**
+     * Returns whether the instruction at the given offset is the origin of a
+     * branch instruction in the CodeAttrInfo that was visited most recently.
+     */
+    public boolean isBranchOrigin(int offset)
+    {
+        return (instructionMarks[offset] & BRANCH_ORIGIN) != 0;
     }
 
 
@@ -57,7 +103,48 @@ implements   AttrInfoVisitor,
      */
     public boolean isBranchTarget(int offset)
     {
-        return isBranchTarget[offset];
+        return (instructionMarks[offset] & BRANCH_TARGET) != 0;
+    }
+
+
+    /**
+     * Returns whether the instruction at the given offset is the start of an
+     * exception try block in the CodeAttrInfo that was visited most recently.
+     */
+    public boolean isExceptionStart(int offset)
+    {
+        return (instructionMarks[offset] & EXCEPTION_START) != 0;
+    }
+
+
+    /**
+     * Returns whether the instruction at the given offset is the end of an
+     * exception try block in the CodeAttrInfo that was visited most recently.
+     */
+    public boolean isExceptionEnd(int offset)
+    {
+        return (instructionMarks[offset] & EXCEPTION_END) != 0;
+    }
+
+
+    /**
+     * Returns whether the instruction at the given offset is the start of an
+     * exception catch block in the CodeAttrInfo that was visited most recently.
+     */
+    public boolean isExceptionHandler(int offset)
+    {
+        return (instructionMarks[offset] & EXCEPTION_HANDLER) != 0;
+    }
+
+
+    /**
+     * Returns whether the instruction at the given offset is the special
+     * invocation of an instance initializer in the CodeAttrInfo that was
+     * visited most recently.
+     */
+    public boolean isInitializer(int offset)
+    {
+        return (instructionMarks[offset] & INITIALIZER) != 0;
     }
 
 
@@ -87,23 +174,23 @@ implements   AttrInfoVisitor,
     {
         // Make sure there is a sufficiently large boolean array.
         int length = codeAttrInfo.u4codeLength + 1;
-        if (isBranchTarget.length < length)
+        if (instructionMarks.length < length)
         {
             // Create a new boolean array.
-            isBranchTarget = new boolean[length];
+            instructionMarks = new byte[length];
         }
         else
         {
             // Reset the boolean array.
             for (int index = 0; index < length; index++)
             {
-                isBranchTarget[index] = false;
+                instructionMarks[index] = 0;
             }
         }
 
         // The first instruction and the end of the code are always branch targets.
-        isBranchTarget[0]                         = true;
-        isBranchTarget[codeAttrInfo.u4codeLength] = true;
+        instructionMarks[0]                         = BRANCH_TARGET;
+        instructionMarks[codeAttrInfo.u4codeLength] = BRANCH_TARGET;
 
         // Mark branch targets by going over all instructions.
         codeAttrInfo.instructionsAccept(classFile, methodInfo, this);
@@ -115,21 +202,63 @@ implements   AttrInfoVisitor,
 
     // Implementations for InstructionVisitor.
 
-    public void visitSimpleInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, SimpleInstruction simpleInstruction) {}
-    public void visitCpInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, CpInstruction cpInstruction) {}
-    public void visitVariableInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, VariableInstruction variableInstruction) {}
+    public void visitSimpleInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, SimpleInstruction simpleInstruction)
+    {
+        // Mark the instruction.
+        instructionMarks[offset] |= INSTRUCTION;
+
+        byte opcode = simpleInstruction.opcode;
+        if (opcode == InstructionConstants.OP_RET     ||
+            opcode == InstructionConstants.OP_IRETURN ||
+            opcode == InstructionConstants.OP_LRETURN ||
+            opcode == InstructionConstants.OP_FRETURN ||
+            opcode == InstructionConstants.OP_DRETURN ||
+            opcode == InstructionConstants.OP_ARETURN ||
+            opcode == InstructionConstants.OP_ATHROW)
+        {
+            instructionMarks[offset] |= BRANCH_ORIGIN;
+        }
+    }
+
+
+    public void visitCpInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, CpInstruction cpInstruction)
+    {
+        // Mark the instruction.
+        instructionMarks[offset] |= INSTRUCTION;
+
+        // Check if the instruction is an initializer invocation.
+        isInitializer = false;
+        classFile.constantPoolEntryAccept(cpInstruction.cpIndex, this);
+        if (isInitializer)
+        {
+            instructionMarks[offset] |= INITIALIZER;
+        }
+    }
+
+
+    public void visitVariableInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, VariableInstruction variableInstruction)
+    {
+        // Mark the instruction.
+        instructionMarks[offset] |= INSTRUCTION;
+    }
 
 
     public void visitBranchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, BranchInstruction branchInstruction)
     {
+        // Mark the instruction.
+        instructionMarks[offset] |= INSTRUCTION | BRANCH_ORIGIN;
+
         // Mark the branch target.
-        isBranchTarget[offset + branchInstruction.branchOffset] = true;
+        instructionMarks[offset + branchInstruction.branchOffset] |= BRANCH_TARGET;
     }
 
     public void visitTableSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, TableSwitchInstruction tableSwitchInstruction)
     {
+        // Mark the instruction.
+        instructionMarks[offset] |= INSTRUCTION | BRANCH_ORIGIN;
+
         // Mark the branch targets of the default jump offset.
-        isBranchTarget[offset + tableSwitchInstruction.defaultOffset] = true;
+        instructionMarks[offset + tableSwitchInstruction.defaultOffset] |= BRANCH_TARGET;
 
         // Mark the branch targets of the jump offsets.
         markBranchTargets(offset,
@@ -140,13 +269,36 @@ implements   AttrInfoVisitor,
 
     public void visitLookUpSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, LookUpSwitchInstruction lookUpSwitchInstruction)
     {
+        // Mark the instruction.
+        instructionMarks[offset] |= INSTRUCTION | BRANCH_ORIGIN;
+
         // Mark the branch targets of the default jump offset.
-        isBranchTarget[offset + lookUpSwitchInstruction.defaultOffset] = true;
+        instructionMarks[offset + lookUpSwitchInstruction.defaultOffset] |= BRANCH_TARGET;
 
         // Mark the branch targets of the jump offsets.
         markBranchTargets(offset,
                           lookUpSwitchInstruction.jumpOffsets,
                           lookUpSwitchInstruction.jumpOffsetCount);
+    }
+
+
+    // Implementations for CpInfoVisitor.
+
+    public void visitIntegerCpInfo(ClassFile classFile, IntegerCpInfo integerCpInfo) {}
+    public void visitLongCpInfo(ClassFile classFile, LongCpInfo longCpInfo) {}
+    public void visitFloatCpInfo(ClassFile classFile, FloatCpInfo floatCpInfo) {}
+    public void visitDoubleCpInfo(ClassFile classFile, DoubleCpInfo doubleCpInfo) {}
+    public void visitStringCpInfo(ClassFile classFile, StringCpInfo stringCpInfo) {}
+    public void visitUtf8CpInfo(ClassFile classFile, Utf8CpInfo utf8CpInfo) {}
+    public void visitFieldrefCpInfo(ClassFile classFile, FieldrefCpInfo fieldrefCpInfo) {}
+    public void visitInterfaceMethodrefCpInfo(ClassFile classFile, InterfaceMethodrefCpInfo interfaceMethodrefCpInfo) {}
+    public void visitClassCpInfo(ClassFile classFile, ClassCpInfo classCpInfo) {}
+    public void visitNameAndTypeCpInfo(ClassFile classFile, NameAndTypeCpInfo nameAndTypeCpInfo) {}
+
+
+    public void visitMethodrefCpInfo(ClassFile classFile, MethodrefCpInfo methodrefCpInfo)
+    {
+        isInitializer = methodrefCpInfo.getName(classFile).equals(ClassConstants.INTERNAL_METHOD_NAME_INIT);
     }
 
 
@@ -156,9 +308,9 @@ implements   AttrInfoVisitor,
     {
         // Remap the code offsets. Note that the branch target array also has
         // an entry for the first offset after the code, for u2endpc.
-        isBranchTarget[exceptionInfo.u2startpc]   = true;
-        isBranchTarget[exceptionInfo.u2endpc]     = true;
-        isBranchTarget[exceptionInfo.u2handlerpc] = true;
+        instructionMarks[exceptionInfo.u2startpc]   |= EXCEPTION_START;
+        instructionMarks[exceptionInfo.u2endpc]     |= EXCEPTION_END;
+        instructionMarks[exceptionInfo.u2handlerpc] |= EXCEPTION_HANDLER;
     }
 
 
@@ -172,7 +324,7 @@ implements   AttrInfoVisitor,
     {
         for (int index = 0; index < length; index++)
         {
-            isBranchTarget[offset + jumpOffsets[index]] = true;
+            instructionMarks[offset + jumpOffsets[index]] |= BRANCH_TARGET;
         }
     }
 }

@@ -1,4 +1,4 @@
-/* $Id: VariableEditor.java,v 1.4 2005/06/11 13:21:35 eric Exp $
+/* $Id: VariableEditor.java,v 1.5 2005/09/11 22:15:22 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -56,11 +56,6 @@ public class VariableEditor
         variableRemapper = new VariableRemapper(codeLength);
         deleted          = new boolean[maxLocals];
         variableMap      = new int[maxLocals];
-
-        for (int index = 0; index < maxLocals; index++)
-        {
-            variableMap[index] = -1;
-        }
     }
 
 
@@ -80,8 +75,7 @@ public class VariableEditor
         {
             for (int index = 0; index < maxLocals; index++)
             {
-                deleted[index]     = false;
-                variableMap[index] = -1;
+                deleted[index] = false;
             }
         }
 
@@ -154,8 +148,7 @@ public class VariableEditor
         int oldMaxLocals = codeAttrInfo.u2maxLocals;
 
         // Make sure there is a sufficiently large variable map.
-        if (variableMap == null ||
-            variableMap.length < oldMaxLocals)
+        if (variableMap.length < oldMaxLocals)
         {
             variableMap = new int[oldMaxLocals];
         }
@@ -164,7 +157,8 @@ public class VariableEditor
         int newVariableIndex = 0;
         for (int oldVariableIndex = 0; oldVariableIndex < oldMaxLocals; oldVariableIndex++)
         {
-            if (!deleted[oldVariableIndex])
+            if (oldVariableIndex >= deleted.length ||
+                !deleted[oldVariableIndex])
             {
                 variableMap[oldVariableIndex] = newVariableIndex++;
             }

@@ -1,4 +1,4 @@
-/* $Id: Category1Value.java,v 1.3 2005/06/11 13:13:16 eric Exp $
+/* $Id: Category1Value.java,v 1.4 2005/10/22 11:55:29 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -25,7 +25,7 @@ package proguard.optimize.evaluation.value;
  *
  * @author Eric Lafortune
  */
-abstract class Category1Value extends Value
+public abstract class Category1Value extends Value
 {
     // Implementations for Value.
 

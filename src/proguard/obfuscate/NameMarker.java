@@ -1,4 +1,4 @@
-/* $Id: NameMarker.java,v 1.16 2005/06/11 13:13:16 eric Exp $
+/* $Id: NameMarker.java,v 1.17 2005/08/13 20:57:55 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -57,12 +57,18 @@ public class NameMarker
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {
         keepFieldName(programClassFile, programFieldInfo);
+
+        // Mark the class names referenced in the descriptor string.
+        programFieldInfo.referencedClassesAccept(this);
     }
 
 
     public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
     {
         keepMethodName(programClassFile, programMethodInfo);
+
+        // Mark the class names referenced in the descriptor string.
+        programMethodInfo.referencedClassesAccept(this);
     }
 
 

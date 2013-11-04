@@ -1,4 +1,4 @@
-/* $Id: MethodInvocationFixer.java,v 1.3 2005/06/11 13:21:35 eric Exp $
+/* $Id: MethodInvocationFixer.java,v 1.4 2005/08/13 21:01:04 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -85,10 +85,6 @@ implements   InstructionVisitor,
         // Is it a method invocation?
         if (isMethodInvocation)
         {
-            if (DEBUG)
-            {
-            }
-
             // Do we need to update the opcode?
             byte opcode = cpInstruction.opcode;
 

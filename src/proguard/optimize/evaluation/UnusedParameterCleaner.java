@@ -1,4 +1,4 @@
-/* $Id: UnusedParameterCleaner.java,v 1.4 2005/06/11 13:13:16 eric Exp $
+/* $Id: UnusedParameterCleaner.java,v 1.5 2005/10/22 11:55:29 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -147,11 +147,13 @@ implements   InstructionVisitor,
 
                 if (traceValue != null)
                 {
-                    traceValue = traceValue.generalize(tracedStack.getTopTraceValue(stackIndex));
+                    traceValue = traceValue.generalize(tracedStack.getTopProducerValue(stackIndex));
                 }
 
-                tracedStack.setTopTraceValue(stackIndex,
-                                             InstructionOffsetValueFactory.create());
+                tracedStack.setTopProducerValue(stackIndex,
+                                                InstructionOffsetValueFactory.create());
+                tracedStack.setTopConsumerValue(stackIndex,
+                                                InstructionOffsetValueFactory.create());
 
                 if (DEBUG)
                 {

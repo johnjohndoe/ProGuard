@@ -1,4 +1,4 @@
-/* $Id: WriteOnlyFieldMarker.java,v 1.6 2005/06/11 13:13:16 eric Exp $
+/* $Id: WriteOnlyFieldMarker.java,v 1.7 2005/07/31 18:50:05 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -108,7 +108,7 @@ public class WriteOnlyFieldMarker
         // Hasn't the field been marked as being read yet?
         if (!isRead(programFieldInfo))
         {
-            // Mark it now, depending on whther this is a reading operation
+            // Mark it now, depending on whether this is a reading operation
             // or a writing operation.
             if (reading)
             {

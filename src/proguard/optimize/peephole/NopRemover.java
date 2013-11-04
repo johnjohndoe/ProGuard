@@ -1,4 +1,4 @@
-/* $Id: NopRemover.java,v 1.6 2005/06/11 13:13:16 eric Exp $
+/* $Id: NopRemover.java,v 1.7 2005/07/31 18:50:05 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -34,16 +34,32 @@ import proguard.classfile.visitor.*;
 public class NopRemover implements InstructionVisitor
 {
     private CodeAttrInfoEditor codeAttrInfoEditor;
+    private InstructionVisitor extraInstructionVisitor;
 
 
     /**
      * Creates a new NopRemover.
-     * @param codeAttrInfoEditor a code editor that can be used for
-     *                           accumulating changes to the code.
+     * @param codeAttrInfoEditor      a code editor that can be used for
+     *                                accumulating changes to the code.
      */
     public NopRemover(CodeAttrInfoEditor codeAttrInfoEditor)
     {
-        this.codeAttrInfoEditor = codeAttrInfoEditor;
+        this(codeAttrInfoEditor, null);
+    }
+
+
+    /**
+     * Creates a new NopRemover.
+     * @param codeAttrInfoEditor      a code editor that can be used for
+     *                                accumulating changes to the code.
+     * @param extraInstructionVisitor an optional extra visitor for all removed
+     *                                nop instructions.
+     */
+    public NopRemover(CodeAttrInfoEditor codeAttrInfoEditor,
+                      InstructionVisitor extraInstructionVisitor)
+    {
+        this.codeAttrInfoEditor      = codeAttrInfoEditor;
+        this.extraInstructionVisitor = extraInstructionVisitor;
     }
 
 
@@ -63,6 +79,12 @@ public class NopRemover implements InstructionVisitor
             !codeAttrInfoEditor.isModified(offset))
         {
             codeAttrInfoEditor.deleteInstruction(offset);
+        
+            // Visit the instruction, if required.
+            if (extraInstructionVisitor != null)
+            {
+                extraInstructionVisitor.visitSimpleInstruction(classFile, methodInfo, codeAttrInfo, offset, simpleInstruction);
+            }
         }
     }
 }

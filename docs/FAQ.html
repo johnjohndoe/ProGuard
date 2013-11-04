@@ -166,7 +166,9 @@ is ever incorporated, I'll provide a tool to decrypt the strings as well.
 No. Control obfuscation injects additional branches into the bytecode, in an
 attempt to fool decompilers. This operation may confuse JIT compilers as well,
 adversely affecting performance. It may be added as an option in the future,
-but it doesn't have the highest priority.
+but it doesn't have the highest priority. I will focus mostly on the
+optimization step, which may already restructure the code to the point where
+decompilers get confused.
 
 <a name="incremental">&nbsp;</a>
 <h3>Does <b>ProGuard</b> support incremental obfuscation?</h3>

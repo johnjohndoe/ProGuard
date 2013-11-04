@@ -1,4 +1,4 @@
-/* $Id: MethodPrivatizer.java,v 1.5 2005/06/11 13:21:35 eric Exp $
+/* $Id: MethodPrivatizer.java,v 1.7 2005/07/31 18:50:05 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -35,21 +35,48 @@ import proguard.optimize.NonPrivateMethodMarker;
 public class MethodPrivatizer
   implements MemberInfoVisitor
 {
+    private MemberInfoVisitor extraMemberInfoVisitor;
+
+    
+    /**
+     * Creates a new MethodPrivatizer.
+     */
+    public MethodPrivatizer()
+    {
+        this(null);
+    }
+
+    
+    /**
+     * Creates a new MethodPrivatizer.
+     * @param extraMemberInfoVisitor an optional extra visitor for all privatized
+     *                               methods.
+     */
+    public MethodPrivatizer(MemberInfoVisitor extraMemberInfoVisitor)
+    {
+        this.extraMemberInfoVisitor = extraMemberInfoVisitor;
+    }
+
+        
     // Implementations for MemberInfoVisitor.
 
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo) {}
 
     public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
     {
-        int accessFlags = programMethodInfo.getAccessFlags();
-
         // Is the method unmarked?
         if (NonPrivateMethodMarker.canBeMadePrivate(programMethodInfo))
         {
             // Make the method private.
             programMethodInfo.u2accessFlags =
-                AccessUtil.replaceAccessFlags(accessFlags,
+                AccessUtil.replaceAccessFlags(programMethodInfo.u2accessFlags,
                                               ClassConstants.INTERNAL_ACC_PRIVATE);
+
+            // Visit the method, if required.
+            if (extraMemberInfoVisitor != null)
+            {
+                extraMemberInfoVisitor.visitProgramMethodInfo(programClassFile, programMethodInfo);
+            }
         }
     }
 

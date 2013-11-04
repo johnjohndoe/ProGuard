@@ -1,4 +1,4 @@
-/* $Id: SingleImplementationMarker.java,v 1.7 2005/06/26 16:20:23 eric Exp $
+/* $Id: SingleImplementationMarker.java,v 1.8 2005/07/31 18:50:05 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -39,7 +39,8 @@ implements   ClassFileVisitor
     private static final boolean DEBUG = false;
 
 
-    private boolean allowAccessModification;
+    private boolean          allowAccessModification;
+    private ClassFileVisitor extraClassFileVisitor;
 
 
     /**
@@ -50,7 +51,23 @@ implements   ClassFileVisitor
      */
     public SingleImplementationMarker(boolean allowAccessModification)
     {
+        this(allowAccessModification, null);
+    }
+
+
+    /**
+     * Creates a new SingleImplementationMarker.
+     * @param allowAccessModification indicates whether the access modifiers of
+     *                                a class can be changed in order to inline
+     *                                it.
+     * @param extraClassFileVisitor   an optional extra visitor for all inlinable
+     *                                interfaces.
+     */
+    public SingleImplementationMarker(boolean          allowAccessModification,
+                                      ClassFileVisitor extraClassFileVisitor)
+    {
         this.allowAccessModification = allowAccessModification;
+        this.extraClassFileVisitor   = extraClassFileVisitor;
     }
 
 
@@ -129,9 +146,15 @@ implements   ClassFileVisitor
         {
             System.out.println("Single implementation of ["+programClassFile.getName()+"]: ["+singleImplementationClassFile.getName()+"]");
         }
-
+        
         // Mark the interface and its single implementation.
         markSingleImplementation(programClassFile, singleImplementationClassFile);
+
+        // Visit the interface, if required.
+        if (extraClassFileVisitor != null)
+        {
+            singleImplementationClassFile.accept(extraClassFileVisitor);
+        }
     }
 
 

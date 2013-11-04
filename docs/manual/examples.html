@@ -23,7 +23,6 @@ Some typical useful configurations:
 <li><a href="#native">Processing native methods</a>
 <li><a href="#serializable">Processing serializable classes</a>
 <li><a href="#beans">Processing bean classes</a>
-<li><a href="#enumerations">Processing enumeration classes</a>
 <li><a href="#annotations">Processing annotations</a>
 <li><a href="#rmi">Processing RMI code</a>
 <li><a href="#stacktrace">Producing useful obfuscated stack traces</a>
@@ -32,6 +31,9 @@ Some typical useful configurations:
 <li><a href="#deadcode">Finding dead code</a>
 <li><a href="#structure">Printing out the internal structure of class files</a>
 </ol>
+
+You can find some sample configuration files in the <code>examples</code>
+directory of the ProGuard distribution.
 
 <a name="application">&nbsp;</a>
 <h3>A typical application</h3>
@@ -79,10 +81,10 @@ for de-obfuscating any stack traces later on, or for incremental obfuscation of
 extensions.
 <p>
 In general, you might need a few additional directives for processing <a
-href="#native">native methods</a>, <a href="#enumerations">enumerations</a>,
-<a href="#serializable">serializable classes</a>, or <a href="#beans">bean
-classes</a>. For processing 'simple' applications like ProGuard, that is not
-required.
+href="#native">native methods</a>, <a href="#serializable">serializable
+classes</a>, <a href="#beans">bean classes</a>, or <a
+href="#annotations">annotations</a>. For processing 'simple' applications like
+ProGuard, that is not required.
 
 <a name="applet">&nbsp;</a>
 <h3>A typical applet</h3>
@@ -101,9 +103,9 @@ The typical applet methods will be preserved automatically, since
 class in the library <code>rt.jar</code>.
 <p>
 If applicable, you should add directives for processing <a
-href="#native">native methods</a>, <a href="#enumerations">enumerations</a>,
-<a href="#serializable">serializable classes</a>, or <a href="#beans">bean
-classes</a>.
+href="#native">native methods</a>, <a href="#serializable">serializable
+classes</a>, <a href="#beans">bean classes</a>, or <a
+href="#annotations">annotations</a>.
 
 <a name="midlet">&nbsp;</a>
 <h3>A typical midlet</h3>
@@ -131,9 +133,9 @@ The typical midlet methods will be preserved automatically, since
 class in the library <code>midpapi20.jar</code>.
 <p>
 If applicable, you should add directives for processing <a
-href="#native">native methods</a>, <a href="#enumerations">enumerations</a>,
-<a href="#serializable">serializable classes</a>, or <a href="#beans">bean
-classes</a>.
+href="#native">native methods</a>, <a href="#serializable">serializable
+classes</a>, <a href="#beans">bean classes</a>, or <a
+href="#annotations">annotations</a>.
 <p>
 You must preverify your midlets <i>after</i> having processed them, using
 J2ME's <code>preverify</code> tool. Because this tool unpacks your processed
@@ -167,9 +169,9 @@ The <code>-printseeds</code> option prints out which classes exactly will
 be preserved, so we know for sure we're getting what we want.
 <p>
 If applicable, you should add directives for processing <a
-href="#native">native methods</a>, <a href="#enumerations">enumerations</a>,
-<a href="#serializable">serializable classes</a>, or <a href="#beans">bean
-classes</a>.
+href="#native">native methods</a>, <a href="#serializable">serializable
+classes</a>, <a href="#beans">bean classes</a>, or <a
+href="#annotations">annotations</a>.
 
 <a name="applets">&nbsp;</a>
 <h3>All possible applets in the input jars</h3>
@@ -190,9 +192,9 @@ Again, the <code>-printseeds</code> option prints out which applets exactly
 will be preserved.
 <p>
 If applicable, you should add directives for processing <a
-href="#native">native methods</a>, <a href="#enumerations">enumerations</a>,
-<a href="#serializable">serializable classes</a>, or <a href="#beans">bean
-classes</a>.
+href="#native">native methods</a>, <a href="#serializable">serializable
+classes</a>, <a href="#beans">bean classes</a>, or <a
+href="#annotations">annotations</a>.
 
 <a name="midlets">&nbsp;</a>
 <h3>All possible midlets in the input jars</h3>
@@ -217,9 +219,9 @@ And again, the <code>-printseeds</code> option prints out which midlets exactly
 will be preserved.
 <p>
 If applicable, you should add directives for processing <a
-href="#native">native methods</a>, <a href="#enumerations">enumerations</a>,
-<a href="#serializable">serializable classes</a>, or <a href="#beans">bean
-classes</a>.
+href="#native">native methods</a>, <a href="#serializable">serializable
+classes</a>, <a href="#beans">bean classes</a>, or <a
+href="#annotations">annotations</a>.
 <p>
 You must preverify your midlets <i>after</i> having processed them, using
 J2ME's <code>preverify</code> tool. Because this tool unpacks your processed
@@ -253,9 +255,9 @@ And again, the <code>-printseeds</code> option prints out which servlets
 exactly will be preserved.
 <p>
 If applicable, you should add directives for processing <a
-href="#native">native methods</a>, <a href="#enumerations">enumerations</a>,
-<a href="#serializable">serializable classes</a>, or <a href="#beans">bean
-classes</a>.
+href="#native">native methods</a>, <a href="#serializable">serializable
+classes</a>, <a href="#beans">bean classes</a>, or <a
+href="#annotations">annotations</a>.
 
 <a name="library">&nbsp;</a>
 <h3>Processing a library</h3>
@@ -285,16 +287,16 @@ serialization code:
     native &lt;methods&gt;;
 }
 
--keepclassmembers class * extends java.lang.Enum {
-    public **[] values();
-}
-
 -keepclassmembers class * implements java.io.Serializable {
     static final long serialVersionUID;
     private void writeObject(java.io.ObjectOutputStream);
     private void readObject(java.io.ObjectInputStream);
     java.lang.Object writeReplace();
     java.lang.Object readResolve();
+}
+
+-keepclassmembers class * extends java.lang.Enum {
+    public **[] values();
 }
 </pre>
 <p>
@@ -314,10 +316,9 @@ these other obfuscators are ever used for further obfuscation of the library.
 <p>
 We've added some directives for keeping the "Deprecated" attribute, for <a
 href="#stacktrace">useful stack traces</a>, for <a href="#native">native
-methods</a>, for <a href="#enumerations">enumerations</a>, for <a
-href="#serializable">serializable classes</a>, and for <a
-href="#annotations">annotations</a>, which are all discussed in their
-respective examples.
+methods</a>, <a href="#serializable">serializable classes</a>, and for <a
+href="#annotations">annotations</a> (possibly with enumerations), which are
+all discussed in their respective examples.
 <p>
 The "InnerClasses" attribute (or more precisely, its source name part) has to
 be preserved as well, for any inner classes that can be referenced from
@@ -346,21 +347,6 @@ names from being obfuscated.
 ProGuard doesn't have your native code, so it can't automatically preserve the
 classes or class members that are invoked by the native code. These are entry
 points, which you'll have to specify explicitly.
-
-<a name="enumerations">&nbsp;</a>
-<h3>Processing enumeration classes</h3>
-If your application, applet, servlet, library, etc., contains enumeration
-classes, you'll have to preserve a special method. Enumerations were
-introduced in JDK 5.0. The <code>javac</code> compiler will translate
-enumerations into classes with a special structure. The classes contain
-implementations of a method that the run-time environment accesses by
-introspection (Isn't that just grand? Introspection is the self-modifying code
-of a new generation). You'll therefore have to specify it explicitly:
-<pre>
--keepclassmembers class * extends java.lang.Enum {
-    public **[] values();
-}
-</pre>
 
 <a name="serializable">&nbsp;</a>
 <h3>Processing serializable classes</h3>
@@ -513,6 +499,10 @@ treats annotation attributes as optional, and removes them in the obfuscation
 step. If they are required, you'll have to specify this explicitly:
 <pre>
 -keepattributes *Annotation*
+
+-keepclassmembers class * extends java.lang.Enum {
+    public static **[] values();
+}
 </pre>
 <p>
 For brevity, we're specifying a wildcarded attribute name, which will match
@@ -523,6 +513,11 @@ For brevity, we're specifying a wildcarded attribute name, which will match
 <code>AnnotationDefault</code>. Depending on the purpose of the processed
 code, you could refine this selection, for instance not keeping the run-time
 invisible annotations (which are only used at compile-time).
+<p>
+If your annotations contain enumeration classes, you'll have to preserve the
+<code>values()</code> method in these classes. The run-time environment
+accesses this method by introspection (Isn't that just grand? Introspection is
+the self-modifying code of a new generation).
 <p>
 Some code may make further use of introspection to figure out the enclosing
 methods of anonymous inner classes. In that case, the corresponding attribute

@@ -1,4 +1,4 @@
-/* $Id: Instruction.java,v 1.23 2005/06/11 13:13:15 eric Exp $
+/* $Id: Instruction.java,v 1.24 2005/10/22 11:55:29 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -331,13 +331,13 @@ public abstract class Instruction
         3, // sastore
         1, // pop
         2, // pop2
-        0, // dup
-        0, // dup_x1
-        0, // dup_x2
-        0, // dup2
-        0, // dup2_x1
-        0, // dup2_x2
-        0, // swap
+        1, // dup
+        2, // dup_x1
+        3, // dup_x2
+        2, // dup2
+        3, // dup2_x1
+        4, // dup2_x2
+        2, // swap
         2, // iadd
         4, // ladd
         2, // fadd
@@ -540,13 +540,13 @@ public abstract class Instruction
         0, // sastore
         0, // pop
         0, // pop2
-        1, // dup
-        1, // dup_x1
-        1, // dup_x2
-        2, // dup2
-        2, // dup2_x1
-        2, // dup2_x2
-        0, // swap
+        2, // dup
+        3, // dup_x1
+        4, // dup_x2
+        4, // dup2
+        5, // dup2_x1
+        6, // dup2_x2
+        2, // swap
         1, // iadd
         2, // ladd
         1, // fadd

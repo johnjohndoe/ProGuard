@@ -1,4 +1,4 @@
-/* $Id: GotoReturnReplacer.java,v 1.8 2005/07/31 18:50:05 eric Exp $
+/* $Id: GotoGotoReplacer.java,v 1.2 2005/10/04 21:40:37 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -26,37 +26,37 @@ import proguard.classfile.editor.*;
 import proguard.classfile.instruction.*;
 
 /**
- * This InstructionVisitor replaces unconditional branches to return instructions
- * by these same return instructions.
+ * This InstructionVisitor simplifies unconditional branches to other
+ * unconditional branches.
  *
  * @author Eric Lafortune
  */
-public class GotoReturnReplacer implements InstructionVisitor
+public class GotoGotoReplacer implements InstructionVisitor
 {
     private CodeAttrInfoEditor codeAttrInfoEditor;
     private InstructionVisitor extraInstructionVisitor;
 
 
     /**
-     * Creates a new GotoReturnReplacer.
+     * Creates a new GotoGotoReplacer.
      * @param codeAttrInfoEditor      a code editor that can be used for
      *                                accumulating changes to the code.
      */
-    public GotoReturnReplacer(CodeAttrInfoEditor codeAttrInfoEditor)
+    public GotoGotoReplacer(CodeAttrInfoEditor codeAttrInfoEditor)
     {
         this(codeAttrInfoEditor, null);
     }
 
 
     /**
-     * Creates a new GotoReturnReplacer.
+     * Creates a new GotoGotoReplacer.
      * @param codeAttrInfoEditor      a code editor that can be used for
      *                                accumulating changes to the code.
      * @param extraInstructionVisitor an optional extra visitor for all replaced
      *                                goto instructions.
      */
-    public GotoReturnReplacer(CodeAttrInfoEditor codeAttrInfoEditor,
-                              InstructionVisitor extraInstructionVisitor)
+    public GotoGotoReplacer(CodeAttrInfoEditor codeAttrInfoEditor,
+                            InstructionVisitor extraInstructionVisitor)
     {
         this.codeAttrInfoEditor      = codeAttrInfoEditor;
         this.extraInstructionVisitor = extraInstructionVisitor;
@@ -79,35 +79,33 @@ public class GotoReturnReplacer implements InstructionVisitor
         if (opcode == InstructionConstants.OP_GOTO ||
             opcode == InstructionConstants.OP_GOTO_W)
         {
-            // Check if the goto instruction points to a return instruction.
-            int targetOffset = offset + branchInstruction.branchOffset;
+            // Check if the goto instruction points to another simple goto
+            // instruction.
+            int branchOffset = branchInstruction.branchOffset;
+            int targetOffset = offset + branchOffset;
 
-            if (!codeAttrInfoEditor.isModified(offset) &&
+            if (branchOffset != branchInstruction.length(offset) &&
+                !codeAttrInfoEditor.isModified(offset) &&
                 !codeAttrInfoEditor.isModified(targetOffset))
             {
                 Instruction targetInstruction = InstructionFactory.create(codeAttrInfo.code,
                                                                           targetOffset);
-                switch (targetInstruction.opcode)
+                if (targetInstruction.opcode == InstructionConstants.OP_GOTO)
                 {
-                    case InstructionConstants.OP_IRETURN:
-                    case InstructionConstants.OP_LRETURN:
-                    case InstructionConstants.OP_FRETURN:
-                    case InstructionConstants.OP_DRETURN:
-                    case InstructionConstants.OP_ARETURN:
-                    case InstructionConstants.OP_RETURN:
-                        // Replace the goto instruction by the return instruction.
-                        Instruction returnInstruction =
-                             new SimpleInstruction(targetInstruction.opcode);
-                        codeAttrInfoEditor.replaceInstruction(offset,
-                                                              returnInstruction);
-        
-                        // Visit the instruction, if required.
-                        if (extraInstructionVisitor != null)
-                        {
-                            extraInstructionVisitor.visitBranchInstruction(classFile, methodInfo, codeAttrInfo, offset, branchInstruction);
-                        }
+                    // Simplify the goto instruction.
+                    int targetBranchOffset   = ((BranchInstruction)targetInstruction).branchOffset;
+                    
+                    Instruction newBranchInstruction =
+                         new BranchInstruction(opcode,
+                                               (branchOffset + targetBranchOffset));
+                    codeAttrInfoEditor.replaceInstruction(offset,
+                                                          newBranchInstruction);
 
-                        break;
+                    // Visit the instruction, if required.
+                    if (extraInstructionVisitor != null)
+                    {
+                        extraInstructionVisitor.visitBranchInstruction(classFile, methodInfo, codeAttrInfo, offset, branchInstruction);
+                    }
                 }
             }
         }

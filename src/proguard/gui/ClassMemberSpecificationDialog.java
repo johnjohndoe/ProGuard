@@ -1,4 +1,4 @@
-/* $Id: ClassMemberSpecificationDialog.java,v 1.4 2005/06/11 13:13:15 eric Exp $
+/* $Id: ClassMemberSpecificationDialog.java,v 1.5 2005/08/21 19:28:04 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -177,7 +177,9 @@ class ClassMemberSpecificationDialog extends JDialog
         // Create the type panel.
         JPanel typePanel = new JPanel(layout);
         typePanel.setBorder(BorderFactory.createTitledBorder(etchedBorder,
-                                                             GUIResources.getMessage("returnType")));
+                                                             GUIResources.getMessage(isField ?
+                                                                                         "type" :
+                                                                                         "returnType")));
 
         typePanel.add(typeTextField, constraintsLastStretch);
 
@@ -324,19 +326,43 @@ class ClassMemberSpecificationDialog extends JDialog
         String  type      = typeTextField.getText();
         String  arguments = argumentsTextField.getText();
 
-        boolean fullWildcard = name.equals("") ||
-                               type.equals("");
+        if (name.equals("") ||
+            name.equals("*"))
+        {
+            name = null;
+        }
 
-        ClassMemberSpecification classMemberSpecification = fullWildcard ?
-            new ClassMemberSpecification(0,
-                                         0,
-                                         null,
-                                         null) :
-            new ClassMemberSpecification(0,
-                                         0,
-                                         name,
-                                         isField ? ClassUtil.internalType(type) :
-                                                   ClassUtil.internalMethodDescriptor(type, ListUtil.commaSeparatedList(arguments)));
+        if (type.equals("") ||
+            type.equals("*"))
+        {
+            type = null;
+        }
+
+        if (name != null ||
+            type != null)
+        {
+            if (isField)
+            {
+                if (type == null)
+                {
+                    type = ClassConstants.EXTERNAL_TYPE_INT;
+                }
+
+                type = ClassUtil.internalType(type);
+            }
+            else
+            {
+                if (type == null)
+                {
+                    type = ClassConstants.EXTERNAL_TYPE_VOID;
+                }
+
+                type = ClassUtil.internalMethodDescriptor(type, ListUtil.commaSeparatedList(arguments));
+            }
+        }
+
+        ClassMemberSpecification classMemberSpecification =
+            new ClassMemberSpecification(0, 0, name, type);
 
         // Also get the access radio button settings.
         getClassMemberSpecificationRadioButtons(classMemberSpecification, ClassConstants.INTERNAL_ACC_PUBLIC,       publicRadioButtons);
