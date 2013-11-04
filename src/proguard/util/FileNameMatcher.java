@@ -60,14 +60,15 @@ public class FileNameMatcher extends BasicMatcher
     {
         super(regularExpression,
               FILE_NAME_CHARACTERS,
-              EXTENDED_FILE_NAME_CHARACTERS);
+              EXTENDED_FILE_NAME_CHARACTERS,
+              null);
     }
 
 
     /**
      * A main method for testing file name matching.
      */
-    private static void main(String[] args)
+    public static void main(String[] args)
     {
         try
         {

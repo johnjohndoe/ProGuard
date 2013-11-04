@@ -3,7 +3,7 @@
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
  * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
- * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by
@@ -60,16 +60,17 @@ public abstract class AttrInfo implements VisitorAccepter
         int u4attrLength    = din.readInt();
         String attrName = cf.getCpString(u2attrNameIndex);
         AttrInfo attrInfo =
-            attrName.equals(ClassConstants.ATTR_Code)               ? (AttrInfo)new CodeAttrInfo():
+            attrName.equals(ClassConstants.ATTR_InnerClasses)       ? (AttrInfo)new InnerClassesAttrInfo():
             attrName.equals(ClassConstants.ATTR_ConstantValue)      ? (AttrInfo)new ConstantValueAttrInfo():
-            attrName.equals(ClassConstants.ATTR_Deprecated)         ? (AttrInfo)new DeprecatedAttrInfo():
             attrName.equals(ClassConstants.ATTR_Exceptions)         ? (AttrInfo)new ExceptionsAttrInfo():
+            attrName.equals(ClassConstants.ATTR_Code)               ? (AttrInfo)new CodeAttrInfo():
             attrName.equals(ClassConstants.ATTR_LineNumberTable)    ? (AttrInfo)new LineNumberTableAttrInfo():
+            attrName.equals(ClassConstants.ATTR_LocalVariableTable) ? (AttrInfo)new LocalVariableTableAttrInfo():
             attrName.equals(ClassConstants.ATTR_SourceFile)         ? (AttrInfo)new SourceFileAttrInfo():
             attrName.equals(ClassConstants.ATTR_SourceDir)          ? (AttrInfo)new SourceDirAttrInfo():
-            attrName.equals(ClassConstants.ATTR_LocalVariableTable) ? (AttrInfo)new LocalVariableTableAttrInfo():
-            attrName.equals(ClassConstants.ATTR_InnerClasses)       ? (AttrInfo)new InnerClassesAttrInfo():
+            attrName.equals(ClassConstants.ATTR_Deprecated)         ? (AttrInfo)new DeprecatedAttrInfo():
             attrName.equals(ClassConstants.ATTR_Synthetic)          ? (AttrInfo)new SyntheticAttrInfo():
+            attrName.equals(ClassConstants.ATTR_Signature)          ? (AttrInfo)new SignatureAttrInfo():
                                                                       (AttrInfo)new UnknownAttrInfo(u4attrLength);
 
         attrInfo.u2attrNameIndex = u2attrNameIndex;

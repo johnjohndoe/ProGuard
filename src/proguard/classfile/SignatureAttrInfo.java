@@ -1,4 +1,4 @@
-/* $Id: FieldInfo.java,v 1.9 2003/02/09 15:22:28 eric Exp $
+/* $Id: SignatureAttrInfo.java,v 1.11 2003/12/06 22:15:38 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -21,13 +21,47 @@
  */
 package proguard.classfile;
 
+import proguard.classfile.visitor.*;
 
+import java.io.*;
 
 /**
- * Representation of a field from a class file.
+ * Representation of a signature attribute.
  *
  * @author Eric Lafortune
  */
-public interface FieldInfo extends MemberInfo
+public class SignatureAttrInfo extends AttrInfo
 {
+    private static final int CONSTANT_FIELD_SIZE = 2;
+
+
+    public int u2signatureIndex;
+
+
+    protected SignatureAttrInfo()
+    {
+    }
+
+
+    // Implementations for AttrInfo.
+
+    protected int getAttrInfoLength()
+    {
+        return CONSTANT_FIELD_SIZE;
+    }
+
+    protected void readInfo(DataInput din, ClassFile cf) throws IOException
+    {
+        u2signatureIndex = din.readUnsignedShort();
+    }
+
+    protected void writeInfo(DataOutput dout) throws IOException
+    {
+        dout.writeShort(u2signatureIndex);
+    }
+
+    public void accept(ClassFile classFile, AttrInfoVisitor attrInfoVisitor)
+    {
+        attrInfoVisitor.visitSignatureAttrInfo(classFile, this);
+    }
 }

@@ -32,8 +32,11 @@ import java.util.*;
  * <li>'*'  for any number of Java identifier characters or other wildcard
  *          matching characters, and
  * <li>'**' for any number of Java identifier characters or extended wildcard
- *          matching characters.
+ *          matching characters,
+ * <li>'%'  for a single special wildcard matching character.
  * </ul>
+ * The sets of wildcard characters, extended wildcard characters, and special
+ * wildcard characters can be defined by the user.
  *
  * @author Eric Lafortune
  */
@@ -42,10 +45,12 @@ public class BasicMatcher implements RegularExpressionMatcher
     private static final String SINGLE_CHARACTER_WILDCARD     = "?";
     private static final String MULTIPLE_CHARACTERS_WILDCARD1 = "*";
     private static final String MULTIPLE_CHARACTERS_WILDCARD2 = "**";
+    private static final String SPECIAL_CHARACTER_WILDCARD    = "%";
 
     private String[] expressionParts;
     private char[]   wildcardCharacters;
     private char[]   extendedWildcardCharacters;
+    private char[]   specialWildcardCharacters;
 
 
     /**
@@ -56,7 +61,7 @@ public class BasicMatcher implements RegularExpressionMatcher
      */
     public BasicMatcher(String regularExpression)
     {
-        this(regularExpression, null, null);
+        this(regularExpression, null, null, null);
     }
 
 
@@ -70,14 +75,16 @@ public class BasicMatcher implements RegularExpressionMatcher
      *                           matching characters.
      */
     public BasicMatcher(String regularExpression,
-                                    char[] wildcardCharacters,
-                                    char[] extendedWildcardCharacters)
+                        char[] wildcardCharacters,
+                        char[] extendedWildcardCharacters,
+                        char[] specialWildcardCharacters)
     {
         this.wildcardCharacters         = wildcardCharacters;
         this.extendedWildcardCharacters = extendedWildcardCharacters;
+        this.specialWildcardCharacters  = specialWildcardCharacters;
 
-        // Split the given regular expression into an array of parts: "*", "**",
-        // "?", and simple text strings.
+        // Split the given regular expression into an array of parts: "?",
+        // "*", "**", "%", and simple text strings.
 
         // A List to collect the subsequent regular expression parts.
         List expressionPartsList = new ArrayList();
@@ -92,6 +99,7 @@ public class BasicMatcher implements RegularExpressionMatcher
                 regularExpression.regionMatches(index, MULTIPLE_CHARACTERS_WILDCARD2, 0, MULTIPLE_CHARACTERS_WILDCARD2.length()) ? MULTIPLE_CHARACTERS_WILDCARD2 :
                 regularExpression.regionMatches(index, MULTIPLE_CHARACTERS_WILDCARD1, 0, MULTIPLE_CHARACTERS_WILDCARD1.length()) ? MULTIPLE_CHARACTERS_WILDCARD1 :
                 regularExpression.regionMatches(index, SINGLE_CHARACTER_WILDCARD,     0, SINGLE_CHARACTER_WILDCARD.length()) ?     SINGLE_CHARACTER_WILDCARD     :
+                regularExpression.regionMatches(index, SPECIAL_CHARACTER_WILDCARD,    0, SINGLE_CHARACTER_WILDCARD.length()) ?     SPECIAL_CHARACTER_WILDCARD    :
                                                                                                                                    null;
             if (wildcard != null)
             {
@@ -165,7 +173,7 @@ public class BasicMatcher implements RegularExpressionMatcher
             // Make sure we're matching an allowed character and then check if
             // the rest of the expression parts match.
             return
-                matchesWildCard(string.charAt(stringStartIndex)) &&
+                matchesWildcard(string.charAt(stringStartIndex)) &&
                 matches(string, stringStartIndex + 1, expressionIndex + 1);
         }
         else if (expressionPart.equals(MULTIPLE_CHARACTERS_WILDCARD1))
@@ -180,7 +188,7 @@ public class BasicMatcher implements RegularExpressionMatcher
                 if (stringEndIndex > stringStartIndex)
                 {
                     // Make sure we don't start matching the wrong characters.
-                    if (!matchesWildCard(string.charAt(stringEndIndex-1)))
+                    if (!matchesWildcard(string.charAt(stringEndIndex-1)))
                     {
                         // We can never get a match.
                         return false;
@@ -210,7 +218,7 @@ public class BasicMatcher implements RegularExpressionMatcher
                 if (stringEndIndex > stringStartIndex)
                 {
                     // Make sure we don't start matching the wrong characters.
-                    if (!matchesExtendedWildCard(string.charAt(stringEndIndex-1)))
+                    if (!matchesExtendedWildcard(string.charAt(stringEndIndex-1)))
                     {
                         // We can never get a match.
                         return false;
@@ -229,6 +237,21 @@ public class BasicMatcher implements RegularExpressionMatcher
             // expression parts.
             return stringStartIndex == string.length();
         }
+        else if (expressionPart.equals(SPECIAL_CHARACTER_WILDCARD))
+        {
+            // Do we have any characters left to match?
+            if (stringStartIndex == string.length())
+            {
+                // We've run out of characters.
+                return false;
+            }
+
+            // Make sure we're matching an allowed character and then check if
+            // the rest of the expression parts match.
+            return
+                matchesSpecialWildcard(string.charAt(stringStartIndex)) &&
+                matches(string, stringStartIndex + 1, expressionIndex + 1);
+        }
         else
         {
             // The expression part is a simple text string. Check if it matches,
@@ -244,7 +267,7 @@ public class BasicMatcher implements RegularExpressionMatcher
     /**
      * Returns whether the given character matches a simple '?' or '*' wildcard.
      */
-    private boolean matchesWildCard(char character)
+    private boolean matchesWildcard(char character)
     {
         if (Character.isJavaIdentifierPart(character))
         {
@@ -269,9 +292,9 @@ public class BasicMatcher implements RegularExpressionMatcher
     /**
      * Returns whether the given character matches an extended '**' wildcard.
      */
-    private boolean matchesExtendedWildCard(char character)
+    private boolean matchesExtendedWildcard(char character)
     {
-        if (matchesWildCard(character))
+        if (matchesWildcard(character))
         {
             return true;
         }
@@ -292,15 +315,35 @@ public class BasicMatcher implements RegularExpressionMatcher
 
 
     /**
+     * Returns whether the given character matches a special '%' wildcard.
+     */
+    private boolean matchesSpecialWildcard(char character)
+    {
+        if (specialWildcardCharacters != null)
+        {
+            for (int index = 0; index < specialWildcardCharacters.length; index++)
+            {
+                if (character == specialWildcardCharacters[index])
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+
+    /**
      * A main method for testing string matching.
      */
-    private static void main(String[] args)
+    public static void main(String[] args)
     {
         try
         {
             System.out.println("Regular expression ["+args[0]+"]");
             BasicMatcher matcher =
-                new BasicMatcher(args[0], null, new char[] {'/'});
+                new BasicMatcher(args[0], null, new char[] {'/'}, null);
 
             for (int index = 1; index < args.length; index++)
             {

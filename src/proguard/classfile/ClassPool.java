@@ -3,7 +3,7 @@
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
  * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
- * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by
@@ -38,20 +38,22 @@ public class ClassPool
 
 
     /**
-     * Adds the given ClassFile to the class pool.
+     * Adds the given ClassFile to the class pool. If a class file of the same
+     * name is already present, it is left unchanged and the old class file is
+     * returned.
      */
-    public void addClass(ClassFile classFile)
+    public ClassFile addClass(ClassFile classFile)
     {
         String name = classFile.getName();
 
-        Object previousClassFile = classFiles.put(name, classFile);
+        ClassFile previousClassFile = (ClassFile)classFiles.put(name, classFile);
         if (previousClassFile != null)
         {
-            System.err.println("Warning: duplicated input class [" + name + "]");
-
             // We'll put the original one back.
             classFiles.put(name, previousClassFile);
         }
+        
+        return previousClassFile;
     }
 
 

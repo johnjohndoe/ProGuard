@@ -2,7 +2,7 @@
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
- * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -150,12 +150,24 @@ public class ClassFileObfuscator
 
     // Small utility methods.
 
+    /**
+     * Assigns a new name to the given class file.
+     * @param classFile the given class file.
+     * @param name      the new name.
+     */
     static void setNewClassName(ClassFile classFile, String name)
     {
         classFile.setVisitorInfo(name);
     }
 
 
+
+    /**
+     * Retrieves the new name of the given class file.
+     * @param classFile the given class file.
+     * @return the class file's new name, or <code>null</code> if it doesn't
+     *         have one yet.
+     */
     static String newClassName(ClassFile classFile)
     {
         Object visitorInfo = classFile.getVisitorInfo();

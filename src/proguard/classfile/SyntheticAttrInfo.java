@@ -3,7 +3,7 @@
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
  * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
- * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by
@@ -26,7 +26,7 @@ import proguard.classfile.visitor.*;
 import java.io.*;
 
 /**
- * Representation of an attribute.
+ * Representation of a synthetic attribute.
  *
  * @author Mark Welsh
  * @author Eric Lafortune

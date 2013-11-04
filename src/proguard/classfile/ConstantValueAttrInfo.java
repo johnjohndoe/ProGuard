@@ -26,7 +26,7 @@ import proguard.classfile.visitor.*;
 import java.io.*;
 
 /**
- * Representation of an attribute.
+ * Representation of a constant value attribute.
  *
  * @author Mark Welsh
  * @author Eric Lafortune

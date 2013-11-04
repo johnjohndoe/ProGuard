@@ -40,65 +40,19 @@
 # Additional - Bean classes. Keep all bean classes along with their getters
 # and setters.
 -keep class * {
-    void set*(boolean);
-    void set*(byte);
-    void set*(char);
-    void set*(short);
-    void set*(int);
-    void set*(long);
-    void set*(float);
-    void set*(double);
+    void set*(%);
     void set*(**);
-
-    void set*(boolean[]);
-    void set*(byte[]);
-    void set*(char[]);
-    void set*(short[]);
-    void set*(int[]);
-    void set*(long[]);
-    void set*(float[]);
-    void set*(double[]);
+    void set*(%[]);
     void set*(**[]);
-
-    void set*(int, boolean);
-    void set*(int, byte);
-    void set*(int, char);
-    void set*(int, short);
-    void set*(int, int);
-    void set*(int, long);
-    void set*(int, float);
-    void set*(int, double);
+    void set*(int, %);
     void set*(int, **);
 
-    boolean get*();
-    byte    get*();
-    char    get*();
-    short   get*();
-    int     get*();
-    long    get*();
-    float   get*();
-    double  get*();
-    **      get*();
-
-    boolean[] get*();
-    byte[]    get*();
-    char[]    get*();
-    short[]   get*();
-    int[]     get*();
-    long[]    get*();
-    float[]   get*();
-    double[]  get*();
-    **[]      get*();
-
-    boolean get*(int);
-    byte    get*(int);
-    char    get*(int);
-    short   get*(int);
-    int     get*(int);
-    long    get*(int);
-    float   get*(int);
-    double  get*(int);
-    **      get*(int);
+    %    get*();
+    **   get*();
+    %[]  get*();
+    **[] get*();
+    %    get*(int);
+    **   get*(int);
 }
 
 # Additional - RMI interfaces. Keep all Remote interfaces and their methods.

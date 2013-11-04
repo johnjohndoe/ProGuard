@@ -24,11 +24,13 @@ ProGuard may print out some notes and non-fatal warnings:
     the <code>-dontnote</code> option.
     <p>
 
-<li>If you get a warning about <b>duplicate input classes</b>, your input jars
-    or library jars contain multiple definitions of the same class. ProGuard
-    continues processing as usual, only considering the first definition. The
-    warning may be an indication of some problem though, so it's advisable to
-    remove the duplicates. There is no option to switch off these warnings.
+<li>If you get notes about <b>duplicate definitions of input classes</b>, your
+    program jars or library jars contain multiple definitions of the listed
+    classes. ProGuard continues processing as usual, only considering the
+    first definition. The warning may be an indication of some problem though,
+    so it's advisable to remove the duplicates. A convenient way to do so is
+    by specifying filters on the input jars or library jars. You can switch
+    off these notes by specifying the <code>-dontnote</code> option.
     <p>
 
 <li>If you get a warning about <b>duplicate resource files or zip entries</b>,
@@ -36,7 +38,9 @@ ProGuard may print out some notes and non-fatal warnings:
     same name. ProGuard continues copying the resource files as usual,
     skipping any files with previously used names. Once more, the warning may
     be an indication of some problem though, so it's advisable to remove the
-    duplicates. There is no option to switch off these warnings.
+    duplicates. A convenient way to do so is by specifying filters on the
+    input jars or resource jars. There is no option to switch off these
+    warnings.
 
 </ul>
 <p>
@@ -104,23 +108,22 @@ If ProGuard runs fine, but your processed application doesn't work, there
 might be several reasons:
 <ul>
 
+<li>If you are working on Windows and it looks like <b>some classes have
+    disappeared</b> from your output, you should make sure you're not writing
+    your output class files to a directory (or unpacking the output jar). On
+    platforms with case-insensitive file systems, such as Windows, unpacking
+    tools often let class files with similar lower-case and upper-case names
+    overwrite each other. If you really can't switch to a different operating
+    system, you could consider using ProGuard's
+    <code>-dontusemixedcaseclassnames</code> option.
+    <p>
+
 <li>If ProGuard is <b>not keeping the right classes or class members</b>, make
     sure you are using fully qualified class names. If the package name of
     some class is missing, ProGuard won't match the elements that you might be
     expecting. It may help to double-check for typos too. You can use the
     <code>-printseeds</code> option to see which elements are being kept
     exactly.
-    <p>
-
-<li>If it looks like <b>a whole bunch of classes has disappeared</b> from your
-    output jar, you should make sure you're not writing your output class
-    files to a directory (or unpacking the output jar) on a platform with a
-    case-insensitive file system, such as Windows. Unpacking tools often let
-    class files with similar lower-case and upper-case names overwrite each
-    other. Especially J2ME developers on Windows should note that the
-    <code>preverify</code> tool always unpacks the jars it processes. If you
-    really can't switch to a different operating system, you could consider
-    using ProGuard's <code>-dontusemixedcaseclassnames</code> option.
     <p>
 
 <li>If you get a <code><b>NoClassDefFoundError</b></code>, your class path is
@@ -161,13 +164,23 @@ might be several reasons:
     <b>verification error</b> in J2ME, you may have forgotten to preverify
     your program jar <i>after</i> having processed it with ProGuard.
     <p>
+    Also, J2ME developers on Windows should note that the
+    <code>preverify</code> tool always unpacks the jars it processes. It may
+    thus let similarly named class files overwrite each other, as discussed in
+    the first item on this list.
+    <p>
+
+<li>If you get a <code><b>ClassFormatError</b></code> mentioning a "repetitive
+    field name/signature", you are probably processing some code that has been
+    obfuscated before with the <code>-overloadaggressively</code> option. You
+    should then use the same option again in the second processing round.
+    <p>
 
 <li>If you get a <code><b>NoSuchMethodError</b></code> or an
-    <code><b>AbstractMethodError</b></code>, you should make sure you're not
-    writing your output class files to a directory (or unpacking the output
-    jar) on a platform with a case-insensitive file system, such as Windows.
-    Refer to the item about disappearing classes, higher up in this list, for
-    details.
+    <code><b>AbstractMethodError</b></code>, again you should make sure you're
+    not writing your output class files to a directory on a platform with a
+    case-insensitive file system, such as Windows. Please refer to the first
+    item on this list for details.
     <p>
     Furthermore, you should check whether you have specified your program jars
     and library jars properly. Program classes can refer to library classes,
@@ -182,7 +195,7 @@ might be several reasons:
 
 <hr>
 <address>
-Copyright &copy; 2002-2003
+Copyright &copy; 2002-2004
 <a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>

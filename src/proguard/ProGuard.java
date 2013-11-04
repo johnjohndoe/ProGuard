@@ -2,7 +2,7 @@
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
- * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -39,7 +39,7 @@ import java.util.jar.*;
  */
 public class ProGuard
 {
-    public static final String VERSION = "ProGuard, version 2.0";
+    public static final String VERSION = "ProGuard, version 2.1";
 
     private Configuration configuration;
     private ClassPool     programClassPool = new ClassPool();
@@ -112,7 +112,8 @@ public class ProGuard
         return
             new DataEntryClassFileFilter(
                 new ClassFileReader(
-                    new ClassPoolFiller(classPool),
+                    new ClassPoolFiller(classPool,
+                                        configuration.note),
                     isLibrary,
                     configuration.skipNonPublicLibraryClasses));
     }
@@ -257,7 +258,7 @@ public class ProGuard
         ClassPool newLibraryClassPool = new ClassPool();
         libraryClassPool.classFilesAccept(
             new SubclassedClassFileFilter(
-            new ClassPoolFiller(newLibraryClassPool)));
+            new ClassPoolFiller(newLibraryClassPool, false)));
         libraryClassPool = newLibraryClassPool;
 
         if (configuration.verbose)
@@ -362,7 +363,7 @@ public class ProGuard
             new MultiClassFileVisitor(
             new ClassFileVisitor[] {
                 new ClassFileShrinker(),
-                new ClassPoolFiller(newProgramClassPool)
+                new ClassPoolFiller(newProgramClassPool, false)
             })));
         programClassPool = newProgramClassPool;
 
@@ -423,6 +424,26 @@ public class ProGuard
             reader.pump(keeper);
         }
 
+        // Mark attributes that have to be kept.
+        AttributeUsageMarker attributeUsageMarker = new AttributeUsageMarker();
+        if (configuration.keepAttributes != null)
+        {
+            if (configuration.keepAttributes.size() != 0)
+            {
+                attributeUsageMarker.setKeepAttributes(configuration.keepAttributes);
+            }
+            else
+            {
+                attributeUsageMarker.setKeepAllAttributes();
+            }
+        }
+        programClassPool.classFilesAccept(attributeUsageMarker);
+
+        if (configuration.verbose)
+        {
+            System.out.println("Renaming program classes and class elements...");
+        }
+
         // Come up with new names for all class files.
         programClassPool.classFilesAccept(new ClassFileObfuscator(programClassPool,
                                                                   configuration.defaultPackage,
@@ -453,30 +474,11 @@ public class ProGuard
             }
         }
 
-        if (configuration.verbose)
-        {
-            System.out.println("Renaming program classes and class elements...");
-        }
-
         // Actually apply these new names.
         programClassPool.classFilesAccept(new ClassFileRenamer(configuration.defaultPackage != null,
                                                                configuration.newSourceFileAttribute));
 
-        // Mark attributes that have to be kept and remove the other ones.
-        AttributeUsageMarker attributeUsageMarker = new AttributeUsageMarker();
-        if (configuration.keepAttributes != null)
-        {
-            if (configuration.keepAttributes != null)
-            {
-                attributeUsageMarker.keepAttributes(configuration.keepAttributes);
-            }
-            else
-            {
-                attributeUsageMarker.keepAllAttributes();
-            }
-        }
-
-        programClassPool.classFilesAccept(attributeUsageMarker);
+        // Remove the attributes that can be discarded.
         programClassPool.classFilesAccept(new AttributeShrinker());
 
         // Mark NameAndType constant pool entries that have to be kept and remove the other ones.
@@ -632,9 +634,9 @@ public class ProGuard
         // Filter the writer, if required.
         return classPathEntry.getFilter() != null ?
             new FilteredDataEntryWriter(
-                new FileNameMatcher(classPathEntry.getFilter()),
-                                    matchingWriter,
-                                    nonMatchingWriter) :
+                new FileNameListMatcher(classPathEntry.getFilter()),
+                                        matchingWriter,
+                                        nonMatchingWriter) :
             matchingWriter;
     }
 

@@ -185,12 +185,12 @@ The following table lists all ProGuard options:
     list or a <code><b>*</b></code> wildcard preserves all attributes. Typical
     optional attributes are <code>LineNumberTable</code>,
     <code>LocalVariableTable</code>, <code>SourceFile</code>,
-    <code>SourceDir</code>, <code>Deprecated</code>, and
-    <code>Synthetic</code>. The <code>InnerClasses</code> attribute name can
-    be specified as well, referring to the source name part of this attribute.
-    For example, you could keep the <code>Deprecated</code> attribute when <a
-    href="examples.html#library">processing a library</a>. Only applicable
-    when obfuscating.<p></dd>
+    <code>SourceDir</code>, <code>Deprecated</code>, <code>Synthetic</code>,
+    and <code>Signature</code>. The <code>InnerClasses</code> attribute name
+    can be specified as well, referring to the source name part of this
+    attribute. For example, you could keep the <code>Deprecated</code>
+    attribute when <a href="examples.html#library">processing a library</a>.
+    Only applicable when obfuscating.<p></dd>
 
 <dt><a name="renamesourcefileattribute"><code><b>-renamesourcefileattribute</b></code></a>
     [<i>string</i>]<p></dt>
@@ -443,12 +443,13 @@ following wildcards are supported:
 
 <table cellspacing="10">
 <tr><td valign="top"><code><b>?</b></code></td>
-    <td>matches any single character.</td></tr>
+    <td>matches any single character in a file name.</td></tr>
 <tr><td valign="top"><code><b>*</b></code></td>
-    <td>matches any string not containing the directory separator.</td></tr>
+    <td>matches any part of a filename not containing the directory
+        separator.</td></tr>
 <tr><td valign="top"><code><b>**</b></code></td>
-    <td>matches any string, possibly containing any number of directory
-        separators.</td></tr>
+    <td>matches any part of a filename, possibly containing any number of
+        directory separators.</td></tr>
 </table>
 
 For example, "<code>rt.jar(java/**.class,javax/**.class)</code>" matches all
@@ -538,15 +539,16 @@ intended meaning, but white-space is irrelevant in actual configuration files.
 
 <tr><td valign="top"><code><b>?</b></code></td>
 
-<td>matches any single character, but not the package separator. For example,
-    "<code>mypackage.Test?</code>" matches "<code>mypackage.Test1</code>" and
-    "<code>mypackage.Test2</code>", but not
+<td>matches any single character in a class name, but not the package
+    separator. For example, "<code>mypackage.Test?</code>" matches
+    "<code>mypackage.Test1</code>" and "<code>mypackage.Test2</code>", but not
     "<code>mypackage.Test12</code>".</td></tr>
 
 <tr><td valign="top"><code><b>*</b></code></td>
 
-<td>matches any string not containing the package separator. For example,
-    "<code>mypackage.*Test*</code>" matches "<code>mypackage.Test</code>" and
+<td>matches any part of a class name not containing the package separator. For
+    example, "<code>mypackage.*Test*</code>" matches
+    "<code>mypackage.Test</code>" and
     "<code>mypackage.YourTestApplication</code>", but not
     "<code>mypackage.mysubpackage.MyTest</code>". Or, more generally,
     "<code>mypackage.*</code>" matches all classes in
@@ -554,10 +556,10 @@ intended meaning, but white-space is irrelevant in actual configuration files.
 
 <tr><td valign="top"><code><b>**</b></code></td>
 
-<td>matches any string, possibly containing any number of package separators.
-    For example, "<code>**.Test</code>"
-    matches all <code>Test</code> classes in all packages except the root
-    package. Or, "<code>mypackage.**</code>" matches all classes in
+<td>matches any part of a class name, possibly containing any number of
+    package separators. For example, "<code>**.Test</code>" matches all
+    <code>Test</code> classes in all packages except the root package. Or,
+    "<code>mypackage.**</code>" matches all classes in
     "<code>mypackage</code>" and in its subpackages.</td></tr>
 
 </table>
@@ -603,28 +605,32 @@ intended meaning, but white-space is irrelevant in actual configuration files.
 
 <table cellspacing="10">
 <tr><td valign="top"><code><b>?</b></code></td>
-    <td>matches any single character.</td></tr>
+    <td>matches any single character in a method name.</td></tr>
 <tr><td valign="top"><code><b>*</b></code></td>
-    <td>matches any string.</td></tr>
+    <td>matches any part of a method name.</td></tr>
 </table>
 
-    Class names in descriptors can contain the following wildcards:
+    Types in descriptors can contain the following wildcards:
 
 <table cellspacing="10">
 <tr><td valign="top"><code><b>?</b></code></td>
-    <td>matches any single character.</td></tr>
+    <td>matches any single character in a class name.</td></tr>
 <tr><td valign="top"><code><b>*</b></code></td>
-    <td>matches any string not containing the package separator.</td></tr>
+    <td>matches any part of a class name not containing the package                     separator.</td></tr>
 <tr><td valign="top"><code><b>**</b></code></td>
-    <td>matches any string, possibly containing any number of package
-        separators.</td></tr>
+    <td>matches any part of a class name, possibly containing any number of
+        package separators.</td></tr>
+<tr><td valign="top"><code><b>%</b></code></td>
+    <td>matches any primitive type ("<code>boolean</code>", "<code>int</code>",
+        etc, but not "<code>void</code>").</td></tr>
 </table>
 
-    Note that wildcards will never match primitive types, nor array types of
-    different dimensions than specified by the regular expression. For
-    example, "<code>** get*()</code>" matches "<code>java.lang.Object
-    getObject()</code>", but not "<code>float getFloat()</code>", nor
-    "<code>java.lang.Object[] getObjects()</code>".
+    Note that the <code>?</code>, <code>*</code>, and <code>**</code>
+    wildcards will never match primitive types. None of the wildcards will
+    match array types of different dimensions than specified by the regular
+    expression. For example, "<code>** get*()</code>" matches
+    "<code>java.lang.Object getObject()</code>", but not "<code>float
+    getFloat()</code>", nor "<code>java.lang.Object[] getObjects()</code>".
     <p>
 
 <li>Constructors can also be specified using their short class name (without
@@ -650,7 +656,7 @@ intended meaning, but white-space is irrelevant in actual configuration files.
 
 <hr>
 <address>
-Copyright &copy; 2002-2003
+Copyright &copy; 2002-2004
 <a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>

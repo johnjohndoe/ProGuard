@@ -19,7 +19,7 @@
 
 -printmapping out.map
 -renamesourcefileattribute SourceFile
--keepattributes SourceFile,LineNumberTable,Deprecated
+-keepattributes SourceFile,LineNumberTable,Deprecated,Signature
 
 
 # Preserve all public classes, and their public and protected fields and

@@ -37,7 +37,7 @@ public interface ClassConstants
 
     public static final int MAJOR_VERSION_MIN = 45;
     public static final int MINOR_VERSION_MIN = 3;
-    public static final int MAJOR_VERSION_MAX = 48;
+    public static final int MAJOR_VERSION_MAX = 49;
     public static final int MINOR_VERSION_MAX = 0;
 
     public static final int    INTERNAL_ACC_PUBLIC       = 0x0001;
@@ -112,6 +112,7 @@ public interface ClassConstants
     public static final String ATTR_SourceDir           = "SourceDir";
     public static final String ATTR_Deprecated          = "Deprecated";
     public static final String ATTR_Synthetic           = "Synthetic";
+    public static final String ATTR_Signature           = "Signature";
 
     public static final char EXTERNAL_PACKAGE_SEPARATOR = '.';
     public static final char INTERNAL_PACKAGE_SEPARATOR = '/';
@@ -143,29 +144,29 @@ public interface ClassConstants
     public static final String INTERNAL_METHOD_TYPE_NEW_INSTANCE = "()Ljava/lang/Object;";
 
     public static final char   INTERNAL_TYPE_VOID        = 'V';
+    public static final char   INTERNAL_TYPE_BOOLEAN     = 'Z';
     public static final char   INTERNAL_TYPE_BYTE        = 'B';
     public static final char   INTERNAL_TYPE_CHAR        = 'C';
-    public static final char   INTERNAL_TYPE_DOUBLE      = 'D';
-    public static final char   INTERNAL_TYPE_FLOAT       = 'F';
+    public static final char   INTERNAL_TYPE_SHORT       = 'S';
     public static final char   INTERNAL_TYPE_INT         = 'I';
+    public static final char   INTERNAL_TYPE_FLOAT       = 'F';
     public static final char   INTERNAL_TYPE_LONG        = 'J';
+    public static final char   INTERNAL_TYPE_DOUBLE      = 'D';
     public static final char   INTERNAL_TYPE_CLASS_START = 'L';
     public static final char   INTERNAL_TYPE_CLASS_END   = ';';
-    public static final char   INTERNAL_TYPE_SHORT       = 'S';
-    public static final char   INTERNAL_TYPE_BOOLEAN     = 'Z';
     public static final char   INTERNAL_TYPE_ARRAY       = '[';
 
     public static final String EXTERNAL_TYPE_JAVA_LANG_OBJECT = "java.lang.Object";
     public static final String EXTERNAL_PACKAGE_JAVA_LANG     = "java.lang.";
 
     public static final String EXTERNAL_TYPE_VOID        = "void";
+    public static final String EXTERNAL_TYPE_BOOLEAN     = "boolean";
     public static final String EXTERNAL_TYPE_BYTE        = "byte";
     public static final String EXTERNAL_TYPE_CHAR        = "char";
-    public static final String EXTERNAL_TYPE_DOUBLE      = "double";
-    public static final String EXTERNAL_TYPE_FLOAT       = "float";
-    public static final String EXTERNAL_TYPE_INT         = "int";
-    public static final String EXTERNAL_TYPE_LONG        = "long";
     public static final String EXTERNAL_TYPE_SHORT       = "short";
-    public static final String EXTERNAL_TYPE_BOOLEAN     = "boolean";
+    public static final String EXTERNAL_TYPE_INT         = "int";
+    public static final String EXTERNAL_TYPE_FLOAT       = "float";
+    public static final String EXTERNAL_TYPE_LONG        = "long";
+    public static final String EXTERNAL_TYPE_DOUBLE      = "double";
     public static final String EXTERNAL_TYPE_ARRAY       = "[]";
 }

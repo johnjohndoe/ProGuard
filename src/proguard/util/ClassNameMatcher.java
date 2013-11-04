@@ -31,14 +31,27 @@ import proguard.classfile.ClassConstants;
  * '*'  for any number of regular Java identifier characters, and
  * '**' for any number of regular Java identifier characters or package separator
  *      characters.
+ * '%'  for a single internal primitive type character (Z, B, C, S, I, F, J, or D),
  *
  * @author Eric Lafortune
  */
 public class ClassNameMatcher extends BasicMatcher
 {
-    private static final char[] EXTENDED_FILE_NAME_CHARACTERS = new char[]
+    private static final char[] EXTENDED_CLASS_NAME_CHARACTERS = new char[]
     {
         ClassConstants.INTERNAL_PACKAGE_SEPARATOR
+    };
+
+    private static final char[] SPECIAL_PRIMITIVE_CHARACTERS = new char[]
+    {
+        ClassConstants.INTERNAL_TYPE_BOOLEAN,
+        ClassConstants.INTERNAL_TYPE_BYTE,
+        ClassConstants.INTERNAL_TYPE_CHAR,
+        ClassConstants.INTERNAL_TYPE_SHORT,
+        ClassConstants.INTERNAL_TYPE_INT,
+        ClassConstants.INTERNAL_TYPE_FLOAT,
+        ClassConstants.INTERNAL_TYPE_LONG,
+        ClassConstants.INTERNAL_TYPE_DOUBLE
     };
 
 
@@ -51,14 +64,15 @@ public class ClassNameMatcher extends BasicMatcher
     {
         super(regularExpression,
               null,
-              EXTENDED_FILE_NAME_CHARACTERS);
+              EXTENDED_CLASS_NAME_CHARACTERS,
+              SPECIAL_PRIMITIVE_CHARACTERS);
     }
 
 
     /**
      * A main method for testing class name matching.
      */
-    private static void main(String[] args)
+    public static void main(String[] args)
     {
         try
         {

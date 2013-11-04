@@ -1,4 +1,4 @@
-/* $Id: ProGuardTask.java,v 1.21 2003/12/19 04:17:03 eric Exp $
+/* $Id: $
  *
  * ProGuard - integration into Ant.
  *
@@ -10,7 +10,7 @@
  * any later version.
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRAntY; without even the implied warranty of MERCHAntABILITY or
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
@@ -18,6 +18,8 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
+
+
 package proguard.ant;
 
 import java.io.*;
@@ -165,13 +167,13 @@ public class ProGuardTask
             return false;
         }
 
-        ClassPathIterator iterator = new ClassPathIterator(classPath);
+        final ClassPathIterator iterator = new ClassPathIterator(classPath);
 
         while (iterator.hasNext())
         {
-            ClassPathEntry classPathEntry = iterator.nextClassPathEntry();
-            String         jar     = classPathEntry.getName();
-            File           jarFile = new File(jar);
+            final ClassPathEntry classPathEntry = iterator.nextClassPathEntry();
+            final String         jar     = classPathEntry.getName();
+            final File           jarFile = new File(jar);
 
             if (!jarFile.exists())
             {
@@ -210,14 +212,13 @@ public class ProGuardTask
         }
 
         ClassPathIterator iterator = new ClassPathIterator(classPath);
-
         long              lastModified = -1;
 
         while (iterator.hasNext())
         {
-            ClassPathEntry classPathEntry = iterator.nextClassPathEntry();
-            String         jar     = classPathEntry.getName();
-            File           jarFile = new File(jar);
+            final ClassPathEntry classPathEntry = iterator.nextClassPathEntry();
+            final String         jar     = classPathEntry.getName();
+            final File           jarFile = new File(jar);
 
             if (jarFile.exists())
             {
@@ -259,12 +260,11 @@ public class ProGuardTask
 
         for (int i = 0; i < size; i++)
         {
-            File actChild = children[i];
+            final File actChild = children[i];
 
             if (actChild.isDirectory())
             {
-                long lastModifiedSub = getLastModifiedFromSubDir(directory);
-
+                long lastModifiedSub = getLastModifiedFromSubDir(actChild);
                 if (lastModifiedSub > lastModified)
                 {
                     lastModified = lastModifiedSub;
@@ -300,7 +300,7 @@ public class ProGuardTask
 
         for (int i = 0; i < size; i++)
         {
-            File actChild = children[i];
+            final File actChild = children[i];
 
             if (actChild.isDirectory())
             {

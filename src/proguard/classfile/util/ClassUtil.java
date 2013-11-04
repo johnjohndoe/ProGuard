@@ -2,7 +2,7 @@
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
- * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -151,7 +151,29 @@ public class ClassUtil
 
 
     /**
-     * Returns whether the given internal type is a plain class type.
+     * Returns whether the given internal type is a plain primitive type
+     * (not void).
+     * @param internalType the internal type,
+     *                     e.g. "<code>I</code>".
+     * @return <code>true</code> if the given type is a class type,
+     *         <code>false</code> otherwise.
+     */
+    public static boolean isInternalPrimitveType(char internalType)
+    {
+        return internalType == ClassConstants.INTERNAL_TYPE_BOOLEAN ||
+               internalType == ClassConstants.INTERNAL_TYPE_BYTE    ||
+               internalType == ClassConstants.INTERNAL_TYPE_CHAR    ||
+               internalType == ClassConstants.INTERNAL_TYPE_SHORT   ||
+               internalType == ClassConstants.INTERNAL_TYPE_INT     ||
+               internalType == ClassConstants.INTERNAL_TYPE_FLOAT   ||
+               internalType == ClassConstants.INTERNAL_TYPE_LONG    ||
+               internalType == ClassConstants.INTERNAL_TYPE_DOUBLE;
+    }
+
+
+    /**
+     * Returns whether the given internal type is a plain class type
+     * (not an array type).
      * @param internalType the internal type,
      *                     e.g. "<code>Ljava/lang/Object;</code>".
      * @return <code>true</code> if the given type is a class type,
@@ -200,10 +222,10 @@ public class ClassUtil
      * The returned class name for primitive array types is
      * "<code>java/lang/Object</code>".
      * @param internalClassType the internal class type,
-     *                     e.g. "<code>Ljava/lang/Object;</code>" or
-     *                          "<code>[[I</code>".
+     *                           e.g. "<code>Ljava/lang/Object;</code>" or
+     *                                "<code>[[I</code>".
      * @return the internal class name,
-     *                     e.g. "<code>java/lang/Object</code>".
+     *                           e.g. "<code>java/lang/Object</code>".
      */
     public static String internalClassNameFromType(String internalClassType)
     {
@@ -229,7 +251,7 @@ public class ClassUtil
 
     /**
      * Converts an external type to an internal type.
-     * @param externalType the external type,
+     * @param externalType the external type (possibly containing wildcards),
      *                     e.g. "<code>java.lang.Object[][]</code>" or
      *                          "<code>int[]</code>".
      * @return the internal type,
@@ -268,6 +290,8 @@ public class ClassUtil
                                 ClassConstants.INTERNAL_TYPE_LONG     :
             externalType.equals(ClassConstants.EXTERNAL_TYPE_DOUBLE ) ?
                                 ClassConstants.INTERNAL_TYPE_DOUBLE   :
+            externalType.equals("%"                                 ) ?
+                                '%'                                   :
                                 (char)0;
 
         return arrayPrefix + (internalTypeChar != 0 ?
@@ -379,12 +403,12 @@ public class ClassUtil
     /**
      * Converts the given external method return type and name and arguments to
      * an internal method descriptor.
-     * @param externalReturnType the external method return type,
-     *                                       e.g. "boolean".
+     * @param externalReturnType             the external method return type,
+     *                                       e.g. "<code>boolean</code>".
      * @param externalMethodNameAndArguments the external method name and arguments,
      *                                       e.g. "<code>myMethod(int,int)</code>".
      * @return the internal method descriptor,
-     *                                       e.g. "(II)Z".
+     *                                       e.g. "<code>(II)Z</code>".
      */
     public static String internalMethodDescriptor(String externalReturnType,
                                                   String externalMethodNameAndArguments)
@@ -409,11 +433,11 @@ public class ClassUtil
      * Converts the given external method return type and List of arguments to
      * an internal method descriptor.
      * @param externalReturnType the external method return type,
-     *                                       e.g. "boolean".
+     *                                       e.g. "<code>boolean</code>".
      * @param externalArguments the external method arguments,
-     *                                       e.g. "<code>{ "int", "int" }</code>".
+     *                                       e.g. <code>{ "int", "int" }</code>.
      * @return the internal method descriptor,
-     *                                       e.g. "(II)Z".
+     *                                       e.g. "<code>(II)Z</code>".
      */
     public static String internalMethodDescriptor(String externalReturnType,
                                                   List   externalArguments)
@@ -487,7 +511,7 @@ public class ClassUtil
      * Converts internal class access flags to an external access description.
      * @param accessFlags the class access flags.
      * @return the external class access description,
-     *         e.g. "public final ".
+     *         e.g. "<code>public final </code>".
      */
     public static String externalClassAccessFlags(int accessFlags)
     {
@@ -500,7 +524,7 @@ public class ClassUtil
      * @param accessFlags the class access flags.
      * @param an optional prefix that is added to each access modifier.
      * @return the external class access description,
-     *         e.g. "public final ".
+     *         e.g. "<code>public final </code>".
      */
     public static String externalClassAccessFlags(int accessFlags, String prefix)
     {
@@ -539,7 +563,7 @@ public class ClassUtil
      * Converts internal field access flags to an external access description.
      * @param accessFlags the field access flags.
      * @return the external field access description,
-     *         e.g. "public volatile ".
+     *         e.g. "<code>public volatile </code>".
      */
     public static String externalFieldAccessFlags(int accessFlags)
     {
@@ -552,7 +576,7 @@ public class ClassUtil
      * @param accessFlags the field access flags.
      * @param an optional prefix that is added to each access modifier.
      * @return the external field access description,
-     *         e.g. "public volatile ".
+     *         e.g. "<code>public volatile </code>".
      */
     public static String externalFieldAccessFlags(int accessFlags, String prefix)
     {
@@ -600,7 +624,7 @@ public class ClassUtil
      * Converts internal method access flags to an external access description.
      * @param accessFlags the method access flags.
      * @return the external method access description,
-     *                    e.g. "public synchronized ".
+     *                    e.g. "<code>public synchronized </code>".
      */
     public static String externalMethodAccessFlags(int accessFlags)
     {

@@ -2,7 +2,7 @@
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
- * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -56,12 +56,13 @@ public class AttributeUsageMarker
     private boolean keepSourceDirAttribute;
     private boolean keepDeprecatedAttribute;
     private boolean keepSyntheticAttribute;
+    private boolean keepSignatureAttribute;
 
 
     /**
      * Specifies to keep all optional attributes.
      */
-    public void keepAllAttributes()
+    public void setKeepAllAttributes()
     {
         keepAllAttributes = true;
     }
@@ -69,7 +70,7 @@ public class AttributeUsageMarker
     /**
      * Specifies to keep all unknown attributes.
      */
-    public void keepAllUnknownAttributes()
+    public void setKeepAllUnknownAttributes()
     {
         keepAllUnknownAttributes = true;
     }
@@ -77,7 +78,7 @@ public class AttributeUsageMarker
     /**
      * Specifies to keep all known attributes.
      */
-    public void keepAllKnownAttributes()
+    public void setKeepAllKnownAttributes()
     {
         keepAllKnownAttributes = true;
     }
@@ -86,7 +87,7 @@ public class AttributeUsageMarker
     /**
      * Specifies to keep optional attributes with the given names.
      */
-    public void keepAttributes(List attributeNames)
+    public void setKeepAttributes(List attributeNames)
     {
         for (int index = 0; index < attributeNames.size(); index++)
         {
@@ -128,6 +129,10 @@ public class AttributeUsageMarker
         {
             keepSyntheticAttribute = true;
         }
+        else if (attributeName.equals(ClassConstants.ATTR_Signature))
+        {
+            keepSignatureAttribute = true;
+        }
         else
         {
             if (keepUnknownAttributes == null)
@@ -153,9 +158,7 @@ public class AttributeUsageMarker
     }
 
 
-    public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
-    {
-    }
+    public void visitLibraryClassFile(LibraryClassFile libraryClassFile) {}
 
 
     // Implementations for MemberInfoVisitor.
@@ -294,6 +297,18 @@ public class AttributeUsageMarker
             keepSyntheticAttribute)
         {
             markAsUsed(syntheticAttrInfo);
+        }
+    }
+
+
+    public void visitSignatureAttrInfo(ClassFile classFile, SignatureAttrInfo signatureAttrInfo)
+    {
+        if ((keepAllAttributes ||
+             keepAllKnownAttributes ||
+             keepSignatureAttribute) &&
+            classFile.getName().equals(ClassFileObfuscator.newClassName(classFile)))
+        {
+            markAsUsed(signatureAttrInfo);
         }
     }
 

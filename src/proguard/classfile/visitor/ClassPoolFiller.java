@@ -2,7 +2,7 @@
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
- * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -21,6 +21,7 @@
 package proguard.classfile.visitor;
 
 import proguard.classfile.*;
+import proguard.classfile.util.ClassUtil;
 
 
 /**
@@ -32,11 +33,14 @@ import proguard.classfile.*;
 public class ClassPoolFiller implements ClassFileVisitor
 {
     private ClassPool classPool;
+    private boolean   note;
 
 
-    public ClassPoolFiller(ClassPool classPool)
+    public ClassPoolFiller(ClassPool classPool,
+                           boolean   note)
     {
         this.classPool = classPool;
+        this.note      = note;
     }
 
 
@@ -44,12 +48,22 @@ public class ClassPoolFiller implements ClassFileVisitor
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
-        classPool.addClass(programClassFile);
+        ClassFile previousClassFile = classPool.addClass(programClassFile);
+        if (previousClassFile != null &&
+            note)
+        {
+            System.err.println("Note: duplicate definition of program class [" + ClassUtil.externalClassName(programClassFile.getName()) + "]");
+        }
     }
 
 
     public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
     {
-        classPool.addClass(libraryClassFile);
+        ClassFile previousClassFile = classPool.addClass(libraryClassFile);
+        if (previousClassFile != null &&
+            note)
+        {
+            System.err.println("Note: duplicate definition of library class [" + ClassUtil.externalClassName(libraryClassFile.getName()) + "]");
+        }
     }
 }

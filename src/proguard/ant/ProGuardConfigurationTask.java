@@ -1,4 +1,4 @@
-/* $Id: ProGuardConfigurationTask.java,v 1.2 2003/12/19 04:17:03 eric Exp $
+/* $Id: $
  *
  * ProGuard - integration into Ant.
  *
@@ -10,7 +10,7 @@
  * any later version.
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRAntY; without even the implied warranty of MERCHAntABILITY or
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
@@ -18,6 +18,8 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
+
+
 package proguard.ant;
 
 import java.io.*;
@@ -37,6 +39,7 @@ import proguard.classfile.util.*;
  * Storage for recurrent configuration settings.
  *
  * @author Dirk Schnelle
+ * @version $Revision: 1.1 $
  */
 public class ProGuardConfigurationTask
         extends Task
@@ -88,7 +91,7 @@ public class ProGuardConfigurationTask
                     value.equalsIgnoreCase("false") ||
                     value.equalsIgnoreCase("off"))
         {
-            return Boolean.TRUE;
+            return Boolean.FALSE;
         }
 
         return null;
@@ -533,7 +536,19 @@ public class ProGuardConfigurationTask
      */
     public void setPrintmapping(String out)
     {
-        options.printMapping = getFullPathName(out);
+      Boolean printMapping = getBoolean(out);
+
+      if (printMapping == null)
+      {
+          options.printMapping = getFullPathName(out);
+      }
+      else
+      {
+          if (Boolean.TRUE.equals(printMapping))
+          {
+            options.printSeeds = "";
+          }
+      }
     }
 
     /**
@@ -549,11 +564,23 @@ public class ProGuardConfigurationTask
     /**
      * Sets the filename where to store the seeds.
      *
-     * @param filename Name of the file
+     * @param filename Name of the file or a floag to print to stdout.
      */
     public void setPrintseeds(String filename)
     {
-        options.printSeeds = getFullPathName(filename);
+        Boolean printSeeds = getBoolean(filename);
+
+        if (printSeeds == null)
+        {
+            options.printSeeds = getFullPathName(filename);
+        }
+        else
+        {
+            if (Boolean.TRUE.equals(printSeeds))
+            {
+              options.printSeeds = "";
+            }
+        }
     }
 
     /**
@@ -571,7 +598,10 @@ public class ProGuardConfigurationTask
         }
         else
         {
-            options.printUsage = "";
+            if (Boolean.TRUE.equals(printUsage))
+            {
+              options.printUsage = "";
+            }
         }
     }
 

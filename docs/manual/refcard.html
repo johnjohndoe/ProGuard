@@ -1,3 +1,4 @@
+
 <!doctype html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <html>
 <head>
@@ -102,7 +103,7 @@
 <td>Preserve the given optional attributes; typically
     <code>LineNumberTable</code>, <code>LocalVariableTable</code>,
     <code>SourceFile</code>, <code>Deprecated</code>, <code>Synthetic</code>,
-    and <code>InnerClasses</code>.</td>
+    <code>Signature</code>, and <code>InnerClasses</code>.</td>
 </tr>
 
 <tr>
@@ -260,11 +261,11 @@ Notes:
 <ul>
 <li>Class names must always be fully qualified, i.e. including their package
     names.
-<li>Class names in <i>classname</i>, <i>returntype</i>, and
-    <i>argumenttype</i> can contain wildcards: '<code><b>?</b></code>' for a
-    single character, '<code><b>*</b></code>' for any number of characters
-    (but not the package separator), and '<code><b>**</b></code>' for any
-    number of (any) characters.
+<li>Types in <i>classname</i>, <i>returntype</i>, and <i>argumenttype</i> can
+    contain wildcards: '<code><b>?</b></code>' for a single character,
+    '<code><b>*</b></code>' for any number of characters (but not the package
+    separator), '<code><b>**</b></code>' for any number of (any)
+    characters, and  '<code><b>%</b></code>' for any primitive type.
 <li><i>fieldname</i> and <i>methodname</i> can contain wildcards as well:
     '<code><b>?</b></code>' for a single character and '<code><b>*</b></code>'
     for any number of characters.
@@ -273,7 +274,7 @@ Notes:
 
 <hr>
 <address>
-Copyright &copy; 2002-2003
+Copyright &copy; 2002-2004
 <a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>

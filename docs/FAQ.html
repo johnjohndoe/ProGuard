@@ -15,7 +15,7 @@
 <ol>
 <li><a href="#shrinking">What is shrinking?</a>
 <li><a href="#obfuscation">What is obfuscation?</a>
-<li><a href="#jdk1.4">Does <b>ProGuard</b> work with JDK1.4?</a>
+<li><a href="#jdk1.4">Does <b>ProGuard</b> work with JDK1.4? JDK1.5?</a>
 <li><a href="#j2me">Does <b>ProGuard</b> work with J2ME?</a>
 <li><a href="#ant">Does <b>ProGuard</b> have support for Ant?</a>
 <li><a href="#gui">Does <b>ProGuard</b> come with a GUI?</a>
@@ -53,13 +53,11 @@ bonus. The program remains functionally equivalent, except for the class
 names, method names, and line numbers given in exception stack traces.
 
 <a name="jdk1.4">&nbsp;</a>
-<h3>Does <b>ProGuard</b> work with JDK1.4?</h3>
-Yes. Class files compiled with the <code>javac</code> compiler of JDK1.4 are
-targeted at JRE 1.2 by default. These class files have a slightly different
-structure from older class files. The new class files fall within the original
-Java bytecode specifications, so they will run on most virtual machines, but
-they may trip some obfuscators. <b>ProGuard</b> handles both class file
-structures correctly.
+<h3>Does <b>ProGuard</b> work with JDK1.4? JDK1.5?</h3>
+Yes. Class files compiled with JDK1.4 are targeted at JRE1.2 by default. Class
+files compiled with JDK1.5 may have additional attributes for supporting
+generics. The compiled class files have slightly different structures from
+older class files. <b>ProGuard</b> handles all versions correctly.
 
 <a name="j2me">&nbsp;</a>
 <h3>Does <b>ProGuard</b> work with J2ME?</h3>
@@ -135,7 +133,7 @@ Manual</a> for more details.
 
 <hr>
 <address>
-Copyright &copy; 2002-2003
+Copyright &copy; 2002-2004
 <a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>

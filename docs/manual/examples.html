@@ -129,9 +129,9 @@ jars, you should use ProGuard's <code>-dontusemixedcaseclassnames</code>
 option on platforms with case-insensitive filing systems, such as Windows.
 <p>
 Please note the in-depth article <a
-href="http://wireless.java.sun.com/midp/ttips/proguard/">"Obfuscating MIDlet
-Suites with ProGuard"</a> at <a
-href="http://wireless.java.sun.com/">wireless.java.sun.com</a>.
+href="http://developers.sun.com/techtopics/mobility/midp/ttips/proguard/">"Obfuscating
+MIDlet Suites with ProGuard"</a> at <a
+href="http://developers.sun.com/">developers.sun.com</a>.
 
 <a name="applications">&nbsp;</a>
 <h3>All possible applications in the input jars</h3>
@@ -428,32 +428,31 @@ names don't change. For instance:
 -keep public class mypackage.MyBeanEditor
 </pre>
 <p>
-If there are too many elements to list explicitly, wildcards in class names and
-method signatures might be helpful. A simple example, which ignores arrays or
-indexed properties:
+If there are too many elements to list explicitly, wildcards in class names
+and method signatures might be helpful. This example encompasses a wide range
+of setters and getters:
 <pre>
 -keep class mybeans.** {
-    void set**(byte);
-    void set**(char);
-    void set**(short);
-    void set**(int);
-    void set**(long);
-    void set**(float);
-    void set**(double);
-    void set**(**);
+    void set*(%);
+    void set*(**);
+    void set*(%[]);
+    void set*(**[]);
+    void set*(int, %);
+    void set*(int, **);
 
-    byte   get**();
-    char   get**();
-    short  get**();
-    int    get**();
-    long   get**();
-    float  get**();
-    double get**();
-    **     get();
+    %    get*();
+    **   get*();
+    %[]  get*();
+    **[] get*();
+    %    get*(int);
+    **   get*(int);
 }
 </pre>
 <p>
-Note that the class wildcards don't match primitive types or array types.
+The '<code>%</code>' wildcard matches any primitive type, while the
+'<code>**</code>' wildcard matches any class name. Array types  have to be
+specified explicitly. This results in a short list of alternative method
+signatures.
 
 <a name="rmi">&nbsp;</a>
 <h3>Processing RMI code</h3>
@@ -559,7 +558,7 @@ processing the input jar at all.
 
 <hr>
 <address>
-Copyright &copy; 2002-2003
+Copyright &copy; 2002-2004
 <a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>

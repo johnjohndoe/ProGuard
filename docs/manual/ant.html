@@ -163,11 +163,13 @@ of this page presents the supported tags.
     <td valign="top">printseeds</td>
     <td valign="top">
      Specifies to exhaustively list classes and class members matched by the
-     various -keep commands. The list is printed to the standard output or to
-     the given file. The list can be useful to verify if the intended class
-      members are really found, especially if you're using wildcards.
-      For example, you may want to list all the applications or all the applets
-      that you are keeping.
+     various -keep commands. The list is printed  to the given file, or to the
+     standard output (if you specify <code>yes</code>, <code>on</code>, or
+     <code>true</code>). The list can be useful to verify if the intended class
+     members are really found, especially if you're using wildcards.
+     For example, you may want to list all the applications or all the applets
+     that you are keeping.<br>
+     Defaults to <code>off</code>.
     </td>
     <td valign="top" align="center">No</td>
   </tr>
@@ -178,8 +180,9 @@ of this page presents the supported tags.
      to the standard output or to the given file. For example, you can list
      the unused code of an application.<br>
      Specify the name of the file or <code>yes</code>, <code>on</code> or
-     <code>true</code> to print to the standard output.<br>
-     Defaults to <code>off</code>. Only applicable when shrinking.
+     <code>true</code> to print to the standard output.
+     Only applicable when shrinking.<br>
+     Defaults to <code>off</code>.
     </td>
     <td valign="top" align="center">No</td>
   </tr>
@@ -188,9 +191,11 @@ of this page presents the supported tags.
     <td valign="top">
      Specifies to print the mapping from old names to new names for classes and
      class members that have been renamed. The mapping is printed to the
-     standard output or to the given file. It is required if you ever want
+     given file, or to the standard output (if you specify <code>yes</code>,
+     <code>on</code>, or <code>true</code>). It is required if you ever want
      to make sense again of obfuscated stack traces.
-     Only applicable when obfuscating.
+     Only applicable when obfuscating.<br>
+     Defaults to <code>off</code>.
     </td>
     <td valign="top" align="center">No</td>
   </tr>

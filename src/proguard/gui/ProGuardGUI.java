@@ -2,7 +2,7 @@
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
- * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -47,6 +47,9 @@ public class ProGuardGUI extends JFrame
     private static final String TITLE_IMAGE_FILE            = "vtitle.gif";
     private static final String BOILERPLATE_KEEP_CLASS_FILE = "boilerplate.pro";
     private static final String DEFAULT_CONFIGURATION       = "default.pro";
+
+    private static final String KEEP_ATTRIBUTE_DEFAULT        = "InnerClasses,SourceFile,LineNumberTable,Deprecated,Signature";
+    private static final String SOURCE_FILE_ATTRIBUTE_DEFAULT = "SourceFile";
 
     private static final Border BORDER = BorderFactory.createEtchedBorder(EtchedBorder.RAISED);
 
@@ -681,8 +684,8 @@ public class ProGuardGUI extends JFrame
         printMappingTextField              .setText(configuration.printMapping);
         applyMappingTextField              .setText(configuration.applyMapping);
         defaultPackageTextField            .setText(configuration.defaultPackage);
-        keepAttributesTextField            .setText(configuration.keepAttributes         == null ? "InnerClasses,SourceFile,LineNumberTable,Deprecated" : ListUtil.commaSeparatedString(configuration.keepAttributes));
-        newSourceFileAttributeTextField    .setText(configuration.newSourceFileAttribute == null ? "SourceFile" : configuration.newSourceFileAttribute);
+        keepAttributesTextField            .setText(configuration.keepAttributes         == null ? KEEP_ATTRIBUTE_DEFAULT : ListUtil.commaSeparatedString(configuration.keepAttributes));
+        newSourceFileAttributeTextField    .setText(configuration.newSourceFileAttribute == null ? SOURCE_FILE_ATTRIBUTE_DEFAULT : configuration.newSourceFileAttribute);
 
         if (configuration.printMapping != null)
         {
