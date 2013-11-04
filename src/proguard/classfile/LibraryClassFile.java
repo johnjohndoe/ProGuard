@@ -1,9 +1,9 @@
-/* $Id: LibraryClassFile.java,v 1.40.2.1 2006/01/16 22:57:55 eric Exp $
+/* $Id: LibraryClassFile.java,v 1.40.2.3 2007/01/25 21:01:01 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
- * Copyright (c) 2002-2006 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -54,19 +54,19 @@ public class LibraryClassFile implements ClassFile
 
     /**
      * An extra field pointing to the superclass of this class.
-     * This field is filled out by the <code>{@link ClassFileReferenceInitializer}</code>.
+     * This field is filled out by the <code>{@link ClassFileHierarchyInitializer}</code>.
      */
     public ClassFile   superClass          = null;
 
     /**
      * An extra field pointing to the interfaces of this class.
-     * This field is filled out by the <code>{@link ClassFileReferenceInitializer}</code>.
+     * This field is filled out by the <code>{@link ClassFileHierarchyInitializer}</code>.
      */
     public ClassFile[] interfaceClasses    = null;
 
     /**
      * An extra field pointing to the subclasses of this class.
-     * This field is filled out by the <code>{@link ClassFileReferenceInitializer}</code>.
+     * This field is filled out by the <code>{@link ClassFileHierarchyInitializer}</code>.
      */
     public ClassFile[] subClasses          = null;
 

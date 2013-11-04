@@ -1,9 +1,9 @@
-/* $Id: LineNumberTableAttrInfo.java,v 1.2.2.1 2006/01/16 22:57:55 eric Exp $
+/* $Id: LineNumberTableAttrInfo.java,v 1.2.2.2 2007/01/18 21:31:51 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
- * Copyright (c) 2002-2006 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by

@@ -1,8 +1,8 @@
-/* $Id: ClassFileObfuscator.java,v 1.24.2.1 2006/01/16 22:57:56 eric Exp $
+/* $Id: ClassFileObfuscator.java,v 1.24.2.3 2007/01/18 21:31:52 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2006 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -39,8 +39,8 @@ import java.util.*;
 public class ClassFileObfuscator
   implements ClassFileVisitor
 {
-    private boolean useMixedCaseClassNames;
     private String  defaultPackageName;
+    private boolean useMixedCaseClassNames;
 
     // Map: [package name - class name factory]
     private final Map         packageMap = new HashMap();
@@ -50,14 +50,14 @@ public class ClassFileObfuscator
 
     /**
      * Creates a new ClassFileObfuscator.
-     * @param programClassPool   the class pool in which class names have to be
-     *                           unique.
-     * @param defaultPackageName the package in which all classes that don't
-     *                           have fixed names will be put, or <code>null</code>,
-     *                           if all classes can remain in their original
-     *                           packages.
-     * @param allowAggressiveOverloading a flag that specifies whether class
-     *                           members can be overloaded aggressively.
+     * @param programClassPool       the class pool in which class names have
+     *                               to be unique.
+     * @param defaultPackageName     the package in which all classes that don't
+     *                               have fixed names will be put, or
+     *                               <code>null</code>, if all classes can
+     *                               remain in their original packages.
+     * @param useMixedCaseClassNames specifies whether to use mixed case
+     *                               class names.
      */
     public ClassFileObfuscator(ClassPool programClassPool,
                                String    defaultPackageName,

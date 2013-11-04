@@ -12,6 +12,9 @@
 # Keep - Midlets. Keep all extensions of javax.microedition.midlet.MIDlet.
 -keep public class * extends javax.microedition.midlet.MIDlet
 
+# Keep - Xlets. Keep all extensions of java.tv.xlet.Xlet.
+-keep public class * extends java.tv.xlet.Xlet
+
 # Keep - Library. Keep all externally accessible classes, fields, and methods.
 -keep public class * {
     public protected <fields>;

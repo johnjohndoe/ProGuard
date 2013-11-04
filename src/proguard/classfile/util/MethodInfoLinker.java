@@ -1,8 +1,8 @@
-/* $Id: MethodInfoLinker.java,v 1.2.2.2 2006/06/07 22:36:52 eric Exp $
+/* $Id: MethodInfoLinker.java,v 1.2.2.4 2007/01/18 21:31:51 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2006 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -31,6 +31,9 @@ import java.util.*;
  * files that are not being subclassed. Chains of links that have been created
  * in previous invocations are merged with new chains of links, in order to
  * create a consistent set of chains.
+ * <p>
+ * As a MemberInfoVisitor, it links all corresponding methods that it ever
+ * visits.
  *
  * @author Eric Lafortune
  */
@@ -47,19 +50,30 @@ public class MethodInfoLinker
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
+        visitClassFile(programClassFile);
+    }
+
+
+    public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
+    {
+        visitClassFile(libraryClassFile);
+    }
+
+
+    /**
+     * Links all corresponding methods in the given class file and all of its
+     * super classes and interfaces.
+     */
+    private void visitClassFile(ClassFile classFile)
+    {
         // Collect all non-private members in this class hierarchy.
-        programClassFile.hierarchyAccept(true, true, true, false,
+        classFile.hierarchyAccept(true, true, true, false,
             new AllMemberInfoVisitor(
             new MemberInfoAccessFilter(0, ClassConstants.INTERNAL_ACC_PRIVATE,
             this)));
 
         // Clean up for the next class hierarchy.
         memberInfoMap.clear();
-    }
-
-
-    public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
-    {
     }
 
 
@@ -163,6 +177,7 @@ public class MethodInfoLinker
         return lastMemberInfo;
     }
 
+    
     /**
      * Finds the last visitor accepter in the linked list of visitors.
      * @param visitorAccepter the given method.

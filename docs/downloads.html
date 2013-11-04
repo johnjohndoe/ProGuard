@@ -59,6 +59,9 @@ collected since the previous release.
 <li>Added new options <code>-flattenpackagehierarchy</code> and
     <code>-repackageclasses</code> (replacing <code>-defaultpackage</code>) to
     control obfuscation of packages names.
+<li>Added new options <code>-adaptresourcefilenames</code> and
+    <code>-adaptresourcefilecontents</code>, with file filters, to update
+    resource files corresponding to obfuscated class names.
 <li>Now respecting naming rule for nested class names
     (<code>EnclosingClass$InnerClass</code>) in obfuscation step, if
     <code>InnerClasses</code> attributes or <code>EnclosingMethod</code>
@@ -66,7 +69,7 @@ collected since the previous release.
 <li>Added new inter-procedural optimizations: method inlining and propagation
     of constant fields, constant arguments, and constant return values.
 <li>Added optimized local variable allocation.
-<li>Added many new peephole optimizations.
+<li>Added over 250 new peephole optimizations.
 <li>Improved making classes and class members public or protected.
 <li>Now printing notes on suspiciously unkept classes in parameters of
     specified methods.
@@ -76,6 +79,14 @@ collected since the previous release.
 <li>TODO: Update documentation and examples.
 </ul>
 </font>
+
+<h3><div>Mar 2007</div> Version 3.8</h3>
+<ul>
+<li>Fixed optimization of parameters used as local variables.
+<li>Fixed obfuscation with conflicting class member names.
+<li>Fixed incremental obfuscation with incomplete mapping file for library jars.
+<li>Updated documentation and examples.
+</ul>
 
 <h3><div>Dec 2006</div> Version 3.7</h3>
 <ul>
@@ -346,7 +357,7 @@ collected since the previous release.
 
 <hr>
 <address>
-Copyright &copy; 2002-2006
+Copyright &copy; 2002-2007
 <a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 

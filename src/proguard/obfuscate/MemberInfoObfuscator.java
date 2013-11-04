@@ -1,8 +1,8 @@
-/* $Id: MemberInfoObfuscator.java,v 1.14.2.3 2006/11/25 16:56:11 eric Exp $
+/* $Id: MemberInfoObfuscator.java,v 1.14.2.5 2007/01/18 21:31:52 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2006 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -42,7 +42,6 @@ public class MemberInfoObfuscator implements MemberInfoVisitor
     private boolean        allowAggressiveOverloading;
     private NameFactory    nameFactory;
     private Map            descriptorMap;
-    private WarningPrinter warningPrinter;
 
 
     /**
@@ -53,19 +52,14 @@ public class MemberInfoObfuscator implements MemberInfoVisitor
      *                                   obfuscated member names.
      * @param descriptorMap              the map of descriptors to
      *                                   [new name - old name] maps.
-     * @param warningPrinter             an optional warning printer to which
-     *                                   warnings about conflicting name
-     *                                   mappings can be printed.
      */
     public MemberInfoObfuscator(boolean        allowAggressiveOverloading,
                                 NameFactory    nameFactory,
-                                Map            descriptorMap,
-                                WarningPrinter warningPrinter)
+                                Map            descriptorMap)
     {
         this.allowAggressiveOverloading = allowAggressiveOverloading;
         this.nameFactory                = nameFactory;
         this.descriptorMap              = descriptorMap;
-        this.warningPrinter             = warningPrinter;
     }
 
 
@@ -75,7 +69,7 @@ public class MemberInfoObfuscator implements MemberInfoVisitor
 
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {
-        visitMemberInfo(programClassFile, programFieldInfo, true);
+        visitMemberInfo(programClassFile, programFieldInfo);
     }
 
 
@@ -90,7 +84,7 @@ public class MemberInfoObfuscator implements MemberInfoVisitor
             return;
         }
 
-        visitMemberInfo(programClassFile, programMethodInfo, false);
+        visitMemberInfo(programClassFile, programMethodInfo);
     }
 
 
@@ -102,17 +96,15 @@ public class MemberInfoObfuscator implements MemberInfoVisitor
      * Obfuscates the given class member.
      * @param classFile  the class file of the given member.
      * @param memberInfo the class member to be obfuscated.
-     * @param isField    speficies whether the class member is a field.
      */
     private void visitMemberInfo(ClassFile  classFile,
-                                 MemberInfo memberInfo,
-                                 boolean    isField)
+                                 MemberInfo memberInfo)
     {
         // Get the member's name and descriptor.
         String name       = memberInfo.getName(classFile);
         String descriptor = memberInfo.getDescriptor(classFile);
 
-        // Check whether we're allowed to do aggressive overloading
+        // Check whether we're allowed to overload aggressively.
         if (!allowAggressiveOverloading)
         {
             // Trim the return argument from the descriptor if not.
@@ -143,37 +135,6 @@ public class MemberInfoObfuscator implements MemberInfoVisitor
 
             // Assign the new name.
             setNewMemberName(memberInfo, newName);
-        }
-        else
-        {
-            String previousName = (String)nameMap.get(newName);
-            if (!name.equals(previousName))
-            {
-                // There's a conflict! A member (with a given old name) in a
-                // first namespace has received the same new name as this
-                // member (with a different old name) in a second name space,
-                // and now these two have to live together in this name space.
-                if (hasFixedNewMemberName(memberInfo) &&
-                    warningPrinter != null)
-                {
-                    descriptor = memberInfo.getDescriptor(classFile);
-                    warningPrinter.print("Warning: " + ClassUtil.externalClassName(classFile.getName()) +
-                                         (isField ?
-                                             ": field '" + ClassUtil.externalFullFieldDescription(0, name, descriptor) :
-                                             ": method '" + ClassUtil.externalFullMethodDescription(classFile.getName(), 0, name, descriptor)) +
-                                         "' can't be mapped to '" + newName +
-                                         "' because it would conflict with " +
-                                         (isField ?
-                                             "field '" :
-                                             "method '" ) + previousName +
-                                         "', which is already being mapped to '" + newName + "'");
-                }
-
-                // TODO: Preferentially keep the fixed name.
-
-                // Mark the name as conflicting.
-                MemberInfoNameConflictFilter.markConflictingName(memberInfo);
-            }
         }
     }
 

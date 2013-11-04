@@ -1,8 +1,8 @@
-/* $Id: ClassPoolFiller.java,v 1.9.2.3 2006/11/26 15:29:20 eric Exp $
+/* $Id: ClassPoolFiller.java,v 1.9.2.4 2007/01/18 21:31:51 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2006 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free

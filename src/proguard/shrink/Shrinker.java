@@ -1,8 +1,8 @@
-/* $Id: Shrinker.java,v 1.1.2.3 2006/11/25 16:56:11 eric Exp $
+/* $Id: Shrinker.java,v 1.1.2.5 2007/01/25 21:01:01 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2006 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -47,7 +47,7 @@ public class Shrinker
 
 
     /**
-     * Performs obfuscation of the given program class pool.
+     * Performs shrinking of the given program class pool.
      */
     public ClassPool execute(ClassPool programClassPool,
                              ClassPool libraryClassPool) throws IOException

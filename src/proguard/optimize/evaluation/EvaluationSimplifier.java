@@ -1,8 +1,8 @@
-/* $Id: EvaluationSimplifier.java,v 1.4.2.15 2006/10/07 12:08:25 eric Exp $
+/* $Id: EvaluationSimplifier.java,v 1.4.2.17 2007/01/18 21:31:53 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2006 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -1984,7 +1984,8 @@ implements   MemberInfoVisitor,
         {
             int offset = offsets.instructionOffset(offsetIndex);
 
-            if (all ^ (isNecessary[offset] && (producer || !isSimplified[offset])))
+            if (all ^ (offset == PartialEvaluator.AT_METHOD_ENTRY ||
+                       (isNecessary[offset] && (producer || !isSimplified[offset]))))
             {
                 return !all;
             }

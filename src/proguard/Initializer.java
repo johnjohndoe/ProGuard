@@ -1,8 +1,8 @@
-/* $Id: Initializer.java,v 1.2.2.8 2006/12/11 21:57:29 eric Exp $
+/* $Id: Initializer.java,v 1.2.2.11 2007/02/03 09:05:51 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java bytecode.
  *
- * Copyright (c) 2002-2006 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -84,10 +84,10 @@ public class Initializer
             new AllMethodVisitor(
             new AllAttrInfoVisitor(
             new AllInstructionVisitor(
-           new ClassFileClassForNameReferenceInitializer(programClassPool,
-                                                         libraryClassPool,
-                                                         classForNameNotePrinter,
-                                                         createNoteExceptionMatcher(configuration.keep))))));
+            new ClassFileClassForNameReferenceInitializer(programClassPool,
+                                                          libraryClassPool,
+                                                          classForNameNotePrinter,
+                                                          createNoteExceptionMatcher(configuration.keep))))));
 
         // Initialize the class references from program class members and
         // attributes.
@@ -100,7 +100,8 @@ public class Initializer
                                               libraryClassPool,
                                               referenceWarningPrinter));
 
-        if (!configuration.useUniqueClassMemberNames)
+        if (configuration.applyMapping == null &&
+            !configuration.useUniqueClassMemberNames)
         {
             // Reconstruct a library class pool with only those library classes
             // whose hierarchies are referenced by the program classes.
@@ -114,7 +115,6 @@ public class Initializer
         }
 
         // Initialize the class references from library class members.
-
         libraryClassPool.classFilesAccept(
             new ClassFileReferenceInitializer(programClassPool,
                                               libraryClassPool,

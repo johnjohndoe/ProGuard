@@ -1,8 +1,8 @@
-/* $Id: MemberInfoNameCollector.java,v 1.3.2.2 2006/06/07 22:36:52 eric Exp $
+/* $Id: MemberInfoNameCollector.java,v 1.3.2.4 2007/01/18 21:31:52 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2006 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -119,9 +119,12 @@ public class MemberInfoNameCollector implements MemberInfoVisitor
             // creating a new [new name - old name] map if necessary.
             Map nameMap = MemberInfoObfuscator.retrieveNameMap(descriptorMap, descriptor);
 
-            // Is the other original name different from this original name?
-            if (nameMap.get(newName) == null ||
-                MemberInfoObfuscator.hasFixedNewMemberName(memberInfo))
+            // Isn't there another original name for this new name, or should
+            // this original name get priority?
+            Object otherName = nameMap.get(newName);
+            if (otherName == null                                      ||
+                MemberInfoObfuscator.hasFixedNewMemberName(memberInfo) ||
+                name.compareTo(otherName) < 0)
             {
                 // Remember not to use the new name again in this name space.
                 nameMap.put(newName, name);

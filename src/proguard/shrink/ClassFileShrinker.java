@@ -1,8 +1,8 @@
-/* $Id: ClassFileShrinker.java,v 1.27.2.1 2006/01/16 22:57:56 eric Exp $
+/* $Id: ClassFileShrinker.java,v 1.27.2.3 2007/01/25 21:01:01 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (c) 2002-2006 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2007 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -48,8 +48,6 @@ public class ClassFileShrinker
 
     /**
      * Creates a new ClassFileShrinker.
-    /**
-     * Creates a new InnerUsageMarker.
      * @param usageMarker the usage marker that is used to mark the classes
      *                    and class members.
      * @param codeLength an estimate of the maximum length of all the code that
