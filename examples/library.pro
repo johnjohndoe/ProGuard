@@ -1,6 +1,8 @@
 #
 # This ProGuard configuration file illustrates how to process a program
 # library, such that it remains usable as a library.
+# Usage:
+#     java -jar proguard.jar @library.pro
 #
 
 # Specify the library jars, input jars, and output jar.
@@ -17,7 +19,7 @@
 
 -printmapping out.map
 -renamesourcefileattribute SourceFile
--keepattributes SourceFile,LineNumberTable
+-keepattributes SourceFile,LineNumberTable,Deprecated
 
 
 # Preserve all public classes, and their public and protected fields and
@@ -28,11 +30,18 @@
 }
 
 
-# Preserve all native method names and .class method names.
+# Preserve all .class method names.
 
 -keepclassmembernames class * {
-    native <methods>;
     static Class class$(java.lang.String);
+    static Class class$(java.lang.String, boolean);
+}
+
+
+# Preserve all native method names and the names of their classes.
+
+-keepclasseswithmembernames class * {
+    native <methods>;
 }
 
 

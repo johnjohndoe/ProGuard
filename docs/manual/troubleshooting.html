@@ -1,0 +1,128 @@
+<!doctype html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<title>ProGuard Troubleshooting</title>
+</head>
+<body
+ bgcolor="#ffffff"
+ text="#000000">
+
+<table width="100%" cellpadding="10" cellspacing="0"><tr><th bgcolor="#EEEEFF">
+<font size="+2">Troubleshooting</font>
+</th></tr></table>
+<p>
+
+<h3>Problems while processing</h3>
+
+ProGuard may print out some notes:
+<ul>
+<li>If your code contains <b>class casts of dynamically created class
+    instances</b>, like
+    "<code>(MyClass)Class.forName(variable).newInstance()</code>", ProGuard
+    will list them. Depending on your application, you may need to keep the
+    mentioned classes with something like "<code>-keep class MyClass</code>",
+    or their implementations with something like "<code>-keep class *
+    implements MyClass</code>". You can switch off these notes by specifying
+    the <code>-dontnote</code> option.
+</ul>
+<p>
+
+ProGuard may terminate with warnings in a couple of cases:
+<ul>
+<li>If you get an error message about <b>missing <code>-keep</code>
+    options</b>, you either forgot them or you mistyped the class names.
+    ProGuard has to know exactly what you want to keep: an application, an
+    applet, a servlet, a midlet,..., or any combination of these. Without the
+    proper seed specifications, ProGuard would mark all class files as unused,
+    and your output jar would be empty.
+    <p>
+
+<li>If there are <b>unresolved references to superclasses or interfaces</b>,
+    you most likely forgot to specify an essential library. At least the Java
+    run-time library should be specified. Furthermore, all libraries with
+    classes or interfaces that are extended or implemented by classes in your
+    input jars should be specified. For specifying libraries, use the
+    <code>-libraryjars</code> option.
+    <p>
+    If the class that is reported as missing is a non-public library class,
+    you should specify the <code>-dontskipnonpubliclibraryclasses</code>
+    option.
+    <p>
+    If you're missing a library and you're absolutely sure it isn't used
+    anyway, you can try your luck with the <code>-ignorewarnings</code>
+    option, or even the <code>-dontwarn</code> option.
+    <p>
+
+<li>If there are <b>unresolved references to class members in input
+    classes</b>, your class files are most likely inconsistent. Possibly, some
+    class file didn't get recompiled properly, or some class file was left
+    behind after its source file was removed. Try removing all class files,
+    recompiling them, zipping them up, and running ProGuard again.
+
+</ul>
+<p>
+
+Should ProGuard crash while processing your application:
+<ul>
+<li>Maybe your class files are corrupt. See if recompiling them and trying
+    again helps. If not, please contact me, at least reporting the version of
+    your JDK, the version of ProGuard, the options, and the printed output,
+    including exception stack trace (use the <code>-verbose</code> option).
+</ul>
+<p>
+
+<h3>Problems at run-time</h3>
+
+If ProGuard runs fine, but your processed application doesn't work, there
+might be several reasons:
+<ul>
+<li>If you get a <code><b>NoClassDefFoundError</b></code>, your class path is
+    probably incorrect. It should at least contain all library jars and, of
+    course, your processed program jar.
+    <p>
+
+<li>If you get a <code><b>ClassNotFoundException</b></code>, your code is
+    probably calling <code>Class.forName</code>, trying to create the missing
+    class dynamically. ProGuard can only detect constant name arguments, like
+    <code>Class.forName("mypackage.MyClass")</code>. For variable name
+    arguments like <code>Class.forName(someClass)</code>, you have to keep all
+    possible classes using the <code>-keep</code> option, e.g. "<code>-keep
+    class mypackage.MyClass</code>" or "<code>-keep class * implements
+    mypackage.MyInterface</code>".
+    <p>
+
+<li>If you get a <code><b>NoSuchMethodException</b></code>, your code is
+    probably calling something like <code>myClass.getMethod</code>, trying to
+    find some method dynamically. Since ProGuard isn't detecting this (yet),
+    you have to keep the missing method in using the <code>-keep</code>
+    option, e.g. "<code>-keep class mypackage.MyClass { void myMethod();
+    }</code>".
+    <p>
+
+<li>If you get a <code><b>NullPointerException</b></code> or if you don't see
+    any icons, your processed code may be unable to find some resource files.
+    ProGuard currently simply copies resource files over from the input jars
+    to the output jar. Their names and contents remain unchanged. If you've
+    used the <code>-defaultpackage</code> option, the package names of some
+    classes may have changed, and along with them, the directory in which they
+    look for their resource files. It's better not to use this option in these
+    circumstances.
+    <p>
+
+<li>If you get a <b>verification error</b> in J2ME, you may have forgotten to
+    preverify your program jar <i>after</i> having processed it with ProGuard.
+    <p>
+
+<li>If you get a <code><b>NoSuchMethodError</b></code> or an
+    <code><b>AbstractMethodError</b></code>, perhaps there's a bug in ProGuard
+    (gasp!). If so, please contact me, preferably with the simplest example on
+    which you can find ProGuard to fail. </ul>
+<p>
+
+<hr>
+<address>
+Copyright &copy; 2002 <a href="http://www.graphics.cornell.edu/~eric/">Eric
+Lafortune</a>.
+</address>
+</body>
+</html>

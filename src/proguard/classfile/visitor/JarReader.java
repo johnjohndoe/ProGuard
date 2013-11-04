@@ -1,4 +1,4 @@
-/* $Id: JarReader.java,v 1.6 2002/09/01 16:41:35 eric Exp $
+/* $Id: JarReader.java,v 1.9 2002/11/03 13:30:14 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -20,57 +20,27 @@
  */
 package proguard.classfile.visitor;
 
-import proguard.classfile.*;
-
 import java.io.*;
-import java.util.zip.*;
 import java.util.jar.*;
+import java.util.zip.ZipEntry;
 
 
 /**
- * This class can read a given jar, applying a given ClassFileVisitor to all
- * class files it reads. The visitor can for instance collect the class files,
- * or perform some operation on them.
- * <p>
- * Class files are read as ProgramClassFile objects or LibraryClassFile objects,
- * depending on the <code>isLibrary</code> flag. In case of libraries, only
- * public class files are considered.
+ * This class can read a given jar, applying a given ZipEntryReader to all
+ * ZIP entries it reads. The reader can for instance collect the class files,
+ * or copy the resource files.
  *
  * @author Eric Lafortune
  */
 public class JarReader
 {
     private String   jarFileName;
-    private boolean  isLibrary;
     private Manifest manifest;
 
 
-    public JarReader(String jarFileName, boolean isLibrary)
+    public JarReader(String jarFileName)
     {
         this.jarFileName = jarFileName;
-        this.isLibrary   = isLibrary;
-    }
-
-
-    public void setJarFileName(String jarFileName)
-    {
-        this.jarFileName = jarFileName;
-    }
-
-    public String getJarFileName()
-    {
-        return jarFileName;
-    }
-
-
-    public void setLibrary(boolean isLibrary)
-    {
-        this.isLibrary = isLibrary;
-    }
-
-    public boolean isLibrary()
-    {
-        return isLibrary;
     }
 
 
@@ -84,21 +54,12 @@ public class JarReader
 
 
     /**
-     * Reads the given jar, applying the given ClassFileVisitor to all class
-     * files that are read.
+     * Reads the given jar, applying the given ZipEntryReader to all ZIP entries
+     * that are encountered.
      */
-    public void classFilesAccept(ClassFileVisitor classFileVisitor)
+    public void readZipEntries(ZipEntryReader zipEntryReader)
     throws IOException
     {
-        if (isLibrary)
-        {
-            // We filter library class files, only keeping public ones.
-            // E.g. about 60% of all rt.jar classes.
-            classFileVisitor = new AccessFilteredClassFileVisitor(classFileVisitor,
-                                                                  ClassConstants.INTERNAL_ACC_PUBLIC,
-                                                                  0);
-        }
-
         JarInputStream jarInputStream = null;
 
         try
@@ -111,37 +72,17 @@ public class JarReader
             // Get all entries from the input jar.
             while (true)
             {
-                // Is there another file?
-                ZipEntry inEntry = jarInputStream.getNextEntry();
-                if (inEntry == null)
+                // Can we get another entry?
+                ZipEntry zipEntry = jarInputStream.getNextEntry();
+                if (zipEntry == null)
                 {
                     break;
                 }
 
-                // Is it a class file?
-                String name = inEntry.getName();
-                if (name.endsWith(ClassConstants.CLASS_FILE_EXTENSION))
-                {
-                    // Create a full internal representation of the class file
-                    DataInputStream inStream = new DataInputStream(jarInputStream);
+                // Delegate the actual reading to the ZIP entry reader.
+                zipEntryReader.readZipEntry(zipEntry, jarInputStream);
 
-                    try
-                    {
-                        // Create a ClassFile representation.
-                        ClassFile classFile = isLibrary ?
-                            (ClassFile)LibraryClassFile.create(inStream) :
-                            (ClassFile)ProgramClassFile.create(inStream);
-
-                        // Apply the visitor.
-                        classFile.accept(classFileVisitor);
-                    }
-                    catch (Exception ex)
-                    {
-                      ex.printStackTrace();
-                      System.err.println("Corrupt class ["+name+"] in jar ["+jarFileName+"]");
-                    }
-                }
-
+                // Close the entry, so we can continue with the next one.
                 jarInputStream.closeEntry();
             }
 

@@ -1,4 +1,4 @@
-/* $Id: FloatCpInfo.java,v 1.8 2002/07/28 15:56:58 eric Exp $
+/* $Id: FloatCpInfo.java,v 1.9 2002/11/03 13:30:13 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -21,9 +21,9 @@
  */
 package proguard.classfile;
 
-import proguard.classfile.visitor.*;
+import proguard.classfile.visitor.CpInfoVisitor;
+
 import java.io.*;
-import java.util.*;
 
 /**
  * Representation of a 'float' entry in the ConstantPool.

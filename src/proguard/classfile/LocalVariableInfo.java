@@ -1,4 +1,4 @@
-/* $Id: LocalVariableInfo.java,v 1.6 2002/05/12 14:29:08 eric Exp $
+/* $Id: LocalVariableInfo.java,v 1.7 2002/11/03 13:30:13 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -22,7 +22,6 @@
 package proguard.classfile;
 
 import java.io.*;
-import java.util.*;
 
 /**
  * Representation of an Local Variable table entry.

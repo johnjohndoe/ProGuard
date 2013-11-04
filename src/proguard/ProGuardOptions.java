@@ -1,4 +1,4 @@
-/* $Id: ProGuardOptions.java,v 1.6 2002/08/30 16:27:43 eric Exp $
+/* $Id: ProGuardOptions.java,v 1.9 2002/10/20 13:05:16 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -24,24 +24,30 @@ import java.util.Vector;
 
 
 /**
- * Various ProGuard options.
+ * All ProGuard options.
  *
  * @author Eric Lafortune
  */
 public class ProGuardOptions
 {
-    public boolean  verbose;
-    public String   printSeeds;
-    public String   printUsage;
-    public String   printMapping;
-    public String   dump;
-    public boolean  ignoreWarnings;
-    public boolean  warn      = true;
-    public boolean  note      = true;
-    public boolean  shrink    = true;
-    public boolean  obfuscate = true;
-    public boolean  overloadAggressively;
-    public String   defaultPackage;
-    public Vector   keepAttributes;
-    public String   newSourceFileAttribute;
+    public Vector  libraryJars;
+    public Vector  inJars;
+    public String  outJar;
+    public Vector  keepCommands;
+    public Vector  keepAttributes;
+    public String  newSourceFileAttribute;
+    public String  printSeeds;
+    public String  printUsage;
+    public String  printMapping;
+    public boolean verbose;
+    public String  dump;
+    public boolean ignoreWarnings;
+    public boolean warn                        = true;
+    public boolean note                        = true;
+    public boolean shrink                      = true;
+    public boolean obfuscate                   = true;
+    public boolean useMixedCaseClassNames      = true;
+    public boolean overloadAggressively;
+    public String  defaultPackage;
+    public boolean skipNonPublicLibraryClasses = true;
 }

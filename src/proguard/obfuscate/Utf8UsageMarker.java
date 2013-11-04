@@ -1,4 +1,4 @@
-/* $Id: Utf8UsageMarker.java,v 1.10 2002/08/29 18:02:25 eric Exp $
+/* $Id: Utf8UsageMarker.java,v 1.11 2002/11/03 13:30:14 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -22,8 +22,6 @@ package proguard.obfuscate;
 
 import proguard.classfile.*;
 import proguard.classfile.visitor.*;
-
-import java.util.*;
 
 
 /**

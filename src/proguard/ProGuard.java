@@ -1,4 +1,4 @@
-/* $Id: ProGuard.java,v 1.22 2002/08/30 16:27:43 eric Exp $
+/* $Id: ProGuard.java,v 1.29 2002/11/03 14:29:56 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -20,14 +20,13 @@
  */
 package proguard;
 
-import proguard.classfile.*;
+import proguard.classfile.ClassPool;
 import proguard.classfile.util.*;
 import proguard.classfile.visitor.*;
-import proguard.shrink.*;
 import proguard.obfuscate.*;
+import proguard.shrink.*;
 
 import java.io.*;
-import java.util.*;
 
 
 /**
@@ -38,55 +37,104 @@ import java.util.*;
  */
 public class ProGuard
 {
-    public static final String VERSION = "ProGuard, version 1.3";
+    public static final String VERSION = "ProGuard, version 1.4";
 
-    private CompoundCommand commands         = new CompoundCommand();
-    private ProGuardOptions options          = new ProGuardOptions();
+    private ProGuardOptions options;
     private ClassPool       programClassPool = new ClassPool();
     private ClassPool       libraryClassPool = new ClassPool();
 
 
     /**
-     * Reads the given configuration file.
+     * Creates a new ProGuard to process jars as specified by the given options.
      */
-    private void readCommands(String[] args) throws IOException
+    public ProGuard(ProGuardOptions options)
     {
-        CommandParser parser = new CommandParser(options, args);
+        this.options = options;
+    }
 
-        try
+
+    /**
+     * Reads the input jars.
+     */
+    private void readJars() throws IOException
+    {
+        if (options.verbose)
         {
-            while (true)
-            {
-                Command command = parser.nextCommand();
-                if (command == null)
-                {
-                    break;
-                }
+            System.out.println("Reading jars...");
+        }
 
-                commands.addCommand(command);
+        // Check if we have at least some input jars.
+        if (options.inJars == null)
+        {
+            throw new IOException("The input is empty. You have to specify one or more '-injars' options.");
+        }
+
+        // Read all program jars.
+        if (options.inJars != null)
+        {
+            for (int index = 0; index < options.inJars.size(); index++)
+            {
+                String jarFileName = (String)options.inJars.elementAt(index);
+                readJar(jarFileName, false);
             }
         }
-        catch (ParseException ex)
+
+        // Check if we have at least some input class files.
+        if (programClassPool.size() == 0)
         {
-            throw new IOException(ex.getMessage());
+            throw new IOException("The input jars are empty. Did you specify the proper '-injars' options?");
+        }
+
+        // Read all library jars.
+        if (options.libraryJars != null)
+        {
+            for (int index = 0; index < options.libraryJars.size(); index++)
+            {
+                String jarFileName = (String)options.libraryJars.elementAt(index);
+                readJar(jarFileName, true);
+            }
         }
     }
 
 
     /**
-     * Performs the initialization phase.
+     * Reads the given input jar.
      */
-    private void initialize()
+    private void readJar(String jarFileName, boolean isLibrary) throws IOException
     {
-        if (options.verbose)
+        System.out.println("Reading " + (isLibrary?"library":"program") +
+                           " jar [" + jarFileName + "]");
+
+        ClassPool classPool = isLibrary ?
+            libraryClassPool :
+            programClassPool;
+
+        JarReader jarReader = new JarReader(jarFileName);
+
+        try
         {
-            System.out.println("Loading jars...");
+            // Let a class pool filler visit all read class files.
+            // It will collect them in the class pool.
+            jarReader.readZipEntries(
+                new ZipEntryClassFileReader(
+                new ClassPoolFiller(classPool),
+                    isLibrary,
+                    options.skipNonPublicLibraryClasses));
+
+            classPool.setManifest(jarReader.getManifest());
         }
+        catch (IOException ex)
+        {
+            System.err.println("Can't read [" + jarFileName + "]");
+        }
+    }
 
-        // Load all library jars and program jars.
-        executeCommands(Command.PHASE_INITIALIZE);
 
-        // Initialize the cross-references between all class files.
+    /**
+     * Initializes the cross-references between all class files.
+     */
+    private void initialize() throws IOException
+    {
 
         // First the class file hierarchy.
         ClassFileHierarchyInitializer hierarchyInitializer =
@@ -110,7 +158,7 @@ public class ProGuard
             System.err.println("Note: there were " + noteCount +
                                " class casts of dynamically created class instances.");
             System.err.println("      You might consider explicitly keeping the mentioned classes and/or");
-            System.err.println("      their implementations.");
+            System.err.println("      their implementations (using '-keep').");
         }
 
         int classFileWarningCount = hierarchyInitializer.getWarningCount();
@@ -118,7 +166,7 @@ public class ProGuard
         {
             System.err.println("Warning: there were " + classFileWarningCount +
                                " unresolved references to superclasses or interfaces.");
-            System.err.println("         You may need to specify additional library jars.");
+            System.err.println("         You may need to specify additional library jars (using '-libraryjars').");
         }
 
         int memberWarningCount = referenceInitializer.getWarningCount();
@@ -136,7 +184,7 @@ public class ProGuard
         {
             System.err.println("         If you are sure the mentioned classes are not used anyway,");
             System.err.println("         you could try your luck using the '-ignorewarnings' option.");
-            System.exit(-1);
+            throw new IOException("");
         }
 
         // Discard unused library classes.
@@ -160,21 +208,41 @@ public class ProGuard
 
 
     /**
-     * Performs the checking phase.
+     * Prints out classes and class members that are used as seeds in the
+     * shrinking and obfuscation steps.
      */
-    private void check()
+    private void printSeeds() throws IOException
     {
-      if (options.verbose)
-      {
-          System.out.println("Printing kept classes, fields, and methods...");
-      }
+        if (options.verbose)
+        {
+            System.out.println("Printing kept classes, fields, and methods...");
+        }
 
-      executeCommands(Command.PHASE_CHECK);
+        // Check if we have at least some keep commands.
+        if (options.keepCommands == null)
+        {
+            throw new IOException("You have to specify '-keep' options for shrinking and obfuscation.");
+        }
+
+        PrintStream ps = options.printSeeds.length() > 0 ?
+            new PrintStream(new BufferedOutputStream(new FileOutputStream(options.printSeeds))) :
+            System.out;
+
+        // Print out items that are used as seeds.
+        for (int index = 0; index < options.keepCommands.size(); index++) {
+            KeepCommand command = (KeepCommand)options.keepCommands.elementAt(index);
+            command.executeCheckingPhase(programClassPool, libraryClassPool, ps);
+        }
+
+        if (options.printSeeds.length() > 0)
+        {
+            ps.close();
+        }
     }
 
 
     /**
-     * Performs the shrinking phase.
+     * Performs the shrinking step.
      */
     private void shrink() throws IOException
     {
@@ -183,8 +251,17 @@ public class ProGuard
             System.out.println("Shrinking...");
         }
 
+        // Check if we have at least some keep commands.
+        if (options.keepCommands == null)
+        {
+            throw new IOException("You have to specify '-keep' options for the shrinking step.");
+        }
+
         // Mark elements that have to be kept.
-        executeCommands(Command.PHASE_SHRINK);
+        for (int index = 0; index < options.keepCommands.size(); index++) {
+            KeepCommand command = (KeepCommand)options.keepCommands.elementAt(index);
+            command.executeShrinkingPhase(programClassPool, libraryClassPool);
+        }
 
         // Mark interfaces that have to be kept.
         programClassPool.classFilesAccept(new InterfaceUsageMarker());
@@ -234,16 +311,16 @@ public class ProGuard
             System.out.println("    Final number of program classes:    "+programClassPool.size());
         }
 
+        // Check if we have at least some output class files.
         if (programClassPool.size() == 0)
         {
-            System.err.println("Warning: the final jar is empty. Did you specify the proper -keep options?");
-            System.exit(-1);
+            throw new IOException("The output jar is empty. Did you specify the proper '-keep' options?");
         }
     }
 
 
     /**
-     * Performs the obfuscation phase.
+     * Performs the obfuscation step.
      */
     private void obfuscate() throws IOException
     {
@@ -252,15 +329,26 @@ public class ProGuard
             System.out.println("Obfuscating...");
         }
 
-        // Cleans up any old visitor info.
+        // Check if we have at least some keep commands.
+        if (options.keepCommands == null)
+        {
+            throw new IOException("You have to specify '-keep' options for the obfuscation step.");
+        }
+
+        // Clean up any old visitor info.
         programClassPool.classFilesAccept(new ClassFileCleaner());
 
         // Mark element names that have to be kept.
-        executeCommands(Command.PHASE_OBFUSCATE);
+        for (int index = 0; index < options.keepCommands.size(); index++) {
+            KeepCommand command = (KeepCommand)options.keepCommands.elementAt(index);
+            command.executeObfuscationPhase(programClassPool, libraryClassPool);
+        }
+
 
         // Come up with new names for all class files and their class members.
         programClassPool.classFilesAccept(new ClassFileObfuscator(programClassPool,
                                                                   options.defaultPackage,
+                                                                  options.useMixedCaseClassNames,
                                                                   options.overloadAggressively));
         if (options.printMapping != null)
         {
@@ -318,17 +406,52 @@ public class ProGuard
 
 
     /**
-     * Performs the writing phase.
+     * Writes the output jars.
      */
-    private void write()
+    private void writeJars()
     {
         if (options.verbose)
         {
-            System.out.println("Writing jars...");
+            System.out.println("Writing jar...");
         }
 
-        // Mark element names that have to be kept.
-        executeCommands(Command.PHASE_WRITE);
+        System.out.println("Writing output jar [" + options.outJar + "]...");
+
+        // Create a writer for the output jar.
+        JarWriter jarWriter = new JarWriter(options.outJar,
+                                            programClassPool.getManifest(),
+                                            ProGuard.VERSION);
+
+        // Create a reader for all input jars (for copying any resource files).
+        MultiJarReader jarReader = new MultiJarReader(options.inJars);
+
+        try
+        {
+            jarWriter.open();
+
+            // Write all Java class files.
+            programClassPool.classFilesAccept(
+                new ZipEntryClassFileWriter(jarWriter));
+
+            // Copy all resource files.
+            jarReader.readZipEntries(
+                new ZipEntryResourceFileReader(
+                new ZipEntryCopier(jarWriter)));
+        }
+        catch (IOException ex)
+        {
+            System.err.println("Can't write [" + options.outJar + "]");
+        }
+        finally
+        {
+            try
+            {
+                jarWriter.close();
+            }
+            catch (IOException ex)
+            {
+            }
+        }
     }
 
 
@@ -356,57 +479,37 @@ public class ProGuard
 
 
     /**
-     * Executes all parsed commands, for a given phase.
-     */
-    private void executeCommands(int phase)
-    {
-        commands.execute(phase, programClassPool, libraryClassPool);
-    }
-
-
-    /**
      * Performs all subsequent ProGuard operations.
      */
-    private void execute(String[] args)
+    private void execute() throws IOException
     {
-        try
-        {
-            readCommands(args);
+        readJars();
 
+        if (options.shrink || options.obfuscate)
+        {
             initialize();
-
-            if (options.printSeeds != null)
-            {
-                check();
-            }
-
-            if (options.shrink)
-            {
-                shrink();
-            }
-
-            if (options.obfuscate)
-            {
-                obfuscate();
-            }
-
-            write();
-
-            if (options.dump != null)
-            {
-                dump();
-            }
         }
-        catch (Exception ex)
+
+        if (options.printSeeds != null)
         {
-            if (options.verbose)
-            {
-                ex.printStackTrace();
-            }
-            else
-            {
-                System.err.println(ex.getMessage());
-            }
+            printSeeds();
+        }
+
+        if (options.shrink)
+        {
+            shrink();
+        }
+
+        if (options.obfuscate)
+        {
+            obfuscate();
+        }
+
+        writeJars();
+
+        if (options.dump != null)
+        {
+            dump();
         }
     }
 
@@ -423,11 +526,36 @@ public class ProGuard
             System.out.println("Usage: java proguard.ProGuard [options ...]");
             System.exit(1);
         }
-        else
+
+        // Create the default options.
+        ProGuardOptions options = new ProGuardOptions();
+
+        try
         {
-            ProGuard proGuard = new ProGuard();
-            proGuard.execute(args);
-            System.exit(0);
+            // Parse the options specified in the command line arguments.
+            CommandParser parser = new CommandParser(args);
+            parser.parse(options);
+
+            // Execute ProGuard with these options.
+            ProGuard proGuard = new ProGuard(options);
+            proGuard.execute();
         }
+        catch (Exception ex)
+        {
+            if (options.verbose)
+            {
+                // Print a verbose stack trace.
+                ex.printStackTrace();
+            }
+            else
+            {
+                // Print just the stack trace message.
+                System.err.println("Error: "+ex.getMessage());
+            }
+
+            System.exit(1);
+        }
+
+        System.exit(0);
     }
 }

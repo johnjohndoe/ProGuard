@@ -1,4 +1,4 @@
-/* $Id: SyntheticAttrInfo.java,v 1.7 2002/07/28 16:57:22 eric Exp $
+/* $Id: SyntheticAttrInfo.java,v 1.8 2002/11/03 13:30:13 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -21,9 +21,9 @@
  */
 package proguard.classfile;
 
-import proguard.classfile.visitor.*;
+import proguard.classfile.visitor.AttrInfoVisitor;
+
 import java.io.*;
-import java.util.*;
 
 /**
  * Representation of an attribute.

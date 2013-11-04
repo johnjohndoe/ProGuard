@@ -1,5 +1,7 @@
 #
 # This ProGuard configuration file illustrates how to process applications.
+# Usage:
+#     java -jar proguard.jar @applications.pro
 #
 
 # Specify the library jars, input jars, and output jar.
@@ -26,9 +28,9 @@
 -printseeds
 
 
-# Preserve all native method names.
+# Preserve all native method names and the names of their classes.
 
--keepclassmembernames class * {
+-keepclasseswithmembernames class * {
     native <methods>;
 }
 

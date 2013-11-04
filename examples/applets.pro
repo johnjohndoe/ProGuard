@@ -1,5 +1,7 @@
 #
 # This ProGuard configuration file illustrates how to process applets.
+# Usage:
+#     java -jar proguard.jar @applets.pro
 #
 
 # Specify the library jars, input jars, and output jar.

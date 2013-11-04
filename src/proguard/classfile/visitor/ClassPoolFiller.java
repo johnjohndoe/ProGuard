@@ -1,4 +1,4 @@
-/* $Id: ClassPoolFiller.java,v 1.3 2002/05/12 13:33:41 eric Exp $
+/* $Id: ClassPoolFiller.java,v 1.4 2002/11/03 13:30:14 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -21,9 +21,6 @@
 package proguard.classfile.visitor;
 
 import proguard.classfile.*;
-
-import java.io.*;
-import java.util.zip.*;
 
 
 /**

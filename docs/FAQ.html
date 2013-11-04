@@ -15,6 +15,7 @@
 <li><a href="#shrinking">What is shrinking?</a>
 <li><a href="#obfuscation">What is obfuscation?</a>
 <li><a href="#jdk1.4">Does <b>ProGuard</b> work with JDK1.4?</a>
+<li><a href="#j2me">Does <b>ProGuard</b> work with J2ME?</a>
 <li><a href="#forname">Does <b>ProGuard</b> handle <code>Class.forName</code>
     calls?</a>
 <li><a href="#resource">Does <b>ProGuard</b> handle resource files?</a>
@@ -61,10 +62,27 @@ names, method names, and line numbers given in exception stack traces.
 <p>
 Yes. Class files compiled with the <code>javac</code> compiler of JDK1.4 are
 targeted at JRE 1.2 by default. These class files have a slightly different
-structure than before. The new class files fall within the original Java
-bytecode specifications, so they will run on most virtual machines, but they
-may trip some obfuscators. <b>ProGuard</b> handles both class file structures
-correctly.
+structure from older class files. The new class files fall within the original
+Java bytecode specifications, so they will run on most virtual machines, but
+they may trip some obfuscators. <b>ProGuard</b> handles both class file
+structures correctly.
+
+<p>
+<a name="j2me">&nbsp;</a>
+<table width="100%" cellpadding="5" cellspacing="0"><tr><td bgcolor="#EEEEFF">
+<h3>Does <b>ProGuard</b> work with J2ME?</h3>
+</td></tr></table>
+<p>
+Yes. <b>ProGuard</b> itself runs in J2SE, but you can freely specify the
+run-time environment at which your programs are targeted, including J2ME. More
+specifically, you'll specify <code>midpapi.zip</code> as the run-time library,
+instead of J2SE's traditional <code>rt.jar</code>. All of <b>ProGuard</b>'s
+powerful configuration options remain available. The <a
+href="manual/examples.html">example section</a> of the <a
+href="manual/index.html">ProGuard User Manual</a> illustrates how to process
+<a href="manual/examples.html#midlet">a single midlet</a> or <a
+href="manual/examples.html#midlets">all midlets</a> in your input jar, for
+instance.
 
 <p>
 <a name="forname">&nbsp;</a>
@@ -78,7 +96,7 @@ constructs. The referenced classes are preserved in the shrinking phase, and
 the string arguments are properly replaced in the obfuscation phase.
 <p>
 With variable string arguments, it's generally not possible to determine their
-possible values (they might be read from a configuration file, for instance).
+possible values. They might be read from a configuration file, for instance.
 However, <b>ProGuard</b> will note constructs like
 "<code>(SomeClass)Class.forName(variable).newInstance()</code>". These might
 be an indication that the class or interface <code>SomeClass</code> and/or its
@@ -91,9 +109,9 @@ accordingly.
 <h3>Does <b>ProGuard</b> handle resource files?</h3>
 </td></tr></table>
 <p>
-Not specifically. It's on the list of things to do, but for the moment,
-<b>ProGuard</b> ignores any resource files. You will have to add them
-manually, or include them in a separate jar.
+Yes, in the sense that <b>ProGuard</b> copies all non-class resource files
+from the input jars to the output jar. Their names and contents remain
+unchanged.
 
 <p>
 <a name="ant">&nbsp;</a>
@@ -104,9 +122,8 @@ manually, or include them in a separate jar.
 Not specifically, but <b>ProGuard</b> can be used in an Ant build process as a
 straightforward Java program, using any combination of command line options
 and configuration files. Specific support is on the list of things to do.
-(Still, I've always wondered about build tools that require all of their tools
-to be adapted. Call me old-fashioned, but I can still appreciate
-<code>make</code>).
+(I've always wondered about build tools that require all of their tools to be
+adapted. Personally, I still appreciate <code>make</code>).
 
 <p>
 <a name="gui">&nbsp;</a>
@@ -117,9 +134,9 @@ to be adapted. Call me old-fashioned, but I can still appreciate
 No. <b>ProGuard</b> is a command-line tool. It can easily be integrated into
 any automatic build process. Configuration is done using a few compact and
 powerful options; just have a look at the examples in the <a
-href="manual.html">ProGuard User Manual</a>. A graphical user interface to
-create configuration files is on the list of things to do, but it has a fairly
-low priority.
+href="manual/index.html">ProGuard User Manual</a>. A graphical user interface
+to create configuration files is on the list of things to do, but it has a
+fairly low priority.
 
 <p>
 <a name="stacktrace">&nbsp;</a>
@@ -132,7 +149,7 @@ Yes. <b>ProGuard</b> comes with a companion tool, <b>ReTrace</b>, that can
 reconstruction is based on the mapping file that <b>ProGuard</b> can write
 out. If line numbers have been obfuscated away, a list of alternative method
 names is presented for each obfuscated method name that has an ambiguous
-reverse mapping. Please refer to the <a href="retrace.html">ReTrace User
+reverse mapping. Please refer to the <a href="manual/index.html">ProGuard User
 Manual</a> for more details.
 
 <hr>

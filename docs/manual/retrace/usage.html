@@ -1,0 +1,84 @@
+<!doctype html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<title>ReTrace Usage</title>
+</head>
+<body
+ bgcolor="#ffffff"
+ text="#000000">
+
+<table width="100%" cellpadding="10" cellspacing="0"><tr><th bgcolor="#EEEEFF">
+<font size="+2">Usage</font>
+</th></tr></table>
+<p>
+
+Assuming the ProGuard jar is in your class path, the basic ReTrace command is:
+<p>
+<table width="90%" cellpadding="10"><tr><td bgcolor="#E0E0E0">
+<code><b>java proguard.ReTrace [-verbose] </b></code>
+<i>mapping_file</i> [<i>stacktrace_file</i>]
+</td></tr></table>
+<p>
+where the arguments have the following meaning:
+<p>
+<table cellspacing="10">
+<tr>
+<td valign="top"><code><b>-verbose</b></code></td>
+
+<td>Optionally specifies to print out more informative stack traces that
+    include not only method names, but also method return types and
+    arguments.</td>
+
+</tr>
+<tr>
+<td valign="top"><i>mapping_file</i></td>
+
+<td>Specifies the name of the mapping file, produced by ProGuard with the
+    option "<code>-printmapping</code> <i>mapping_file</i>", while obfuscating
+    the application that produced the stack trace.</td>
+
+</tr>
+<tr>
+<td valign="top"><i>stacktrace_file</i></td>
+
+<td>Optionally specifies the name of the file containing the stack trace. If
+    no file is specified, a stack trace is read from the standard input. Blank
+    lines and unrecognized lines are ignored, as far as possible.</td>
+
+</tr>
+</table>
+
+The restored stack trace is printed to the standard output. The completeness
+of the restored stack trace depends on the presence of line number tables in
+the obfuscated class files:
+
+<ul>
+<li>If all line numbers have been preserved while obfuscating the application,
+    ReTrace will be able to restore the stack trace completely.
+    <p>
+
+<li>If the line numbers have been removed, mapping obfuscated method names
+    back to their original names has become ambiguous. Retrace will list all
+    possible original method names for each line in the stack trace. The user
+    can then try to deduce the actual stack trace manually, based on the logic
+    of the program.
+
+</ul>
+<p>
+
+Preserving line number tables is explained in detail in this <a
+href="../examples.html#stacktrace">example</a> in the ProGuard User Manual.
+<p>
+
+Unobfuscated elements and obfuscated elements for which no mapping is available
+will be left unchanged.
+<p>
+
+<hr>
+<address>
+Copyright &copy; 2002 <a href="http://www.graphics.cornell.edu/~eric/">Eric
+Lafortune</a>.
+</address>
+</body>
+</html>
+

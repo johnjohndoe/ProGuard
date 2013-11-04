@@ -1,4 +1,4 @@
-/* $Id: ClassFileReferenceInitializer.java,v 1.2 2002/08/29 18:02:25 eric Exp $
+/* $Id: ClassFileReferenceInitializer.java,v 1.4 2002/11/03 13:30:14 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -23,8 +23,6 @@ package proguard.classfile.util;
 import proguard.classfile.*;
 import proguard.classfile.instruction.*;
 import proguard.classfile.visitor.*;
-
-import java.util.*;
 
 
 /**
@@ -294,7 +292,19 @@ public class ClassFileReferenceInitializer
     public void visitInstruction(ClassFile classFile, Instruction instruction)
     {
         // Just ignore generic instructions and reset the constant pool indices.
-        ldcStringCpIndex              = -1;
+        switch (instruction.getOpcode())
+        {
+            case Instruction.OP_ICONST_0:
+            case Instruction.OP_ICONST_1:
+                // Still remember any loaded string; it might be the argument of
+                // class$(String, boolean).
+                break;
+
+            default:
+                ldcStringCpIndex = -1;
+                break;
+        }
+
         invokestaticMethodRefCpIndex  = -1;
         invokevirtualMethodRefCpIndex = -1;
     }
@@ -312,7 +322,9 @@ public class ClassFileReferenceInitializer
                 int currentCpTag = classFile.getCpTag(currentCpIndex);
                 if (currentCpTag == ClassConstants.CONSTANT_String)
                 {
-                    // Remember it; it might be the argument of Class.forName.
+                    // Remember it; it might be the argument of
+                    // Class.forName(String), class$(String), or
+                    // class$(String, boolean).
                     ldcStringCpIndex = currentCpIndex;
                 }
                 invokestaticMethodRefCpIndex  = -1;
@@ -441,11 +453,13 @@ public class ClassFileReferenceInitializer
                 methodType.equals(ClassConstants.INTERNAL_METHOD_TYPE_CLASS_FOR_NAME);
 
             // Is it a reference to .class?
-            // Note that .class is implemented as "static Class class$(String)".
+            // Note that .class is implemented as "static Class class$(String)"
+            // or as "static Class class$(String, boolean)".
             isDotClassInvocation =
                 className .equals(classFile.getName())                           &&
                 methodName.equals(ClassConstants.INTERNAL_METHOD_NAME_DOT_CLASS) &&
-                methodType.equals(ClassConstants.INTERNAL_METHOD_TYPE_DOT_CLASS);
+                (methodType.equals(ClassConstants.INTERNAL_METHOD_TYPE_DOT_CLASS_JAVAC) ||
+                 methodType.equals(ClassConstants.INTERNAL_METHOD_TYPE_DOT_CLASS_JIKES));
         }
 
 

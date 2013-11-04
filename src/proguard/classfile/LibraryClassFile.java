@@ -1,4 +1,4 @@
-/* $Id: LibraryClassFile.java,v 1.17 2002/07/30 17:27:34 eric Exp $
+/* $Id: LibraryClassFile.java,v 1.19 2002/11/03 13:30:13 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -22,11 +22,10 @@
 package proguard.classfile;
 
 
-import proguard.classfile.visitor.*;
 import proguard.classfile.util.ClassUtil;
+import proguard.classfile.visitor.*;
 
 import java.io.*;
-import java.util.*;
 
 /**
  * This is a compact representation of the essential data in a Java class file.
@@ -81,21 +80,38 @@ public class LibraryClassFile implements ClassFile
 
     /**
      * Creates a new LibraryClassFile from the class file format data in the DataInput
-     * stream.
+     * stream. If specified, this method may return <code>null</code> if the
+     * class file is not visible.
      *
-     * @throws IOException if class file is corrupt or incomplete
+     * @throws IOException if the class file is corrupt or incomplete
      */
-    public static LibraryClassFile create(DataInput din) throws IOException
+    public static LibraryClassFile create(DataInput din, boolean skipNonPublic)
+    throws IOException
     {
         // See if we have to create a new library class file object.
-        if (reusableLibraryClassFile == null ||
-            reusableLibraryClassFile.isVisible())
+        if (reusableLibraryClassFile == null)
         {
             reusableLibraryClassFile = new LibraryClassFile();
         }
 
-        reusableLibraryClassFile.read(din);
-        return reusableLibraryClassFile;
+        // We'll start using the reusable object.
+        LibraryClassFile libraryClassFile = reusableLibraryClassFile;
+
+        libraryClassFile.read(din, skipNonPublic);
+
+        // Did we actually read a useful library class file?
+        if (libraryClassFile.thisClassName != null)
+        {
+            // We can't reuse this library class file object next time.
+            reusableLibraryClassFile = null;
+        }
+        else
+        {
+            // We don't have a useful library class file to return.
+            libraryClassFile = null;
+        }
+
+        return libraryClassFile;
     }
 
 
@@ -103,7 +119,7 @@ public class LibraryClassFile implements ClassFile
     private LibraryClassFile() {}
 
     // Import the class data to internal representation.
-    private void read(DataInput din) throws IOException
+    private void read(DataInput din, boolean skipNonPublic) throws IOException
     {
         // Read and check the class file magic number.
         int u4magic = din.readInt();
@@ -137,9 +153,11 @@ public class LibraryClassFile implements ClassFile
             }
         }
 
-        // Stop parsing this library class file if it's not public anyway.
         u2accessFlags = din.readUnsignedShort();
-        if (!isVisible())
+
+        // We may stop parsing this library class file if it's not public anyway.
+        // E.g. only about 60% of all rt.jar classes need to be parsed.
+        if (skipNonPublic && !isVisible())
         {
             return;
         }

@@ -1,4 +1,4 @@
-/* $Id: UsageMarker.java,v 1.15 2002/09/07 16:05:46 eric Exp $
+/* $Id: UsageMarker.java,v 1.16 2002/11/03 13:30:14 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -21,10 +21,8 @@
 package proguard.shrink;
 
 import proguard.classfile.*;
-import proguard.classfile.visitor.*;
 import proguard.classfile.instruction.*;
-
-import java.util.*;
+import proguard.classfile.visitor.*;
 
 
 /**

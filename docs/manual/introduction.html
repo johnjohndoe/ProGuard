@@ -1,0 +1,52 @@
+<!doctype html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<title>ProGuard Introduction</title>
+</head>
+<body
+ bgcolor="#ffffff"
+ text="#000000">
+
+<table width="100%" cellpadding="10" cellspacing="0"><tr><th bgcolor="#EEEEFF">
+<font size="+2">Introduction</font>
+</th></tr></table>
+<p>
+
+<b>ProGuard</b> is a Java class file shrinker and obfuscator. It detects and
+removes unused classes, fields, methods, and attributes, and it renames the
+remaining classes, fields, and methods using short meaningless names. The
+resulting jars are smaller and harder to reverse-engineer.
+<p>
+ProGuard can also be used to list unused fields and methods in an application,
+and to print out the internal structure of class files.
+<p>
+ProGuard typically reads the input jars, shrinks their class files, obfuscates
+the shrunk class files, and writes them to an output jar. In the shrinking
+phase, one or more seed methods or classes are required. These seeds are
+typically main classes or applets. The shrinker can then recursively
+determine which classes and class members are used, and discard the rest. In
+the obfuscation phase, all classes and class members get new names, except for
+the seeds, so they can still be called by their original names.
+<p>
+ProGuard automatically handles <code>Class.forName("SomeClass")</code> and
+<code>SomeClass.class</code> constructs. The referenced classes are preserved
+in the shrinking phase, and the string arguments are properly replaced in the
+obfuscation phase. With variable string arguments, it's generally not possible
+to determine their possible values (they might be read from a configuration
+file, for instance). However, ProGuard will note constructs like
+"<code>(SomeClass)Class.forName(variable).newInstance()</code>". These might
+be an indication that the class or interface <code>SomeClass</code> and/or its
+implementations may need to be preserved. The user can adapt his configuration
+accordingly.
+<p>
+ProGuard copies all non-class resource files from the input jars to the output
+jar. Their names and contents remain unchanged.
+<p>
+
+<hr>
+<address>
+Copyright &copy; 2002 <a href="http://www.graphics.cornell.edu/~eric/">Eric
+Lafortune</a>.
+</address>
+</body>
+</html>

@@ -1,4 +1,4 @@
-/* $Id: ArgumentWordReader.java,v 1.3 2002/05/09 17:55:49 eric Exp $
+/* $Id: ArgumentWordReader.java,v 1.4 2002/11/03 13:30:13 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -20,7 +20,7 @@
  */
 package proguard;
 
-import java.io.*;
+import java.io.IOException;
 
 
 /**

@@ -1,4 +1,4 @@
-/* $Id: SimpleClassFilePrinter.java,v 1.9 2002/08/29 18:02:25 eric Exp $
+/* $Id: SimpleClassFilePrinter.java,v 1.10 2002/11/03 13:30:14 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -21,9 +21,9 @@
 package proguard.classfile.visitor;
 
 import proguard.classfile.*;
-import proguard.classfile.util.*;
+import proguard.classfile.util.ClassUtil;
 
-import java.io.*;
+import java.io.PrintStream;
 
 
 /**

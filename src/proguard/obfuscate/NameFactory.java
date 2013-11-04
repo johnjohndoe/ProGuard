@@ -1,4 +1,4 @@
-/* $Id: NameFactory.java,v 1.3 2002/05/12 13:33:42 eric Exp $
+/* $Id: NameFactory.java,v 1.6 2002/11/03 13:30:14 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -20,26 +20,44 @@
  */
 package proguard.obfuscate;
 
-import proguard.classfile.*;
-import proguard.classfile.visitor.*;
-
-import java.util.*;
+import java.util.Vector;
 
 
 /**
- * A <code>NameFactory</code> generates unique names using lower-case characters,
- * and upper-case characters
+ * A <code>NameFactory</code> generates unique names using mixed-case characters,
+ * or lower-case characters only.
  *
  * @author Eric Lafortune
  */
 class NameFactory
 {
-    private static final int CHARACTER_COUNT1 = 26;
-    private static final int CHARACTER_COUNT2 = 26 + CHARACTER_COUNT1;
+    private static final int CHARACTER_COUNT = 26;
 
-    private static final Vector cachedNames = new Vector();
+    private static final Vector cachedMixedCaseNames = new Vector();
+    private static final Vector cachedLowerCaseNames = new Vector();
 
-    private int index = 0;
+    private boolean generateMixedCaseNames;
+    private int     index = 0;
+
+
+    /**
+     * Creates a new <code>NameFactory</code> that generates mixed-case names.
+     */
+    public NameFactory()
+    {
+        this(true);
+    }
+
+
+    /**
+     * Creates a new <code>NameFactory</code>.
+     * @param generateMixedCaseNames a flag to indicate whether the generated
+     *                               names will be mixed-case, or lower-case only.
+     */
+    public NameFactory(boolean generateMixedCaseNames)
+    {
+        this.generateMixedCaseNames = generateMixedCaseNames;
+    }
 
 
     public void reset()
@@ -50,44 +68,77 @@ class NameFactory
 
     public String nextName()
     {
-        return nameAt(index++);
+        return name(index++);
     }
 
 
-    private String nameAt(int index)
+    private String name(int index)
     {
-        return index >= cachedNames.size() ?
-            newNameAt(index) :
-            oldNameAt(index);
+        // Which cache do we need?
+        Vector cachedNames = generateMixedCaseNames ?
+            cachedMixedCaseNames :
+            cachedLowerCaseNames;
+
+        // Do we have the name in the cache?
+        if (index < cachedNames.size())
+        {
+            return (String)cachedNames.elementAt(index);
+        }
+
+        // Create a new name and cache it.
+        String name = newName(index);
+        cachedNames.add(index, name);
+
+        return name;
     }
 
 
-    private String newNameAt(int index)
+    private String newName(int index)
     {
-        int baseIndex = index / CHARACTER_COUNT2;
-        int offset    = index % CHARACTER_COUNT2;
+        // If we're allowed to generate mixed-case names, we can use twice as
+        // many characters.
+        int totalCharacterCount = generateMixedCaseNames ?
+            2 * CHARACTER_COUNT :
+            CHARACTER_COUNT;
+
+        int baseIndex = index / totalCharacterCount;
+        int offset    = index % totalCharacterCount;
 
         char newChar = charAt(offset);
 
         String newName = baseIndex == 0 ?
             new String(new char[] { newChar }) :
-            (nameAt(baseIndex) + newChar);
-
-        cachedNames.add(index, newName);
+            (name(baseIndex-1) + newChar);
 
         return newName;
     }
 
 
-    private String oldNameAt(int index)
+    private char charAt(int index)
     {
-        return (String)cachedNames.elementAt(index);
+        return (char)((index < CHARACTER_COUNT ? 'a' - 0               :
+                                                 'A' - CHARACTER_COUNT) + index);
     }
 
 
-    private char charAt(int index)
+    private static void main(String[] args)
     {
-        return (char)((index < CHARACTER_COUNT1 ? 'a' - 0               :
-                                                  'A' - CHARACTER_COUNT1) + index);
+        System.out.println("Some mixed-case names:");
+        printNameSamples(new NameFactory(true), 60);
+        System.out.println("Some lower-case names:");
+        printNameSamples(new NameFactory(false), 60);
+        System.out.println("Some more mixed-case names:");
+        printNameSamples(new NameFactory(true), 80);
+        System.out.println("Some more lower-case names:");
+        printNameSamples(new NameFactory(false), 80);
+    }
+
+
+    private static void printNameSamples(NameFactory factory, int count)
+    {
+        for (int counter = 0; counter < count; counter++)
+        {
+            System.out.println("  ["+factory.nextName()+"]");
+        }
     }
 }

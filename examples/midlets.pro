@@ -1,5 +1,7 @@
 #
 # This ProGuard configuration file illustrates how to process J2ME midlets.
+# Usage:
+#     java -jar proguard.jar @midlets.pro
 #
 
 # Specify the library jars, input jars, and output jar.

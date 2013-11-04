@@ -1,0 +1,35 @@
+<!doctype html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head>
+<title>ReTrace Introduction</title>
+</head>
+<body
+ bgcolor="#ffffff"
+ text="#000000">
+
+<table width="100%" cellpadding="10" cellspacing="0"><tr><th bgcolor="#EEEEFF">
+<font size="+2">Introduction</font>
+</th></tr></table>
+<p>
+
+<b>ReTrace</b> is a companion tool for <b>ProGuard</b> that 'de-obfuscates'
+stack traces. When an obfuscated program throws an exception, the resulting
+stack trace typically isn't very informative. Class names and method names
+have been replaced by short meaningless strings. Source file names and line
+numbers are missing altogether. While this may be intentional, it can also be
+inconvenient when debugging problems.
+<p>
+ReTrace can read an obfuscated stack trace and restore it to what it would
+look like without obfuscation. The restoration is based on the mapping file
+that ProGuard can write out during obfuscation. The mapping file links the
+original class names and class member names to their obfuscated names.
+<p>
+
+<hr>
+<address>
+Copyright &copy; 2002 <a href="http://www.graphics.cornell.edu/~eric/">Eric
+Lafortune</a>.
+</address>
+</body>
+</html>
+

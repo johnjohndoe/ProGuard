@@ -1,4 +1,4 @@
-/* $Id: SubclassedClassFileFilter.java,v 1.3 2002/05/12 13:33:40 eric Exp $
+/* $Id: SubclassedClassFileFilter.java,v 1.4 2002/11/03 13:30:13 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -21,7 +21,7 @@
 package proguard;
 
 import proguard.classfile.*;
-import proguard.classfile.visitor.*;
+import proguard.classfile.visitor.ClassFileVisitor;
 
 
 /**

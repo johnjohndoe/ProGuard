@@ -1,4 +1,4 @@
-/* $Id: ClassUtil.java,v 1.10 2002/07/30 18:10:57 eric Exp $
+/* $Id: ClassUtil.java,v 1.11 2002/11/03 13:30:14 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -20,10 +20,10 @@
  */
 package proguard.classfile.util;
 
-import java.io.*;
-import java.util.*;
-
 import proguard.classfile.ClassConstants;
+
+import java.io.IOException;
+import java.util.Vector;
 
 
 /**

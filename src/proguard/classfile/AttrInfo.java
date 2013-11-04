@@ -1,4 +1,4 @@
-/* $Id: AttrInfo.java,v 1.12 2002/08/05 16:59:28 eric Exp $
+/* $Id: AttrInfo.java,v 1.13 2002/11/03 13:30:13 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -22,9 +22,9 @@
 package proguard.classfile;
 
 
-import proguard.classfile.visitor.*;
+import proguard.classfile.visitor.AttrInfoVisitor;
+
 import java.io.*;
-import java.util.*;
 
 /**
  * Representation of an attribute. Specific attributes have their representations

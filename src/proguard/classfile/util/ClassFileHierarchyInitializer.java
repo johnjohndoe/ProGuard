@@ -1,4 +1,4 @@
-/* $Id: ClassFileHierarchyInitializer.java,v 1.1 2002/08/01 17:12:40 eric Exp $
+/* $Id: ClassFileHierarchyInitializer.java,v 1.2 2002/11/03 13:30:14 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -22,8 +22,6 @@ package proguard.classfile.util;
 
 import proguard.classfile.*;
 import proguard.classfile.visitor.*;
-
-import java.util.*;
 
 
 /**

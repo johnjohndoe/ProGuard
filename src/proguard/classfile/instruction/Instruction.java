@@ -1,4 +1,4 @@
-/* $Id: Instruction.java,v 1.6 2002/07/04 16:16:58 eric Exp $
+/* $Id: Instruction.java,v 1.7 2002/11/03 13:30:14 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -20,7 +20,7 @@
  */
 package proguard.classfile.instruction;
 
-import proguard.classfile.*;
+import proguard.classfile.ClassFile;
 
 
 /**

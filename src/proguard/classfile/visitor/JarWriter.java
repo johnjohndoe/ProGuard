@@ -1,4 +1,4 @@
-/* $Id: JarWriter.java,v 1.4 2002/07/18 17:03:33 eric Exp $
+/* $Id: JarWriter.java,v 1.6 2002/11/03 13:30:14 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -20,22 +20,22 @@
  */
 package proguard.classfile.visitor;
 
-import proguard.classfile.*;
-
 import java.io.*;
-import java.util.zip.*;
 import java.util.jar.*;
+import java.util.zip.ZipEntry;
 
 
 /**
- * This ClassFileVisitor can write all ProgramClassFile objects it visits to a
- * given jar file. The jar file name must be set and the <code>open</code> method
+ * This ZipEntryWriter writes its entries to a given jar file that can be
+ * opened and closed.
+ * <p>
+ * The jar file name must be set and the <code>open</code> method
  * must be called before visiting. The <code>close</code> method must be called
  * after visiting. The manifest and comment properties can optionally be set.
  *
  * @author Eric Lafortune
  */
-public class JarWriter implements ClassFileVisitor
+public class JarWriter implements ZipEntryWriter
 {
     private String          jarFileName;
     private Manifest        manifest;
@@ -43,42 +43,13 @@ public class JarWriter implements ClassFileVisitor
     private JarOutputStream jarOutputStream;
 
 
-    public JarWriter(String jarFileName)
+    public JarWriter(String   jarFileName,
+                     Manifest manifest,
+                     String   comment)
     {
         this.jarFileName = jarFileName;
-    }
-
-
-    public void setJarFileName(String jarFileName)
-    {
-        this.jarFileName = jarFileName;
-    }
-
-    public String getJarFileName()
-    {
-        return jarFileName;
-    }
-
-
-    public void setManifest(Manifest manifest)
-    {
-        this.manifest = manifest;
-    }
-
-    public Manifest getManifest()
-    {
-        return manifest;
-    }
-
-
-    public void setComment(String comment)
-    {
-        this.comment = comment;
-    }
-
-    public String getComment()
-    {
-        return comment;
+        this.manifest    = manifest;
+        this.comment     = comment;
     }
 
 
@@ -111,32 +82,18 @@ public class JarWriter implements ClassFileVisitor
     }
 
 
-    // Implementations for ClassFileVisitor
+    // Implementations for ZipEntryWriter
 
-    public void visitProgramClassFile(ProgramClassFile programClassFile)
+    public OutputStream openZipEntry(ZipEntry zipEntry) throws IOException
     {
-        try
-        {
-            String className = programClassFile.getName() + ClassConstants.CLASS_FILE_EXTENSION;
+        jarOutputStream.putNextEntry(zipEntry);
 
-            ZipEntry outEntry = new ZipEntry(className);
-            jarOutputStream.putNextEntry(outEntry);
-
-            // Write the class file using a DataOutputStream.
-            DataOutputStream classOutputStream = new DataOutputStream(jarOutputStream);
-            programClassFile.write(classOutputStream);
-            classOutputStream.flush();
-
-            jarOutputStream.closeEntry();
-        }
-        catch (IOException ex)
-        {
-            throw new IllegalArgumentException(ex.getMessage());
-        }
+        return jarOutputStream;
     }
 
 
-    public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
+    public void closeZipEntry() throws IOException
     {
+        jarOutputStream.closeEntry();
     }
 }

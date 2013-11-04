@@ -1,4 +1,4 @@
-/* $Id: NameAndTypeUsageMarker.java,v 1.5 2002/08/02 16:40:29 eric Exp $
+/* $Id: NameAndTypeUsageMarker.java,v 1.6 2002/11/03 13:30:14 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -22,8 +22,6 @@ package proguard.obfuscate;
 
 import proguard.classfile.*;
 import proguard.classfile.visitor.*;
-
-import java.util.*;
 
 
 /**

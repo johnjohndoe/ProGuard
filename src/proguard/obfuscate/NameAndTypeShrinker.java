@@ -1,4 +1,4 @@
-/* $Id: NameAndTypeShrinker.java,v 1.9 2002/08/29 18:02:25 eric Exp $
+/* $Id: NameAndTypeShrinker.java,v 1.10 2002/11/03 13:30:14 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -23,8 +23,6 @@ package proguard.obfuscate;
 import proguard.classfile.*;
 import proguard.classfile.instruction.*;
 import proguard.classfile.visitor.*;
-
-import java.util.*;
 
 
 /**

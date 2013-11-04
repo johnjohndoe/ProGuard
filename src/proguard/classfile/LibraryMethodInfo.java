@@ -1,4 +1,4 @@
-/* $Id: LibraryMethodInfo.java,v 1.8 2002/07/04 16:16:58 eric Exp $
+/* $Id: LibraryMethodInfo.java,v 1.9 2002/11/03 13:30:13 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -21,9 +21,9 @@
  */
 package proguard.classfile;
 
-import proguard.classfile.visitor.*;
+import proguard.classfile.visitor.MemberInfoVisitor;
+
 import java.io.*;
-import java.util.*;
 
 /**
  * Representation of a method from a class-file.

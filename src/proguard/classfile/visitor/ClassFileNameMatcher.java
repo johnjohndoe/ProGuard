@@ -1,4 +1,4 @@
-/* $Id: ClassFileNameMatcher.java,v 1.1 2002/09/01 16:41:35 eric Exp $
+/* $Id: ClassFileNameMatcher.java,v 1.2 2002/11/03 13:30:14 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -20,7 +20,7 @@
  */
 package proguard.classfile.visitor;
 
-import proguard.classfile.*;
+import proguard.classfile.ClassConstants;
 
 import java.util.Vector;
 

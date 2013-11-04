@@ -1,4 +1,4 @@
-/* $Id: ClassFileRenamer.java,v 1.16 2002/08/30 16:27:43 eric Exp $
+/* $Id: ClassFileRenamer.java,v 1.17 2002/11/03 13:30:14 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -21,10 +21,8 @@
 package proguard.obfuscate;
 
 import proguard.classfile.*;
-import proguard.classfile.visitor.*;
 import proguard.classfile.util.*;
-
-import java.util.*;
+import proguard.classfile.visitor.*;
 
 
 /**

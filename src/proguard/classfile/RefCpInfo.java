@@ -1,4 +1,4 @@
-/* $Id: RefCpInfo.java,v 1.11 2002/07/28 15:56:58 eric Exp $
+/* $Id: RefCpInfo.java,v 1.12 2002/11/03 13:30:13 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -21,11 +21,9 @@
  */
 package proguard.classfile;
 
-import proguard.classfile.util.*;
 import proguard.classfile.visitor.*;
 
 import java.io.*;
-import java.util.*;
 
 /**
  * Representation of a 'ref'-type entry in the ConstantPool.

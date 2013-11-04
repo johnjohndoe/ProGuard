@@ -1,4 +1,4 @@
-/* $Id: VisitorAccepter.java,v 1.6 2002/05/16 19:04:27 eric Exp $
+/* $Id: VisitorAccepter.java,v 1.7 2002/11/03 13:30:13 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -21,7 +21,7 @@
  */
 package proguard.classfile;
 
-import proguard.classfile.visitor.*;
+
 
 
 /**

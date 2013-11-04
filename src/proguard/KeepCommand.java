@@ -1,4 +1,4 @@
-/* $Id: KeepCommand.java,v 1.14 2002/09/01 16:41:35 eric Exp $
+/* $Id: KeepCommand.java,v 1.16 2002/11/03 13:30:13 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -22,17 +22,22 @@ package proguard;
 
 import proguard.classfile.*;
 import proguard.classfile.visitor.*;
-import proguard.shrink.*;
-import proguard.obfuscate.*;
+import proguard.obfuscate.NameMarker;
+import proguard.shrink.UsageMarker;
+
+import java.io.PrintStream;
 
 
 /**
- * This <code>Command</code> marks specified classes and/or class members to be
- * kept from shrinking and/or obfuscation.
+ * This class marks specified classes and/or class members to be kept from
+ * shrinking and/or obfuscation. The specifications are template-based: the
+ * class names and class member names can contain wildcards. Classes can
+ * be specified explicitly, or as extensions or implementations in the class
+ * hierarchy.
  *
  * @author Eric Lafortune
  */
-public class KeepCommand implements Command
+public class KeepCommand
 {
     // The visitors that delegate to the usage marker and name marker,
     // depending on the phase of the program execution.
@@ -328,29 +333,9 @@ public class KeepCommand implements Command
     }
 
 
-    // Implementations for Command
-
-    public void execute(int       phase,
-                        ClassPool programClassPool,
-                        ClassPool libraryClassPool)
-    {
-        switch (phase)
-        {
-            case PHASE_CHECK:
-                executeCheckingPhase(programClassPool, libraryClassPool);
-                break;
-            case PHASE_SHRINK:
-                executeShrinkingPhase(programClassPool, libraryClassPool);
-                break;
-            case PHASE_OBFUSCATE:
-                executeObfuscationPhase(programClassPool, libraryClassPool);
-                break;
-        }
-    }
-
-
-    private void executeCheckingPhase(ClassPool programClassPool,
-                                      ClassPool libraryClassPool)
+    public void executeCheckingPhase(ClassPool   programClassPool,
+                                     ClassPool   libraryClassPool,
+                                     PrintStream printStream)
     {
         if (onlyKeepNames)
         {
@@ -358,7 +343,7 @@ public class KeepCommand implements Command
         }
 
         // Print the class(es) and class member(s).
-        SimpleClassFilePrinter printer = new SimpleClassFilePrinter();
+        SimpleClassFilePrinter printer = new SimpleClassFilePrinter(false, printStream);
         variableClassFileVisitor.setClassFileVisitor(
             new ProgramFilteredClassFileVisitor(printer));
         variableMemberInfoVisitor.setMemberInfoVisitor(
@@ -375,8 +360,8 @@ public class KeepCommand implements Command
     }
 
 
-    private void executeShrinkingPhase(ClassPool programClassPool,
-                                       ClassPool libraryClassPool)
+    public void executeShrinkingPhase(ClassPool programClassPool,
+                                      ClassPool libraryClassPool)
     {
         if (onlyKeepNames)
         {
@@ -400,8 +385,8 @@ public class KeepCommand implements Command
     }
 
 
-    private void executeObfuscationPhase(ClassPool programClassPool,
-                                         ClassPool libraryClassPool)
+    public void executeObfuscationPhase(ClassPool programClassPool,
+                                        ClassPool libraryClassPool)
     {
         NameMarker nameMarker = new NameMarker();
 

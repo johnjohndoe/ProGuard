@@ -1,4 +1,4 @@
-/* $Id: ReTrace.java,v 1.2 2002/09/03 08:27:54 eric Exp $
+/* $Id: ReTrace.java,v 1.3 2002/11/03 13:30:13 eric Exp $
  *
  * ProGuard -- obfuscation and shrinking package for Java class files.
  *
@@ -19,10 +19,6 @@
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 package proguard;
-
-import proguard.classfile.*;
-import proguard.classfile.util.*;
-import proguard.classfile.visitor.*;
 
 import java.io.*;
 import java.util.*;

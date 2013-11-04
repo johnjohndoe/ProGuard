@@ -1,6 +1,8 @@
 #
 # This ProGuard configuration file illustrates how to process ProGuard itself.
 # Configuration files for typical applications will be very similar.
+# Usage:
+#     java -jar proguard.jar @proguard.pro
 #
 
 -libraryjars <java.home>/lib/rt.jar

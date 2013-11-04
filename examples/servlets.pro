@@ -1,5 +1,7 @@
 #
 # This ProGuard configuration file illustrates how to process servlets.
+# Usage:
+#     java -jar proguard.jar @servlets.pro
 #
 
 # Specify the library jars, input jars, and output jar.
