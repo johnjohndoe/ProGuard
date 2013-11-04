@@ -51,6 +51,9 @@ collected since the previous release.
 <li>Made <code>-keep</code> options more orthogonal and flexible, with option
     modifiers <code>allowshrinking</code>, <code>allowoptimization</code>, and
     <code>allowobfuscation</code>.
+<li>Added new wildcards for class member descriptors: "<code>***</code>",
+    matching any type, and "<code>...</code>", matching any number of
+    arguments.
 <li>Added support for configuration by means of annotations.
 <li>Improved shrinking of unused annotations.
 <li>Added check on modification times of input and output, to avoid unnecessary
@@ -76,6 +79,7 @@ collected since the previous release.
     specified methods.
 <li>Now printing notes for class names that don't seem to be fully qualified.
 <li>Added support for uppercase filename extensions.
+<li>Added tool tips to the GUI.
 <li>Rewritten class file I/O code.
 <li>Updated documentation and examples.
 </ul>
@@ -84,14 +88,25 @@ Upgrade considerations:
 
 <li>Since ProGuard now treats the <code>Exceptions</code> attribute as
     optional, you may have to specify <code>-keepattributes Exceptions</code>,
-    for instance when processing code that is to be used as a library.
+    notably when processing code that is to be used as a library.
 
-<li>ProGuard will now preverify code for Java Micro Edition, if you specify the
+<li>ProGuard now preverifies code for Java Micro Edition, if you specify the
     option <code>-microedition</code>. You then no longer need to process the
     code with an external preverifier.
 
 <li>You should preferably specify <code>-repackageclasses</code> instead of the
     old option name <code>-defaultpackage</code>.
+</ul>
+
+<h3><div>Aug 2007</div> Version 3.10</h3>
+<ul>
+<li>Now handling mixed-case input class names when
+    <code>-dontusemixedcaseclassnames</code> is specified.
+<li>Fixed optimization of synchronization on classes, as compiled by Eclipse
+    and Jikes.
+<li>Fixed optimization of switch statements with unreachable cases.
+<li>Avoiding merging subsequent identically named files.
+<li>Updated documentation and examples.
 </ul>
 
 <h3><div>Jun 2007</div> Version 3.9</h3>

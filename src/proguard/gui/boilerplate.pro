@@ -32,6 +32,7 @@
 # used for serialization.
 -keepclassmembers class * extends java.io.Serializable {
     static final long serialVersionUID;
+    static final java.io.ObjectStreamField[] serialPersistentFields;
     private void writeObject(java.io.ObjectOutputStream);
     private void readObject(java.io.ObjectInputStream);
     java.lang.Object writeReplace();

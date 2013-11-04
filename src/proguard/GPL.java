@@ -166,6 +166,7 @@ public class GPL
                packageName.startsWith("org.eclipse")            ||
                packageName.startsWith("org.netbeans")           ||
                packageName.startsWith("com.sun.kvem")           ||
+               packageName.startsWith("eclipseme")              ||
                packageName.startsWith("jg.j2me")                ||
                packageName.startsWith("jg.common")              ||
                packageName.startsWith("jg.buildengine");

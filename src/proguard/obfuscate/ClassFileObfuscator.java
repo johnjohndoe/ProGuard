@@ -1,4 +1,4 @@
-/* $Id: ClassFileObfuscator.java,v 1.24.2.3 2007/01/18 21:31:52 eric Exp $
+/* $Id: ClassFileObfuscator.java,v 1.24.2.4 2007/08/06 19:47:43 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -75,7 +75,7 @@ public class ClassFileObfuscator
                 String newClassName = newClassName(programClassFile);
                 if (newClassName != null)
                 {
-                    namesToAvoid.add(newClassName);
+                    namesToAvoid.add(mixedCaseClassName(newClassName));
                 }
             }
 
@@ -136,7 +136,7 @@ public class ClassFileObfuscator
                 }
 
             }
-            while (namesToAvoid.contains(newClassName));
+            while (namesToAvoid.contains(mixedCaseClassName(newClassName)));
 
             setNewClassName(programClassFile, newClassName);
         }
@@ -149,6 +149,18 @@ public class ClassFileObfuscator
 
 
     // Small utility methods.
+
+    /**
+     * Returns the given class name, unchanged if mixed-case class names are
+     * allowed, or the lower-case version otherwise.
+     */
+    private String mixedCaseClassName(String className)
+    {
+        return useMixedCaseClassNames ?
+            className :
+            className.toLowerCase();
+    }
+
 
     /**
      * Assigns a new name to the given class file.

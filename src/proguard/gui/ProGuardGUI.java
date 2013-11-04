@@ -1,4 +1,4 @@
-/* $Id: ProGuardGUI.java,v 1.35.2.3 2007/01/18 21:31:52 eric Exp $
+/* $Id: ProGuardGUI.java,v 1.35.2.4 2007/08/25 12:59:31 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -48,7 +48,7 @@ public class ProGuardGUI extends JFrame
     private static final String BOILERPLATE_CONFIGURATION = "boilerplate.pro";
     private static final String DEFAULT_CONFIGURATION     = "default.pro";
 
-    private static final String KEEP_ATTRIBUTE_DEFAULT        = "InnerClasses,SourceFile,LineNumberTable,Deprecated,Signature,*Annotation*,EnclosingMethod";
+    private static final String KEEP_ATTRIBUTE_DEFAULT        = "InnerClasses,Signature,Deprecated,SourceFile,LineNumberTable,*Annotation*,EnclosingMethod";
     private static final String SOURCE_FILE_ATTRIBUTE_DEFAULT = "SourceFile";
 
     private static final Border BORDER = BorderFactory.createEtchedBorder(EtchedBorder.RAISED);
@@ -289,8 +289,8 @@ public class ProGuardGUI extends JFrame
         setCommonPreferredSize(panelButtons);
         panelButtons = null;
 
-        addBorder(programPanel, "programJars" );
-        addBorder(libraryPanel, "libraryJars" );
+        addBorder(programPanel, "programJars");
+        addBorder(libraryPanel, "libraryJars");
 
         JPanel inputOutputPanel = new JPanel(layout);
         inputOutputPanel.add(programPanel, stretchPanelConstraints);

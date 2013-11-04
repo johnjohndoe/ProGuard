@@ -1,4 +1,4 @@
-/* $Id: AnnotationDefaultAttrInfo.java,v 1.4.2.2 2007/01/18 21:31:51 eric Exp $
+/* $Id: AnnotationDefaultAttrInfo.java,v 1.4.2.3 2007/07/30 21:42:34 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *

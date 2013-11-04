@@ -1,4 +1,4 @@
-/* $Id: DataEntryWriterFactory.java,v 1.4.2.2 2007/01/18 21:31:51 eric Exp $
+/* $Id: DataEntryWriterFactory.java,v 1.4.2.3 2007/07/30 21:42:34 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -22,8 +22,6 @@ package proguard;
 
 import proguard.io.*;
 import proguard.util.*;
-
-import java.io.*;
 
 
 /**
@@ -81,7 +79,7 @@ public class DataEntryWriterFactory
         System.out.println("Preparing output " +
                            (isJar ? "jar" :
                             isWar ? "war" :
-                            isWar ? "ear" :
+                            isEar ? "ear" :
                             isZip ? "zip" :
                                     "directory") +
                            " [" + entryName + "]" +

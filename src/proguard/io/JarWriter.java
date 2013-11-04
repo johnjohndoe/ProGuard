@@ -1,4 +1,4 @@
-/* $Id: JarWriter.java,v 1.3.2.2 2007/01/18 21:31:52 eric Exp $
+/* $Id: JarWriter.java,v 1.3.2.3 2007/07/30 21:42:34 eric Exp $
  *
  * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
@@ -41,7 +41,7 @@ public class JarWriter implements DataEntryWriter, Finisher
     private OutputStream    currentParentOutputStream;
     private ZipOutputStream currentJarOutputStream;
     private Finisher        currentFinisher;
-    private String          currentEntryName;
+    private DataEntry       currentDataEntry;
 
     // The names of the jar entries that are already in the jar.
     private Set jarEntryNames = new HashSet();
@@ -108,14 +108,14 @@ public class JarWriter implements DataEntryWriter, Finisher
             }
         }
 
-        // Get the entry name.
-        String name = dataEntry.getName();
-
         // Do we need a new entry?
-        if (!name.equals(currentEntryName))
+        if (!dataEntry.equals(currentDataEntry))
         {
             // Close the previous ZIP entry, if any.
             closeEntry();
+
+            // Get the entry name.
+            String name = dataEntry.getName();
 
             // We have to check if the name is already used, because ZipOutputStream
             // doesn't handle this case properly (it throws an exception which can
@@ -129,7 +129,7 @@ public class JarWriter implements DataEntryWriter, Finisher
             currentJarOutputStream.putNextEntry(new ZipEntry(name));
 
             currentFinisher  = finisher;
-            currentEntryName = name;
+            currentDataEntry = dataEntry;
         }
 
         return currentJarOutputStream;
@@ -167,7 +167,7 @@ public class JarWriter implements DataEntryWriter, Finisher
      */
     private void closeEntry() throws IOException
     {
-        if (currentEntryName != null)
+        if (currentDataEntry != null)
         {
             // Let any finisher finish up first.
             if (currentFinisher != null)
@@ -177,7 +177,7 @@ public class JarWriter implements DataEntryWriter, Finisher
             }
 
             currentJarOutputStream.closeEntry();
-            currentEntryName = null;
+            currentDataEntry = null;
         }
     }
 }
