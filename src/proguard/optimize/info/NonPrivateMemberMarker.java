@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -77,15 +77,9 @@ implements   ClassVisitor,
 
     public void visitStringConstant(Clazz clazz, StringConstant stringConstant)
     {
-        Clazz referencedClass = stringConstant.referencedClass;
-
-        // Is it refering to another class or class member?
-        if (referencedClass != null &&
-            !referencedClass.equals(clazz))
-        {
-            // The referenced class member, if any, can never be made private.
-            stringConstant.referencedMemberAccept(this);
-        }
+        // The referenced class member, if any, can never be made private,
+        // even if it's in the same class.
+        stringConstant.referencedMemberAccept(this);
     }
 
 
@@ -93,7 +87,7 @@ implements   ClassVisitor,
     {
         Clazz referencedClass = refConstant.referencedClass;
 
-        // Is it refering to a class member in another class?
+        // Is it referring to a class member in another class?
         // The class member might be in another class, or
         // it may be referenced through another class.
         if (referencedClass != null &&

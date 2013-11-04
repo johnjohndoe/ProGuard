@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -19,6 +19,8 @@
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 package proguard;
+
+import proguard.util.ListUtil;
 
 import java.io.*;
 import java.util.List;
@@ -145,5 +147,33 @@ public class ClassPathEntry
     public void setZipFilter(List filter)
     {
         this.zipFilter = filter == null || filter.size() == 0 ? null : filter;
+    }
+
+
+    public String toString()
+    {
+        String string = getName();
+
+        if (filter    != null ||
+            jarFilter != null ||
+            warFilter != null ||
+            earFilter != null ||
+            zipFilter != null)
+        {
+            string +=
+                ConfigurationConstants.OPEN_ARGUMENTS_KEYWORD +
+                (zipFilter != null ? ListUtil.commaSeparatedString(zipFilter, true) : "")  +
+                ConfigurationConstants.SEPARATOR_KEYWORD +
+                (earFilter != null ? ListUtil.commaSeparatedString(earFilter, true) : "")  +
+                ConfigurationConstants.SEPARATOR_KEYWORD +
+                (warFilter != null ? ListUtil.commaSeparatedString(warFilter, true) : "")  +
+                ConfigurationConstants.SEPARATOR_KEYWORD +
+                (jarFilter != null ? ListUtil.commaSeparatedString(jarFilter, true) : "")  +
+                ConfigurationConstants.SEPARATOR_KEYWORD +
+                (filter    != null ? ListUtil.commaSeparatedString(filter, true)    : "")  +
+                ConfigurationConstants.CLOSE_ARGUMENTS_KEYWORD;
+        }
+
+        return string;
     }
 }

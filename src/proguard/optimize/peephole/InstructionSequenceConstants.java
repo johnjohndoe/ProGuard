@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -651,22 +651,23 @@ public class InstructionSequenceConstants
                 // Nothing.
             },
         },
-        {   // ... + 0f = ...
-            {
-                new SimpleInstruction(InstructionConstants.OP_FCONST_0),
-                new SimpleInstruction(InstructionConstants.OP_FADD),
-            },{
-                // Nothing.
-            },
-        },
-        {   // ... + 0d = ...
-            {
-                new SimpleInstruction(InstructionConstants.OP_DCONST_0),
-                new SimpleInstruction(InstructionConstants.OP_DADD),
-            },{
-                // Nothing.
-            },
-        },
+        // Not valid for -0.0.
+//        {   // ... + 0f = ...
+//            {
+//                new SimpleInstruction(InstructionConstants.OP_FCONST_0),
+//                new SimpleInstruction(InstructionConstants.OP_FADD),
+//            },{
+//                // Nothing.
+//            },
+//        },
+//        {   // ... + 0d = ...
+//            {
+//                new SimpleInstruction(InstructionConstants.OP_DCONST_0),
+//                new SimpleInstruction(InstructionConstants.OP_DADD),
+//            },{
+//                // Nothing.
+//            },
+//        },
         {   // ... - 0 = ...
             {
                 new SimpleInstruction(InstructionConstants.OP_ICONST_0),
@@ -1072,7 +1073,8 @@ public class InstructionSequenceConstants
                 new SimpleInstruction(InstructionConstants.OP_FNEG),
             },
         },
-//        {   // ... * 0f = 0f (or NaN)
+        // Not valid for -0.0 and for NaN.
+//        {   // ... * 0f = 0f
 //            {
 //                new SimpleInstruction(InstructionConstants.OP_FCONST_0),
 //                new SimpleInstruction(InstructionConstants.OP_FMUL),
@@ -1097,7 +1099,8 @@ public class InstructionSequenceConstants
                 new SimpleInstruction(InstructionConstants.OP_DNEG),
             },
         },
-//        {   // ... * 0d = 0d (or NaN)
+        // Not valid for -0.0 and for NaN.
+//        {   // ... * 0d = 0d
 //            {
 //                new SimpleInstruction(InstructionConstants.OP_DCONST_0),
 //                new SimpleInstruction(InstructionConstants.OP_DMUL),
@@ -1504,6 +1507,7 @@ public class InstructionSequenceConstants
                 new SimpleInstruction(InstructionConstants.OP_ICONST_0),
             },
         },
+        // Not valid for negative values.
 //        {   // ... % 2 = ... & 0x1
 //            {
 //                new SimpleInstruction(InstructionConstants.OP_ICONST_2),

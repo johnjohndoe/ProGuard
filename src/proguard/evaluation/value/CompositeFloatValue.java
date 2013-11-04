@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -36,7 +36,7 @@ final class CompositeFloatValue extends SpecificFloatValue
 
 
     private final FloatValue floatValue1;
-    private final byte        operation;
+    private final byte       operation;
     private final FloatValue floatValue2;
 
 
@@ -45,11 +45,11 @@ final class CompositeFloatValue extends SpecificFloatValue
      * and the given operation.
      */
     public CompositeFloatValue(FloatValue floatValue1,
-                                byte        operation,
-                                FloatValue floatValue2)
+                               byte       operation,
+                               FloatValue floatValue2)
     {
         this.floatValue1 = floatValue1;
-        this.operation    = operation;
+        this.operation   = operation;
         this.floatValue2 = floatValue2;
     }
 

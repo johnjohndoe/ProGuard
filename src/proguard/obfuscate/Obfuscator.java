@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -111,6 +111,16 @@ public class Obfuscator
             new AllAttributeVisitor(true,
             new RequiredAttributeFilter(requiredAttributeUsageMarker,
                                         optionalAttributeUsageMarker)));
+
+        // Keep parameter names and types if specified.
+        if (configuration.keepParameterNames)
+        {
+            programClassPool.classesAccept(
+                new AllMethodVisitor(
+                new MemberNameFilter(
+                new AllAttributeVisitor(true,
+                new ParameterNameMarker()))));
+        }
 
         // Remove the attributes that can be discarded. Note that the attributes
         // may only be discarded after the seeds have been marked, since the
@@ -398,6 +408,12 @@ public class Obfuscator
             programClassPool.classesAccept(
                 new AllConstantVisitor(
                 new AccessFixer()));
+
+            // Fix the access flags of the inner classes information.
+            programClassPool.classesAccept(
+                new AllAttributeVisitor(
+                new AllInnerClassesInfoVisitor(
+                new InnerClassesAccessFixer())));
         }
 
         // Rename the source file attributes, if requested.

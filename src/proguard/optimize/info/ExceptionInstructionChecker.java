@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -67,34 +67,39 @@ implements   InstructionVisitor
         byte opcode = simpleInstruction.opcode;
 
         // Check for instructions that may throw exceptions.
-        if (opcode == InstructionConstants.OP_IDIV         ||
-            opcode == InstructionConstants.OP_LDIV         ||
-            opcode == InstructionConstants.OP_IREM         ||
-            opcode == InstructionConstants.OP_LREM         ||
-            opcode == InstructionConstants.OP_IALOAD       ||
-            opcode == InstructionConstants.OP_LALOAD       ||
-            opcode == InstructionConstants.OP_FALOAD       ||
-            opcode == InstructionConstants.OP_DALOAD       ||
-            opcode == InstructionConstants.OP_AALOAD       ||
-            opcode == InstructionConstants.OP_BALOAD       ||
-            opcode == InstructionConstants.OP_CALOAD       ||
-            opcode == InstructionConstants.OP_SALOAD       ||
-            opcode == InstructionConstants.OP_IASTORE      ||
-            opcode == InstructionConstants.OP_LASTORE      ||
-            opcode == InstructionConstants.OP_FASTORE      ||
-            opcode == InstructionConstants.OP_DASTORE      ||
-            opcode == InstructionConstants.OP_AASTORE      ||
-            opcode == InstructionConstants.OP_BASTORE      ||
-            opcode == InstructionConstants.OP_CASTORE      ||
-            opcode == InstructionConstants.OP_SASTORE      ||
-            opcode == InstructionConstants.OP_NEWARRAY     ||
-            opcode == InstructionConstants.OP_ARRAYLENGTH  ||
-            opcode == InstructionConstants.OP_ATHROW       ||
-            opcode == InstructionConstants.OP_MONITORENTER ||
-            opcode == InstructionConstants.OP_MONITOREXIT)
+        // Note that monitorexit can not sensibly throw exceptions, except the
+        // broken and deprecated asynchronous ThreadDeath. Removing the
+        // artificial infinite looping exception blocks that recent compilers
+        // add does not strictly follow the JVM specs, but it does have the
+        // additional benefit of avoiding a bug in the JVM in JDK 1.1.
+        switch (opcode)
         {
-            // These instructions may throw exceptions.
-            mayThrowExceptions = true;
+            case InstructionConstants.OP_IDIV:
+            case InstructionConstants.OP_LDIV:
+            case InstructionConstants.OP_IREM:
+            case InstructionConstants.OP_LREM:
+            case InstructionConstants.OP_IALOAD:
+            case InstructionConstants.OP_LALOAD:
+            case InstructionConstants.OP_FALOAD:
+            case InstructionConstants.OP_DALOAD:
+            case InstructionConstants.OP_AALOAD:
+            case InstructionConstants.OP_BALOAD:
+            case InstructionConstants.OP_CALOAD:
+            case InstructionConstants.OP_SALOAD:
+            case InstructionConstants.OP_IASTORE:
+            case InstructionConstants.OP_LASTORE:
+            case InstructionConstants.OP_FASTORE:
+            case InstructionConstants.OP_DASTORE:
+            case InstructionConstants.OP_AASTORE:
+            case InstructionConstants.OP_BASTORE:
+            case InstructionConstants.OP_CASTORE:
+            case InstructionConstants.OP_SASTORE:
+            case InstructionConstants.OP_NEWARRAY:
+            case InstructionConstants.OP_ARRAYLENGTH:
+            case InstructionConstants.OP_ATHROW:
+            case InstructionConstants.OP_MONITORENTER:
+                // These instructions may throw exceptions.
+                mayThrowExceptions = true;
         }
 
     }
@@ -105,31 +110,30 @@ implements   InstructionVisitor
         byte opcode = constantInstruction.opcode;
 
         // Check for instructions that may throw exceptions.
-        if (opcode == InstructionConstants.OP_GETSTATIC       ||
-            opcode == InstructionConstants.OP_PUTSTATIC       ||
-            opcode == InstructionConstants.OP_GETFIELD        ||
-            opcode == InstructionConstants.OP_PUTFIELD        ||
-            opcode == InstructionConstants.OP_INVOKEVIRTUAL   ||
-            opcode == InstructionConstants.OP_INVOKESPECIAL   ||
-            opcode == InstructionConstants.OP_INVOKESTATIC    ||
-            opcode == InstructionConstants.OP_INVOKEINTERFACE ||
-            opcode == InstructionConstants.OP_NEW             ||
-            opcode == InstructionConstants.OP_ANEWARRAY       ||
-            opcode == InstructionConstants.OP_CHECKCAST       ||
-            opcode == InstructionConstants.OP_MULTIANEWARRAY)
+        switch (opcode)
         {
-            // These instructions may throw exceptions.
-            mayThrowExceptions = true;
+            case InstructionConstants.OP_GETSTATIC:
+            case InstructionConstants.OP_PUTSTATIC:
+            case InstructionConstants.OP_GETFIELD:
+            case InstructionConstants.OP_PUTFIELD:
+            case InstructionConstants.OP_INVOKEVIRTUAL:
+            case InstructionConstants.OP_INVOKESPECIAL:
+            case InstructionConstants.OP_INVOKESTATIC:
+            case InstructionConstants.OP_INVOKEINTERFACE:
+            case InstructionConstants.OP_NEW:
+            case InstructionConstants.OP_ANEWARRAY:
+            case InstructionConstants.OP_CHECKCAST:
+            case InstructionConstants.OP_MULTIANEWARRAY:
+                // These instructions may throw exceptions.
+                mayThrowExceptions = true;
         }
-//        else
-//        if (opcode == InstructionConstants.OP_INVOKEVIRTUAL   ||
-//            opcode == InstructionConstants.OP_INVOKESPECIAL   ||
-//            opcode == InstructionConstants.OP_INVOKESTATIC    ||
-//            opcode == InstructionConstants.OP_INVOKEINTERFACE)
-//        {
+
+//          case InstructionConstants.OP_INVOKEVIRTUAL:
+//          case InstructionConstants.OP_INVOKESPECIAL:
+//          case InstructionConstants.OP_INVOKESTATIC:
+//          case InstructionConstants.OP_INVOKEINTERFACE:
 //            // Check if the invoking the method may throw an exception.
 //            clazz.constantPoolEntryAccept(constantInstruction.constantIndex, this);
-//        }
     }
 
 

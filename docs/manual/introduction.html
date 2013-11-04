@@ -5,6 +5,14 @@
 <meta http-equiv="content-style-type" content="text/css">
 <link rel="stylesheet" type="text/css" href="style.css">
 <title>ProGuard Introduction</title>
+<script type="text/javascript" language="JavaScript">
+<!--
+if (window.top.document.title!="ProGuard")
+  window.top.location.replace("index.html#"+window.location.pathname+window.location.hash);
+//else if (window.top.location.hash!="#"+window.location.pathname)
+//  window.top.location.hash="#"+window.location.pathname;
+//-->
+</script>
 </head>
 <body>
 
@@ -103,16 +111,17 @@ The <a href="usage.html">Usage section</a> of this manual describes the
 necessary <a href="usage.html#keepoptions"><code>-keep</code> options</a> and
 the <a href="examples.html">Examples section</a> provides plenty of examples.
 
-<h3>Introspection</h3>
+<h3>Reflection</h3>
 
-Introspection presents particular problems for any automatic processing of
-code. In ProGuard, classes or class members in your code that are created or
-invoked dynamically (that is, by name) have to be specified as entry points
-too. For example, <code>Class.forName()</code> constructs may refer to any
-class at run-time. It is generally impossible to foresee which classes have to
-be preserved (with their original names), since the class names might be read
-from a configuration file, for instance. You therefore have to specify them in
-your ProGuard configuration, with the same simple <code>-keep</code> options.
+Reflection and introspection present particular problems for any automatic
+processing of code. In ProGuard, classes or class members in your code that
+are created or invoked dynamically (that is, by name) have to be specified as
+entry points too. For example, <code>Class.forName()</code> constructs may
+refer to any class at run-time. It is generally impossible to foresee which
+classes have to be preserved (with their original names), since the class
+names might be read from a configuration file, for instance. You therefore
+have to specify them in your ProGuard configuration, with the same
+simple <code>-keep</code> options.
 <p>
 However, ProGuard will already detect and handle the following cases for you:
 
@@ -142,14 +151,15 @@ and/or its implementations may need to be preserved. You can then adapt your
 configuration accordingly.
 <p>
 For proper results, you should at least be somewhat familiar with the code
-that you are processing. Obfuscating code that performs a lot of introspection
+that you are processing. Obfuscating code that performs a lot of reflection
 may require trial and error, especially without the necessary information
 about the internals of the code.
 <p>
 
 <hr>
+<noscript><div><a target="_top" href="../index.html" class="button">Show menu</a></div></noscript>
 <address>
-Copyright &copy; 2002-2009
+Copyright &copy; 2002-2010
 <a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>

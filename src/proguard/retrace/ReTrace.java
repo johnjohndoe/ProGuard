@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -47,7 +47,7 @@ implements   MappingProcessor
     private static final String REGEX_CLASS_SLASH = "\\b(?:[A-Za-z0-9_$]+/)*[A-Za-z0-9_$]+\\b";
     private static final String REGEX_LINE_NUMBER = "\\b[0-9]+\\b";
     private static final String REGEX_TYPE        = REGEX_CLASS + "(?:\\[\\])*";
-    private static final String REGEX_MEMBER      = "\\b[A-Za-z0-9_$]+\\b";
+    private static final String REGEX_MEMBER      = "<?\\b[A-Za-z0-9_$]+\\b>?";
     private static final String REGEX_ARGUMENTS   = "(?:" + REGEX_TYPE + "(?:\\s*,\\s*" + REGEX_TYPE + ")*)?";
 
     // The class settings.

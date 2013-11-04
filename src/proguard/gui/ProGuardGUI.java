@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -110,6 +110,7 @@ public class ProGuardGUI extends JFrame
     private final JCheckBox flattenPackageHierarchyCheckBox      = new JCheckBox(msg("flattenPackageHierarchy"));
     private final JCheckBox repackageClassesCheckBox             = new JCheckBox(msg("repackageClasses"));
     private final JCheckBox keepAttributesCheckBox               = new JCheckBox(msg("keepAttributes"));
+    private final JCheckBox keepParameterNamesCheckBox           = new JCheckBox(msg("keepParameterNames"));
     private final JCheckBox newSourceFileAttributeCheckBox       = new JCheckBox(msg("renameSourceFileAttribute"));
     private final JCheckBox adaptClassStringsCheckBox            = new JCheckBox(msg("adaptClassStrings"));
     private final JCheckBox adaptResourceFileNamesCheckBox       = new JCheckBox(msg("adaptResourceFileNames"));
@@ -403,6 +404,7 @@ public class ProGuardGUI extends JFrame
         obfuscationOptionsPanel.add(tip(repackageClassesTextField,               "packageTip"),                      constraintsLastStretch);
         obfuscationOptionsPanel.add(tip(keepAttributesCheckBox,                  "keepAttributesTip"),               constraints);
         obfuscationOptionsPanel.add(tip(keepAttributesTextField,                 "attributesTip"),                   constraintsLastStretch);
+        obfuscationOptionsPanel.add(tip(keepParameterNamesCheckBox,              "keepParameterNamesTip"),           constraintsLastStretch);
         obfuscationOptionsPanel.add(tip(newSourceFileAttributeCheckBox,          "renameSourceFileAttributeTip"),    constraints);
         obfuscationOptionsPanel.add(tip(newSourceFileAttributeTextField,         "sourceFileAttributeTip"),          constraintsLastStretch);
         obfuscationOptionsPanel.add(tip(adaptClassStringsCheckBox,               "adaptClassStringsTip"),            constraints);
@@ -1019,6 +1021,7 @@ public class ProGuardGUI extends JFrame
         flattenPackageHierarchyCheckBox         .setSelected(configuration.flattenPackageHierarchy      != null);
         repackageClassesCheckBox                .setSelected(configuration.repackageClasses             != null);
         keepAttributesCheckBox                  .setSelected(configuration.keepAttributes               != null);
+        keepParameterNamesCheckBox              .setSelected(configuration.keepParameterNames);
         newSourceFileAttributeCheckBox          .setSelected(configuration.newSourceFileAttribute       != null);
         adaptClassStringsCheckBox               .setSelected(configuration.adaptClassStrings            != null);
         adaptResourceFileNamesCheckBox          .setSelected(configuration.adaptResourceFileNames       != null);
@@ -1041,21 +1044,21 @@ public class ProGuardGUI extends JFrame
         dumpCheckBox                            .setSelected(configuration.dump               != null);
 
         printUsageTextField                     .setText(fileName(configuration.printUsage));
-        optimizationsTextField                  .setText(configuration.optimizations             == null ? OPTIMIZATIONS_DEFAULT                : ListUtil.commaSeparatedString(configuration.optimizations));
+        optimizationsTextField                  .setText(configuration.optimizations             == null ? OPTIMIZATIONS_DEFAULT                : ListUtil.commaSeparatedString(configuration.optimizations, true));
         printMappingTextField                   .setText(fileName(configuration.printMapping));
         applyMappingTextField                   .setText(fileName(configuration.applyMapping));
         obfuscationDictionaryTextField          .setText(fileName(configuration.obfuscationDictionary));
-        keepPackageNamesTextField               .setText(configuration.keepPackageNames          == null ? ""                                   : ClassUtil.externalClassName(ListUtil.commaSeparatedString(configuration.keepPackageNames)));
+        keepPackageNamesTextField               .setText(configuration.keepPackageNames          == null ? ""                                   : ClassUtil.externalClassName(ListUtil.commaSeparatedString(configuration.keepPackageNames, true)));
         flattenPackageHierarchyTextField        .setText(configuration.flattenPackageHierarchy);
         repackageClassesTextField               .setText(configuration.repackageClasses);
-        keepAttributesTextField                 .setText(configuration.keepAttributes            == null ? KEEP_ATTRIBUTE_DEFAULT               : ListUtil.commaSeparatedString(configuration.keepAttributes));
+        keepAttributesTextField                 .setText(configuration.keepAttributes            == null ? KEEP_ATTRIBUTE_DEFAULT               : ListUtil.commaSeparatedString(configuration.keepAttributes, true));
         newSourceFileAttributeTextField         .setText(configuration.newSourceFileAttribute    == null ? SOURCE_FILE_ATTRIBUTE_DEFAULT        : configuration.newSourceFileAttribute);
-        adaptClassStringsTextField              .setText(configuration.adaptClassStrings         == null ? ""                                   : ClassUtil.externalClassName(ListUtil.commaSeparatedString(configuration.adaptClassStrings)));
-        adaptResourceFileNamesTextField         .setText(configuration.adaptResourceFileNames    == null ? ADAPT_RESOURCE_FILE_NAMES_DEFAULT    : ListUtil.commaSeparatedString(configuration.adaptResourceFileNames));
-        adaptResourceFileContentsTextField      .setText(configuration.adaptResourceFileContents == null ? ADAPT_RESOURCE_FILE_CONTENTS_DEFAULT : ListUtil.commaSeparatedString(configuration.adaptResourceFileContents));
-        noteTextField                           .setText(ListUtil.commaSeparatedString(configuration.note));
-        warnTextField                           .setText(ListUtil.commaSeparatedString(configuration.warn));
-        keepDirectoriesTextField                .setText(ListUtil.commaSeparatedString(configuration.keepDirectories));
+        adaptClassStringsTextField              .setText(configuration.adaptClassStrings         == null ? ""                                   : ClassUtil.externalClassName(ListUtil.commaSeparatedString(configuration.adaptClassStrings, true)));
+        adaptResourceFileNamesTextField         .setText(configuration.adaptResourceFileNames    == null ? ADAPT_RESOURCE_FILE_NAMES_DEFAULT    : ListUtil.commaSeparatedString(configuration.adaptResourceFileNames, true));
+        adaptResourceFileContentsTextField      .setText(configuration.adaptResourceFileContents == null ? ADAPT_RESOURCE_FILE_CONTENTS_DEFAULT : ListUtil.commaSeparatedString(configuration.adaptResourceFileContents, true));
+        noteTextField                           .setText(ListUtil.commaSeparatedString(configuration.note, true));
+        warnTextField                           .setText(ListUtil.commaSeparatedString(configuration.warn, true));
+        keepDirectoriesTextField                .setText(ListUtil.commaSeparatedString(configuration.keepDirectories, true));
         printSeedsTextField                     .setText(fileName(configuration.printSeeds));
         printConfigurationTextField             .setText(fileName(configuration.printConfiguration));
         dumpTextField                           .setText(fileName(configuration.dump));
@@ -1182,6 +1185,7 @@ public class ProGuardGUI extends JFrame
         configuration.flattenPackageHierarchy          = flattenPackageHierarchyCheckBox         .isSelected() ? ClassUtil.internalClassName(flattenPackageHierarchyTextField         .getText()) : null;
         configuration.repackageClasses                 = repackageClassesCheckBox                .isSelected() ? ClassUtil.internalClassName(repackageClassesTextField                .getText()) : null;
         configuration.keepAttributes                   = keepAttributesCheckBox                  .isSelected() ? ListUtil.commaSeparatedList(keepAttributesTextField                  .getText()) : null;
+        configuration.keepParameterNames               = keepParameterNamesCheckBox              .isSelected();
         configuration.newSourceFileAttribute           = newSourceFileAttributeCheckBox          .isSelected() ? newSourceFileAttributeTextField                                      .getText()  : null;
         configuration.adaptClassStrings                = adaptClassStringsCheckBox               .isSelected() ? adaptClassStringsTextField.getText().length() > 0 ? ListUtil.commaSeparatedList(ClassUtil.internalClassName(adaptClassStringsTextField.getText())) : new ArrayList() : null;
         configuration.adaptResourceFileNames           = adaptResourceFileNamesCheckBox          .isSelected() ? ListUtil.commaSeparatedList(adaptResourceFileNamesTextField          .getText()) : null;
@@ -1645,7 +1649,8 @@ public class ProGuardGUI extends JFrame
      */
     private static String fileName(File file)
     {
-        return file == null ? "" : file.getAbsolutePath();
+        return file == null || file.getName().length() == 0 ? "" :
+            file.getAbsolutePath();
     }
 
 

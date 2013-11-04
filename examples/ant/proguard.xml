@@ -9,8 +9,7 @@
   <taskdef resource="proguard/ant/task.properties"
            classpath="lib/proguard.jar" />
 
-  <proguard skipnonpubliclibraryclasses="off"
-            printmapping="proguard.map"
+  <proguard printmapping="proguard.map"
             overloadaggressively="on"
             repackageclasses="">
 

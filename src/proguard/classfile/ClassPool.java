@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -33,7 +33,9 @@ import java.util.*;
  */
 public class ClassPool
 {
-    private final Map classes = new HashMap();
+    // We're using a sorted tree map instead of a hash map to store the classes,
+    // in order to make the processing more deterministic.
+    private final Map classes = new TreeMap();
 
 
     /**
@@ -122,8 +124,11 @@ public class ClassPool
      */
     public void classesAcceptAlphabetically(ClassVisitor classVisitor)
     {
-        TreeMap sortedClasses = new TreeMap(classes);
-        Iterator iterator = sortedClasses.values().iterator();
+        // We're already using a tree map.
+        //TreeMap sortedClasses = new TreeMap(classes);
+        //Iterator iterator = sortedClasses.values().iterator();
+
+        Iterator iterator = classes.values().iterator();
         while (iterator.hasNext())
         {
             Clazz clazz = (Clazz)iterator.next();

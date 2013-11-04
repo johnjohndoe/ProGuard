@@ -5,6 +5,14 @@
 <meta http-equiv="content-style-type" content="text/css">
 <link rel="stylesheet" type="text/css" href="style.css">
 <title>ProGuard Usage</title>
+<script type="text/javascript" language="JavaScript">
+<!--
+if (window.top.document.title!="ProGuard")
+  window.top.location.replace("index.html#"+window.location.pathname+window.location.hash);
+//else if (window.top.location.hash!="#"+window.location.pathname)
+//  window.top.location.hash="#"+window.location.pathname;
+//-->
+</script>
 </head>
 <body>
 
@@ -135,24 +143,28 @@ The sections below provide more details:
     href="examples.html#midlet">JME midlets</a>, just by specifying the
     appropriate run-time jar.</dd>
 
+<dt><a name="skipnonpubliclibraryclasses"><code><b>-skipnonpubliclibraryclasses</b></code></a></dt>
+
+<dd>Specifies to skip non-public classes while reading library jars, to speed
+    up processing and reduce memory usage of ProGuard. By default, ProGuard
+    reads non-public and public library classes alike. However, non-public
+    classes are often not relevant, if they don't affect the actual program
+    code in the input jars. Ignoring them then speeds up ProGuard, without
+    affecting the output. Unfortunately, some libraries, including recent JSE
+    run-time libraries, contain non-public library classes that are extended
+    by public library classes. You then can't use this option. ProGuard will
+    print out warnings if it can't find classes due to this option being
+    set.</dd>
+
 <dt><a name="dontskipnonpubliclibraryclasses"><code><b>-dontskipnonpubliclibraryclasses</b></code></a></dt>
 
-<dd>Specifies not to ignore non-public library classes. By default, non-public
-    library classes are skipped while parsing library jars. The classes are
-    typically not relevant during processing, since they don't affect the
-    actual program code in the input jars. Ignoring them reduces memory usage
-    and processing time. Occasionally, a badly designed library may contain a
-    non-public library class that is extended/implemented by a public library
-    class. If the latter library class in turn is extended/implemented by a
-    program class, ProGuard will complain that it can't find the non-public
-    library class, which it had ignored during parsing. This option will
-    overcome that problem, at the cost of greater memory usage and longer
-    processing time.</dd>
+<dd>Specifies not to ignore non-public library classes. As of version 4.5, this
+    is the default setting.</dd>
 
 <dt><a name="dontskipnonpubliclibraryclassmembers"><code><b>-dontskipnonpubliclibraryclassmembers</b></code></a></dt>
 
 <dd>Specifies not to ignore package visible library class members (fields and
-    methods). By default, these class members are skipped while parsing
+    methods). By default, ProGuard skips these class members while parsing
     library classes, as program classes will generally not refer to them.
     Sometimes however, program classes reside in the same packages as library
     classes, and they do refer to their package visible class members. In
@@ -443,7 +455,8 @@ The sections below provide more details:
     piece of code. In such cases, you should consider whether you also need
     the option <a
     href="#useuniqueclassmembernames"><code>-useuniqueclassmembernames</code></a>.
-    Only applicable when obfuscating.</dd>
+    Only a single mapping file is allowed. Only applicable when
+    obfuscating.</dd>
 
 <dt><a name="obfuscationdictionary"><code><b>-obfuscationdictionary</b></code></a>
     <a href="#filename"><i>filename</i></a></dt>
@@ -506,9 +519,8 @@ The sections below provide more details:
     <ul>
     <li>Sun's JDK 1.2.2 <code>javac</code> compiler produces an exception when
         compiling with such a library (cfr. <a href=
-        "http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4216736">Bug
-        #4216736</a>). You probably shouldn't use this option for processing
-        libraries.
+        "http://bugs.sun.com/view_bug.do?bug_id=4216736">Bug #4216736</a>).
+        You probably shouldn't use this option for processing libraries.
     <li>Sun's JRE 1.4 and later fail to serialize objects with overloaded
         primitive fields.
     <li>Sun's JRE 1.5 <code>pack200</code> tool reportedly has problems with
@@ -614,6 +626,16 @@ The sections below provide more details:
     <code>LineNumberTable</code> attributes for <a
     href="examples.html#stacktrace">producing useful obfuscated stack
     traces</a>. Only applicable when obfuscating.</dd>
+
+<dt><a name="keepparameternames"><code><b>-keepparameternames</b></code></a></dt>
+
+<dd>Specifies to keep the parameter names and types of methods that are kept.
+    This option actually keeps trimmed versions of the debugging attributes
+    <code>LocalVariableTable</code> and
+    <code>LocalVariableTypeTable</code>. It can be useful when
+    <a href="examples.html#library">processing a library</a>. Some IDEs can
+    use the information to assist developers who use the library, for example
+    with tool tips or autocompletion. Only applicable when obfuscating.</dd>
 
 <dt><a name="renamesourcefileattribute"><code><b>-renamesourcefileattribute</b></code></a>
     [<i>string</i>]</dt>
@@ -1223,8 +1245,9 @@ files.
 <p>
 
 <hr>
+<noscript><div><a target="_top" href="../index.html" class="button">Show menu</a></div></noscript>
 <address>
-Copyright &copy; 2002-2009
+Copyright &copy; 2002-2010
 <a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>

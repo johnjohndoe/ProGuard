@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -275,8 +275,12 @@ public class Initializer
         {
             System.err.println("Warning: there were " + classReferenceWarningCount +
                                " unresolved references to classes or interfaces.");
-            System.err.println("         You may need to specify additional library jars (using '-libraryjars'),");
-            System.err.println("         or perhaps the '-dontskipnonpubliclibraryclasses' option.");
+            System.err.println("         You may need to specify additional library jars (using '-libraryjars').");
+
+            if (configuration.skipNonPublicLibraryClasses)
+            {
+                System.err.println("         You may also have to remove the option '-skipnonpubliclibraryclasses'.");
+            }
         }
 
         int dependencyWarningCount = dependencyWarningPrinter.getWarningCount();
@@ -295,9 +299,13 @@ public class Initializer
                                " unresolved references to program class members.");
             System.err.println("         Your input classes appear to be inconsistent.");
             System.err.println("         You may need to recompile them and try again.");
-            System.err.println("         Alternatively, you may have to specify the options ");
-            System.err.println("         '-dontskipnonpubliclibraryclasses' and/or");
+            System.err.println("         Alternatively, you may have to specify the option ");
             System.err.println("         '-dontskipnonpubliclibraryclassmembers'.");
+
+            if (configuration.skipNonPublicLibraryClasses)
+            {
+                System.err.println("         You may also have to remove the option '-skipnonpubliclibraryclasses'.");
+            }
         }
 
         if ((classReferenceWarningCount   > 0 ||

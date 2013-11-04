@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -35,11 +35,11 @@ final class ComparisonValue extends SpecificIntegerValue
     /**
      * Creates a new comparison integer value of the two given scalar values.
      */
-    public ComparisonValue(Value integerValue1,
-                           Value integerValue2)
+    public ComparisonValue(Value value1,
+                           Value value2)
     {
-        this.value1 = integerValue1;
-        this.value2 = integerValue2;
+        this.value1 = value1;
+        this.value2 = value2;
     }
 
 

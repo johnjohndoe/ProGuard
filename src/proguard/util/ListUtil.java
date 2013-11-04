@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -34,7 +34,7 @@ public class ListUtil
     /**
      * Creates a comma-separated String from the given List of String objects.
      */
-    public static String commaSeparatedString(List list)
+    public static String commaSeparatedString(List list, boolean quoteStrings)
     {
         if (list == null)
         {
@@ -50,7 +50,14 @@ public class ListUtil
                 buffer.append(',');
             }
 
-            buffer.append(quotedString((String)list.get(index)));
+            String string = (String)list.get(index);
+
+            if (quoteStrings)
+            {
+                string = quotedString(string);
+            }
+
+            buffer.append(string);
         }
 
         return buffer.toString();
@@ -165,7 +172,7 @@ public class ListUtil
                 System.out.println("["+list.get(index)+"]");
             }
 
-            String string = commaSeparatedString(list);
+            String string = commaSeparatedString(list, true);
 
             System.out.println("Resulting string: ["+string+"]");
         }

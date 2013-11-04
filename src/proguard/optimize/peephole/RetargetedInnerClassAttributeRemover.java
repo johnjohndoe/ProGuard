@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -90,8 +90,42 @@ implements   ClassVisitor,
         // Check whether the class itself is retargeted.
         checkTarget(clazz);
 
-        // Check whether the referenced classes are retargeted.
-        innerClassesAttribute.innerClassEntriesAccept(clazz, this);
+        if (!retargeted)
+        {
+            // Check whether the referenced classes are retargeted.
+            innerClassesAttribute.innerClassEntriesAccept(clazz, this);
+            int                classesCount = innerClassesAttribute.u2classesCount;
+            InnerClassesInfo[] classes      = innerClassesAttribute.classes;
+
+            int newClassesCount = 0;
+
+            // Copy over all non-retargeted attributes.
+            for (int index = 0; index < classesCount; index++)
+            {
+                InnerClassesInfo classInfo = classes[index];
+
+                // Check if the outer class or inner class is a retargeted class.
+                retargeted = false;
+                classInfo.outerClassConstantAccept(clazz, this);
+                classInfo.innerClassConstantAccept(clazz, this);
+                if (!retargeted)
+                {
+                    classes[newClassesCount++] = classInfo;
+                }
+            }
+
+            // Clean up any remaining array elements.
+            for (int index = newClassesCount; index < classesCount; index++)
+            {
+                classes[index] = null;
+            }
+
+            // Update the number of classes.
+            innerClassesAttribute.u2classesCount = newClassesCount;
+
+            // Remove the attribute altogether if it's empty.
+            retargeted = newClassesCount == 0;
+        }
     }
 
 

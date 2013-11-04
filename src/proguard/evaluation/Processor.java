@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -22,11 +22,8 @@ package proguard.evaluation;
 
 import proguard.classfile.*;
 import proguard.classfile.attribute.CodeAttribute;
-import proguard.classfile.constant.*;
-import proguard.classfile.constant.visitor.ConstantVisitor;
 import proguard.classfile.instruction.*;
 import proguard.classfile.instruction.visitor.InstructionVisitor;
-import proguard.classfile.util.SimplifiedVisitor;
 import proguard.evaluation.value.*;
 
 /**
@@ -36,9 +33,7 @@ import proguard.evaluation.value.*;
  * @author Eric Lafortune
  */
 public class Processor
-extends      SimplifiedVisitor
-implements   InstructionVisitor,
-             ConstantVisitor
+implements   InstructionVisitor
 {
     private final Variables      variables;
     private final Stack          stack;
@@ -46,9 +41,8 @@ implements   InstructionVisitor,
     private final BranchUnit     branchUnit;
     private final InvocationUnit invocationUnit;
 
-    // Fields acting as parameters for the ConstantVisitor methods.
-    private boolean handleClassConstantAsClassValue;
-    private Value   cpValue;
+    private final ConstantValueFactory      constantValueFactory;
+    private final ClassConstantValueFactory classConstantValueFactory;
 
 
     /**
@@ -69,6 +63,9 @@ implements   InstructionVisitor,
         this.valueFactory   = valueFactory;
         this.branchUnit     = branchUnit;
         this.invocationUnit = invocationUnit;
+
+        constantValueFactory      = new ConstantValueFactory(valueFactory);
+        classConstantValueFactory = new ClassConstantValueFactory(valueFactory);
     }
 
 
@@ -561,7 +558,7 @@ implements   InstructionVisitor,
             case InstructionConstants.OP_LDC:
             case InstructionConstants.OP_LDC_W:
             case InstructionConstants.OP_LDC2_W:
-                stack.push(cpValue(clazz, constantIndex, true));
+                stack.push(classConstantValueFactory.constantValue(clazz, constantIndex));
                 break;
 
             case InstructionConstants.OP_GETSTATIC:
@@ -576,12 +573,12 @@ implements   InstructionVisitor,
                 break;
 
             case InstructionConstants.OP_NEW:
-                stack.push(cpValue(clazz, constantIndex).referenceValue());
+                stack.push(constantValueFactory.constantValue(clazz, constantIndex).referenceValue());
                 break;
 
             case InstructionConstants.OP_ANEWARRAY:
             {
-                ReferenceValue referenceValue = cpValue(clazz, constantIndex).referenceValue();
+                ReferenceValue referenceValue = constantValueFactory.constantValue(clazz, constantIndex).referenceValue();
 
                 stack.push(valueFactory.createArrayReferenceValue(referenceValue.internalType(),
                                                                   referenceValue.getReferencedClass(),
@@ -594,14 +591,14 @@ implements   InstructionVisitor,
                 ReferenceValue castValue = stack.apop();
                 ReferenceValue castResultValue =
                     castValue.isNull() == Value.ALWAYS ? castValue :
-                    castValue.isNull() == Value.NEVER  ? cpValue(clazz, constantIndex).referenceValue() :
-                                                         cpValue(clazz, constantIndex).referenceValue().generalize(valueFactory.createReferenceValueNull());
+                    castValue.isNull() == Value.NEVER  ? constantValueFactory.constantValue(clazz, constantIndex).referenceValue() :
+                                                         constantValueFactory.constantValue(clazz, constantIndex).referenceValue().generalize(valueFactory.createReferenceValueNull());
                 stack.push(castResultValue);
                 break;
 
             case InstructionConstants.OP_INSTANCEOF:
             {
-                ReferenceValue referenceValue = cpValue(clazz, constantIndex).referenceValue();
+                ReferenceValue referenceValue = constantValueFactory.constantValue(clazz, constantIndex).referenceValue();
 
                 int instanceOf = stack.apop().instanceOf(referenceValue.getType(),
                                                          referenceValue.getReferencedClass());
@@ -621,7 +618,7 @@ implements   InstructionVisitor,
                     IntegerValue arrayLength = stack.ipop();
                 }
 
-                stack.push(cpValue(clazz, constantIndex).referenceValue());
+                stack.push(constantValueFactory.constantValue(clazz, constantIndex).referenceValue());
                 break;
             }
 
@@ -906,74 +903,5 @@ implements   InstructionVisitor,
                 break;
             }
         }
-    }
-
-
-    // Implementations for ConstantVisitor.
-
-    public void visitIntegerConstant(Clazz clazz, IntegerConstant integerConstant)
-    {
-        cpValue = valueFactory.createIntegerValue(integerConstant.getValue());
-    }
-
-    public void visitLongConstant(Clazz clazz, LongConstant longConstant)
-    {
-        cpValue = valueFactory.createLongValue(longConstant.getValue());
-    }
-
-    public void visitFloatConstant(Clazz clazz, FloatConstant floatConstant)
-    {
-        cpValue = valueFactory.createFloatValue(floatConstant.getValue());
-    }
-
-    public void visitDoubleConstant(Clazz clazz, DoubleConstant doubleConstant)
-    {
-        cpValue = valueFactory.createDoubleValue(doubleConstant.getValue());
-    }
-
-    public void visitStringConstant(Clazz clazz, StringConstant stringConstant)
-    {
-        cpValue = valueFactory.createReferenceValue(ClassConstants.INTERNAL_NAME_JAVA_LANG_STRING,
-                                                    stringConstant.javaLangStringClass,
-                                                    false);
-    }
-
-    public void visitClassConstant(Clazz clazz, ClassConstant classConstant)
-    {
-        cpValue = handleClassConstantAsClassValue ?
-            valueFactory.createReferenceValue(ClassConstants.INTERNAL_NAME_JAVA_LANG_CLASS,
-                                              classConstant.javaLangClassClass,
-                                              false) :
-            valueFactory.createReferenceValue(classConstant.getName(clazz),
-                                              classConstant.referencedClass,
-                                              false);
-    }
-
-
-    // Small utility methods.
-
-    /**
-     * Returns the Value of the constant pool element at the given index.
-     */
-    private Value cpValue(Clazz clazz,
-                          int   constantIndex)
-    {
-        return cpValue(clazz, constantIndex, false);
-    }
-
-
-    /**
-     * Returns the Value of the constant pool element at the given index.
-     */
-    private Value cpValue(Clazz   clazz,
-                          int     constantIndex,
-                          boolean handleClassConstantAsClassValue)
-    {
-        this.handleClassConstantAsClassValue = handleClassConstantAsClassValue;
-
-        // Visit the constant pool entry to get its return value.
-        clazz.constantPoolEntryAccept(constantIndex, this);
-
-        return cpValue;
     }
 }

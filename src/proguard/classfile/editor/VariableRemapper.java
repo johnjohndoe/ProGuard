@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -40,6 +40,9 @@ implements   AttributeVisitor,
              LocalVariableInfoVisitor,
              LocalVariableTypeInfoVisitor
 {
+    private static final boolean DEBUG = false;
+
+
     private final CodeAttributeEditor codeAttributeEditor = new CodeAttributeEditor();
 
     private int[] variableMap;
@@ -62,6 +65,19 @@ implements   AttributeVisitor,
 
     public void visitCodeAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute)
     {
+        if (DEBUG)
+        {
+            System.out.println("VariableRemapper: "+clazz.getName()+"."+method.getName(clazz)+method.getDescriptor(clazz));
+            for (int index= 0; index < codeAttribute.u2maxLocals; index++)
+            {
+                System.out.println("  v"+index+" -> "+variableMap[index]);
+            }
+        }
+
+        // Remap the variables of the attributes, before editing the code and
+        // cleaning up its local variable frame.
+        codeAttribute.attributesAccept(clazz, method, this);
+
         // Initially, the code attribute editor doesn't contain any changes.
         codeAttributeEditor.reset(codeAttribute.u4codeLength);
 
@@ -70,9 +86,6 @@ implements   AttributeVisitor,
 
         // Apply the code atribute editor.
         codeAttributeEditor.visitCodeAttribute(clazz, method, codeAttribute);
-
-        // Remap the variables of the attributes.
-        codeAttribute.attributesAccept(clazz, method, this);
     }
 
 
@@ -80,11 +93,6 @@ implements   AttributeVisitor,
     {
         // Remap the variable references of the local variables.
         localVariableTableAttribute.localVariablesAccept(clazz, method, codeAttribute, this);
-
-        // Remove local variables that haven't been mapped.
-        localVariableTableAttribute.u2localVariableTableLength =
-            removeEmptyLocalVariables(localVariableTableAttribute.localVariableTable,
-                                      localVariableTableAttribute.u2localVariableTableLength);
     }
 
 
@@ -92,11 +100,6 @@ implements   AttributeVisitor,
     {
         // Remap the variable references of the local variables.
         localVariableTypeTableAttribute.localVariablesAccept(clazz, method, codeAttribute, this);
-
-        // Remove local variables that haven't been mapped.
-        localVariableTypeTableAttribute.u2localVariableTypeTableLength =
-            removeEmptyLocalVariableTypes(localVariableTypeTableAttribute.localVariableTypeTable,
-                                          localVariableTypeTableAttribute.u2localVariableTypeTableLength);
     }
 
 
@@ -149,49 +152,5 @@ implements   AttributeVisitor,
     private int remapVariable(int variableIndex)
     {
         return variableMap[variableIndex];
-    }
-
-
-    /**
-     * Returns the given list of local variables, without the ones that have
-     * been removed.
-     */
-    private int removeEmptyLocalVariables(LocalVariableInfo[] localVariableInfos,
-                                          int                 localVariableInfoCount)
-    {
-        // Overwrite all empty local variable entries.
-        int newIndex = 0;
-        for (int index = 0; index < localVariableInfoCount; index++)
-        {
-            LocalVariableInfo localVariableInfo = localVariableInfos[index];
-            if (localVariableInfo.u2index >= 0)
-            {
-                localVariableInfos[newIndex++] = localVariableInfo;
-            }
-        }
-
-        return newIndex;
-    }
-
-
-    /**
-     * Returns the given list of local variable types, without the ones that
-     * have been removed.
-     */
-    private int removeEmptyLocalVariableTypes(LocalVariableTypeInfo[] localVariableTypeInfos,
-                                              int                     localVariableTypeInfoCount)
-    {
-        // Overwrite all empty local variable type entries.
-        int newIndex = 0;
-        for (int index = 0; index < localVariableTypeInfoCount; index++)
-        {
-            LocalVariableTypeInfo localVariableTypeInfo = localVariableTypeInfos[index];
-            if (localVariableTypeInfo.u2index >= 0)
-            {
-                localVariableTypeInfos[newIndex++] = localVariableTypeInfo;
-            }
-        }
-
-        return newIndex;
     }
 }

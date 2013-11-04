@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -75,7 +75,7 @@ public class DataEntryObfuscator implements DataEntryReader
         String dataEntryName = dataEntry.getName();
 
         // Try to find a corresponding class name by removing increasingly
-        // long suffixes,
+        // long suffixes.
         for (int suffixIndex = dataEntryName.length() - 1;
              suffixIndex > 0;
              suffixIndex--)
@@ -106,25 +106,44 @@ public class DataEntryObfuscator implements DataEntryReader
 
                         return new RenamedDataEntry(dataEntry, newDataEntryName);
                     }
-
-                    // Otherwise stop looking.
-                    break;
+                    else
+                    {
+                        // Otherwise stop looking.
+                        return dataEntry;
+                    }
                 }
             }
         }
 
-        // Did the package get a new name?
-        String packagePrefix    = ClassUtil.internalPackagePrefix(dataEntryName);
-        String newPackagePrefix = (String)packagePrefixMap.get(packagePrefix);
-        if (newPackagePrefix != null &&
-            !packagePrefix.equals(newPackagePrefix))
+        // Try to find a corresponding package name by increasingly removing
+        // more subpackages.
+        String packagePrefix = dataEntryName;
+        do
         {
-            // Return a renamed data entry.
-            String newDataEntryName =
-                newPackagePrefix + dataEntryName.substring(packagePrefix.length());
+            // Chop off the class name or the last subpackage name.
+            packagePrefix = ClassUtil.internalPackagePrefix(packagePrefix);
 
-            return new RenamedDataEntry(dataEntry, newDataEntryName);
+            // Is there a package corresponding to the package prefix?
+            String newPackagePrefix = (String)packagePrefixMap.get(packagePrefix);
+            if (newPackagePrefix != null)
+            {
+                // Did the package get a new name?
+                if (!packagePrefix.equals(newPackagePrefix))
+                {
+                    // Return a renamed data entry.
+                    String newDataEntryName =
+                        newPackagePrefix + dataEntryName.substring(packagePrefix.length());
+
+                    return new RenamedDataEntry(dataEntry, newDataEntryName);
+                }
+                else
+                {
+                    // Otherwise stop looking.
+                    return dataEntry;
+                }
+            }
         }
+        while (packagePrefix.length() > 0);
 
         return dataEntry;
     }

@@ -11,12 +11,28 @@
 <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
 <title>ProGuard</title>
 </head>
+
+<script type="text/javascript" language="JavaScript">
+<!--
+var main="main.html";
+if (window.location.hash.length > 1)
+  main=window.location.hash.substr(1);
+var sections="sections.html";
+if (main.search(/^manual/) == 0)
+  sections="manual/sections.html";
+
+document.write("<frameset rows=\"50,*\" framespacing=\"0\" frameborder=\"no\"><frame id=\"title\" name=\"title\" src=\"title.html\" scrolling=\"no\" marginwidth=\"0\" marginheight=\"0\" noresize><frameset cols=\"120,*\" framespacing=\"0\" frameborder=\"no\"><frame id=\"sections\" name=\"sections\" src=\""+sections+"\" scrolling=\"no\" marginwidth=\"0\" marginheight=\"0\" noresize><frame id=\"main\" name=\"main\" src=\""+main+"\" scrolling=\"auto\" marginwidth=\"10\" marginheight=\"10\" noresize></frameset></frameset>");
+//-->
+</script>
+
+<noscript>
 <frameset
  rows="50,*"
  framespacing="0"
  frameborder="no">
 
 <frame
+ id="title"
  name="title"
  src="title.html"
  scrolling="no"
@@ -30,6 +46,7 @@
  frameborder="no">
 
 <frame
+ id="sections"
  name="sections"
  src="sections.html"
  scrolling="no"
@@ -38,6 +55,7 @@
  noresize>
 
 <frame
+ id="main"
  name="main"
  src="main.html"
  scrolling="auto"
@@ -47,15 +65,17 @@
 
 </frameset>
 </frameset>
+</noscript>
 
 <noframes>
 <body>
 <p class="intro">
-<b>ProGuard</b> is a free Java class file shrinker, optimizer, and obfuscator.
-It can detect and remove unused classes, fields, methods, and attributes. It
-can then optimize bytecode and remove unused instructions. Finally, it can
-rename the remaining classes, fields, and methods using short meaningless
-names. The resulting jars are smaller and harder to reverse-engineer.
+<b>ProGuard</b> is a free Java class file shrinker, optimizer, obfuscator, and
+preverifier. It detects and removes unused classes, fields, methods, and
+attributes. It optimizes bytecode and removes unused instructions. It renames
+the remaining classes, fields, and methods using short meaningless names.
+Finally, it preverifies the processed code for Java 6 or for Java Micro
+Edition.
 </p>
 <p>
 Your browser doesn't support frames, but that's cool.
@@ -64,7 +84,7 @@ You can go straight to the <a href="main.html">main page</a>.
 
 <hr>
 <address>
-Copyright &copy; 2002-2009
+Copyright &copy; 2002-2010
 <a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>

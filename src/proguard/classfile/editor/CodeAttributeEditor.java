@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -28,7 +28,6 @@ import proguard.classfile.attribute.visitor.*;
 import proguard.classfile.instruction.*;
 import proguard.classfile.instruction.visitor.InstructionVisitor;
 import proguard.classfile.util.SimplifiedVisitor;
-import proguard.classfile.visitor.ClassPrinter;
 
 /**
  * This AttributeVisitor accumulates specified changes to code, and then applies
@@ -328,52 +327,51 @@ implements   AttributeVisitor,
     {
         if (DEBUG)
         {
-            System.out.println("CodeAttributeEditor: ["+clazz.getName()+"."+method.getName(clazz)+"]");
+            System.out.println("CodeAttributeEditor: "+clazz.getName()+"."+method.getName(clazz)+method.getDescriptor(clazz));
         }
 
-        // Avoid doing any work if nothing is changing anyway.
-        if (!modified)
+        // Do we have to update the code?
+        if (modified)
         {
-            return;
-        }
+            // Can we perform a faster simple replacement of instructions?
+            if (canPerformSimpleReplacements(codeAttribute))
+            {
+                if (DEBUG)
+                {
+                    System.out.println("  Simple editing");
+                }
 
-        // Check if we can perform a faster simple replacement of instructions.
-        if (canPerformSimpleReplacements(codeAttribute))
-        {
-            // Simply overwrite the instructions.
-            performSimpleReplacements(codeAttribute);
+                // Simply overwrite the instructions.
+                performSimpleReplacements(codeAttribute);
+            }
+            else
+            {
+                if (DEBUG)
+                {
+                    System.out.println("  Full editing");
+                }
 
-            // Update the maximum stack size and local variable frame size.
-            updateFrameSizes(clazz, method, codeAttribute);
-        }
-        else
-        {
-            // Move and remap the instructions.
-            codeAttribute.u4codeLength =
-                updateInstructions(clazz, method, codeAttribute);
+                // Move and remap the instructions.
+                codeAttribute.u4codeLength =
+                    updateInstructions(clazz, method, codeAttribute);
 
-            // Remap the exception table.
-            codeAttribute.exceptionsAccept(clazz, method, this);
+                // Remap the exception table.
+                codeAttribute.exceptionsAccept(clazz, method, this);
 
-            // Remove exceptions with empty code blocks.
-            codeAttribute.u2exceptionTableLength =
-                removeEmptyExceptions(codeAttribute.exceptionTable,
-                                      codeAttribute.u2exceptionTableLength);
+                // Remove exceptions with empty code blocks.
+                codeAttribute.u2exceptionTableLength =
+                    removeEmptyExceptions(codeAttribute.exceptionTable,
+                                          codeAttribute.u2exceptionTableLength);
 
-            // Update the maximum stack size and local variable frame size.
-            updateFrameSizes(clazz, method, codeAttribute);
-
-            // Remap the line number table and the local variable table.
-            codeAttribute.attributesAccept(clazz, method, this);
+                // Remap the line number table and the local variable tables.
+                codeAttribute.attributesAccept(clazz, method, this);
+            }
 
             // Make sure instructions are widened if necessary.
             instructionWriter.visitCodeAttribute(clazz, method, codeAttribute);
         }
-    }
 
-
-    private void updateFrameSizes(Clazz clazz, Method method, CodeAttribute codeAttribute)
-    {
+        // Update the maximum stack size and local variable frame size.
         if (updateFrameSizes)
         {
             stackSizeUpdater.visitCodeAttribute(clazz, method, codeAttribute);
@@ -415,12 +413,6 @@ implements   AttributeVisitor,
     {
         // Remap all local variable table entries.
         localVariableTableAttribute.localVariablesAccept(clazz, method, codeAttribute, this);
-
-        // Remove local variables with empty code blocks.
-        localVariableTableAttribute.u2localVariableTableLength =
-            removeEmptyLocalVariables(localVariableTableAttribute.localVariableTable,
-                                      localVariableTableAttribute.u2localVariableTableLength,
-                                      codeAttribute.u2maxLocals);
     }
 
 
@@ -428,12 +420,6 @@ implements   AttributeVisitor,
     {
         // Remap all local variable table entries.
         localVariableTypeTableAttribute.localVariablesAccept(clazz, method, codeAttribute, this);
-
-        // Remove local variables with empty code blocks.
-        localVariableTypeTableAttribute.u2localVariableTypeTableLength =
-            removeEmptyLocalVariableTypes(localVariableTypeTableAttribute.localVariableTypeTable,
-                                          localVariableTypeTableAttribute.u2localVariableTypeTableLength,
-                                          codeAttribute.u2maxLocals);
     }
 
 
@@ -912,10 +898,12 @@ implements   AttributeVisitor,
     public void visitLocalVariableInfo(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableInfo localVariableInfo)
     {
         // Remap the code offset and length.
-        // TODO: The local variable frame might not be strictly preserved.
-        localVariableInfo.u2length  = remapBranchOffset(localVariableInfo.u2startPC,
-                                                        localVariableInfo.u2length);
-        localVariableInfo.u2startPC = remapInstructionOffset(localVariableInfo.u2startPC);
+        int newStartPC = remapInstructionOffset(localVariableInfo.u2startPC);
+        int newEndPC   = remapInstructionOffset(localVariableInfo.u2startPC +
+                                                localVariableInfo.u2length);
+
+        localVariableInfo.u2length  = newEndPC - newStartPC;
+        localVariableInfo.u2startPC = newStartPC;
     }
 
 
@@ -924,10 +912,12 @@ implements   AttributeVisitor,
     public void visitLocalVariableTypeInfo(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableTypeInfo localVariableTypeInfo)
     {
         // Remap the code offset and length.
-        // TODO: The local variable frame might not be strictly preserved.
-        localVariableTypeInfo.u2length  = remapBranchOffset(localVariableTypeInfo.u2startPC,
-                                                            localVariableTypeInfo.u2length);
-        localVariableTypeInfo.u2startPC = remapInstructionOffset(localVariableTypeInfo.u2startPC);
+        int newStartPC = remapInstructionOffset(localVariableTypeInfo.u2startPC);
+        int newEndPC   = remapInstructionOffset(localVariableTypeInfo.u2startPC +
+                                                localVariableTypeInfo.u2length);
+
+        localVariableTypeInfo.u2length  = newEndPC - newStartPC;
+        localVariableTypeInfo.u2startPC = newStartPC;
     }
 
 
@@ -1010,54 +1000,6 @@ implements   AttributeVisitor,
                 (index == 0 || startPC > lineNumberInfos[index-1].u2startPC))
             {
                 lineNumberInfos[newIndex++] = lineNumberInfo;
-            }
-        }
-
-        return newIndex;
-    }
-
-
-    /**
-     * Returns the given list of local variables, without the ones that have empty
-     * code blocks or that exceed the actual number of local variables.
-     */
-    private int removeEmptyLocalVariables(LocalVariableInfo[] localVariableInfos,
-                                          int                 localVariableInfoCount,
-                                          int                 maxLocals)
-    {
-        // Overwrite all empty local variable entries.
-        int newIndex = 0;
-        for (int index = 0; index < localVariableInfoCount; index++)
-        {
-            LocalVariableInfo localVariableInfo = localVariableInfos[index];
-            if (localVariableInfo.u2length > 0 &&
-                localVariableInfo.u2index < maxLocals)
-            {
-                localVariableInfos[newIndex++] = localVariableInfo;
-            }
-        }
-
-        return newIndex;
-    }
-
-
-    /**
-     * Returns the given list of local variable types, without the ones that
-     * have empty code blocks or that exceed the actual number of local variables.
-     */
-    private int removeEmptyLocalVariableTypes(LocalVariableTypeInfo[] localVariableTypeInfos,
-                                              int                     localVariableTypeInfoCount,
-                                              int                     maxLocals)
-    {
-        // Overwrite all empty local variable type entries.
-        int newIndex = 0;
-        for (int index = 0; index < localVariableTypeInfoCount; index++)
-        {
-            LocalVariableTypeInfo localVariableTypeInfo = localVariableTypeInfos[index];
-            if (localVariableTypeInfo.u2length > 0 &&
-                localVariableTypeInfo.u2index < maxLocals)
-            {
-                localVariableTypeInfos[newIndex++] = localVariableTypeInfo;
             }
         }
 

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -25,7 +25,7 @@ import proguard.classfile.util.ClassUtil;
 import proguard.util.ListUtil;
 
 import java.io.*;
-import java.util.List;
+import java.util.*;
 
 
 /**
@@ -105,7 +105,7 @@ public class ConfigurationWriter
         writer.println();
 
         // Write the other options.
-        writeOption(ConfigurationConstants.DONT_SKIP_NON_PUBLIC_LIBRARY_CLASSES_OPTION,       !configuration.skipNonPublicLibraryClasses);
+        writeOption(ConfigurationConstants.SKIP_NON_PUBLIC_LIBRARY_CLASSES_OPTION,            configuration.skipNonPublicLibraryClasses);
         writeOption(ConfigurationConstants.DONT_SKIP_NON_PUBLIC_LIBRARY_CLASS_MEMBERS_OPTION, !configuration.skipNonPublicLibraryClassMembers);
         writeOption(ConfigurationConstants.KEEP_DIRECTORIES_OPTION,                           configuration.keepDirectories);
         writeOption(ConfigurationConstants.TARGET_OPTION,                                     ClassUtil.externalClassVersion(configuration.targetClassVersion));
@@ -115,7 +115,7 @@ public class ConfigurationWriter
         writeOption(ConfigurationConstants.PRINT_USAGE_OPTION, configuration.printUsage);
 
         writeOption(ConfigurationConstants.DONT_OPTIMIZE_OPTION,                 !configuration.optimize);
-        writeOption(ConfigurationConstants.OPTIMIZATIONS,                        configuration.optimize ? ListUtil.commaSeparatedString(configuration.optimizations) : null);
+        writeOption(ConfigurationConstants.OPTIMIZATIONS,                        configuration.optimizations);
         writeOption(ConfigurationConstants.OPTIMIZATION_PASSES,                  configuration.optimizationPasses);
         writeOption(ConfigurationConstants.ALLOW_ACCESS_MODIFICATION_OPTION,     configuration.allowAccessModification);
         writeOption(ConfigurationConstants.MERGE_INTERFACES_AGGRESSIVELY_OPTION, configuration.mergeInterfacesAggressively);
@@ -133,6 +133,7 @@ public class ConfigurationWriter
         writeOption(ConfigurationConstants.FLATTEN_PACKAGE_HIERARCHY_OPTION,       configuration.flattenPackageHierarchy, true);
         writeOption(ConfigurationConstants.REPACKAGE_CLASSES_OPTION,               configuration.repackageClasses, true);
         writeOption(ConfigurationConstants.KEEP_ATTRIBUTES_OPTION,                 configuration.keepAttributes);
+        writeOption(ConfigurationConstants.KEEP_PARAMETER_NAMES_OPTION,            configuration.keepParameterNames);
         writeOption(ConfigurationConstants.RENAME_SOURCE_FILE_ATTRIBUTE_OPTION,    configuration.newSourceFileAttribute);
         writeOption(ConfigurationConstants.ADAPT_CLASS_STRINGS_OPTION,             configuration.adaptClassStrings, true);
         writeOption(ConfigurationConstants.ADAPT_RESOURCE_FILE_NAMES_OPTION,       configuration.adaptResourceFileNames);
@@ -218,15 +219,7 @@ public class ConfigurationWriter
                 writer.print(ConfigurationConstants.OPEN_ARGUMENTS_KEYWORD);
             }
 
-            for (int index = 0; index < filter.size(); index++)
-            {
-                if (index > 0)
-                {
-                    writer.print(ConfigurationConstants.ARGUMENT_SEPARATOR_KEYWORD);
-                }
-
-                writer.print(quotedString((String)filter.get(index)));
-            }
+            writer.print(ListUtil.commaSeparatedString(filter, true));
 
             filtered = true;
         }
@@ -273,16 +266,14 @@ public class ConfigurationWriter
             }
             else
             {
-                String argumentString = ListUtil.commaSeparatedString(arguments);
-
                 if (replaceInternalClassNames)
                 {
-                    argumentString = ClassUtil.externalClassName(argumentString);
+                    arguments = externalClassNames(arguments);
                 }
 
                 writer.print(optionName);
                 writer.print(' ');
-                writer.println(quotedString(argumentString));
+                writer.println(ListUtil.commaSeparatedString(arguments, true));
             }
         }
     }
@@ -581,6 +572,23 @@ public class ConfigurationWriter
                 writer.println(ConfigurationConstants.SEPARATOR_KEYWORD);
             }
         }
+    }
+
+
+    /**
+     * Returns a list with external versions of the given list of internal
+     * class names.
+     */
+    private List externalClassNames(List internalClassNames)
+    {
+        List externalClassNames = new ArrayList(internalClassNames.size());
+
+        for (int index = 0; index < internalClassNames.size(); index++)
+        {
+            externalClassNames.add(ClassUtil.externalClassName((String)internalClassNames.get(index)));
+        }
+
+        return externalClassNames;
     }
 
 

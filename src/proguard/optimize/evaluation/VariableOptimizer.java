@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -147,15 +147,10 @@ implements   AttributeVisitor
         {
             if (DEBUG)
             {
-                System.out.println("Remapping variables:");
-                System.out.println("  Class "+ ClassUtil.externalClassName(clazz.getName()));
-                System.out.println("  Method "+ClassUtil.externalFullMethodDescription(clazz.getName(),
-                                                                                       0,
-                                                                                       method.getName(clazz),
-                                                                                       method.getDescriptor(clazz)));
-                for (int index = 0; index < variableSize; index++)
+                System.out.println("VariableOptimizer: "+clazz.getName()+"."+method.getName(clazz)+method.getDescriptor(clazz));
+                for (int index= 0; index < variableSize; index++)
                 {
-                    System.out.println("  ["+index+"] -> ["+variableMap[index]+"]");
+                    System.out.println("  v"+index+" -> "+variableMap[index]);
                 }
             }
 

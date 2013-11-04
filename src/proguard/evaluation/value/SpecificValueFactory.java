@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -45,6 +45,10 @@ extends      ValueFactory
     static final DoubleValue  DOUBLE_VALUE_1   = new ParticularDoubleValue(1.0);
 
 
+    private static int  POS_ZERO_FLOAT_BITS  = Float.floatToIntBits(0.0f);
+    private static long POS_ZERO_DOUBLE_BITS = Double.doubleToLongBits(0.0);
+
+
     // Implementations for ValueFactory.
 
     public IntegerValue createIntegerValue(int value)
@@ -73,7 +77,9 @@ extends      ValueFactory
 
     public FloatValue createFloatValue(float value)
     {
-        return value == 0.0f ? FLOAT_VALUE_0 :
+        // Make sure to distinguish between +0.0 and -0.0.
+        return value == 0.0f && Float.floatToIntBits(value) == POS_ZERO_FLOAT_BITS
+                             ? FLOAT_VALUE_0 :
                value == 1.0f ? FLOAT_VALUE_1 :
                value == 2.0f ? FLOAT_VALUE_2 :
                                new ParticularFloatValue(value);
@@ -82,7 +88,9 @@ extends      ValueFactory
 
     public DoubleValue createDoubleValue(double value)
     {
-        return value == 0.0 ? DOUBLE_VALUE_0 :
+        // Make sure to distinguish between +0.0 and -0.0.
+        return value == 0.0 && Double.doubleToLongBits(value) == POS_ZERO_DOUBLE_BITS
+                            ? DOUBLE_VALUE_0 :
                value == 1.0 ? DOUBLE_VALUE_1 :
                               new ParticularDoubleValue(value);
     }

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -50,7 +50,7 @@ public class Configuration
      * Specifies whether to skip non-public library classes while reading
      * library jars.
      */
-    public boolean   skipNonPublicLibraryClasses      = true;
+    public boolean   skipNonPublicLibraryClasses      = false;
 
     /**
      * Specifies whether to skip non-public library class members while reading
@@ -235,6 +235,13 @@ public class Configuration
      * they may be preceded by the "!" negator.
      */
     public List      keepAttributes;
+
+    /**
+     * Specifies whether method parameter names and types should be kept for
+     * methods that are not obfuscated. This is achieved by keeping partial
+     * "LocalVariableTable" and "LocalVariableTypeTable" attributes.
+     */
+    public boolean   keepParameterNames               = false;
 
     /**
      * An optional replacement for all SourceFile attributes.

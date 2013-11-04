@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -73,6 +73,7 @@ class ConfigurationConstants
     public static final String REPACKAGE_CLASSES_OPTION               = "-repackageclasses";
     public static final String DEFAULT_PACKAGE_OPTION                 = "-defaultpackage";
     public static final String KEEP_ATTRIBUTES_OPTION                 = "-keepattributes";
+    public static final String KEEP_PARAMETER_NAMES_OPTION            = "-keepparameternames";
     public static final String RENAME_SOURCE_FILE_ATTRIBUTE_OPTION    = "-renamesourcefileattribute";
     public static final String ADAPT_CLASS_STRINGS_OPTION             = "-adaptclassstrings";
     public static final String ADAPT_RESOURCE_FILE_NAMES_OPTION       = "-adaptresourcefilenames";
@@ -87,6 +88,7 @@ class ConfigurationConstants
     public static final String IGNORE_WARNINGS_OPTION                            = "-ignorewarnings";
     public static final String PRINT_CONFIGURATION_OPTION                        = "-printconfiguration";
     public static final String DUMP_OPTION                                       = "-dump";
+    public static final String SKIP_NON_PUBLIC_LIBRARY_CLASSES_OPTION            = "-skipnonpubliclibraryclasses";
     public static final String DONT_SKIP_NON_PUBLIC_LIBRARY_CLASSES_OPTION       = "-dontskipnonpubliclibraryclasses";
     public static final String DONT_SKIP_NON_PUBLIC_LIBRARY_CLASS_MEMBERS_OPTION = "-dontskipnonpubliclibraryclassmembers";
     public static final String TARGET_OPTION                                     = "-target";

@@ -5,6 +5,14 @@
 <meta http-equiv="content-style-type" content="text/css">
 <link rel="stylesheet" type="text/css" href="style.css">
 <title>ProGuard GUI</title>
+<script type="text/javascript" language="JavaScript">
+<!--
+if (window.top.document.title!="ProGuard")
+  window.top.location.replace("index.html#"+window.location.pathname+window.location.hash);
+//else if (window.top.location.hash!="#"+window.location.pathname)
+//  window.top.location.hash="#"+window.location.pathname;
+//-->
+</script>
 </head>
 <body>
 
@@ -349,6 +357,7 @@ Corresponding configuration options:
 <li>-<a href="usage.html#flattenpackagehierarchy">flattenpackagehierarchy</a>
 <li>-<a href="usage.html#repackageclasses">repackageclasses</a>
 <li>-<a href="usage.html#keepattributes">keepattributes</a>
+<li>-<a href="usage.html#keepparameternames">keepparameternames</a>
 <li>-<a href="usage.html#renamesourcefileattribute">renamesourcefileattribute</a>
 <li>-<a href="usage.html#adaptclassstrings">adaptclassstrings</a>
 <li>-<a href="usage.html#adaptresourcefilenames">adaptresourcefilenames</a>
@@ -403,6 +412,7 @@ Corresponding configuration options:
 <li>-<a href="usage.html#dontnote">dontnote</a>
 <li>-<a href="usage.html#dontwarn">dontwarn</a>
 <li>-<a href="usage.html#ignorewarnings">ignorewarnings</a>
+<li>-<a href="usage.html#skipnonpubliclibraryclasses">skipnonpubliclibraryclasses</a>
 <li>-<a href="usage.html#dontskipnonpubliclibraryclasses">dontskipnonpubliclibraryclasses</a>
 <li>-<a href="usage.html#dontskipnonpubliclibraryclassmembers">dontskipnonpubliclibraryclassmembers</a>
 <li>-<a href="usage.html#keepdirectories">keepdirectories</a>
@@ -466,8 +476,9 @@ There are two buttons at the bottom:
 <p>
 
 <hr>
+<noscript><div><a target="_top" href="../index.html" class="button">Show menu</a></div></noscript>
 <address>
-Copyright &copy; 2002-2009
+Copyright &copy; 2002-2010
 <a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>

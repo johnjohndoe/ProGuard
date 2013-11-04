@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -80,6 +80,7 @@ public class Optimizer
         CLASS_MERGING_VERTICAL,
         CLASS_MERGING_HORIZONTAL,
         FIELD_REMOVAL_WRITEONLY,
+        FIELD_MARKING_PRIVATE,
         FIELD_PROPAGATION_VALUE,
         METHOD_MARKING_PRIVATE,
         METHOD_MARKING_STATIC,
@@ -530,6 +531,12 @@ public class Optimizer
                     new AllConstantVisitor(
                     new AccessFixer()));
             }
+
+            // Fix the access flags of the inner classes information.
+            programClassPool.classesAccept(
+                new AllAttributeVisitor(
+                new AllInnerClassesInfoVisitor(
+                new InnerClassesAccessFixer())));
         }
 
         if (methodRemovalParameter ||
@@ -595,14 +602,14 @@ public class Optimizer
                 new NonPrivateMemberMarker());
         }
 
-        if (fieldMarkingPrivate ||
-            methodMarkingPrivate)
+        if (fieldMarkingPrivate)
         {
             // Make all non-private fields private, whereever possible.
             programClassPool.classesAccept(
+                new ClassAccessFilter(0, ClassConstants.INTERNAL_ACC_INTERFACE,
                 new AllFieldVisitor(
                 new MemberAccessFilter(0, ClassConstants.INTERNAL_ACC_PRIVATE,
-                new MemberPrivatizer(fieldMarkingPrivateCounter))));
+                new MemberPrivatizer(fieldMarkingPrivateCounter)))));
         }
 
         if (methodMarkingPrivate)
@@ -748,14 +755,6 @@ public class Optimizer
                 new AllMethodVisitor(
                 new AllAttributeVisitor(
                 new VariableShrinker(codeRemovalVariableCounter))));
-        }
-        else
-        {
-            // Clean up all unused local variables.
-            programClassPool.classesAccept(
-                new AllMethodVisitor(
-                new AllAttributeVisitor(
-                new VariableCleaner())));
         }
 
         if (codeAllocationVariable)

@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -68,7 +68,6 @@ implements   AttributeVisitor,
     private TracedStack[]            stacksAfter          = new TracedStack[ClassConstants.TYPICAL_CODE_LENGTH];
     private boolean[]                generalizedContexts  = new boolean[ClassConstants.TYPICAL_CODE_LENGTH];
     private int[]                    evaluationCounts     = new int[ClassConstants.TYPICAL_CODE_LENGTH];
-    private int[]                    initializedVariables = new int[ClassConstants.TYPICAL_CODE_LENGTH];
     private boolean                  evaluateExceptions;
 
     private final BasicBranchUnit    branchUnit;
@@ -186,9 +185,50 @@ implements   AttributeVisitor,
             System.err.println("  Method      = ["+method.getName(clazz)+method.getDescriptor(clazz)+"]");
             System.err.println("  Exception   = ["+ex.getClass().getName()+"] ("+ex.getMessage()+")");
 
-            if (DEBUG)
+            //if (DEBUG)
             {
                 method.accept(clazz, new ClassPrinter());
+
+                System.out.println("Evaluation results:");
+
+                int offset = 0;
+                do
+                {
+                    if (isBranchOrExceptionTarget(offset))
+                    {
+                        System.out.println("Branch target from ["+branchOriginValues[offset]+"]:");
+                        if (isTraced(offset))
+                        {
+                            System.out.println("  Vars:  "+variablesBefore[offset]);
+                            System.out.println("  Stack: "+stacksBefore[offset]);
+                        }
+                    }
+
+                    Instruction instruction = InstructionFactory.create(codeAttribute.code,
+                                                                        offset);
+                    System.out.println(instruction.toString(offset));
+
+                    if (isTraced(offset))
+                    {
+                        int initializationOffset = branchTargetFinder.initializationOffset(offset);
+                        if (initializationOffset != NONE)
+                        {
+                            System.out.println("     is to be initialized at ["+initializationOffset+"]");
+                        }
+
+                        InstructionOffsetValue branchTargets = branchTargets(offset);
+                        if (branchTargets != null)
+                        {
+                            System.out.println("     has overall been branching to "+branchTargets);
+                        }
+
+                        System.out.println("  Vars:  "+variablesAfter[offset]);
+                        System.out.println("  Stack: "+stacksAfter[offset]);
+                    }
+
+                    offset += instruction.length(offset);
+                }
+                while (offset < codeAttribute.u4codeLength);
             }
 
             throw ex;
@@ -212,7 +252,8 @@ implements   AttributeVisitor,
         TracedStack     stack     = new TracedStack(codeAttribute.u2maxStack);
 
         // Initialize the reusable arrays and variables.
-        initializeVariables(clazz, method, codeAttribute, variables, stack);
+        initializeArrays(codeAttribute);
+        initializeParameters(clazz, method, codeAttribute, variables);
 
         // Find all instruction offsets,...
         codeAttribute.accept(clazz, method, branchTargetFinder);
@@ -249,12 +290,6 @@ implements   AttributeVisitor,
 
                 if (isTraced(offset))
                 {
-                    int variableIndex = initializedVariable(offset);
-                    if (variableIndex >= 0)
-                    {
-                        System.out.println("     is initializing variable v"+variableIndex);
-                    }
-
                     int initializationOffset = branchTargetFinder.initializationOffset(offset);
                     if (initializationOffset != NONE)
                     {
@@ -479,16 +514,6 @@ implements   AttributeVisitor,
     }
 
 
-    /**
-     * Returns the variable that is initialized at the given instruction offset,
-     * or <code>NONE</code> if no variable was initialized.
-     */
-    public int initializedVariable(int instructionOffset)
-    {
-        return initializedVariables[instructionOffset];
-    }
-
-
     // Utility methods to evaluate instruction blocks.
 
     /**
@@ -702,9 +727,6 @@ implements   AttributeVisitor,
             // Reset the trace value.
             InstructionOffsetValue traceValue = InstructionOffsetValue.EMPTY_VALUE;
 
-            // Reset the initialization flag.
-            variables.resetInitialization();
-
             // Note that the instruction is only volatile.
             Instruction instruction = InstructionFactory.create(code, instructionOffset);
 
@@ -742,9 +764,6 @@ implements   AttributeVisitor,
 
                 throw ex;
             }
-
-            // Collect the offsets of the instructions whose results were used.
-            initializedVariables[instructionOffset] = variables.getInitializationIndex();
 
             // Collect the branch targets from the branch unit.
             InstructionOffsetValue branchTargets = branchUnit.getTraceBranchTargets();
@@ -896,11 +915,7 @@ implements   AttributeVisitor,
 
             subroutinePartialEvaluator = new PartialEvaluator(this);
 
-            subroutinePartialEvaluator.initializeVariables(clazz,
-                                                           method,
-                                                           codeAttribute,
-                                                           variables,
-                                                           stack);
+            subroutinePartialEvaluator.initializeArrays(codeAttribute);
         }
 
         // Evaluate the subroutine.
@@ -952,13 +967,12 @@ implements   AttributeVisitor,
 
                 if (evaluationCounts[offset] == 0)
                 {
-                    variablesBefore[offset]      = other.variablesBefore[offset];
-                    stacksBefore[offset]         = other.stacksBefore[offset];
-                    variablesAfter[offset]       = other.variablesAfter[offset];
-                    stacksAfter[offset]          = other.stacksAfter[offset];
-                    generalizedContexts[offset]  = other.generalizedContexts[offset];
-                    evaluationCounts[offset]     = other.evaluationCounts[offset];
-                    initializedVariables[offset] = other.initializedVariables[offset];
+                    variablesBefore[offset]     = other.variablesBefore[offset];
+                    stacksBefore[offset]        = other.stacksBefore[offset];
+                    variablesAfter[offset]      = other.variablesAfter[offset];
+                    stacksAfter[offset]         = other.stacksAfter[offset];
+                    generalizedContexts[offset] = other.generalizedContexts[offset];
+                    evaluationCounts[offset]    = other.evaluationCounts[offset];
                 }
                 else
                 {
@@ -968,7 +982,6 @@ implements   AttributeVisitor,
                     stacksAfter[offset]    .generalize(other.stacksAfter[offset]);
                     //generalizedContexts[offset]
                     evaluationCounts[offset] += other.evaluationCounts[offset];
-                    //initializedVariables[offset]
                 }
             }
         }
@@ -1094,11 +1107,7 @@ implements   AttributeVisitor,
     /**
      * Initializes the data structures for the variables, stack, etc.
      */
-    private void initializeVariables(Clazz           clazz,
-                                     Method          method,
-                                     CodeAttribute   codeAttribute,
-                                     TracedVariables variables,
-                                     TracedStack     stack)
+    private void initializeArrays(CodeAttribute codeAttribute)
     {
         int codeLength = codeAttribute.u4codeLength;
 
@@ -1106,21 +1115,14 @@ implements   AttributeVisitor,
         if (variablesAfter.length < codeLength)
         {
             // Create new arrays.
-            branchOriginValues   = new InstructionOffsetValue[codeLength];
-            branchTargetValues   = new InstructionOffsetValue[codeLength];
-            variablesBefore      = new TracedVariables[codeLength];
-            stacksBefore         = new TracedStack[codeLength];
-            variablesAfter       = new TracedVariables[codeLength];
-            stacksAfter          = new TracedStack[codeLength];
-            generalizedContexts  = new boolean[codeLength];
-            evaluationCounts     = new int[codeLength];
-            initializedVariables = new int[codeLength];
-
-            // Reset the arrays.
-            for (int index = 0; index < codeLength; index++)
-            {
-                initializedVariables[index] = NONE;
-            }
+            branchOriginValues  = new InstructionOffsetValue[codeLength];
+            branchTargetValues  = new InstructionOffsetValue[codeLength];
+            variablesBefore     = new TracedVariables[codeLength];
+            stacksBefore        = new TracedStack[codeLength];
+            variablesAfter      = new TracedVariables[codeLength];
+            stacksAfter         = new TracedStack[codeLength];
+            generalizedContexts = new boolean[codeLength];
+            evaluationCounts    = new int[codeLength];
         }
         else
         {
@@ -1131,7 +1133,6 @@ implements   AttributeVisitor,
                 branchTargetValues[index]   = null;
                 generalizedContexts[index]  = false;
                 evaluationCounts[index]     = 0;
-                initializedVariables[index] = NONE;
 
                 if (variablesBefore[index] != null)
                 {
@@ -1154,7 +1155,17 @@ implements   AttributeVisitor,
                 }
             }
         }
+    }
 
+
+    /**
+     * Initializes the data structures for the variables, stack, etc.
+     */
+    private void initializeParameters(Clazz           clazz,
+                                      Method          method,
+                                      CodeAttribute   codeAttribute,
+                                      TracedVariables variables)
+    {
         // Create the method parameters.
         TracedVariables parameters = new TracedVariables(codeAttribute.u2maxLocals);
 

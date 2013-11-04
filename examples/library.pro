@@ -19,6 +19,7 @@
 # You can comment this out if you're not interested in stack traces.
 
 -printmapping out.map
+-keepparameternames
 -renamesourcefileattribute SourceFile
 -keepattributes Exceptions,InnerClasses,Signature,Deprecated,
                 SourceFile,LineNumberTable,EnclosingMethod

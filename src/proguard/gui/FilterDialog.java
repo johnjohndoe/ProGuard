@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -182,7 +182,7 @@ public class FilterDialog extends JDialog
      */
     public void setFilter(List filter)
     {
-        filterTextField.setText(filter != null ? ListUtil.commaSeparatedString(filter) : DEFAULT_FILTER);
+        filterTextField.setText(filter != null ? ListUtil.commaSeparatedString(filter, true) : DEFAULT_FILTER);
     }
 
 
@@ -202,7 +202,7 @@ public class FilterDialog extends JDialog
      */
     public void setJarFilter(List filter)
     {
-        jarFilterTextField.setText(filter != null ? ListUtil.commaSeparatedString(filter) : DEFAULT_JAR_FILTER);
+        jarFilterTextField.setText(filter != null ? ListUtil.commaSeparatedString(filter, true) : DEFAULT_JAR_FILTER);
     }
 
 
@@ -222,7 +222,7 @@ public class FilterDialog extends JDialog
      */
     public void setWarFilter(List filter)
     {
-        warFilterTextField.setText(filter != null ? ListUtil.commaSeparatedString(filter) : DEFAULT_WAR_FILTER);
+        warFilterTextField.setText(filter != null ? ListUtil.commaSeparatedString(filter, true) : DEFAULT_WAR_FILTER);
     }
 
 
@@ -242,7 +242,7 @@ public class FilterDialog extends JDialog
      */
     public void setEarFilter(List filter)
     {
-        earFilterTextField.setText(filter != null ? ListUtil.commaSeparatedString(filter) : DEFAULT_EAR_FILTER);
+        earFilterTextField.setText(filter != null ? ListUtil.commaSeparatedString(filter, true) : DEFAULT_EAR_FILTER);
     }
 
 
@@ -262,7 +262,7 @@ public class FilterDialog extends JDialog
      */
     public void setZipFilter(List filter)
     {
-        zipFilterTextField.setText(filter != null ? ListUtil.commaSeparatedString(filter) : DEFAULT_ZIP_FILTER);
+        zipFilterTextField.setText(filter != null ? ListUtil.commaSeparatedString(filter, true) : DEFAULT_ZIP_FILTER);
     }
 
 

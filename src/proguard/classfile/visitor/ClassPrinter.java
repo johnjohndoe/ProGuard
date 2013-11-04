@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -603,6 +603,8 @@ implements   ClassVisitor,
                 " InnerClassesInfo:");
 
         indent();
+        println("Access flags:  0x" + Integer.toHexString(innerClassesInfo.u2innerClassAccessFlags) + " = " +
+                ClassUtil.externalClassAccessFlags(innerClassesInfo.u2innerClassAccessFlags));
         innerClassesInfo.innerClassConstantAccept(clazz, this);
         innerClassesInfo.outerClassConstantAccept(clazz, this);
         innerClassesInfo.innerNameConstantAccept(clazz, this);
@@ -816,7 +818,7 @@ implements   ClassVisitor,
 
     public void visitLocalVariableInfo(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableInfo localVariableInfo)
     {
-        println("#" + localVariableInfo.u2index + ": " +
+        println("v" + localVariableInfo.u2index + ": " +
                 localVariableInfo.u2startPC + " -> " +
                 (localVariableInfo.u2startPC + localVariableInfo.u2length) + " [" +
                 clazz.getString(localVariableInfo.u2descriptorIndex) + " " +
@@ -828,7 +830,7 @@ implements   ClassVisitor,
 
     public void visitLocalVariableTypeInfo(Clazz clazz, Method method, CodeAttribute codeAttribute, LocalVariableTypeInfo localVariableTypeInfo)
     {
-        println("#" + localVariableTypeInfo.u2index + ": " +
+        println("v" + localVariableTypeInfo.u2index + ": " +
                 localVariableTypeInfo.u2startPC + " -> " +
                 (localVariableTypeInfo.u2startPC + localVariableTypeInfo.u2length) + " [" +
                 clazz.getString(localVariableTypeInfo.u2signatureIndex) + " " +

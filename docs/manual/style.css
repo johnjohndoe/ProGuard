@@ -39,6 +39,14 @@ a
   text-decoration: none;
 }
 
+a.button {
+  color: #000000;
+  text-decoration: none;
+  background: #E0E0E0;
+  border: 1px outset #FFFFFF;
+  float: right;
+}
+
 /* Settings for variable width code. */
 
 p.code {
@@ -63,7 +71,7 @@ td.transparentblock {
 td.whiteblock {
   width: 100px;
   text-align: center;
-  border: solid #C0C0C0 1px;
+  border: 1px solid #C0C0C0;
   background: #E0E0E0;
   padding: 10px 0px;
 }
@@ -71,7 +79,7 @@ td.whiteblock {
 td.lightblock {
   width: 100px;
   text-align: center;
-  border: solid #8888FF 1px;
+  border: 1px solid #8888FF;
   background: #BBBBFF;
   padding: 20px 0px;
 }
@@ -87,6 +95,6 @@ td.darkblock {
 
 td.button {
   background: #E0E0E0;
-  border: outset #FFFFFF 1px;
+  border: 1px outset #FFFFFF;
   font-weight: bold;
 }

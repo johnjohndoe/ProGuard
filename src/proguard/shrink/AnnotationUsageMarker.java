@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -52,7 +52,6 @@ implements   AttributeVisitor,
     // Fields acting as a return parameters for several methods.
     private boolean attributeUsed;
     private boolean annotationUsed;
-    private boolean elementValueUsed;
     private boolean classUsed;
     private boolean methodUsed;
 
@@ -151,9 +150,6 @@ implements   AttributeVisitor,
 
             markConstant(clazz, constantElementValue.u2elementNameIndex);
             markConstant(clazz, constantElementValue.u2constantValueIndex);
-
-            // The return value.
-            elementValueUsed = true;
         }
     }
 
@@ -174,9 +170,6 @@ implements   AttributeVisitor,
                 markConstant(clazz, enumConstantElementValue.u2elementNameIndex);
                 markConstant(clazz, enumConstantElementValue.u2typeNameIndex);
                 markConstant(clazz, enumConstantElementValue.u2constantNameIndex);
-
-                // The return value.
-                elementValueUsed = true;
             }
         }
     }
@@ -197,9 +190,6 @@ implements   AttributeVisitor,
 
                 markConstant(clazz, classElementValue.u2elementNameIndex);
                 markConstant(clazz, classElementValue.u2classInfoIndex);
-
-                // The return value.
-                elementValueUsed = true;
             }
         }
     }
@@ -221,9 +211,6 @@ implements   AttributeVisitor,
                 usageMarker.markAsUsed(annotationElementValue);
 
                 markConstant(clazz, annotationElementValue.u2elementNameIndex);
-
-                // The return value.
-                elementValueUsed = true;
             }
 
             annotationUsed = oldAnnotationUsed;
@@ -235,26 +222,13 @@ implements   AttributeVisitor,
     {
         if (isReferencedMethodUsed(arrayElementValue))
         {
-            boolean oldelementValueUsed = elementValueUsed;
-
             // Check and mark the contained element values.
-            elementValueUsed = false;
             arrayElementValue.elementValuesAccept(clazz, annotation, this);
 
-            if (elementValueUsed)
-            {
-                // Mark the element value as being used.
-                usageMarker.markAsUsed(arrayElementValue);
+            // Mark the element value as being used.
+            usageMarker.markAsUsed(arrayElementValue);
 
-                markConstant(clazz, arrayElementValue.u2elementNameIndex);
-
-                // The return value.
-                //elementValueUsed = true;
-            }
-            else
-            {
-                elementValueUsed = oldelementValueUsed;
-            }
+            markConstant(clazz, arrayElementValue.u2elementNameIndex);
         }
     }
 

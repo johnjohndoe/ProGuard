@@ -5,6 +5,14 @@
 <meta http-equiv="content-style-type" content="text/css">
 <link rel="stylesheet" type="text/css" href="style.css">
 <title>ProGuard Limitations</title>
+<script type="text/javascript" language="JavaScript">
+<!--
+if (window.top.document.title!="ProGuard")
+  window.top.location.replace("index.html#"+window.location.pathname+window.location.hash);
+//else if (window.top.location.hash!="#"+window.location.pathname)
+//  window.top.location.hash="#"+window.location.pathname;
+//-->
+</script>
 </head>
 <body>
 
@@ -14,15 +22,6 @@ When using ProGuard, you should be aware of a few technical issues, all of
 which are easily avoided or resolved:
 <p>
 <ul>
-
-<li>For efficiency, ProGuard always ignores any <b>private or package visible
-    library classes</b> while reading library jars. If any of them are
-    extended by public library classes, and then extended again by input
-    classes, ProGuard will complain it can't find them. In that case, you'll
-    have to use the <code>-dontskipnonpubliclibraryclasses</code> option, and
-    maybe even the <code>-dontskipnonpubliclibraryclassmembers</code> option.
-    The graphical user interface has checkboxes for these settings.
-    <p>
 
 <li>For best results, ProGuard's optimization algorithms assume that the
     processed code never <b>intentionally throws NullPointerExceptions</b> or
@@ -44,20 +43,21 @@ which are easily avoided or resolved:
     across input jars and library jars.
     <p>
 
-<li>When obfuscating, ProGuard will write out class files named
-    "<code>a.class</code>", "<code>b.class</code>", etc. If there is a large
-    numbers of classes in the same package, it may also write out
-    <b>"<code>aux.class</code>"</b>. Windows doesn't allow creating files with
-    this reserved name (among a few other names), so it's generally better to
-    write the output to a jar, in order to avoid such problems.
+<li>When obfuscating, ProGuard writes out class files named
+    "<code>a.class</code>", "<code>b.class</code>", etc. If a package contains
+    a large number of classes, ProGuard may also write out
+    <b>"<code>aux.class</code>"</b>. Inconveniently, Windows refuses to create
+    files with this reserved name (among a few other names). It's generally
+    better to write the output to a jar, in order to avoid such problems.
     <p>
 
 </ul>
 <p>
 
 <hr>
+<noscript><div><a target="_top" href="../index.html" class="button">Show menu</a></div></noscript>
 <address>
-Copyright &copy; 2002-2009
+Copyright &copy; 2002-2010
 <a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>

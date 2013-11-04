@@ -2,7 +2,7 @@
  * ProGuard -- shrinking, optimization, obfuscation, and preverification
  *             of Java bytecode.
  *
- * Copyright (c) 2002-2009 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2010 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -110,6 +110,7 @@ public class ConfigurationParser
             else if (ConfigurationConstants.OUTJARS_OPTION                                   .startsWith(nextWord)) configuration.programJars                      = parseClassPathArgument(configuration.programJars, true);
             else if (ConfigurationConstants.LIBRARYJARS_OPTION                               .startsWith(nextWord)) configuration.libraryJars                      = parseClassPathArgument(configuration.libraryJars, false);
             else if (ConfigurationConstants.RESOURCEJARS_OPTION                              .startsWith(nextWord)) throw new ParseException("The '-resourcejars' option is no longer supported. Please use the '-injars' option for all input");
+            else if (ConfigurationConstants.SKIP_NON_PUBLIC_LIBRARY_CLASSES_OPTION           .startsWith(nextWord)) configuration.skipNonPublicLibraryClasses      = parseNoArgument(true);
             else if (ConfigurationConstants.DONT_SKIP_NON_PUBLIC_LIBRARY_CLASSES_OPTION      .startsWith(nextWord)) configuration.skipNonPublicLibraryClasses      = parseNoArgument(false);
             else if (ConfigurationConstants.DONT_SKIP_NON_PUBLIC_LIBRARY_CLASS_MEMBERS_OPTION.startsWith(nextWord)) configuration.skipNonPublicLibraryClassMembers = parseNoArgument(false);
             else if (ConfigurationConstants.TARGET_OPTION                                    .startsWith(nextWord)) configuration.targetClassVersion               = parseClassVersion();
@@ -151,6 +152,7 @@ public class ConfigurationParser
             else if (ConfigurationConstants.REPACKAGE_CLASSES_OPTION                         .startsWith(nextWord)) configuration.repackageClasses                 = ClassUtil.internalClassName(parseOptionalArgument());
             else if (ConfigurationConstants.DEFAULT_PACKAGE_OPTION                           .startsWith(nextWord)) configuration.repackageClasses                 = ClassUtil.internalClassName(parseOptionalArgument());
             else if (ConfigurationConstants.KEEP_ATTRIBUTES_OPTION                           .startsWith(nextWord)) configuration.keepAttributes                   = parseCommaSeparatedList("attribute name", true, true, false, true, false, false, false, configuration.keepAttributes);
+            else if (ConfigurationConstants.KEEP_PARAMETER_NAMES_OPTION                      .startsWith(nextWord)) configuration.keepParameterNames               = parseNoArgument(true);
             else if (ConfigurationConstants.RENAME_SOURCE_FILE_ATTRIBUTE_OPTION              .startsWith(nextWord)) configuration.newSourceFileAttribute           = parseOptionalArgument();
             else if (ConfigurationConstants.ADAPT_CLASS_STRINGS_OPTION                       .startsWith(nextWord)) configuration.adaptClassStrings                = parseCommaSeparatedList("class name", true, true, false, true, false, true, false, configuration.adaptClassStrings);
             else if (ConfigurationConstants.ADAPT_RESOURCE_FILE_NAMES_OPTION                 .startsWith(nextWord)) configuration.adaptResourceFileNames           = parseCommaSeparatedList("resource file name", true, true, false, false, false, false, false, configuration.adaptResourceFileNames);
@@ -554,7 +556,7 @@ public class ConfigurationParser
                     annotationType =
                         ListUtil.commaSeparatedString(
                         parseCommaSeparatedList("annotation type",
-                                                false, false, false, true, false, false, true, null));
+                                                false, false, false, true, false, false, true, null), false);
 
                     continue;
                 }
@@ -594,7 +596,7 @@ public class ConfigurationParser
         String externalClassName =
             ListUtil.commaSeparatedString(
             parseCommaSeparatedList("class name or interface name",
-                                    true, false, false, true, false, false, false, null));
+                                    true, false, false, true, false, false, false, null), false);
 
         // For backward compatibility, allow a single "*" wildcard to match any
         // class.
@@ -620,13 +622,13 @@ public class ConfigurationParser
                     extendsAnnotationType =
                         ListUtil.commaSeparatedString(
                         parseCommaSeparatedList("annotation type",
-                                                true, false, false, true, false, false, true, null));
+                                                true, false, false, true, false, false, true, null), false);
                 }
 
                 String externalExtendsClassName =
                     ListUtil.commaSeparatedString(
                     parseCommaSeparatedList("class name or interface name",
-                                            false, false, false, true, false, false, false, null));
+                                            false, false, false, true, false, false, false, null), false);
 
                 extendsClassName = ConfigurationConstants.ANY_CLASS_KEYWORD.equals(externalExtendsClassName) ?
                     null :
@@ -697,8 +699,7 @@ public class ConfigurationParser
                 annotationType =
                     ListUtil.commaSeparatedString(
                     parseCommaSeparatedList("annotation type",
-                                            true, false, false, true, false, false, true, null));
-
+                                            true, false, false, true, false, false, true, null), false);
                 continue;
             }
 
