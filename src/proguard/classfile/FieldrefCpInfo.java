@@ -1,6 +1,6 @@
-/* $Id: FieldrefCpInfo.java,v 1.16 2003/12/06 22:15:38 eric Exp $
+/* $Id: FieldrefCpInfo.java,v 1.19 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
@@ -33,6 +33,25 @@ public class FieldrefCpInfo extends RefCpInfo
 {
     protected FieldrefCpInfo()
     {
+    }
+
+
+    /**
+     * Creates a new FieldrefCpInfo with the given name and type indices.
+     * @param u2classIndex         the index of the class in the constant pool.
+     * @param u2nameAndTypeIndex   the index of the name and type entry in the constant pool.
+     * @param referencedClassFile  the referenced class file.
+     * @param referencedMemberInfo the referenced member info.
+     */
+    public FieldrefCpInfo(int        u2classIndex,
+                          int        u2nameAndTypeIndex,
+                          ClassFile  referencedClassFile,
+                          MemberInfo referencedMemberInfo)
+    {
+        this.u2classIndex         = u2classIndex;
+        this.u2nameAndTypeIndex   = u2nameAndTypeIndex;
+        this.referencedClassFile  = referencedClassFile;
+        this.referencedMemberInfo = referencedMemberInfo;
     }
 
 

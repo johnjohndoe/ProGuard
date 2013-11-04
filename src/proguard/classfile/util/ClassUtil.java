@@ -1,6 +1,6 @@
-/* $Id: ClassUtil.java,v 1.17 2003/12/06 22:12:42 eric Exp $
+/* $Id: ClassUtil.java,v 1.21 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -75,7 +75,7 @@ public class ClassUtil
 
 
     /**
-     * Converts an external class name to an internal class name.
+     * Converts an external class name into an internal class name.
      * @param externalClassName the external class name,
      *                          e.g. "<code>java.lang.Object</code>"
      * @return the internal class name,
@@ -89,7 +89,7 @@ public class ClassUtil
 
 
     /**
-     * Converts an internal class description to an external class description.
+     * Converts an internal class description into an external class description.
      * @param accessFlags       the access flags of the class.
      * @param internalClassName the internal class name,
      *                          e.g. "<code>java/lang/Object</code>".
@@ -105,7 +105,7 @@ public class ClassUtil
 
 
     /**
-     * Converts an internal class name to an external class name.
+     * Converts an internal class name into an external class name.
      * @param internalClassName the internal class name,
      *                          e.g. "<code>java/lang/Object</code>".
      * @return the external class name,
@@ -122,7 +122,7 @@ public class ClassUtil
 
 
     /**
-     * Converts an internal class name to an external short class name, without
+     * Converts an internal class name into an external short class name, without
      * package specification.
      * @param externalClassName the external class name,
      *                          e.g. "<code>java.lang.Object</code>"
@@ -151,6 +151,24 @@ public class ClassUtil
 
 
     /**
+     * Returns the number of dimensions of the given internal type.
+     * @param internalType the internal type,
+     *                     e.g. "<code>[[Ljava/lang/Object;</code>".
+     * @return the number of dimensions, e.g. 2.
+     */
+    public static int internalArrayTypeDimensionCount(String internalType)
+    {
+        int dimensions = 0;
+        while (internalType.charAt(dimensions) == ClassConstants.INTERNAL_TYPE_ARRAY)
+        {
+            dimensions++;
+        }
+
+        return dimensions;
+    }
+
+
+    /**
      * Returns whether the given internal type is a plain primitive type
      * (not void).
      * @param internalType the internal type,
@@ -158,7 +176,7 @@ public class ClassUtil
      * @return <code>true</code> if the given type is a class type,
      *         <code>false</code> otherwise.
      */
-    public static boolean isInternalPrimitveType(char internalType)
+    public static boolean isInternalPrimitiveType(char internalType)
     {
         return internalType == ClassConstants.INTERNAL_TYPE_BOOLEAN ||
                internalType == ClassConstants.INTERNAL_TYPE_BYTE    ||
@@ -191,11 +209,11 @@ public class ClassUtil
     /**
      * Returns the internal element type of a given internal array type.
      * @param internalArrayType the internal array type,
-     *                     e.g. "<code>[[Ljava/lang/Object;</code>" or
-     *                          "<code>[I</code>".
+     *                          e.g. "<code>[[Ljava/lang/Object;</code>" or
+     *                               "<code>[I</code>".
      * @return the internal type of the array elements,
-     *                     e.g. "<code>Ljava/lang/Object;</code>" or
-     *                          "<code>I</code>".
+     *                          e.g. "<code>Ljava/lang/Object;</code>" or
+     *                               "<code>I</code>".
      */
     public static String internalTypeFromArrayType(String internalArrayType)
     {
@@ -207,9 +225,9 @@ public class ClassUtil
     /**
      * Returns the internal class name of a given internal class type.
      * @param internalClassType the internal class type,
-     *                     e.g. "<code>Ljava/lang/Object;</code>".
+     *                          e.g. "<code>Ljava/lang/Object;</code>".
      * @return the internal class name,
-     *                     e.g. "<code>java/lang/Object</code>".
+     *                          e.g. "<code>java/lang/Object</code>".
      */
     public static String internalClassNameFromClassType(String internalClassType)
     {
@@ -218,14 +236,14 @@ public class ClassUtil
 
 
     /**
-     * Returns internal class name of any given internal type.
+     * Returns the internal class name of any given internal type.
      * The returned class name for primitive array types is
      * "<code>java/lang/Object</code>".
      * @param internalClassType the internal class type,
-     *                           e.g. "<code>Ljava/lang/Object;</code>" or
-     *                                "<code>[[I</code>".
+     *                          e.g. "<code>Ljava/lang/Object;</code>" or
+     *                               "<code>[[I</code>".
      * @return the internal class name,
-     *                           e.g. "<code>java/lang/Object</code>".
+     *                          e.g. "<code>java/lang/Object</code>".
      */
     public static String internalClassNameFromType(String internalClassType)
     {
@@ -250,8 +268,99 @@ public class ClassUtil
 
 
     /**
-     * Converts an external type to an internal type.
-     * @param externalType the external type (possibly containing wildcards),
+     * Returns the internal type of the given internal method descriptor.
+     * @param internalMethodDescriptor the internal method descriptor,
+     *                                 e.g. "<code>(II)Z</code>".
+     * @return the internal return type,
+     *                                 e.g. "<code>Z</code>".
+     */
+    public static String internalMethodReturnType(String internalMethodDescriptor)
+    {
+        int index = internalMethodDescriptor.indexOf(ClassConstants.INTERNAL_METHOD_ARGUMENTS_CLOSE);
+        return internalMethodDescriptor.substring(index + 1);
+    }
+
+
+    /**
+     * Returns the number of parameters of the given internal method descriptor.
+     * @param internalMethodDescriptor the internal method descriptor,
+     *                                 e.g. "<code>(ID)Z</code>".
+     * @return the number of parameters,
+     *                                 e.g. 2.
+     */
+    public static int internalMethodParameterCount(String internalMethodDescriptor)
+    {
+        internalTypeEnumeration.setDescriptor(internalMethodDescriptor);
+
+        int counter = 0;
+        while (internalTypeEnumeration.hasMoreTypes())
+        {
+            internalTypeEnumeration.nextType();
+
+            counter++;
+        }
+
+        return counter;
+    }
+
+
+    /**
+     * Returns the size taken up on the stack by the parameters of the given
+     * internal method descriptor. This accounts for long and double parameters
+     * taking up two spaces.
+     * @param internalMethodDescriptor the internal method descriptor,
+     *                                 e.g. "<code>(ID)Z</code>".
+     * @return the size taken up on the stack,
+     *                                 e.g. 3.
+     */
+    public static int internalMethodParameterSize(String internalMethodDescriptor)
+    {
+        internalTypeEnumeration.setDescriptor(internalMethodDescriptor);
+
+        int size = 0;
+        while (internalTypeEnumeration.hasMoreTypes())
+        {
+            String internalType = internalTypeEnumeration.nextType();
+
+            size += internalTypeSize(internalType);
+        }
+
+        return size;
+    }
+
+
+    /**
+     * Returns the size taken up on the stack by the given internal type.
+     * The size is 1, except for long and double types, for which it is 2,
+     * and for the void type, for which 0 is returned
+     * @param internalType the internal type,
+     *                     e.g. "<code>I</code>".
+     * @return the size taken up on the stack,
+     *                     e.g. 1.
+     */
+    public static int internalTypeSize(String internalType)
+    {
+        if (internalType.length() == 1)
+        {
+            char internalPrimitiveType = internalType.charAt(0);
+            if      (internalPrimitiveType == ClassConstants.INTERNAL_TYPE_LONG ||
+                     internalPrimitiveType == ClassConstants.INTERNAL_TYPE_DOUBLE)
+            {
+                return 2;
+            }
+            else if (internalPrimitiveType == ClassConstants.INTERNAL_TYPE_VOID)
+            {
+                return 0;
+            }
+        }
+
+        return 1;
+    }
+
+
+    /**
+     * Converts an external type into an internal type.
+     * @param externalType the external type,
      *                     e.g. "<code>java.lang.Object[][]</code>" or
      *                          "<code>int[]</code>".
      * @return the internal type,
@@ -261,13 +370,10 @@ public class ClassUtil
     public static String internalType(String externalType)
     {
         // Strip the array part, if any.
-        String arrayPrefix = "";
-        while (externalType.endsWith(ClassConstants.EXTERNAL_TYPE_ARRAY))
+        int dimensionCount = externalArrayTypeDimensionCount(externalType);
+        if (dimensionCount > 0)
         {
-            arrayPrefix = arrayPrefix + ClassConstants.INTERNAL_TYPE_ARRAY;
-            externalType = externalType.substring(0,
-                                                  externalType.length() -
-                                                  ClassConstants.EXTERNAL_TYPE_ARRAY.length());
+            externalType = externalType.substring(0, externalType.length() - dimensionCount * ClassConstants.EXTERNAL_TYPE_ARRAY.length());
         }
 
         // Analyze the actual type part.
@@ -294,18 +400,48 @@ public class ClassUtil
                                 '%'                                   :
                                 (char)0;
 
-        return arrayPrefix + (internalTypeChar != 0 ?
-            // We found a primitive type.
-            ("" + internalTypeChar) :
-            // It must be something else: a class type.
-            (ClassConstants.INTERNAL_TYPE_CLASS_START +
-             internalClassName(externalType) +
-             ClassConstants.INTERNAL_TYPE_CLASS_END));
+        String internalType =
+            internalTypeChar != 0 ? ("" + internalTypeChar) :
+                                    (ClassConstants.INTERNAL_TYPE_CLASS_START +
+                                     internalClassName(externalType) +
+                                     ClassConstants.INTERNAL_TYPE_CLASS_END);
+
+        // Prepend the array part, if any.
+        for (int count = 0; count < dimensionCount; count++)
+        {
+            internalType = ClassConstants.INTERNAL_TYPE_ARRAY + internalType;
+        }
+
+        return internalType;
     }
 
 
     /**
-     * Converts an internal type to an external type.
+     * Returns the number of dimensions of the given external type.
+     * @param externalType the external type,
+     *                     e.g. "<code>[[Ljava/lang/Object;</code>".
+     * @return the number of dimensions, e.g. 2.
+     */
+    public static int externalArrayTypeDimensionCount(String externalType)
+    {
+        int dimensions = 0;
+        int length = ClassConstants.EXTERNAL_TYPE_ARRAY.length();
+        int offset = externalType.length() - length;
+        while (externalType.regionMatches(offset,
+                                          ClassConstants.EXTERNAL_TYPE_ARRAY,
+                                          0,
+                                          length))
+        {
+            dimensions++;
+            offset -= length;
+        }
+
+        return dimensions;
+    }
+
+
+    /**
+     * Converts an internal type into an external type.
      * @param internalType the internal type,
      *                     e.g. "<code>[[Ljava/lang/Object;</code>" or
      *                          "<code>[I</code>".
@@ -316,11 +452,10 @@ public class ClassUtil
     public static String externalType(String internalType)
     {
         // Strip the array part, if any.
-        String arraySuffix = "";
-        while (internalType.charAt(0) == ClassConstants.INTERNAL_TYPE_ARRAY)
+        int dimensionCount = internalArrayTypeDimensionCount(internalType);
+        if (dimensionCount > 0)
         {
-            arraySuffix = arraySuffix + ClassConstants.EXTERNAL_TYPE_ARRAY;
-            internalType = internalType.substring(1);
+            internalType = internalType.substring(dimensionCount);
         }
 
         // Analyze the actual type part.
@@ -354,7 +489,13 @@ public class ClassUtil
             throw new IllegalArgumentException("Unknown type ["+internalType+"]");
         }
 
-        return externalType + arraySuffix;
+        // Append the array part, if any.
+        for (int count = 0; count < dimensionCount; count++)
+        {
+            externalType = externalType + ClassConstants.EXTERNAL_TYPE_ARRAY;
+        }
+
+        return externalType;
     }
 
 
@@ -362,7 +503,7 @@ public class ClassUtil
      * Returns whether the given internal descriptor String represents a method
      * descriptor.
      * @param internalDescriptor the internal descriptor String,
-     *                                 e.g. "<code>(II)Z</code>".
+     *                           e.g. "<code>(II)Z</code>".
      * @return <code>true</code> if the given String is a method descriptor,
      *         <code>false</code> otherwise.
      */
@@ -458,7 +599,7 @@ public class ClassUtil
 
 
     /**
-     * Converts an internal field description to an external full field description.
+     * Converts an internal field description into an external full field description.
      * @param accessFlags             the access flags of the field.
      * @param fieldName               the field name,
      *                                e.g. "<code>myField</code>".
@@ -479,7 +620,7 @@ public class ClassUtil
 
 
     /**
-     * Converts an internal method description to an external full method description.
+     * Converts an internal method description into an external full method description.
      * @param internalClassName        the internal name of the class of the method,
      *                                 e.g. "<code>mypackage/MyClass</code>".
      * @param accessFlags              the access flags of the method.
@@ -508,7 +649,7 @@ public class ClassUtil
 
 
     /**
-     * Converts internal class access flags to an external access description.
+     * Converts internal class access flags into an external access description.
      * @param accessFlags the class access flags.
      * @return the external class access description,
      *         e.g. "<code>public final </code>".
@@ -520,9 +661,9 @@ public class ClassUtil
 
 
     /**
-     * Converts internal class access flags to an external access description.
+     * Converts internal class access flags into an external access description.
      * @param accessFlags the class access flags.
-     * @param an optional prefix that is added to each access modifier.
+     * @param prefix      a prefix that is added to each access modifier.
      * @return the external class access description,
      *         e.g. "<code>public final </code>".
      */
@@ -560,7 +701,7 @@ public class ClassUtil
 
 
     /**
-     * Converts internal field access flags to an external access description.
+     * Converts internal field access flags into an external access description.
      * @param accessFlags the field access flags.
      * @return the external field access description,
      *         e.g. "<code>public volatile </code>".
@@ -572,9 +713,9 @@ public class ClassUtil
 
 
     /**
-     * Converts internal field access flags to an external access description.
+     * Converts internal field access flags into an external access description.
      * @param accessFlags the field access flags.
-     * @param an optional prefix that is added to each access modifier.
+     * @param prefix      a prefix that is added to each access modifier.
      * @return the external field access description,
      *         e.g. "<code>public volatile </code>".
      */
@@ -621,7 +762,7 @@ public class ClassUtil
 
 
     /**
-     * Converts internal method access flags to an external access description.
+     * Converts internal method access flags into an external access description.
      * @param accessFlags the method access flags.
      * @return the external method access description,
      *                    e.g. "<code>public synchronized </code>".
@@ -633,10 +774,11 @@ public class ClassUtil
 
 
     /**
-     * Converts internal method access flags to an external access description.
+     * Converts internal method access flags into an external access description.
      * @param accessFlags the method access flags.
+     * @param prefix      a prefix that is added to each access modifier.
      * @return the external method access description,
-     *         e.g. "public synchronized ".
+     *                    e.g. "public synchronized ".
      */
     public static String externalMethodAccessFlags(int accessFlags, String prefix)
     {
@@ -689,7 +831,7 @@ public class ClassUtil
 
 
     /**
-     * Converts an internal method descriptor to an external method return type.
+     * Converts an internal method descriptor into an external method return type.
      * @param internalMethodDescriptor the internal method descriptor,
      *                                 e.g. "<code>(II)Z</code>".
      * @return the external method return type,
@@ -697,8 +839,7 @@ public class ClassUtil
      */
     public static String externalMethodReturnType(String internalMethodDescriptor)
     {
-        internalTypeEnumeration.setDescriptor(internalMethodDescriptor);
-        return externalType(internalTypeEnumeration.returnType());
+        return externalType(internalMethodReturnType(internalMethodDescriptor));
     }
 
 
@@ -730,7 +871,7 @@ public class ClassUtil
 
 
     /**
-     * Converts an internal method descriptor to an external method argument
+     * Converts an internal method descriptor into an external method argument
      * description.
      * @param internalMethodDescriptor the internal method descriptor,
      *                                 e.g. "<code>(II)Z</code>".

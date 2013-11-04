@@ -1,6 +1,6 @@
-/* $Id: ProgramFieldInfo.java,v 1.11 2003/02/09 15:22:28 eric Exp $
+/* $Id: ProgramFieldInfo.java,v 1.14 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
@@ -33,8 +33,6 @@ import java.io.*;
  */
 public class ProgramFieldInfo extends ProgramMemberInfo implements FieldInfo
 {
-
-
     /**
      * Creates a new ProgramFieldInfo from the file format data in the DataInput stream.
      *
@@ -47,14 +45,25 @@ public class ProgramFieldInfo extends ProgramMemberInfo implements FieldInfo
         return fi;
     }
 
-    /**
-     * Accepts the given visitor.
-     */
+
+    protected ProgramFieldInfo()
+    {
+    }
+
+
+    // Implementations for ProgramMemberInfo.
+
     public void accept(ProgramClassFile programClassFile, MemberInfoVisitor memberInfoVisitor)
     {
         memberInfoVisitor.visitProgramFieldInfo(programClassFile, this);
     }
 
 
-    protected ProgramFieldInfo() {}
+    public void attributesAccept(ProgramClassFile programClassFile, AttrInfoVisitor attrInfoVisitor)
+    {
+        for (int i = 0; i < u2attributesCount; i++)
+        {
+            attributes[i].accept(programClassFile, this, attrInfoVisitor);
+        }
+    }
 }

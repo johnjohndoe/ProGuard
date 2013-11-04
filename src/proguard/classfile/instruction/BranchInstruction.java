@@ -1,6 +1,6 @@
-/* $Id: BranchInstruction.java,v 1.5 2003/02/09 15:22:28 eric Exp $
+/* $Id: BranchInstruction.java,v 1.13 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -20,7 +20,7 @@
  */
 package proguard.classfile.instruction;
 
-
+import proguard.classfile.*;
 
 /**
  * This interface describes an instruction that branches to a given offset in
@@ -28,10 +28,105 @@ package proguard.classfile.instruction;
  *
  * @author Eric Lafortune
  */
-public interface BranchInstruction
+public class BranchInstruction extends Instruction
 {
+    public int branchOffset;
+
+
     /**
-     * Gets the instruction's branch offset.
+     * Creates an uninitialized BranchInstruction.
      */
-    public int getBranchOffset();
+    public BranchInstruction() {}
+
+
+    public BranchInstruction(byte opcode, int branchOffset)
+    {
+        this.opcode       = opcode;
+        this.branchOffset = branchOffset;
+    }
+
+
+    /**
+     * Copies the given instruction into this instruction.
+     * @param branchInstruction the instruction to be copied.
+     * @return this instruction.
+     */
+    public BranchInstruction copy(BranchInstruction branchInstruction)
+    {
+        this.opcode       = branchInstruction.opcode;
+        this.branchOffset = branchInstruction.branchOffset;
+
+        return this;
+    }
+
+
+    // Implementations for Instruction.
+
+    public Instruction shrink()
+    {
+        // Is this a wide branch that can be replaced by a normal branch?
+        if (branchOffset << 16 >> 16 == branchOffset)
+        {
+            if      (opcode == InstructionConstants.OP_GOTO_W)
+            {
+                opcode = InstructionConstants.OP_GOTO;
+            }
+            else if (opcode == InstructionConstants.OP_JSR_W)
+            {
+                opcode = InstructionConstants.OP_JSR;
+            }
+        }
+
+        return this;
+    }
+
+    protected void readInfo(byte[] code, int offset)
+    {
+        branchOffset = readSignedValue(code, offset, branchOffsetSize());
+    }
+
+
+    protected void writeInfo(byte[] code, int offset)
+    {
+        writeValue(code, offset, branchOffset, branchOffsetSize());
+    }
+
+
+    public int length(int offset)
+    {
+        return 1 + branchOffsetSize();
+    }
+
+
+    public void accept(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, InstructionVisitor instructionVisitor)
+    {
+        instructionVisitor.visitBranchInstruction(classFile, methodInfo, codeAttrInfo, offset, this);
+    }
+
+
+    public String toString(int offset)
+    {
+        return "["+offset+"] "+getName()+" (offset="+branchOffset+", target="+(offset+branchOffset)+")";
+    }
+
+
+    // Implementations for Object.
+
+    public String toString()
+    {
+        return getName()+" (offset="+branchOffset+")";
+    }
+
+
+    // Small utility methods.
+
+    /**
+     * Computes the appropriate branch offset size for this instruction.
+     */
+    private int branchOffsetSize()
+    {
+        return opcode == InstructionConstants.OP_GOTO_W ||
+               opcode == InstructionConstants.OP_JSR_W  ? 4 :
+                                                          2;
+    }
 }

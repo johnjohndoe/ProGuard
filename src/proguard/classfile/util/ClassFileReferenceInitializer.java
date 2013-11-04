@@ -1,6 +1,6 @@
-/* $Id: ClassFileReferenceInitializer.java,v 1.12 2003/12/06 22:15:38 eric Exp $
+/* $Id: ClassFileReferenceInitializer.java,v 1.21 2004/08/21 21:37:28 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -25,18 +25,21 @@ import proguard.classfile.visitor.*;
 
 
 /**
- * This ClassFileVisitor initializes the simple references of the elements of
- * all class files it visits. More specifically, it fills out the references of
- * fields, methods, and constant pool entries that refer to a class file or to
- * a class member in the program class pool.
+ * This ClassFileVisitor initializes the references of all class files that
+ * it visits.
  * <p>
+ * All class constant pool entries get direct references to the corresponding
+ * classes. These references make it more convenient to travel up and across
+ * the class hierarchy.
  * <p>
- * It optionally prints warnings if some items can't be found, and notes on the
- * usage of <code>(SomeClass)Class.forName(variable).newInstance()</code>.
+ * All field and method reference constant pool entries get direct references
+ * to the corresponding classes, fields, and methods.
  * <p>
- * The class file hierarchy must be initialized before using this visitor.
- *
- * @see ClassFileHierarchyInitializer
+ * All name and type constant pool entries get a list of direct references to
+ * the classes listed in the type.
+ * <p>
+ * This visitor optionally prints warnings if some items can't be found, and
+ * notes on the usage of <code>(SomeClass)Class.forName(variable).newInstance()</code>.
  *
  * @author Eric Lafortune
  */
@@ -46,34 +49,42 @@ public class ClassFileReferenceInitializer
              CpInfoVisitor,
              AttrInfoVisitor
 {
+    // A reusable object for checking whether referenced methods are Class.forName,...
+    private ClassFileClassForNameReferenceInitializer classFileClassForNameReferenceInitializer;
+
+    private MyMemberFinder memberFinder = new MyMemberFinder();
+
     private ClassPool programClassPool;
+    private ClassPool libraryClassPool;
     private boolean   warn;
 
-    // Counters for warnings and notes.
-    private int       warningCount;
-
-    // Helper class for checking whether referenced methods are Class.forName,...
-    private ClassFileClassForNameReferenceInitializer classFileClassForNameReferenceInitializer;
+    // Counter for warnings.
+    private int warningCount;
 
 
     /**
-     * Creates a new ClassFileReferenceInitializer that prints warnings and notes.
+     * Creates a new ClassFileReferenceInitializer that initializes the hierarchy
+     * of all visited class files, printing warnings if some classes can't be found.
      */
-    public ClassFileReferenceInitializer(ClassPool programClassPool)
+    public ClassFileReferenceInitializer(ClassPool programClassPool,
+                                ClassPool libraryClassPool)
     {
-        this(programClassPool, true, true);
+        this(programClassPool, libraryClassPool, true, true);
     }
 
 
     /**
-     * Creates a new ClassFileReferenceInitializer that optionally prints
-     * warnings and notes.
+     * Creates a new ClassFileReferenceInitializer that initializes the hierarchy
+     * of all visited class files, optionally printing warnings if some classes
+     * can't be found.
      */
     public ClassFileReferenceInitializer(ClassPool programClassPool,
+                                         ClassPool libraryClassPool,
                                          boolean   warn,
                                          boolean   note)
     {
         this.programClassPool = programClassPool;
+        this.libraryClassPool = libraryClassPool;
         this.warn             = warn;
 
         classFileClassForNameReferenceInitializer =
@@ -116,7 +127,6 @@ public class ClassFileReferenceInitializer
 
     public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
     {
-        // Library class files have no elements to be initialized.
     }
 
 
@@ -137,7 +147,7 @@ public class ClassFileReferenceInitializer
     private void visitMemberInfo(ProgramClassFile programClassFile, ProgramMemberInfo programMemberInfo)
     {
         programMemberInfo.referencedClassFiles =
-            findReferencedClassFiles(programMemberInfo.getDescriptor(programClassFile));
+            findReferencedClasses(programMemberInfo.getDescriptor(programClassFile));
 
         // Initialize the attributes.
         programMemberInfo.attributesAccept(programClassFile, this);
@@ -181,10 +191,9 @@ public class ClassFileReferenceInitializer
         String className = refCpInfo.getClassName(classFile);
 
         // See if we can find the referenced class file.
-        // Only look for referenced class files in the program class pool.
-        // Unresolved references are assumed to refer to library class files.
-        ProgramClassFile referencedClassFile =
-            (ProgramClassFile)programClassPool.getClass(className);
+        // Unresolved references are assumed to refer to library class files
+        // that will not change anyway.
+        ClassFile referencedClassFile = findClass(className);
 
         if (referencedClassFile != null)
         {
@@ -193,9 +202,9 @@ public class ClassFileReferenceInitializer
 
             // For efficiency, first see if we can find the member in the
             // referenced class itself.
-            ProgramMemberInfo referencedMemberInfo = isFieldRef ?
-                (ProgramMemberInfo)referencedClassFile.findField(name, type) :
-                (ProgramMemberInfo)referencedClassFile.findMethod(name, type);
+            MemberInfo referencedMemberInfo = isFieldRef ?
+                (MemberInfo)referencedClassFile.findField(name, type) :
+                (MemberInfo)referencedClassFile.findMethod(name, type);
 
             if (referencedMemberInfo != null)
             {
@@ -209,19 +218,17 @@ public class ClassFileReferenceInitializer
             // We didn't find the member yet. Organize a search in the hierarchy
             // of superclasses and interfaces. This can happen with classes
             // compiled with "-target 1.2" (the default in JDK 1.4).
-            MyMemberFinder memberFinder = new MyMemberFinder();
             try {
-                referencedClassFile.accept(
-                    new ClassFileUpDownTraveler(true, true, true, false,
-                        isFieldRef ?
-                            (ClassFileVisitor)new NamedFieldVisitor(memberFinder, name, type) :
-                            (ClassFileVisitor)new NamedMethodVisitor(memberFinder, name, type)));
+                referencedClassFile.hierarchyAccept(true, true, true, false,
+                    isFieldRef ?
+                        (ClassFileVisitor)new NamedFieldVisitor(memberFinder, name, type) :
+                        (ClassFileVisitor)new NamedMethodVisitor(memberFinder, name, type));
             }
             catch (MyMemberFinder.MemberFoundException ex)
             {
                 // Save the references.
-                refCpInfo.referencedClassFile  = memberFinder.programClassFile;
-                refCpInfo.referencedMemberInfo = memberFinder.programMemberInfo;
+                refCpInfo.referencedClassFile  = memberFinder.classFile;
+                refCpInfo.referencedMemberInfo = memberFinder.memberInfo;
 
                 return;
             }
@@ -245,19 +252,15 @@ public class ClassFileReferenceInitializer
 
     public void visitClassCpInfo(ClassFile classFile, ClassCpInfo classCpInfo)
     {
-        // Didn't the reference get filled out already by the hierarchy initializer?
-        if (classCpInfo.referencedClassFile == null)
-        {
-            classCpInfo.referencedClassFile =
-                programClassPool.getClass(classCpInfo.getName(classFile));
-        }
+        classCpInfo.referencedClassFile =
+            findClass(classCpInfo.getName(classFile));
     }
 
 
     public void visitNameAndTypeCpInfo(ClassFile classFile, NameAndTypeCpInfo nameAndTypeCpInfo)
     {
         nameAndTypeCpInfo.referencedClassFiles =
-            findReferencedClassFiles(nameAndTypeCpInfo.getType(classFile));
+            findReferencedClasses(nameAndTypeCpInfo.getType(classFile));
     }
 
 
@@ -265,10 +268,10 @@ public class ClassFileReferenceInitializer
 
     public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo) {}
     public void visitInnerClassesAttrInfo(ClassFile classFile, InnerClassesAttrInfo innerClassesAttrInfo) {}
-    public void visitConstantValueAttrInfo(ClassFile classFile, ConstantValueAttrInfo constantValueAttrInfo) {}
-    public void visitExceptionsAttrInfo(ClassFile classFile, ExceptionsAttrInfo exceptionsAttrInfo) {}
-    public void visitLineNumberTableAttrInfo(ClassFile classFile, LineNumberTableAttrInfo lineNumberTableAttrInfo) {}
-    public void visitLocalVariableTableAttrInfo(ClassFile classFile, LocalVariableTableAttrInfo localVariableTableAttrInfo) {}
+    public void visitConstantValueAttrInfo(ClassFile classFile, FieldInfo fieldInfo, ConstantValueAttrInfo constantValueAttrInfo) {}
+    public void visitExceptionsAttrInfo(ClassFile classFile, MethodInfo methodInfo, ExceptionsAttrInfo exceptionsAttrInfo) {}
+    public void visitLineNumberTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LineNumberTableAttrInfo lineNumberTableAttrInfo) {}
+    public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo) {}
     public void visitSourceFileAttrInfo(ClassFile classFile, SourceFileAttrInfo sourceFileAttrInfo) {}
     public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo) {}
     public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo) {}
@@ -276,9 +279,9 @@ public class ClassFileReferenceInitializer
     public void visitSignatureAttrInfo(ClassFile classFile, SignatureAttrInfo signatureAttrInfo) {}
 
 
-    public void visitCodeAttrInfo(ClassFile classFile, CodeAttrInfo codeAttrInfo)
+    public void visitCodeAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo)
     {
-        codeAttrInfo.instructionsAccept(classFile, classFileClassForNameReferenceInitializer);
+        codeAttrInfo.instructionsAccept(classFile, methodInfo, classFileClassForNameReferenceInitializer);
     }
 
 
@@ -288,7 +291,7 @@ public class ClassFileReferenceInitializer
      * Returns an array of class files referenced by the given descriptor, or
      * <code>null</code> if there aren't any useful references.
      */
-    private ClassFile[] findReferencedClassFiles(String aDescriptor)
+    private ClassFile[] findReferencedClasses(String aDescriptor)
     {
         DescriptorClassEnumeration enumeration =
             new DescriptorClassEnumeration(aDescriptor);
@@ -300,15 +303,15 @@ public class ClassFileReferenceInitializer
 
             boolean foundReferencedClassFiles = false;
 
-            for (int i = 0; i < classCount; i++)
+            for (int index = 0; index < classCount; index++)
             {
                 String name = enumeration.nextClassName();
 
-                ClassFile referencedClassFile = programClassPool.getClass(name);
+                ClassFile referencedClassFile = findClass(name);
 
                 if (referencedClassFile != null)
                 {
-                    referencedClassFiles[i] = referencedClassFile;
+                    referencedClassFiles[index] = referencedClassFile;
                     foundReferencedClassFiles = true;
                 }
             }
@@ -324,7 +327,26 @@ public class ClassFileReferenceInitializer
 
 
     /**
-     * A utility class that throws a MemberFoundException whenever it visits
+     * Returns the class with the given name, either for the program class pool
+     * or from the library class pool, or <code>null</code> if it can't be found.
+     */
+    private ClassFile findClass(String name)
+    {
+        // First look for the class in the program class pool.
+        ClassFile classFile = programClassPool.getClass(name);
+
+        // Otherwise look for the class in the library class pool.
+        if (classFile == null)
+        {
+            classFile = libraryClassPool.getClass(name);
+        }
+
+        return classFile;
+    }
+
+
+    /**
+     * This utility class throws a MemberFoundException whenever it visits
      * a member. For program class files, it then also stores the class file
      * and member info.
      */
@@ -333,34 +355,39 @@ public class ClassFileReferenceInitializer
         private static class MemberFoundException extends IllegalArgumentException {};
         private static final MemberFoundException MEMBER_FOUND = new MemberFoundException();
 
-        private ProgramClassFile  programClassFile;
-        private ProgramMemberInfo programMemberInfo;
+        private ClassFile  classFile;
+        private MemberInfo memberInfo;
 
 
         // Implementations for MemberInfoVisitor.
 
         public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
         {
-            this.programClassFile  = programClassFile;
-            this.programMemberInfo = programFieldInfo;
-            throw MEMBER_FOUND;
+            visitMemberInfo(programClassFile, programFieldInfo);
         }
+
 
         public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
         {
-            this.programClassFile  = programClassFile;
-            this.programMemberInfo = programMethodInfo;
-            throw MEMBER_FOUND;
+            visitMemberInfo(programClassFile, programMethodInfo);
         }
 
 
         public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo)
         {
-            throw MEMBER_FOUND;
+            visitMemberInfo(libraryClassFile, libraryFieldInfo);
         }
 
         public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo)
         {
+            visitMemberInfo(libraryClassFile, libraryMethodInfo);
+        }
+
+
+        private void visitMemberInfo(ClassFile classFile, MemberInfo memberInfo)
+        {
+            this.classFile  = classFile;
+            this.memberInfo = memberInfo;
             throw MEMBER_FOUND;
         }
     }

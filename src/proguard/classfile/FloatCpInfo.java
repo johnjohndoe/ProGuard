@@ -1,6 +1,6 @@
-/* $Id: FloatCpInfo.java,v 1.12 2003/12/06 22:15:38 eric Exp $
+/* $Id: FloatCpInfo.java,v 1.15 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
@@ -36,8 +36,35 @@ public class FloatCpInfo extends CpInfo
     public int u4bytes;
 
 
+    /**
+     * Creates a new FloatCpInfo with the given float value.
+     */
+    public FloatCpInfo(float value)
+    {
+        setValue(value);
+    }
+
+
     protected FloatCpInfo()
     {
+    }
+
+
+    /**
+     * Returns the float value of this FloatCpInfo.
+     */
+    public float getValue()
+    {
+        return Float.intBitsToFloat(u4bytes);
+    }
+
+
+    /**
+     * Sets the float value of this FloatCpInfo.
+     */
+    public void setValue(float value)
+    {
+        u4bytes = Float.floatToIntBits(value);
     }
 
 

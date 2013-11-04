@@ -1,6 +1,6 @@
-/* $Id: AttributeUsageMarker.java,v 1.15 2003/12/06 22:15:38 eric Exp $
+/* $Id: AttributeUsageMarker.java,v 1.18 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -214,28 +214,28 @@ public class AttributeUsageMarker
     }
 
 
-    public void visitConstantValueAttrInfo(ClassFile classFile, ConstantValueAttrInfo constantValueAttrInfo)
+    public void visitConstantValueAttrInfo(ClassFile classFile, FieldInfo fieldInfo, ConstantValueAttrInfo constantValueAttrInfo)
     {
         markAsUsed(constantValueAttrInfo);
     }
 
 
-    public void visitExceptionsAttrInfo(ClassFile classFile, ExceptionsAttrInfo exceptionsAttrInfo)
+    public void visitExceptionsAttrInfo(ClassFile classFile, MethodInfo methodInfo, ExceptionsAttrInfo exceptionsAttrInfo)
     {
         markAsUsed(exceptionsAttrInfo);
     }
 
 
-    public void visitCodeAttrInfo(ClassFile classFile, CodeAttrInfo codeAttrInfo)
+    public void visitCodeAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo)
     {
         markAsUsed(codeAttrInfo);
 
         // Mark the code attributes that should be kept.
-        codeAttrInfo.attributesAccept(classFile, this);
+        codeAttrInfo.attributesAccept(classFile, methodInfo, this);
     }
 
 
-    public void visitLineNumberTableAttrInfo(ClassFile classFile, LineNumberTableAttrInfo lineNumberTableAttrInfo)
+    public void visitLineNumberTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LineNumberTableAttrInfo lineNumberTableAttrInfo)
     {
         if (keepAllAttributes ||
             keepAllKnownAttributes ||
@@ -246,7 +246,7 @@ public class AttributeUsageMarker
     }
 
 
-    public void visitLocalVariableTableAttrInfo(ClassFile classFile, LocalVariableTableAttrInfo localVariableTableAttrInfo)
+    public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo)
     {
         if (keepAllAttributes ||
             keepAllKnownAttributes ||

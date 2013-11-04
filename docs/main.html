@@ -11,14 +11,15 @@
 <h2>Main</h2>
 
 <p class="intro">
-<b>ProGuard</b> is a free Java class file shrinker and obfuscator. It can
-detect and remove unused classes, fields, methods, and attributes. It can then
+<b>ProGuard</b> is a free Java class file shrinker, optimizer, and obfuscator.
+It can detect and remove unused classes, fields, methods, and attributes. It
+can then optimize bytecode and remove unused instructions. Finally, it can
 rename the remaining classes, fields, and methods using short meaningless
 names. The resulting jars are smaller and harder to reverse-engineer.
 </p>
 <p>
 More compact jar files also means smaller storage requirements, faster
-transfer of applets across networks, faster loading, and smaller memory
+transfer of applications across networks, faster loading, and smaller memory
 footprints.
 <p>
 <b>ProGuard</b>'s main advantage compared to other Java obfuscators is
@@ -31,14 +32,19 @@ instance, the following configuration option preserves all applets in a jar:
 The user manual explains all available options and shows more examples of this
 powerful configuration style.
 <p>
-<b>ProGuard</b> is fast. It only takes a few seconds to process programs and
-libraries of several megabytes. The results section presents actual figures for
-a number of applications.
+<b>ProGuard</b> is fast. It only takes seconds to process programs and
+libraries of several megabytes. The results section presents actual figures
+for a number of applications.
 <p>
 <b>ProGuard</b> is a command-line tool with an optional graphical user
 interface. It also comes with plugins for Ant and for the J2ME Wireless
 Toolkit.
 <p>
+<p class="intro">
+Version 3.0 introduces bytecode optimization, reading and writing of nested
+jars, and a brand new Ant task. Please report any problems, so they can be
+fixed soon.
+</p>
 The following sections provide more detailed information:
 <ul>
 <li><a href="main.html">Main</a>: this overview page.

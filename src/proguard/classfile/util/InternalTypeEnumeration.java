@@ -1,6 +1,6 @@
-/* $Id: InternalTypeEnumeration.java,v 1.5 2003/02/09 15:22:28 eric Exp $
+/* $Id: InternalTypeEnumeration.java,v 1.8 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -34,15 +34,10 @@ import proguard.classfile.*;
  *
  * @author Eric Lafortune
  */
-class InternalTypeEnumeration
+public class InternalTypeEnumeration
 {
     private String descriptor;
     private int    index;
-
-
-    public InternalTypeEnumeration()
-    {
-    }
 
 
     public InternalTypeEnumeration(String descriptor)
@@ -51,10 +46,22 @@ class InternalTypeEnumeration
     }
 
 
-    public void setDescriptor(String descriptor)
+    public InternalTypeEnumeration()
+    {
+    }
+
+
+    void setDescriptor(String descriptor)
     {
         this.descriptor = descriptor;
-        this.index      = descriptor.indexOf(ClassConstants.INTERNAL_METHOD_ARGUMENTS_OPEN) + 1;
+
+        reset();
+    }
+
+
+    public void reset()
+    {
+        index = descriptor.indexOf(ClassConstants.INTERNAL_METHOD_ARGUMENTS_OPEN) + 1;
 
         if (index < 1)
         {

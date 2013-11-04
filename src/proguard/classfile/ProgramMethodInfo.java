@@ -1,6 +1,6 @@
-/* $Id: ProgramMethodInfo.java,v 1.11 2003/02/09 15:22:28 eric Exp $
+/* $Id: ProgramMethodInfo.java,v 1.14 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
@@ -33,8 +33,6 @@ import java.io.*;
  */
 public class ProgramMethodInfo extends ProgramMemberInfo implements MethodInfo
 {
-
-
     /**
      * Creates a new ProgramMethodInfo from the file format data in the DataInput stream.
      *
@@ -47,14 +45,25 @@ public class ProgramMethodInfo extends ProgramMemberInfo implements MethodInfo
         return mi;
     }
 
-    /**
-     * Accepts the given visitor.
-     */
+
+    public ProgramMethodInfo()
+    {
+    }
+
+
+    // Implementations for ProgramMemberInfo.
+
     public void accept(ProgramClassFile programClassFile, MemberInfoVisitor memberInfoVisitor)
     {
         memberInfoVisitor.visitProgramMethodInfo(programClassFile, this);
     }
 
 
-    public ProgramMethodInfo() {}
+    public void attributesAccept(ProgramClassFile programClassFile, AttrInfoVisitor attrInfoVisitor)
+    {
+        for (int i = 0; i < u2attributesCount; i++)
+        {
+            attributes[i].accept(programClassFile, this, attrInfoVisitor);
+        }
+    }
 }

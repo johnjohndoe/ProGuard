@@ -1,6 +1,6 @@
-/* $Id: DoubleCpInfo.java,v 1.12 2003/12/06 22:15:38 eric Exp $
+/* $Id: DoubleCpInfo.java,v 1.16 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
@@ -37,8 +37,37 @@ public class DoubleCpInfo extends CpInfo
     public int u4lowBytes;
 
 
+    /**
+     * Creates a new DoubleCpInfo with the given double value.
+     */
+    public DoubleCpInfo(double value)
+    {
+        setValue(value);
+    }
+
+
     protected DoubleCpInfo()
     {
+    }
+
+
+    /**
+     * Returns the double value of this DoubleCpInfo.
+     */
+    public double getValue()
+    {
+        return Double.longBitsToDouble(((long)u4highBytes << 32) | (long)u4lowBytes);
+    }
+
+
+    /**
+     * Sets the double value of this DoubleCpInfo.
+     */
+    public void setValue(double value)
+    {
+        long longValue = Double.doubleToLongBits(value);
+        u4highBytes = (int)(longValue >> 32);
+        u4lowBytes  = (int) longValue;
     }
 
 

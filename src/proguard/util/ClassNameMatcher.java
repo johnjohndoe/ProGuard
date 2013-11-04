@@ -1,6 +1,6 @@
-/* $Id: ClassNameMatcher.java,v 1.2 2003/12/06 22:12:42 eric Exp $
+/* $Id: ClassNameMatcher.java,v 1.5 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -24,7 +24,7 @@ import proguard.classfile.ClassConstants;
 
 
 /**
- * This RegularExpressionMatcher tests whether internal class names match a
+ * This StringMatcher tests whether internal class names match a
  * given regular expression.
  * Supported wildcards are
  * '?'  for a single Java identifier character,

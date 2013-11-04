@@ -1,6 +1,6 @@
-/* $Id: ClassFileMemberInfoVisitor.java,v 1.2 2003/02/09 15:22:29 eric Exp $
+/* $Id: ClassFileMemberInfoVisitor.java,v 1.4 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -25,13 +25,16 @@ import proguard.classfile.*;
 
 /**
  * This MemberInfoVisitor delegates all visits to a given ClassFileVisitor.
- * The latter visits the class file of each visited class member.
+ * The latter visits the class file of each visited class member, although
+ * never twice in a row.
  *
  * @author Eric Lafortune
  */
 public class ClassFileMemberInfoVisitor implements MemberInfoVisitor
 {
     private ClassFileVisitor classFileVisitor;
+
+    private ClassFile lastVisitedClassFile;
 
 
     public ClassFileMemberInfoVisitor(ClassFileVisitor classFileVisitor)
@@ -42,24 +45,44 @@ public class ClassFileMemberInfoVisitor implements MemberInfoVisitor
 
     public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {
-        classFileVisitor.visitProgramClassFile(programClassFile);
+        if (!programClassFile.equals(lastVisitedClassFile))
+        {
+            classFileVisitor.visitProgramClassFile(programClassFile);
+
+            lastVisitedClassFile = programClassFile;
+        }
     }
 
 
     public void visitProgramMethodInfo(ProgramClassFile programClassFile, ProgramMethodInfo programMethodInfo)
     {
-        classFileVisitor.visitProgramClassFile(programClassFile);
+        if (!programClassFile.equals(lastVisitedClassFile))
+        {
+            classFileVisitor.visitProgramClassFile(programClassFile);
+
+            lastVisitedClassFile = programClassFile;
+        }
     }
 
 
     public void visitLibraryFieldInfo(LibraryClassFile libraryClassFile, LibraryFieldInfo libraryFieldInfo)
     {
-        classFileVisitor.visitLibraryClassFile(libraryClassFile);
+        if (!libraryClassFile.equals(lastVisitedClassFile))
+        {
+            classFileVisitor.visitLibraryClassFile(libraryClassFile);
+
+            lastVisitedClassFile = libraryClassFile;
+        }
     }
 
 
     public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo)
     {
-        classFileVisitor.visitLibraryClassFile(libraryClassFile);
+        if (!libraryClassFile.equals(lastVisitedClassFile))
+        {
+            classFileVisitor.visitLibraryClassFile(libraryClassFile);
+
+            lastVisitedClassFile = libraryClassFile;
+        }
     }
 }

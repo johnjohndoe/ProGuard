@@ -5,39 +5,45 @@
 #
 # You should still apply the preverify tool after having processed your code.
 
-# Specify the library jars, input jars, and output jar.
+# Specify the input jars, output jars, and library jars.
 
--libraryjars /usr/local/java/wtk104/lib/midpapi.zip
--injars      in.jar
--outjar      out.jar
+-injars  in.jar
+-outjars out.jar
 
+-libraryjars /usr/local/java/wtk2.1/lib/midpapi20.jar
+-libraryjars /usr/local/java/wtk2.1/lib/cldcapi11.jar
 
 # Allow methods with the same signature, except for the return type,
 # to get the same obfuscation name.
 
 -overloadaggressively
 
-
 # Put all obfuscated classes into the nameless root package.
 
 -defaultpackage ''
 
+# Allow classes and class members to be made public.
+
+-allowaccessmodification
 
 # On Windows, you can't use mixed case class names,
 # for the sake of the preverify tool.
 #
 # -dontusemixedcaseclassnames
 
-
 # Preserve all public midlets.
 
 -keep public class * extends javax.microedition.midlet.MIDlet
-
 
 # Print out a list of what we're preserving.
 
 -printseeds
 
+# Preserve all native method names and the names of their classes.
+
+-keepclasseswithmembernames class * {
+    native <methods>;
+}
 
 # Your midlet may contain more items that need to be preserved; 
 # typically classes that are dynamically created using Class.forName:

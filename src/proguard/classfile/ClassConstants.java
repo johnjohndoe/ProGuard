@@ -1,6 +1,6 @@
-/* $Id: ClassConstants.java,v 1.15 2003/11/10 16:50:56 eric Exp $
+/* $Id: ClassConstants.java,v 1.19 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
  * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
@@ -22,9 +22,8 @@
 package proguard.classfile;
 
 
-
 /**
- * Constants used in representing a Java class-file (*.class).
+ * Constants used in representing a Java class file (*.class).
  *
  * @author Mark Welsh
  * @author Eric Lafortune
@@ -124,9 +123,12 @@ public interface ClassConstants
     public static final char INTERNAL_METHOD_ARGUMENTS_OPEN      = '(';
     public static final char INTERNAL_METHOD_ARGUMENTS_CLOSE     = ')';
 
-    public static final String INTERNAL_NAME_JAVA_LANG_OBJECT = "java/lang/Object";
-    public static final String INTERNAL_TYPE_JAVA_LANG_OBJECT = "Ljava/lang/Object;";
-    public static final String INTERNAL_PACKAGE_JAVA_LANG     = "java/lang/";
+    public static final String INTERNAL_NAME_JAVA_LANG_OBJECT     = "java/lang/Object";
+    public static final String INTERNAL_TYPE_JAVA_LANG_OBJECT     = "Ljava/lang/Object;";
+    public static final String INTERNAL_PACKAGE_JAVA_LANG         = "java/lang/";
+
+    public static final String INTERNAL_NAME_JAVA_LANG_CLONEABLE  = "java/lang/Cloneable";
+    public static final String INTERNAL_NAME_JAVA_IO_SERIALIZABLE = "java/io/Serializable";
 
     public static final String INTERNAL_METHOD_NAME_INIT   = "<init>";
     public static final String INTERNAL_METHOD_NAME_CLINIT = "<clinit>";

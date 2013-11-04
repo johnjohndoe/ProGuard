@@ -1,29 +1,24 @@
-# Basic - Applications. Keep all application classes that have a main method.
+# Keep - Applications. Keep all application classes that have a main method.
 -keepclasseswithmembers public class * {
     public static void main(java.lang.String[]);
 }
 
-# Basic - Applets. Keep all extensions of java.applet.Applet.
+# Keep - Applets. Keep all extensions of java.applet.Applet.
 -keep public class * extends java.applet.Applet
 
-# Basic - Servlets. Keep all extensions of javax.servlet.Servlet.
+# Keep - Servlets. Keep all extensions of javax.servlet.Servlet.
 -keep public class * extends javax.servlet.Servlet
 
-# Basic - Midlets. Keep all extensions of javax.microedition.midlet.MIDlet.
+# Keep - Midlets. Keep all extensions of javax.microedition.midlet.MIDlet.
 -keep public class * extends javax.microedition.midlet.MIDlet
 
-# Basic - Library. Keep all externally accessible classes, fields, and methods.
+# Keep - Library. Keep all externally accessible classes, fields, and methods.
 -keep public class * {
     public protected <fields>;
     public protected <methods>;
 }
 
-# Additional - Native method names. Keep all native class/method names.
--keepclasseswithmembernames class * {
-    native <methods>;
-}
-
-# Additional - Serialization code. Keep all fields and methods that are
+# Also keep - Serialization code. Keep all fields and methods that are
 # used for serialization.
 -keepclassmembers class * extends java.io.Serializable {
     static final long serialVersionUID;
@@ -33,11 +28,11 @@
     java.lang.Object readResolve();
 }
 
-# Additional - BeanInfo classes. Keep all classes that implement the
+# Also keep - BeanInfo classes. Keep all classes that implement the
 # BeanInfo interface.
 -keep class * implements java.beans.BeanInfo
 
-# Additional - Bean classes. Keep all bean classes along with their getters
+# Also keep - Bean classes. Keep all bean classes along with their getters
 # and setters.
 -keep class * {
     void set*(%);
@@ -55,21 +50,151 @@
     **   get*(int);
 }
 
-# Additional - RMI interfaces. Keep all Remote interfaces and their methods.
+# Also keep - RMI interfaces. Keep all Remote interfaces and their methods.
 -keep interface * extends java.rmi.Remote {
     <methods>;
 }
 
-# Additional - RMI implementations. Keep all Remote implementations. This
+# Also keep - RMI implementations. Keep all Remote implementations. This
 # includes any explicit or implicit Activatable implementations with their
 # two-argument constructors.
 -keep class * implements java.rmi.Remote {
     <init>(java.rmi.activation.ActivationID, java.rmi.MarshalledObject);
 }
 
-# Additional - _class method names. Keep all .class method names. Useful for
+# Keep names - Native method names. Keep all native class/method names.
+-keepclasseswithmembernames class * {
+    native <methods>;
+}
+
+# Keep names - _class method names. Keep all .class method names. Useful for
 # libraries that will be obfuscated again.
 -keepclassmembernames class * {
     java.lang.Class class$(java.lang.String);
     java.lang.Class class$(java.lang.String, boolean);
+}
+
+# Remove - System method calls. Remove all invocations of System
+# methods without side effects whose return values are not used.
+-assumenosideeffects public class java.lang.System {
+    public static native long currentTimeMillis();
+    static java.lang.Class getCallerClass();
+    public static native int identityHashCode(java.lang.Object);
+    public static java.lang.SecurityManager getSecurityManager();
+    public static java.util.Properties getProperties();
+    public static java.lang.String getProperty(java.lang.String);
+    public static java.lang.String getenv(java.lang.String);
+    public static native java.lang.String mapLibraryName(java.lang.String);
+    public static java.lang.String getProperty(java.lang.String,java.lang.String);
+}
+
+# Remove - String method calls. Remove all invocations of String
+# methods without side effects whose return values are not used.
+-assumenosideeffects public class java.lang.String {
+    public java.lang.String();
+    public java.lang.String(byte[]);
+    public java.lang.String(byte[],int);
+    public java.lang.String(byte[],int,int);
+    public java.lang.String(byte[],int,int,int);
+    public java.lang.String(byte[],int,int,java.lang.String);
+    public java.lang.String(byte[],java.lang.String);
+    public java.lang.String(char[]);
+    public java.lang.String(char[],int,int);
+    public java.lang.String(java.lang.String);
+    public java.lang.String(java.lang.StringBuffer);
+    public static java.lang.String copyValueOf(char[]);
+    public static java.lang.String copyValueOf(char[],int,int);
+    public static java.lang.String valueOf(boolean);
+    public static java.lang.String valueOf(char);
+    public static java.lang.String valueOf(char[]);
+    public static java.lang.String valueOf(char[],int,int);
+    public static java.lang.String valueOf(double);
+    public static java.lang.String valueOf(float);
+    public static java.lang.String valueOf(int);
+    public static java.lang.String valueOf(java.lang.Object);
+    public static java.lang.String valueOf(long);
+    public boolean contentEquals(java.lang.StringBuffer);
+    public boolean endsWith(java.lang.String);
+    public boolean equalsIgnoreCase(java.lang.String);
+    public boolean equals(java.lang.Object);
+    public boolean matches(java.lang.String);
+    public boolean regionMatches(boolean,int,java.lang.String,int,int);
+    public boolean regionMatches(int,java.lang.String,int,int);
+    public boolean startsWith(java.lang.String);
+    public boolean startsWith(java.lang.String,int);
+    public byte[] getBytes();
+    public byte[] getBytes(java.lang.String);
+    public char charAt(int);
+    public char[] toCharArray();
+    public int compareToIgnoreCase(java.lang.String);
+    public int compareTo(java.lang.Object);
+    public int compareTo(java.lang.String);
+    public int hashCode();
+    public int indexOf(int);
+    public int indexOf(int,int);
+    public int indexOf(java.lang.String);
+    public int indexOf(java.lang.String,int);
+    public int lastIndexOf(int);
+    public int lastIndexOf(int,int);
+    public int lastIndexOf(java.lang.String);
+    public int lastIndexOf(java.lang.String,int);
+    public int length();
+    public java.lang.CharSequence subSequence(int,int);
+    public java.lang.String concat(java.lang.String);
+    public java.lang.String replaceAll(java.lang.String,java.lang.String);
+    public java.lang.String replace(char,char);
+    public java.lang.String replaceFirst(java.lang.String,java.lang.String);
+    public java.lang.String[] split(java.lang.String);
+    public java.lang.String[] split(java.lang.String,int);
+    public java.lang.String substring(int);
+    public java.lang.String substring(int,int);
+    public java.lang.String toLowerCase();
+    public java.lang.String toLowerCase(java.util.Locale);
+    public java.lang.String toString();
+    public java.lang.String toUpperCase();
+    public java.lang.String toUpperCase(java.util.Locale);
+    public java.lang.String trim();
+}
+
+
+# Remove - StringBuffer method calls. Remove all invocations of
+# StringBuffer methods without side effects whose return values are not used.
+-assumenosideeffects public class java.lang.StringBuffer {
+    public java.lang.StringBuffer();
+    public java.lang.StringBuffer(int);
+    public java.lang.StringBuffer(java.lang.String);
+    public java.lang.String toString();
+    public char charAt(int);
+    public int capacity();
+    public int indexOf(java.lang.String,int);
+    public int lastIndexOf(java.lang.String);
+    public int lastIndexOf(java.lang.String,int);
+    public int length();
+    public java.lang.StringBuffer reverse();
+    public java.lang.String substring(int);
+    public java.lang.String substring(int,int);
+}
+
+# Remove debugging - Throwable_printStackTrace calls. Remove all invocations of
+# Throwable.printStackTrace().
+-assumenosideeffects public class java.lang.Throwable {
+    public void printStackTrace();
+}
+
+# Remove debugging - Thread_dumpStack calls. Remove all invocations of
+# Thread.dumpStack().
+-assumenosideeffects public class java.lang.Thread {
+    public static void dumpStack();
+}
+
+# Remove debugging - All logging API calls. Remove all invocations of the
+# logging API whose return values are not used.
+-assumenosideeffects public class java.util.logging.* {
+    <methods>;
+}
+
+# Remove debugging - All Log4j API calls. Remove all invocations of the
+# Log4j API whose return values are not used.
+-assumenosideeffects public class org.apache.log4j.** {
+    <methods>;
 }

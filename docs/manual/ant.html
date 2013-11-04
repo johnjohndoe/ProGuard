@@ -10,927 +10,395 @@
 
 <h2>Ant Task</h2>
 
-<h3>Description</h3>
-
+<b>ProGuard</b> can be run as a task in the Java-based build tool Ant.
 <p>
-Run ProGuard as an Ant task. ProGuard is a free Java class file shrinker and
-obfuscator.
-</p>
 
+Before you can use the <code>proguard</code> task, you have to tell Ant about
+this new task. The easiest way is to add the following line to your
+<code>build.xml</code> file:
 <p>
-Before you are able to use the <code>proguard</code> task, you have to tell
-Ant about this new task. This is done through:
-</p>
 
 <pre>
-&lt;taskdef name="proguard" classname="proguard.ant.ProGuardTask" classpath="/usr/local/java/proguard/lib/proguard.jar" /&gt;
+&lt;taskdef resource="proguard/ant/task.properties"
+         classpath="/usr/local/java/proguard/lib/proguard.jar" /&gt;
 </pre>
-
 <p>
-where you obviously have to replace the latter path by the path where you've
-installed ProGuard.
-</p>
 
+Please make sure the class path is set correctly for your system.
 <p>
+
 There are three ways to configure the ProGuard task: using an external
 configuration file, using embedded ProGuard configuration options, and using
 the equivalent XML configuration tags. These three ways can be combined,
 depending on practical circumstances and personal preference.
-</p>
-
-<h4>1. An external ProGuard configuration file</h4>
-
 <p>
+
+<h3>1. An external ProGuard configuration file</h3>
+
 The simplest way to use the ProGuard task in an Ant build file is to keep
 your ProGuard configuration file, and include it from Ant. You can include
 your ProGuard configuration file by setting the <a
-href="#configuration">configuration</a> attribute of your
+href="#configuration"><code>configuration</code></a> attribute of your
 <code>proguard</code> task. Your ant build file will then look like this:
-</p>
+<p>
 
 <pre>
-&lt;taskdef name="proguard" classname="proguard.ant.ProGuardTask" /&gt;
+&lt;taskdef resource="proguard/ant/task.properties"
+         classpath="/usr/local/java/proguard/lib/proguard.jar" /&gt;
 &lt;proguard configuration="myconfigfile.pro"/&gt;
 </pre>
-
 <p>
+
 This is a convenient option if you prefer ProGuard's configuration style over
 XML, if you want to keep your build file small, or if you have to share your
 configuration with developers who don't use Ant.
-</p>
-
-<h4>2. Embedded ProGuard configuration options</h4>
-
 <p>
+
+<h3>2. Embedded ProGuard configuration options</h3>
+
 Instead of keeping an external ProGuard configuration file, you can also copy
 the contents of the file into the nested text of the <code>proguard</code> task
 (the PCDATA area). Your Ant build file will then look like this:
-</p>
+<p>
 
 <pre>
-&lt;taskdef name="proguard" classname="proguard.ant.ProGuardTask" /&gt;
+&lt;taskdef resource="proguard/ant/task.properties"
+         classpath="/usr/local/java/proguard/lib/proguard.jar" /&gt;
 &lt;proguard&gt;
   -libraryjars ${java.home}/lib/rt.jar
   -injars      in.jar
-  -outjar      out.jar
+  -outjars     out.jar
 
   -keepclasseswithmembers public class * {
       public static void main(java.lang.String[]);
   }
 &lt;/proguard&gt;
 </pre>
-
 <p>
+
 Some minor syntactical changes are required in order to conform with the XML
 standard.
-</p>
-
 <p>
+
 Firstly, the <code>#</code> chararacter cannot be used for comments in an XML
 file. Comments must be enclosed by an opening <code>&lt;!--</code> and a
 closing <code>--&gt;</code>. All occurrences of the <code>#</code> chararacter
 can be removed.
-</p>
-
 <p>
-Secondly, the use of <code>&lt;</code> and <code>&gt;</code> characters to
-mark environment variables would upset the structure of the XML build file.
-Environment variables are now enclosed by an opening <code>${</code> and a
-closing <code>}</code>. This syntax is in line with Ant traditions. It also
-allows you to use Ant properties within the ProGuard configuration.
-</p>
 
+Secondly, the use of <code>&lt;</code> and <code>&gt;</code> characters would
+upset the structure of the XML build file. Environment variables are now
+enclosed by an opening <code>${</code> and a closing <code>}</code>. This
+syntax also allows you to use Ant properties within the ProGuard
+configuration. Other occurrences of <code>&lt;</code> and <code>&gt;</code>
+have to be encoded as <code>&amp;lt;</code> and <code>&amp;gt;</code>.
 <p>
-Then there are some other keywords, <code>&lt;init&gt;</code>,
-<code>&lt;methods&gt;</code> and <code>&lt;fields&gt;</code>. All occurrences
-of the these keywords have to be replaced with <code>${proguard.init}</code>,
-<code>${proguard.methods}</code>, and <code>${proguard.fields}</code>,
-respectively.
-</p>
 
-<h4>3. XML configuration tags</h4>
+<h3>3. XML configuration tags</h3>
 
+If you really prefer a full-blown XML configuration, you can replace the
+ProGuard configuration options by the equivalent XML configuration tags. The
+remainder of this page presents the supported tags. For a more extensive
+discussion of their meaning, please refer to the traditional <a
+href="usage.html">Usage</a> section.
 <p>
-If you prefer a full-blown XML configuration, you can replace the ProGuard
-configuration options by the equivalent XML configuration tags. The remainder
-of this page presents the supported tags.
-</p>
-
-
-<h3>Parameters</h3>
-
-<table border="1" cellpadding="2" cellspacing="0">
-
-  <tr>
-    <td valign="top"><b>Attribute</b></td>
-    <td valign="top"><b>Description</b></td>
-    <td align="center" valign="top"><b>Required</b></td>
-  </tr>
-  <tr>
-    <td valign="top"><a name="configuration"></a>configuration</td>
-    <td valign="top">
-        Name of a proguard configuration file.<br>
-        The settings of the configuration file are merged with the ant settings.
-        For single value attributes the ant settings override the settings
-        of the config file.<br>
-        All values can also be set through the configuration file or a
-	nested <a href="#configurationTask">configuration</a> task.
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-  <tr>
-    <td valign="top">outjar</td>
-    <td valign="top">
-      Specifies the name of the output jar (or directory). It must be different
-      from the input jars (and directories).
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-  <tr>
-    <td valign="top">renamesourcefileattribute</td>
-    <td valign="top">
-     Specifies a constant string to be put in the SourceFile attributes of the
-     class files. Note that the attribute also has to be preserved explicitly
-     using the <a href="#keepattributes">keepattributes</a> directive, or it
-     will be removed anyway.<br>
-     For example, you may want to have your processed libraries and
-     applications produce useful obfuscated stack traces. Only applicable
-     when obfuscating.
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-  <tr>
-    <td valign="top">printseeds</td>
-    <td valign="top">
-     Specifies to exhaustively list classes and class members matched by the
-     various -keep commands. The list is printed  to the given file, or to the
-     standard output (if you specify <code>yes</code>, <code>on</code>, or
-     <code>true</code>). The list can be useful to verify if the intended class
-     members are really found, especially if you're using wildcards.
-     For example, you may want to list all the applications or all the applets
-     that you are keeping.<br>
-     Defaults to <code>off</code>.
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-  <tr>
-    <td valign="top">printusage</td>
-    <td valign="top">
-     Specifies to list dead code of the input class files. The list is printed
-     to the standard output or to the given file. For example, you can list
-     the unused code of an application.<br>
-     Specify the name of the file or <code>yes</code>, <code>on</code> or
-     <code>true</code> to print to the standard output.
-     Only applicable when shrinking.<br>
-     Defaults to <code>off</code>.
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-  <tr>
-    <td valign="top">printmapping</td>
-    <td valign="top">
-     Specifies to print the mapping from old names to new names for classes and
-     class members that have been renamed. The mapping is printed to the
-     given file, or to the standard output (if you specify <code>yes</code>,
-     <code>on</code>, or <code>true</code>). It is required if you ever want
-     to make sense again of obfuscated stack traces.
-     Only applicable when obfuscating.<br>
-     Defaults to <code>off</code>.
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-  <tr>
-    <td valign="top">applymapping</td>
-    <td valign="top">
-     Specifies to reuse the given name mapping that was printed out in a 
-     previous obfuscation run of ProGuard. Classes and class members that are 
-     listed in the mapping file receive the names specified along with them. 
-     Classes and class members that are not mentioned receive new names. 
-     This option can be useful for incremental obfuscation, i.e. processing 
-     add-ons or small patches to an existing piece of code. 
-     Only applicable when obfuscating.
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-  <tr>
-    <td valign="top">verbose</td>
-    <td valign="top">
-     Specifies to write out some more information during processing. If the
-     program terminates with an exception, this option will print out the
-     entire stack trace, instead of just the exception message.<br>
-     Defaults to <code>off</code>.
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-  <tr>
-    <td valign="top">dump</td>
-    <td valign="top">
-     Specifies to write out the internal structure of the class files, after
-     any processing. The structure is printed to the standard output or to the
-     given file. For example, you may want to write out the contents of a given
-     jar file, without shrinking or obfuscating it first.
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-  <tr>
-    <td valign="top">ignorewarnings</td>
-    <td valign="top">
-     Specifies to print any warnings about unresolved references to
-     superclasses, interfaces, or class members, but to continue processing in
-     any case. If the classes or class members are indeed required for
-     processing, the output jar will not function properly. Only use this
-     option if you know what you're doing!<br>
-     Defaults to <code>off</code>.
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-  <tr>
-    <td valign="top">warn</td>
-    <td valign="top">
-     Specifies to warn about unresolved references at all. Again, if the
-     unresolved classes or class members are indeed required for processing,
-     the output jar will not function properly. Only use this option if you
-     know what you're doing!<br>
-     Defaults to <code>on</code>.
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-  <tr>
-    <td valign="top">note</td>
-    <td valign="top">
-     Specifies to print notes about class casts of variable dynamically
-     created objects. These notes provide hints about classes that may have to
-     be kept.<br>
-     Defaults to <code>on</code>.
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-  <tr>
-    <td valign="top">shrink</td>
-    <td valign="top">
-     Specifies to shrink the input class files. By default, shrinking is
-     applied: all classes and class members are removed, except for the ones
-     listed by the various -keep commands, and the ones they depend on,
-     recursively.<br>
-     Defaults to <code>on</code>.
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-  <tr>
-    <td valign="top">obfuscate</td>
-    <td valign="top">
-     Specifies to obfuscate the input class files. By default, obfuscation is
-     applied: classes and class members receive new short random names, except
-     for the ones listed by the various -keep commands. Internal attributes
-     that are useful for debugging, such as source files names, variable
-     names, and line numbers are removed.<br>
-     Defaults to <code>on</code>.
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-  <tr>
-    <td valign="top">usemixedclassnames</td>
-    <td valign="top">
-     Specifies to generate mixed-case class names while obfuscating. By default,
-     obfuscated class names can contain a mix of upper-case characters and
-     lower-case characters. This creates perfectly acceptable and usable jars.
-     Only if a jar is unpacked on a platform with a case-insensitive filing
-     system (say, Windows), the unpacking tool may let similarly named class
-     files overwrite each other. Code that self-destructs when it's unpacked!
-     Developers who really want to unpack their jars on Windows and who are
-     unable to switch to another development platform can use this option to
-     switch off this behavior. Note that the obfuscated jars will become larger
-     as a result. Only applicable when obfuscating.<br>
-     Defaults to <code>on</code>.
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-  <tr>
-    <td valign="top">overloadaggressively</td>
-    <td valign="top">
-     Specifies to apply aggressive overloading while obfuscating. Multiple
-     fields and methods can then get the same names, as long as their arguments
-     and return types are different (not just their arguments, in the case of
-     methods). This option can make the output jar even smaller (and less
-     comprehensible). Only applicable when obfuscating.<br>
-     Defaults to <code>off</code>.
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-  <tr>
-    <td valign="top">defaultpackage</td>
-    <td valign="top">
-     Specifies to repackage all class files that are renamed into the single
-     given package. Without argument or with an empty string (''), the package
-     is removed completely. This option can make the output jar even smaller
-     (and less comprehensible). Only applicable when obfuscating.
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-  <tr>
-    <td valign="top">skipnonpubliclibraryclasses</td>
-    <td valign="top">
-     Specifies to ignore non-public library classes. By default, non-public
-     library classes are skipped while parsing library jars. The classes are
-     typically not relevant during processing, since they don't affect the
-     actual program code in the input jars. Ignoring them reduces memory usage
-     and processing time. Occasionally, a badly designed library may contain a
-     non-public library class that is extended/implemented by a public library
-     class. If the latter library class in turn is extended/implemented by a
-     program class, ProGuard will complain that it can't find the non-public
-     library class, which it had ignored during parsing. This option will
-     overcome that problem, at the cost of greater memory usage and longer
-     processing time.<br>
-     Defaults to <code>on</code>.
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-</table>
-
-<h3>Parameters specified as nested elements</h3>
-
-<h3>libraryjar</h3>
-
-<p>
-Specifies the library jars (or directories) of the application to be processed.
-The class files in these jars will not be included in the output jar.
-The specified library jars should at least contain the class files that
-are extended by application class files. Library class files that are only
-called needn't be present.
-</p>
-
-<h3>Parameters</h3>
-
-<table border="1" cellpadding="2" cellspacing="0">
-  <tr>
-    <td valign="top"><b>Attribute</b></td>
-    <td valign="top"><b>Description</b></td>
-    <td align="center" valign="top"><b>Required</b></td>
-  </tr>
-
-  <tr>
-    <td valign="top">name</td>
-    <td valign="top">
-       Name of the library jar or name of a directory.<br>
-       Jar files can be specified via a nested fileset, too. Note that
-       this does not work for files in a directory.
-    </td>
-    <td valign="top" align="center">Yes</td>
-  </tr>
-  <tr>
-    <td valign="top">refid</td>
-    <td valign="top">
-       Reference to a path like structure or a fileset. 
-       Using a refid excludes specifying a name.
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-</table>
-
-<h3>Parameters specified as nested elements</h3>
-<a name="filter"></a>
-<h3>exclude</h3>
-
-<p>
-Exclude files from a jar (or directory). The exclude parameter affects
-subsequent include parameters; it has no effect without the latter. File
-filters are discussed in some more detail in <a
-href="usage.html#classpath">ProGuard Usage</a>.
-</p>
-<p>
-This nested subtask is unsupported for fileset or path like structures. Use
-Ant's filtering methods instead.
-</p>
-
-
-<h3>Parameters</h3>
-
-<table border="1" cellpadding="2" cellspacing="0">
-  <tr>
-    <td valign="top"><b>Attribute</b></td>
-    <td valign="top"><b>Description</b></td>
-    <td align="center" valign="top"><b>Required</b></td>
-  </tr>
-  <tr>
-    <td valign="top">name</td>
-    <td valign="top">
-    Name or Pattern for the files to be excluded.
-    </td>
-    <td valign="top" align="center">Yes</td>
-  </tr>
-</table>
-
-<h3>include</h3>
-
-<p>
-Include files of a jar (or directory). This nested subtask is unsupported
-for fileset or path like structures. Use Ant's filtering methods instead. 
-</p>
-
-
-<h3>Parameters</h3>
-
-<table border="1" cellpadding="2" cellspacing="0">
-  <tr>
-    <td valign="top"><b>Attribute</b></td>
-    <td valign="top"><b>Description</b></td>
-    <td align="center" valign="top"><b>Required</b></td>
-  </tr>
-  <tr>
-    <td valign="top">name</td>
-    <td valign="top">
-    Name or Pattern for the files to be included.
-    </td>
-    <td valign="top" align="center">Yes</td>
-  </tr>
-</table>
-
-<h4>resourcejar</h4>
-
-<p>
-Specifies any resource jars (or directories) to be copied into the output
-jar. Only non-class files in these jars will be copied.
-If this option isn't specified, the resource
-files from the <a href="#injar">injar</a> (or directories) will be copied.
-</p>
-
-
-<h3>Parameters</h3>
-
-<table border="1" cellpadding="2" cellspacing="0">
-  <tr>
-    <td valign="top"><b>Attribute</b></td>
-    <td valign="top"><b>Description</b></td>
-    <td align="center" valign="top"><b>Required</b></td>
-  </tr>
-
-  <tr>
-    <td valign="top">name</td>
-    <td valign="top">
-       Name of the jar or name of a directory.<br>
-       Jar files can be specified via a nested fileset, too. Note that
-       this does not work for files in a directory.
-    </td>
-    <td valign="top" align="center">Yes</td>
-  </tr>
-  <tr>
-    <td valign="top">refid</td>
-    <td valign="top">
-       Reference to a path like structure or a fileset. 
-       Using a refid excludes specifying a name.
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-</table>
-
-<h3>Parameters specified as nested elements</h3>
-
-Parameters are the same as the parameters of the <a
-href="#filter">libraryjars</a> nested tag.
-
-<a name="injar"></a>
-<h4>injar</h4>
-
-<p>
-Specifies the program jars (or directories) of the application to be processed.
-The class files in these jars will be processed and merged in the output jar.
-</p>
-
-
-<h3>Parameters</h3>
-
-<table border="1" cellpadding="2" cellspacing="0">
-  <tr>
-    <td valign="top"><b>Attribute</b></td>
-    <td valign="top"><b>Description</b></td>
-    <td align="center" valign="top"><b>Required</b></td>
-  </tr>
-
-  <tr>
-    <td valign="top">name</td>
-    <td valign="top">
-       Name of the jar or directory.<br>
-       Jar files can be specified via a nested fileset, too. Note that
-       this does not work for files in a directory.
-    </td>
-    <td valign="top" align="center">Yes</td>
-  </tr>
-  <tr>
-    <td valign="top">refid</td>
-    <td valign="top">
-       Reference to a path like structure or a fileset. 
-       Using a refid excludes specifying a name.
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-</table>
-
-<h3>Parameters specified as nested elements</h3>
-
-Parameters are the same as the parameters of the <a
-href="#filter">libraryjars</a> nested tag.
-
-<a name="keep"></a>
-<h3>keep</h3>
-
-<p>
-Specifies classes and class members (fields and methods) to be preserved.
-They will be preserved with their original names. This is typically the
-required seed for recursively determining which other classes and class
-members need to be preserved. For example, in order to keep an application,
-you can specify the main class along with its main method. In order to process
-a library, you should specify all publicly accessible items.
-</p>
-
-
-<h3>Parameters</h3>
-
-<table border="1" cellpadding="2" cellspacing="0">
-  <tr>
-    <td valign="top"><b>Attribute</b></td>
-    <td valign="top"><b>Description</b></td>
-    <td align="center" valign="top"><b>Required</b></td>
-  </tr>
-
-  <tr>
-    <td valign="top">access</td>
-    <td valign="top">
-      List of access flags to the class separated by a space. Must be one of
-      <ul>
-      <li>public</li>
-      <li>final</li>
-      <li>abstract</li>
-      </ul>
-      All access attributes may have a leading <code>!</code> to specify the
-      attributes that are not set.
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-  <tr>
-    <td valign="top">type</td>
-    <td valign="top">
-     Type of the class. Must be one of
-      <ul>
-      <li>class</li>
-      <li>interface</li>
-      <li>!interface</li>
-      </ul>
-      Defaults to <code>class</code>.
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-  <tr>
-    <td valign="top">name</td>
-    <td valign="top">
-    Full name of the class. Wildcards are allowed. A description of the usage
-    and limitations of wildcards can be found in
-    <a href="usage.html#classspecification">ProGuard Usage</a>.<br>
-    Defaults to <code>*</code>
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-  <tr>
-    <td valign="top">extends</td>
-    <td valign="top">
-    Full name of the class this class extends.
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-  <tr>
-    <td valign="top">implements</td>
-    <td valign="top">
-    Full name of the interface this class implements.
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-</table>
-
-<h3>Parameters specified as nested elements</h3>
-
-<a name="accessTag"></a>
-<h3>access</h3>
-
-<p>
-As an alternative to the access attribute it is possible to use the
-nested access tag.
-</p>
-
-
-<h3>Parameters</h3>
-
-<table border="1" cellpadding="2" cellspacing="0">
-  <tr>
-    <td valign="top"><b>Attribute</b></td>
-    <td valign="top"><b>Description</b></td>
-    <td align="center" valign="top"><b>Required</b></td>
-  </tr>
-  <tr>
-    <td valign="top">name</td>
-    <td valign="top">
-    Name of the access attribute.
-    </td>
-    <td valign="top" align="center">Yes</td>
-  </tr>
-</table>
-
-<h3>field</h3>
-
-<p>
-With the fields tag you can specify the fields to be kept.
-</p>
-
-<h3>Parameters</h3>
-
-<table border="1" cellpadding="2" cellspacing="0">
-  <tr>
-    <td valign="top"><b>Attribute</b></td>
-    <td valign="top"><b>Description</b></td>
-    <td align="center" valign="top"><b>Required</b></td>
-  </tr>
-  <tr>
-    <td valign="top">access</td>
-    <td valign="top">
-      List of access flags to the field, separated by spaces. Must be one of
-      <ul>
-      <li>public</li>
-      <li>protected</li>
-      <li>private</li>
-      <li>static</li>
-      <li>volatile</li>
-      <li>transient</li>
-      </ul>
-      All access attributes may have a leading <code>!</code> to specify the
-      attributes that are not set.<br>
-      The access attributes may be set using the nested
-      <a href="#accessTag">access tag</a>.
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-  <tr>
-    <td valign="top">type</td>
-    <td valign="top">
-     Full name of the type of the field.
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-  <tr>
-    <td valign="top">name</td>
-    <td valign="top">
-    Name of the field. Wildcards are allowed. A description of the usage
-    and limitations of wildcards can be found in
-    <a href="usage.html#classspecification">ProGuard usage</a>.<br>
-    The <code>&lt;fields&gt;</code> keyword must not be used. Use
-    <code>*</code> or <code>${proguard.fields}</code> instead.<br>
-    Defaults to <code>*</code>
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-</table>
-
-<h3>method</h3>
-
-<p>
-With the method tag you can specify the methods to be kept.
-</p>
-
-<h3>Parameters</h3>
-
-<table border="1" cellpadding="2" cellspacing="0">
-  <tr>
-    <td valign="top"><b>Attribute</b></td>
-    <td valign="top"><b>Description</b></td>
-    <td align="center" valign="top"><b>Required</b></td>
-  </tr>
-  <tr>
-    <td valign="top">access</td>
-    <td valign="top">
-      List of access flags to the method separated by spaces. Must be one of
-      <ul>
-      <li>public</li>
-      <li>protected</li>
-      <li>private</li>
-      <li>static</li>
-      <li>synchronized</li>
-      <li>native</li>
-      <li>abstract</li>
-      <li>strictfp</li>
-      </ul>
-      All access attributes may have a leading <code>!</code> to specify the
-      attributes that are not set.<br>
-      The access attributes may be set using the nested
-      <a href="#accessTag">access tag</a>.
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-  <tr>
-    <td valign="top">type</td>
-    <td valign="top">
-    Full name of the return type of the method.<br>
-    Defaults to <code>void</code>
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-  <tr>
-    <td valign="top">name</td>
-    <td valign="top">
-    Name of the method. Wildcards are allowed. A description of the usage
-    and limitations of wildcards can be found in
-    <a href="usage.html#classspecification">ProGuard usage</a>.<br>
-    The <code>&lt;methods&gt;</code> keyword must not be used. Use
-    <code>*</code> or <code>${proguard.fields}</code> instead.<br>
-    Defaults to <code>*</code>
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-  <tr>
-    <td valign="top">param</td>
-    <td valign="top">
-    Parameters of the method without brackets, separated by commas.
-    Parameters can also be specified in the name attribute enclosed in brackets.
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-</table>
-
-<h3>constructor</h3>
-<a name="constructor"></a>
-
-<p>
-With the constructor tag you can specify the constructors to be kept.
-</p>
-
-<h3>Parameters</h3>
-
-<table border="1" cellpadding="2" cellspacing="0">
-  <tr>
-    <td valign="top"><b>Attribute</b></td>
-    <td valign="top"><b>Description</b></td>
-    <td align="center" valign="top"><b>Required</b></td>
-  </tr>
-  <tr>
-    <td valign="top">access</td>
-    <td valign="top">
-      List of access flags to the constructor separated by spaces. Must be one of
-      <ul>
-      <li>public</li>
-      <li>protected</li>
-      <li>private</li>
-      <li>static</li>
-      <li>synchronized</li>
-      <li>native</li>
-      <li>abstract</li>
-      <li>strictfp</li>
-      </ul>
-      All access attributes may have a leading <code>!</code> to specify the
-      attributes that are not set.<br>
-      The access attributes may be set using the nested
-      <a href="#accessTag">access tag</a>.
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-  <tr>
-    <td valign="top">param</td>
-    <td valign="top">
-    Parameters of the constructor, separated by commas.
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-</table>
-
-<h3>keepclasssmembers</h3>
-
-<p>
-Specifies class members to be preserved, if their classes are preserved as well.
-For example, you may want to keep all serialization fields and methods of
-classes that implement the Serializable interface.
-</p>
-
-<h3>Parameters</h3>
-
-<p>
-Parameters are the same as the parameters of the <a href="#keep">keep</a>
-nested tag.
-</p>
-
-<h3>keepclasseswithmembers</h3>
-
-<p>
-Specifies classes and class members to be preserved, on the condition that all
-of the specified class members are present. For example, you may want to keep
-all applications that have a main method, without having to list them
-explicitly.
-</p>
-
-<h3>Parameters</h3>
-
-<p>
-Parameters are the same as the parameters of the <a href="#keep">keep</a>
-nested tag.
-
-<h3>keepnames</h3>
-
-<p>
-Specifies classes and class members whose names are to be preserved, if they
-aren't removed in the shrinking phase. For example, you may want to keep all
-class names of classes that implement the Serializable interface, so that the
-processed code remains compatible with any originally serialized classes.
-Classes that aren't used at all can still be removed.
-</p>
-
-<h3>Parameters</h3>
-
-<p>
-Parameters are the same as the parameters of the <a href="#keep">keep</a>
-nested tag.
-</p>
-
-<h3>keepclassmembernames</h3>
-
-<p>
-Specifies class members whose names are to be preserved, if they aren't removed
-in the shrinking phase. For example, you may want to preserve the name of the
-synthetic class$ methods when processing a library, so ProGuard can detect it
-again when processing an application that uses the processed library.
-</p>
-
-<h3>Parameters</h3>
-
-<p>
-Parameters are the same as the parameters of the <a href="#keep">keep</a>
-nested tag.
-</p>
-
-<h3>keepclasseswithmembernames</h3>
-
-<p>
-Specifies classes and class members whose names are to be preserved, on the
-condition that all of the specified class members are present after the
-shrinking phase. For example, you may want to keep all native method names and
-the names of their classes, so that the processed code can still link with the
-native library code. Native methods that aren't used at all can still be
-removed. If a class file is used, but none of its native methods are, its
-name will still be obfuscated.
-</p>
-
-<h3>Parameters</h3>
-
-<p>
-Parameters are the same as the parameters of the <a href="#keep">keep</a>
-nested tag.
-</p>
-
-<a name="keepattribute"></a>
-<h3>keepattribute</h3>
-
-<p>
-Specifies any optional attributes to be preserved.
-Only applicable when obfuscating.
-</p>
-
-<a name="configurationTask"></a>
-<h3>configuration</h3>
-
-<p>
-With the nested configuration task it is possible to include configuration
-settings from a file or a configuration defined somewhere else in this build
-script. The configuration task is described in the document
-<a href="ant-configuration.html">Ant Configuration Task</a>. Nested
-configuration tasks are evaluated in the order they appear.
-</p>
-
-<h3>Parameters</h3>
-
-<table border="1" cellpadding="2" cellspacing="0">
-  <tr>
-    <td valign="top"><b>Attribute</b></td>
-    <td valign="top"><b>Description</b></td>
-    <td align="center" valign="top"><b>Required</b></td>
-  </tr>
-
-  <tr>
-    <td valign="top">name</td>
-    <td valign="top">
-     Name of the attribute to keep. <code>*</code> preserves all attributes.
-     Typical optional attributes are
-      <ul>
-      <li>LineNumberTable</li>
-      <li>LocalVariableTable</li>
-      <li>SourceFile</li>
-      <li>Deprecated</li>
-      <li>Synthetic</li>
-      </ul>
-      The InnerClasses attribute name can be specified as well, referring to
-      the source name part of this attribute.
-      For example, you could keep the Deprecated attribute when processing a
-      library.
-    </td>
-    <td valign="top" align="center">No</td>
-  </tr>
-</table>
+
+<a name="proguard">&nbsp;</a>
+<h2>Task Attributes and Nested Elements</h2>
+
+The <code><b>&lt;proguard&gt;</b></code> task and the
+<code><b>&lt;proguardconfiguration&gt;</b></code> task can have the following
+attributes (only for <code>&lt;proguard&gt;</code>) and nested
+elements:
+
+<dl>
+
+<dt><a name="configuration"><code><b>configuration</b></code></a> =
+    "<i>filename</i>"</dt>
+<dd>Read and merge options from the given ProGuard-style configuration
+    file.</dd>
+
+<dt><code><b>renamesourcefileattribute</b></code> = "<i>string</i>"</dt>
+<dd>Put the given constant string in the <code>SourceFile</code>
+    attributes. The default is to keep the original string.</dd>
+
+<dt><code><b>printseeds</b></code> = "<i>boolean or filename</i>"
+    (default = false)</dt>
+<dd>List classes and class members matched by the various <code>keep</code>
+    commands, to the standard output or to the given file.</dd>
+
+<dt><code><b>printusage</b></code> = "<i>boolean or filename</i>"
+    (default = false)</dt>
+<dd>List dead code of the input class files, to the standard output or to the
+    given file.</dd>
+
+<dt><code><b>printmapping</b></code> = "<i>boolean or filename</i>"
+    (default = false)</dt>
+<dd>Print the mapping from old names to new names for classes and class members
+    that have been renamed, to the standard output or to the given file.</dd>
+
+<dt><code><b>applymapping</b></code> = "<i>filename</i>"</dt>
+<dd>Reuse the given mapping, for incremental obfuscation.</dd>
+
+<dt><code><b>dump</b></code> = "<i>boolean or filename</i>"
+    (default = false)</dt>
+<dd>Write out the internal structure of the processed class files, to the
+    standard output or to the given file.</dd>
+
+<dt><code><b>verbose</b></code> = "<i>boolean</i>"
+    (default = false)</dt>
+<dd>Write out some more information during processing.</dd>
+
+<dt><code><b>ignorewarnings</b></code> = "<i>boolean</i>"
+    (default = false)</dt>
+<dd>Print warnings about unresolved references, but continue processing
+    anyhow. The default is not to ignore warnings. <i>Only use this option if
+    you know what you're doing!</i></dd>
+
+<dt><code><b>warn</b></code> = "<i>boolean</i>" (default = true)</dt>
+<dd>Warn about unresolved references at all.</dd>
+
+<dt><code><b>note</b></code> = "<i>boolean</i>" (default = true)</dt>
+<dd>Print notes about class casts of variable dynamically created objects.</dd>
+
+<dt><code><b>shrink</b></code> = "<i>boolean</i>" (default = true)</dt>
+<dd>Shrink the input class files.</dd>
+
+<dt><code><b>optimize</b></code> = "<i>boolean</i>" (default = true)</dt>
+<dd>Optimize the input class files.</dd>
+
+<dt><code><b>obfuscate</b></code> = "<i>boolean</i>" (default = true)</dt>
+<dd>Obfuscate the input class files.</dd>
+
+<dt><code><b>allowaccessmodification</b></code> = "<i>boolean</i>"
+    (default = false)</dt>
+<dd>Allow the access modifiers of classes and class members to be modified,
+    while optimizing.</dd>
+
+<dt><code><b>usemixedcaseclassnames</b></code> = "<i>boolean</i>"
+    (default = true)</dt>
+<dd>Generate mixed-case class names while obfuscating.</dd>
+
+<dt><code><b>overloadaggressively</b></code> = "<i>boolean</i>"
+    (default = false)</dt>
+<dd>Apply aggressive overloading while obfuscating.</dd>
+
+<dt><code><b>defaultpackage</b></code> = "<i>package_name</i>"</dt>
+<dd>Repackage all class files that are renamed into the single given
+    package.</dd>
+
+<dt><code><b>skipnonpubliclibraryclasses</b></code> = "<i>boolean</i>"
+    (default = true)</dt>
+<dd>Ignore non-public library classes.</dd>
+
+<dt><code><b>&lt;injar</b></code>
+    <a href="#classpath"><i>class_path</i></a>
+    <code><b>/&gt;</b></code></dt>
+<dd>Specifies the program jars (or wars, ears, zips, or directories).</dd>
+
+<dt><code><b>&lt;outjar</b></code>
+    <a href="#classpath"><i>class_path</i></a>
+    <code><b>/&gt;</b></code></dt>
+<dd>Specifies the name of the output jars (or wars, ears, zips, or
+    directories).</dd>
+
+<dt><code><b>&lt;libraryjar</b></code>
+    <a href="#classpath"><i>class_path</i></a>
+    <code><b>/&gt;</b></code></dt>
+<dd>Specifies the library jars (or wars, ears, zips, or directories).</dd>
+
+<dt><code><b>&lt;keep</b></code>
+    <a href="#classspecification"><i>class_specification</i></a>
+    <code><b>&gt;</b></code>
+    <a href="#classspecification"><i>class_member_specifications</i></a>
+    <code><b>&lt;/keep&gt;</b></code></dt>
+<dd>Preserve the specified classes <i>and</i> class members.</dd>
+
+<dt><code><b>&lt;keepclassmembers</b></code>
+    <a href="#classspecification"><i>class_specification</i></a>
+    <code><b>&gt;</b></code>
+    <a href="#classspecification"><i>class_member_specifications</i></a>
+    <code><b>&lt;/keepclassmembers&gt;</b></code></dt>
+<dd>Preserve the specified class members, if their classes are preserved as
+    well.</dd>
+
+<dt><code><b>&lt;keepclasseswithmembers</b></code>
+    <a href="#classspecification"><i>class_specification</i></a>
+    <code><b>&gt;</b></code>
+    <a href="#classspecification"><i>class_member_specifications</i></a>
+    <code><b>&lt;/keepclasseswithmembers&gt;</b></code></dt>
+<dd>Preserve the specified classes <i>and</i> class members, if all of the
+    specified class members are present.</dd>
+
+<dt><code><b>&lt;keepnames</b></code>
+    <a href="#classspecification"><i>class_specification</i></a>
+    <code><b>&gt;</b></code>
+    <a href="#classspecification"><i>class_member_specifications</i></a>
+    <code><b>&lt;/keepnames&gt;</b></code></dt>
+<dd>Preserve the names of the specified classes <i>and</i> class members (if
+    they aren't removed in the shrinking step).</dd>
+
+<dt><code><b>&lt;keepclassmembernames</b></code>
+    <a href="#classspecification"><i>class_specification</i></a>
+    <code><b>&gt;</b></code>
+    <a href="#classspecification"><i>class_member_specifications</i></a>
+    <code><b>&lt;/keepclassmembernames&gt;</b></code></dt>
+<dd>Preserve the names of the specified class members (if they aren't removed
+    in the shrinking step).</dd>
+
+<dt><code><b>&lt;keepclasseswithmembernames</b></code>
+    <a href="#classspecification"><i>class_specification</i></a>
+    <code><b>&gt;</b></code>
+    <a href="#classspecification"><i>class_member_specifications</i></a>
+    <code><b>&lt;/keepclasseswithmembernames&gt;</b></code></dt>
+<dd>Preserve the names of the specified classes <i>and</i> class members, if
+    all of the specified class members are present (after the shrinking
+    step).</dd>
+
+<dt><code><b>&lt;assumenosideeffects</b></code>
+    <a href="#classspecification"><i>class_specification</i></a>
+    <code><b>&gt;</b></code>
+    <a href="#classspecification"><i>class_member_specifications</i></a>
+    <code><b>&lt;/assumenosideeffects&gt;</b></code></dt>
+<dd>Assume that the specified methods don't have any side effects, while
+    optimizing.</dd>
+
+<dt><code><b>&lt;keepattribute name = </b></code>"<i>attribute_name</i>"
+    <code><b>/&gt;</b></code></dt>
+<dd>Preserve the given optional Java bytecode attribute; typically
+    <code>LineNumberTable</code>, <code>LocalVariableTable</code>,
+    <code>SourceFile</code>, <code>Deprecated</code>, <code>Synthetic</code>,
+    <code>Signature</code>, or <code>InnerClasses</code>. If no name is
+    given, all attributes are preserved.</dd>
+
+<dt><code><b>&lt;configuration refid = </b></code>"<i>ref_id</i>"
+    <code><b>/&gt;</b></code></dt>
+<dd>Includes the configuration specified in the
+    <code>&lt;proguardconfiguration&gt;</code> task (or
+    <code>&lt;proguard&gt;</code> task) with the attribute <code>id</code> =
+    "<i>ref_id</i>". Note that only the nested elements of this configuration
+    are considered, not the attributes.</dd>
+
+</dl>
+
+<a name="classpath">&nbsp;</a>
+<h2>Class Path Attributes</h2>
+
+The jar tags are file sets, so they can have any of the file set attributes.
+The most common ones are:
+
+<dl>
+
+<dt><code><b>file</b></code> = "<i>file_name</i>"</dt>
+<dd>The name of the jar (or war, ear, zip, or directory).</dd>
+
+<dt><code><b>refid</b></code> = "<i>ref_id</i>"</dt>
+<dd>Alternatively, a reference to another file set.</dd>
+
+</dl>
+
+In addition, the jar tags can have ProGuard-style filter attributes (as
+described in the section on <a href="usage.html#filters">Filters</a>):
+
+<dl>
+
+<dt><code><b>filter</b></code> = "<i>filter</i>"</dt>
+<dd>An optional filter for all class file names and resource file names that
+    are encountered.</dd>
+
+<dt><code><b>jarfilter</b></code> = "<i>jar_filter</i>"</dt>
+<dd>An optional filter for all jar names that are encountered.</dd>
+
+<dt><code><b>warfilter</b></code> = "<i>war_filter</i>"</dt>
+<dd>An optional filter for all war names that are encountered.</dd>
+
+<dt><code><b>earfilter</b></code> = "<i>ear_filter</i>"</dt>
+<dd>An optional filter for all ear names that are encountered.</dd>
+
+<dt><code><b>zipfilter</b></code> = "<i>zip_filter</i>"</dt>
+<dd>An optional filter for all zip names that are encountered.</dd>
+
+</dl>
+
+<a name="classspecification">&nbsp;</a>
+<h2>Class Specification Attributes and Nested Elements</h2>
+
+The keep tags can have the following <i>class_specification</i> attributes and
+<i>class_member_specifications</i> nested elements:
+ 
+<dl>
+
+<dt><code><b>access</b></code> = "<i>access_modifiers</i>"</dt>
+<dd>The optional access modifiers of the class. Any space-separated list of
+    "public", "final", and "abstract", with optional negators "!".</dd>
+
+<dt><code><b>type</b></code> = "<i>type</i>"</dt>
+<dd>The optional type of the class: one of "class", "interface", or
+    "!interface".</dd>
+
+<dt><code><b>name</b></code> = "<i>class_name</i>"</dt>
+<dd>The optional fully qualified name of the class, with optional
+    wildcards.</dd>
+
+<dt><code><b>extends</b></code> = "<i>class_name</i>"</dt>
+<dd>The optional fully qualified name of the class the specified classes
+    must extend, with optional wildcards.</dd>
+
+<dt><code><b>implements</b></code> = "<i>class_name</i>"</dt>
+<dd>The optional fully qualified name of the class the specified classes
+    must implement, with optional wildcards.</dd>
+
+<dt><code><b>&lt;field</b></code>
+    <a href="#classmemberspecification"><i>class_member_specification</i></a>
+    <code><b>/&gt;</b></code></dt>
+<dd>Specifies a field.</dd>
+
+<dt><code><b>&lt;method</b></code>
+    <a href="#classmemberspecification"><i>class_member_specification</i></a>
+    <code><b>/&gt;</b></code></dt>
+<dd>Specifies a method.</dd>
+
+<dt><code><b>&lt;constructor</b></code>
+    <a href="#classmemberspecification"><i>class_member_specification</i></a>
+    <code><b>/&gt;</b></code></dt>
+<dd>Specifies a constructor.</dd>
+
+</dl>
+
+<a name="classmemberspecification">&nbsp;</a>
+<h2>Class Member Specification Attributes</h2>
+
+The class member tags can have the following <i>class_member_specification</i>
+attributes:
+ 
+<dl>
+
+<dt><code><b>access</b></code> = "<i>access_modifiers</i>"</dt>
+<dd>The optional access modifiers of the class. Any space-separated list of
+    "public", "protected", "private", "static", etc., with optional negators
+    "!".</dd>
+
+<dt><code><b>type</b></code> = "<i>type</i>"</dt>
+<dd>The optional fully qualified type of the class member, with optional
+    wildcards. Not applicable for constructors. Must always be used in
+    combination with the <code>parameters</code> attribute.</dd>
+
+<dt><code><b>name</b></code> = "<i>name</i>"</dt>
+<dd>The optional name of the class member, with optional wildcards. Not
+    applicable for constructors.</dd>
+
+<dt><code><b>parameters</b></code> = "<i>parameters</i>"</dt>
+<dd>The optional comma-separated list of fully qualified method parameters,
+    with optional wildcards. Not applicable for fields, but required for
+    constructors, and for methods for which the <code>type</code> attribute is
+    specified.</dd>
+
+</dl>
 
 <hr>
 <address>
-Copyright &copy; 2003 <a href="mailto:dirk.schnelle@web.de">Dirk Schnelle</a>.
+Copyright &copy; 2002-2004
+<a href="http://www.graphics.cornell.edu/~eric/">Eric Lafortune</a>.
 </address>
 </body>
 </html>

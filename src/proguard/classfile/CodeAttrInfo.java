@@ -1,6 +1,6 @@
-/* $Id: CodeAttrInfo.java,v 1.13 2003/12/06 22:15:38 eric Exp $
+/* $Id: CodeAttrInfo.java,v 1.19 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
@@ -110,7 +110,7 @@ public class CodeAttrInfo extends AttrInfo
         dout.writeShort(u2maxStack);
         dout.writeShort(u2maxLocals);
         dout.writeInt(u4codeLength);
-        dout.write(code);
+        dout.write(code, 0, u4codeLength);
         dout.writeShort(u2exceptionTableLength);
         for (int i = 0; i < u2exceptionTableLength; i++)
         {
@@ -125,57 +125,63 @@ public class CodeAttrInfo extends AttrInfo
 
     public void accept(ClassFile classFile, AttrInfoVisitor attrInfoVisitor)
     {
-        attrInfoVisitor.visitCodeAttrInfo(classFile, this);
+        attrInfoVisitor.visitCodeAttrInfo(classFile, null, this);
+    }
+
+    public void accept(ClassFile classFile, MethodInfo methodInfo, AttrInfoVisitor attrInfoVisitor)
+    {
+        attrInfoVisitor.visitCodeAttrInfo(classFile, methodInfo, this);
     }
 
 
     /**
      * Applies the given instruction visitor to all instructions.
      */
-    public void instructionsAccept(ClassFile classFile, InstructionVisitor instructionVisitor)
+    public void instructionsAccept(ClassFile classFile, MethodInfo methodInfo, InstructionVisitor instructionVisitor)
     {
-        int index = 0;
+        int offset = 0;
 
-        while (index < u4codeLength)
+        do
         {
             // Note that the instruction is only volatile.
-            Instruction instruction = GenericInstruction.create(code, index);
-            int length = instruction.getLength();
-            instruction.accept(classFile, instructionVisitor);
-            index += length;
+            Instruction instruction = InstructionFactory.create(code, offset);
+            int length = instruction.length(offset);
+            instruction.accept(classFile, methodInfo, this, offset, instructionVisitor);
+            offset += length;
         }
+        while (offset < u4codeLength);
     }
 
     /**
      * Applies the given instruction visitor to the given instruction.
      */
-    public void instructionAccept(ClassFile classFile, InstructionVisitor instructionVisitor, int index)
+    public void instructionAccept(ClassFile classFile, MethodInfo methodInfo, InstructionVisitor instructionVisitor, int offset)
     {
-        Instruction instruction = GenericInstruction.create(code, index);
-        instruction.accept(classFile, instructionVisitor);
+        Instruction instruction = InstructionFactory.create(code, offset);
+        instruction.accept(classFile, methodInfo, this, offset, instructionVisitor);
     }
 
     /**
      * Applies the given exception visitor to all exceptions.
      */
-    public void exceptionsAccept(ClassFile classFile, ExceptionInfoVisitor exceptionInfoVisitor)
+    public void exceptionsAccept(ClassFile classFile, MethodInfo methodInfo, ExceptionInfoVisitor exceptionInfoVisitor)
     {
         for (int i = 0; i < u2exceptionTableLength; i++)
         {
             // We don't need double dispatching here, since there is only one
             // type of ExceptionInfo.
-            exceptionInfoVisitor.visitExceptionInfo(classFile, exceptionTable[i]);
+            exceptionInfoVisitor.visitExceptionInfo(classFile, methodInfo, this, exceptionTable[i]);
         }
     }
 
     /**
      * Applies the given attribute visitor to all attributes.
      */
-    public void attributesAccept(ClassFile classFile, AttrInfoVisitor attrInfoVisitor)
+    public void attributesAccept(ClassFile classFile, MethodInfo methodInfo, AttrInfoVisitor attrInfoVisitor)
     {
         for (int i = 0; i < u2attributesCount; i++)
         {
-            attributes[i].accept(classFile, attrInfoVisitor);
+            attributes[i].accept(classFile, methodInfo, this, attrInfoVisitor);
         }
     }
 }

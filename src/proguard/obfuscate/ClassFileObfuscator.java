@@ -1,6 +1,6 @@
-/* $Id: ClassFileObfuscator.java,v 1.20 2003/12/13 20:09:41 eric Exp $
+/* $Id: ClassFileObfuscator.java,v 1.22 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *

@@ -1,6 +1,6 @@
-/* $Id: InstructionVisitor.java,v 1.7 2003/02/09 15:22:28 eric Exp $
+/* $Id: InstructionVisitor.java,v 1.12 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -25,14 +25,16 @@ import proguard.classfile.*;
 
 /**
  * This interface specifies the methods for a visitor of
- * <code>Instruction</code> objects. Currently, only two types of instructions
- * are considered: instructions that refer to the constant pool, and all the
- * rest.
+ * <code>Instruction</code> objects.
  *
  * @author Eric Lafortune
  */
 public interface InstructionVisitor
 {
-    public void visitInstruction(ClassFile classFile, Instruction instruction);
-    public void visitCpInstruction(ClassFile classFile, CpInstruction cpInstruction);
+    public void visitSimpleInstruction(      ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, SimpleInstruction       simpleInstruction);
+    public void visitVariableInstruction(    ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, VariableInstruction     variableInstruction);
+    public void visitCpInstruction(          ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, CpInstruction           cpInstruction);
+    public void visitBranchInstruction(      ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, BranchInstruction       branchInstruction);
+    public void visitTableSwitchInstruction( ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, TableSwitchInstruction  tableSwitchInstruction);
+    public void visitLookUpSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, LookUpSwitchInstruction lookUpSwitchInstruction);
 }

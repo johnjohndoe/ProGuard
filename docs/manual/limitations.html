@@ -15,13 +15,13 @@ easily avoided or resolved:
 <p>
 <ul>
 <li>ProGuard handles the essential elements of Java: classes, interfaces, class
-    members, inheritance,... ProGuard is not aware of any additional
-    <b>naming conventions or APIs</b>: native methods, beans, serialization,...
-    You'll have to specify these in your configuration. The configuration
-    syntax is intended to be compact, readable, expressive, and generally
-    applicable. It's usually quite simple. The examples section of this manual
-    provides many typical examples. The graphical user interface has checkboxes
-    for common boilerplate configurations.
+    members, inheritance,... ProGuard itself is not aware of any additional
+    <b>naming conventions or APIs</b>: main methods, native methods, beans,
+    serialization,... You'll have to specify these in your configuration. The
+    configuration syntax is intended to be compact, readable, expressive, and
+    generally applicable. It's usually quite simple. The examples section of
+    this manual provides many typical examples. The graphical user interface
+    has checkboxes for common boilerplate configurations.
     <p>
 
 <li>ProGuard currently copies <b>manifest files and resource files</b>
@@ -31,11 +31,22 @@ easily avoided or resolved:
     <p>
 
 <li>For efficiency, ProGuard always ignores any <b>private or package visible
-    library classes</b>. If any of them are extended by public library classes,
-    and then extended again by input classes, ProGuard will complain it can't
-    find them. In that case, you'll have to use the
-    <code>-dontskipnonpubliclibraryclasses</code> option. The graphical user
-    interface has a checkbox for this setting.
+    library classes</b> while reading library jars. If any of them are
+    extended by public library classes, and then extended again by input
+    classes, ProGuard will complain it can't find them. In that case, you'll
+    have to use the <code>-dontskipnonpubliclibraryclasses</code> option. The
+    graphical user interface has a checkbox for this setting.
+    <p>
+
+<li>For best results, ProGuard's <b>optimization</b> algorithms assume that
+    the processed code never intentionally causes NullPointerExceptions and
+    ArrayIndexOutOfBoundsExceptions to achieve something useful. For instance,
+    it may remove a method call <code>myObject.myMethod()</code> if that call
+    wouldn't have any effect. It ignores that <code>myObject</code> might be
+    null, causing a NullPointerException. In some way this is a good thing:
+    optimized code may throw fewer exceptions. Should this entire assumption be
+    false, you'll have to switch off optimization using the
+    <code>-dontoptimize</code> option.
     <p>
 
 <li>If an input jar and a library jar contain classes in the <b>same

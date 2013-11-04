@@ -1,6 +1,6 @@
-/* $Id: BasicListMatcher.java,v 1.4 2003/12/13 20:09:41 eric Exp $
+/* $Id: BasicListMatcher.java,v 1.7 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -24,29 +24,28 @@ import java.util.*;
 
 
 /**
- * This RegularExpressionMatcher tests whether strings match any entry in
- * a given list of regular expressions.
- * The list is given as a comma-separated string or as a List of strings.
- * An exclamation mark preceding a list entry acts as a negator:
- * if the expression matches, a negative match is returned, without
- * considering any subsequent entries.
+ * This StringMatcher tests whether strings match an entry in a given list of
+ * regular expressions. The list is given as a comma-separated string or as a
+ * List of strings. An exclamation mark preceding a list entry acts as a
+ * negator: if the expression matches, a negative match is returned, without
+ * considering any subsequent entries. If none of the entries match, a positive
+ * match is returned depending on whether the last regular expression had a
+ * negator or not.
  * <p>
- * The individual regular expression matching is delegated to a
- * RegularExpressionMatcher that is created by the
- * createRegularExpressionMatcher method.
- * If it is not overridden, this method returns a BasicMatcher.
+ * The individual regular expression matching is delegated to a StringMatcher
+ * that is created by the {@link #createBasicMatcher(String}} method. If it is
+ * not overridden, this method returns a BasicMatcher.
  *
  * @see BasicMatcher
- *
  * @author Eric Lafortune
  */
-public class BasicListMatcher implements RegularExpressionMatcher
+public class BasicListMatcher implements StringMatcher
 {
     private static final char REGULAR_EXPRESSION_SEPARATOR = ',';
     private static final char REGULAR_EXPRESSION_NEGATOR   = '!';
 
-    private RegularExpressionMatcher[] regularExpressionMatchers;
-    private boolean[]                  negatedRegularExpressions;
+    private StringMatcher[] regularExpressionMatchers;
+    private boolean[]       negatedRegularExpressions;
 
 
     /**
@@ -70,7 +69,7 @@ public class BasicListMatcher implements RegularExpressionMatcher
         // Collect the regular expressions in arrays.
         int regularExpressionCount = regularExpressionList.size();
 
-        regularExpressionMatchers = new RegularExpressionMatcher[regularExpressionCount];
+        regularExpressionMatchers = new StringMatcher[regularExpressionCount];
         negatedRegularExpressions = new boolean[regularExpressionCount];
 
         for (int index = 0; index < regularExpressionCount; index++)
@@ -89,40 +88,44 @@ public class BasicListMatcher implements RegularExpressionMatcher
             }
 
             regularExpressionMatchers[index] =
-                createRegularExpressionMatcher(regularExpression);
+                createBasicMatcher(regularExpression);
         }
     }
 
 
     /**
-     * Creates a new RegularExpressionMatcher for the given regular expression.
+     * Creates a new StringMatcher for the given regular expression.
      */
-    protected RegularExpressionMatcher createRegularExpressionMatcher(String regularExpression)
+    protected StringMatcher createBasicMatcher(String regularExpression)
     {
         return new BasicMatcher(regularExpression);
     }
 
 
-    // Implementations for RegularExpressionMatcher.
+    // Implementations for StringMatcher.
 
     public boolean matches(String string)
     {
+        boolean result = true;
+
         for (int index = 0; index < regularExpressionMatchers.length; index++)
         {
+            result = negatedRegularExpressions[index];
+
             if (regularExpressionMatchers[index].matches(string))
             {
-                return !negatedRegularExpressions[index];
+                return !result;
             }
         }
 
-        return false;
+        return result;
     }
 
 
     /**
      * A main method for testing string matching.
      */
-    private static void main(String[] args)
+    public static void main(String[] args)
     {
         try
         {

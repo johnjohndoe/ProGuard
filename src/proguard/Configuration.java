@@ -1,6 +1,6 @@
-/* $Id: Configuration.java,v 1.1 2003/08/22 17:11:15 eric Exp $
+/* $Id: Configuration.java,v 1.10 2004/08/28 17:03:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -32,26 +32,57 @@ import java.util.*;
  */
 public class Configuration
 {
+    /**
+     * A list of input and output entries (jars, wars, ears, zips, and directories).
+     */
+    public ClassPath programJars;
+
+    /**
+     * A list of library entries (jars, wars, ears, zips, and directories).
+     */
     public ClassPath libraryJars;
-    public ClassPath inJars;
-    public ClassPath resourceJars;
-    public ClassPath outJars;
-    public List      keepClassFileOptions;
+
+    /**
+     * A list of ClassPathSpecification instances, whose class names and class
+     * member names are to be kept from shrinking, optimization, and obfuscation.
+     */
+    public List      keep;
+
+    /**
+     * A list of ClassPathSpecification instances, whose class names and class
+     * member names are to be kept from obfuscation.
+     */
+    public List      keepNames;
+
+    /**
+     * A list of ClassPathSpecification instances, whose methods are assumed to
+     * have no side effects.
+     */
+    public List      assumeNoSideEffects;
+
+    /**
+     * A list of String instances specifying optional attributes to be kept.
+     * A <code>null</code> list means no attributes. An empty list means all
+     * attributes.
+     */
     public List      keepAttributes;
+
     public String    newSourceFileAttribute;
     public String    printSeeds;
     public String    printUsage;
     public String    printMapping;
     public String    applyMapping;
-    public boolean   verbose;
     public String    dump;
-    public boolean   ignoreWarnings;
+    public boolean   verbose                     = false;
+    public boolean   ignoreWarnings              = false;
     public boolean   warn                        = true;
     public boolean   note                        = true;
     public boolean   shrink                      = true;
+    public boolean   optimize                    = true;
     public boolean   obfuscate                   = true;
+    public boolean   allowAccessModification     = false;
     public boolean   useMixedCaseClassNames      = true;
-    public boolean   overloadAggressively;
+    public boolean   overloadAggressively        = false;
     public String    defaultPackage;
     public boolean   skipNonPublicLibraryClasses = true;
 }

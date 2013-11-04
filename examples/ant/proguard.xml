@@ -1,39 +1,54 @@
 <!-- This Ant build file illustrates how to process ProGuard itself.
-     Usage: ant -f examples/ant/proguard.pro -->
+     Usage: ant -f proguard.xml -->
 
 <project name="ProGuard" default="obfuscate" basedir="../..">
 
 <target name="obfuscate">
-   <taskdef name="proguard" classname="proguard.ant.ProGuardTask"
-            classpath="/usr/local/java/proguard/lib/proguard.jar" />
+  <taskdef resource="proguard/ant/task.properties"
+           classpath="lib/proguard.jar" />
 
-   <proguard overloadaggressively="on"
-             defaultpackage=""
-             ignorewarnings="on"
-             outjar="proguard_out.jar">
-       <libraryjar name="${java.home}/lib/rt.jar" />
-       <libraryjar name="/usr/local/java/ant1.5.3/lib/ant.jar" />
-       <libraryjar name="/usr/local/java/j2me2.0beta/wtklib/kenv.zip" />
-       <injar name="lib/proguard.jar" />
+  <proguard printmapping="proguard.map"
+            overloadaggressively="on"
+            defaultpackage=""
+            allowaccessmodification="on">
 
-       <!-- The main seeds: ProGuard and its companion tool ReTrace. -->
-       <keep access="public" name="proguard.ProGuard">
-          <method access="public static" name="main(java.lang.String[])" />
-       </keep>
-       <keep access="public" name="proguard.ReTrace">
-          <method access="public static" name="main(java.lang.String[])" />
-       </keep>
+    <!-- Specify the input jars, output jars, and library jars. -->
 
-       <!-- If we have ant.jar, we can properly process the Ant task. -->
-       <keep access="public" name="proguard.ant.*">
-          <method access="public" name="set*(boolean)"/>
-          <method access="public" name="set*(**)"/>
-          <method access="public" name="add*(**)"/>
-       </keep>
+    <injar  file="lib/proguard.jar" />
+    <outjar file="proguard_out.jar" />
 
-       <!-- If we have kenv.zip, we can process the J2ME WTK plugin. -->
-       <keep access="public" name="proguard.wtk.ProGuardObfuscator" />
-   </proguard>
+    <libraryjar file="${java.home}/lib/rt.jar" />
+    <libraryjar file="/usr/local/java/ant1.6.2/lib/ant.jar" />
+    <libraryjar file="/usr/local/java/wtk2.1/wtklib/kenv.zip" />
+
+    <!-- The main seeds: ProGuard and its companion tool ReTrace. -->
+
+    <keep access="public" name="proguard.ProGuard">
+      <method access    ="public static"
+              type      ="void"
+              name      ="main"
+              parameters="java.lang.String[]" />
+    </keep>
+    <keep access="public" name="proguard.ReTrace">
+      <method access    ="public static"
+              type      ="void"
+              name      ="main"
+              parameters="java.lang.String[]" />
+    </keep>
+
+    <!-- If we have ant.jar, we can properly process the Ant task. -->
+
+    <keep access="public" name="proguard.ant.*">
+      <method access="public" type="void" name="set*" parameters="%"/>
+      <method access="public" type="void" name="set*" parameters="**"/>
+      <method access="public" type="void" name="add*" parameters="**"/>
+    </keep>
+
+    <!-- If we have kenv.zip, we can process the J2ME WTK plugin. -->
+
+    <keep access="public" name="proguard.wtk.ProGuardObfuscator" />
+
+  </proguard>
 </target>
 
 </project>

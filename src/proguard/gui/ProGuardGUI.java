@@ -1,6 +1,6 @@
-/* $Id: ProGuardGUI.java,v 1.15 2003/12/13 20:09:41 eric Exp $
+/* $Id: ProGuardGUI.java,v 1.24 2004/08/28 20:55:21 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -21,6 +21,7 @@
 package proguard.gui;
 
 import proguard.*;
+import proguard.optimize.NoSideEffectMethodMarker;
 import proguard.util.*;
 import proguard.classfile.util.*;
 import proguard.gui.splash.*;
@@ -44,9 +45,9 @@ public class ProGuardGUI extends JFrame
 {
     private static final String NO_SPLASH_OPTION = "-nosplash";
 
-    private static final String TITLE_IMAGE_FILE            = "vtitle.gif";
-    private static final String BOILERPLATE_KEEP_CLASS_FILE = "boilerplate.pro";
-    private static final String DEFAULT_CONFIGURATION       = "default.pro";
+    private static final String TITLE_IMAGE_FILE          = "vtitle.gif";
+    private static final String BOILERPLATE_CONFIGURATION = "boilerplate.pro";
+    private static final String DEFAULT_CONFIGURATION     = "default.pro";
 
     private static final String KEEP_ATTRIBUTE_DEFAULT        = "InnerClasses,SourceFile,LineNumberTable,Deprecated,Signature";
     private static final String SOURCE_FILE_ATTRIBUTE_DEFAULT = "SourceFile";
@@ -60,19 +61,31 @@ public class ProGuardGUI extends JFrame
 
     private SplashPanel splashPanel;
 
-    private ClassPathPanel programPanel  = new ClassPathPanel(this);
-    private ClassPathPanel resourcePanel = new ClassPathPanel(this);
-    private ClassPathPanel libraryPanel  = new ClassPathPanel(this);
-    private ClassPathPanel outPanel      = new ClassPathPanel(this);
+    private ClassPathPanel programPanel = new ClassPathPanel(this, true);
+    private ClassPathPanel libraryPanel = new ClassPathPanel(this, false);
 
-    private KeepClassFileOption[] boilerplateKeepClassFileOptions;
-    private JCheckBox[]           boilerplateKeepCheckBoxes;
-    private JTextField[]          boilerplateKeepTextFields;
+    private ClassSpecification[] boilerplateKeep;
+    private JCheckBox[]          boilerplateKeepCheckBoxes;
+    private JTextField[]         boilerplateKeepTextFields;
 
-    private KeepClassFileOptionsPanel specialKeepPanel = new KeepClassFileOptionsPanel(this);
+    private ClassSpecificationsPanel additionalKeepPanel = new ClassSpecificationsPanel(this, true);
+
+    private ClassSpecification[] boilerplateKeepNames;
+    private JCheckBox[]          boilerplateKeepNamesCheckBoxes;
+    private JTextField[]         boilerplateKeepNamesTextFields;
+
+    private ClassSpecificationsPanel additionalKeepNamesPanel = new ClassSpecificationsPanel(this, true);
+
+    private ClassSpecification[] boilerplateNoSideEffectMethods;
+    private JCheckBox[]          boilerplateNoSideEffectMethodCheckBoxes;
+
+    private ClassSpecificationsPanel additionalNoSideEffectsPanel = new ClassSpecificationsPanel(this, false);
 
     private JCheckBox shrinkCheckBox                      = new JCheckBox(msg("shrink"));
     private JCheckBox printUsageCheckBox                  = new JCheckBox(msg("printUsage"));
+
+    private JCheckBox optimizeCheckBox                    = new JCheckBox(msg("optimize"));
+    private JCheckBox allowAccessModificationCheckBox     = new JCheckBox(msg("allowAccessModification"));
 
     private JCheckBox obfuscateCheckBox                   = new JCheckBox(msg("obfuscate"));
     private JCheckBox printMappingCheckBox                = new JCheckBox(msg("printMapping"));
@@ -116,14 +129,14 @@ public class ProGuardGUI extends JFrame
 
         // Create some constraints that can be reused.
         GridBagConstraints constraints = new GridBagConstraints();
-        constraints.anchor    = GridBagConstraints.WEST;
-        constraints.insets    = new Insets(0, 4, 0, 4);
+        constraints.anchor = GridBagConstraints.WEST;
+        constraints.insets = new Insets(0, 4, 0, 4);
 
         GridBagConstraints constraintsStretch = new GridBagConstraints();
-        constraintsStretch.fill      = GridBagConstraints.HORIZONTAL;
-        constraintsStretch.weightx   = 1.0;
-        constraintsStretch.anchor    = GridBagConstraints.WEST;
-        constraintsStretch.insets    = constraints.insets;
+        constraintsStretch.fill    = GridBagConstraints.HORIZONTAL;
+        constraintsStretch.weightx = 1.0;
+        constraintsStretch.anchor  = GridBagConstraints.WEST;
+        constraintsStretch.insets  = constraints.insets;
 
         GridBagConstraints constraintsLast = new GridBagConstraints();
         constraintsLast.gridwidth = GridBagConstraints.REMAINDER;
@@ -137,11 +150,20 @@ public class ProGuardGUI extends JFrame
         constraintsLastStretch.anchor    = GridBagConstraints.WEST;
         constraintsLastStretch.insets    = constraints.insets;
 
+        GridBagConstraints splashPanelConstraints = new GridBagConstraints();
+        splashPanelConstraints.gridwidth = GridBagConstraints.REMAINDER;
+        splashPanelConstraints.fill      = GridBagConstraints.BOTH;
+        splashPanelConstraints.weightx   = 1.0;
+        splashPanelConstraints.weighty   = 0.02;
+        splashPanelConstraints.anchor    = GridBagConstraints.NORTHWEST;
+        //splashPanelConstraints.insets    = constraints.insets;
+
         GridBagConstraints welcomeTextAreaConstraints = new GridBagConstraints();
         welcomeTextAreaConstraints.gridwidth = GridBagConstraints.REMAINDER;
-        welcomeTextAreaConstraints.fill      = GridBagConstraints.HORIZONTAL;
+        welcomeTextAreaConstraints.fill      = GridBagConstraints.NONE;
         welcomeTextAreaConstraints.weightx   = 1.0;
-        welcomeTextAreaConstraints.anchor    = GridBagConstraints.NORTHWEST;
+        welcomeTextAreaConstraints.weighty   = 0.01;
+        welcomeTextAreaConstraints.anchor    = GridBagConstraints.CENTER;//NORTHWEST;
         welcomeTextAreaConstraints.insets    = new Insets(20, 40, 20, 40);
 
         GridBagConstraints panelConstraints = new GridBagConstraints();
@@ -160,12 +182,11 @@ public class ProGuardGUI extends JFrame
         stretchPanelConstraints.insets    = constraints.insets;
 
         GridBagConstraints glueConstraints = new GridBagConstraints();
-        glueConstraints.gridheight = GridBagConstraints.REMAINDER;
-        glueConstraints.fill       = GridBagConstraints.BOTH;
-        glueConstraints.weightx    = 0.01;
-        glueConstraints.weighty    = 0.01;
-        glueConstraints.anchor     = GridBagConstraints.NORTHWEST;
-        glueConstraints.insets     = constraints.insets;
+        glueConstraints.fill    = GridBagConstraints.BOTH;
+        glueConstraints.weightx = 0.01;
+        glueConstraints.weighty = 0.01;
+        glueConstraints.anchor  = GridBagConstraints.NORTHWEST;
+        glueConstraints.insets  = constraints.insets;
 
         GridBagConstraints bottomButtonConstraints = new GridBagConstraints();
         bottomButtonConstraints.anchor = GridBagConstraints.SOUTHEAST;
@@ -200,7 +221,7 @@ public class ProGuardGUI extends JFrame
                            new ConstantFont(new Font("sansserif", Font.BOLD, 90)),
                            new ConstantColor(Color.gray),
                            new ConstantInt(160),
-                           new LinearInt(-10, 100, new SmoothTiming(500, 1000))),
+                           new LinearInt(-10, 120, new SmoothTiming(500, 1000))),
 
             new ShadowedSprite(new ConstantInt(3),
                                new ConstantInt(3),
@@ -211,174 +232,180 @@ public class ProGuardGUI extends JFrame
                 new TextSprite(new ConstantString(msg("shrinking")),
                                new ConstantFont(font),
                                new ConstantColor(fontColor),
-                               new LinearInt(1000, 100, new SmoothTiming(1000, 2000)),
-                               new ConstantInt(50)),
+                               new LinearInt(1000, 60, new SmoothTiming(1000, 2000)),
+                               new ConstantInt(70)),
+                new TextSprite(new ConstantString(msg("optimization")),
+                               new ConstantFont(font),
+                               new ConstantColor(fontColor),
+                               new LinearInt(1000, 400, new SmoothTiming(1500, 2500)),
+                               new ConstantInt(60)),
                 new TextSprite(new ConstantString(msg("obfuscation")),
                                new ConstantFont(font),
                                new ConstantColor(fontColor),
                                new LinearInt(1000, 350, new SmoothTiming(2000, 3000)),
-                               new ConstantInt(120)),
+                               new ConstantInt(140)),
                 new TextSprite(new TypeWriterString(msg("developed"), new LinearTiming(3000, 5000)),
                                new ConstantFont(new Font("monospaced", Font.BOLD, 20)),
                                new ConstantColor(fontColor),
                                new ConstantInt(250),
-                               new ConstantInt(150)),
+                               new ConstantInt(170)),
             })),
         });
         splashPanel = new SplashPanel(splash, 0.5, 5000L);
+        splashPanel.setPreferredSize(new Dimension(0, 200));
 
-        JTextArea welcomeTextArea = new JTextArea(msg("proGuardInfo"));
+        JTextArea welcomeTextArea = new JTextArea(msg("proGuardInfo"), 18, 50);
         welcomeTextArea.setOpaque(false);
         welcomeTextArea.setEditable(false);
         welcomeTextArea.setLineWrap(true);
         welcomeTextArea.setWrapStyleWord(true);
+        welcomeTextArea.setPreferredSize(new Dimension(0, 0));
         welcomeTextArea.setBorder(new EmptyBorder(20, 20, 20, 20));
         addBorder(welcomeTextArea, "welcome");
 
         JPanel proGuardPanel = new JPanel(layout);
-        proGuardPanel.add(splashPanel,      stretchPanelConstraints);
+        proGuardPanel.add(splashPanel,      splashPanelConstraints);
         proGuardPanel.add(welcomeTextArea,  welcomeTextAreaConstraints);
-        proGuardPanel.add(Box.createGlue(), stretchPanelConstraints);
 
         // Create the input panel.
-        // TODO: properly clone the ClassPath objects. This is awkward to
-        // implement in the generic ListPanel.addElements(...) method, since
-        // the Object.clone() method is not public.
-        programPanel.addCopyToPanelButton(msg("moveToLibraries"), libraryPanel,  true);
-        programPanel.addCopyToPanelButton(msg("copyToResources"), resourcePanel, false);
-        libraryPanel.addCopyToPanelButton(msg("moveToProgram"),   programPanel,  true);
+        // TODO: properly clone the ClassPath objects.
+        // This is awkward to implement in the generic ListPanel.addElements(...)
+        // method, since the Object.clone() method is not public.
+        programPanel.addCopyToPanelButton(msg("moveToLibraries"), libraryPanel);
+        libraryPanel.addCopyToPanelButton(msg("moveToProgram"),   programPanel);
 
         // Collect all buttons of these panels and make sure they are equally
         // sized.
         List panelButtons = new ArrayList();
-        panelButtons.addAll(programPanel .getButtons());
-        panelButtons.addAll(resourcePanel.getButtons());
-        panelButtons.addAll(libraryPanel .getButtons());
+        panelButtons.addAll(programPanel.getButtons());
+        panelButtons.addAll(libraryPanel.getButtons());
         setCommonPreferredSize(panelButtons);
         panelButtons = null;
 
-        addBorder(programPanel,  "programJars" );
-        addBorder(resourcePanel, "resourceJars");
-        addBorder(libraryPanel,  "libraryJars" );
-        addBorder(outPanel,      "outputJars"  );
+        addBorder(programPanel, "programJars" );
+        addBorder(libraryPanel, "libraryJars" );
 
-        JPanel inputPanel = new JPanel(layout);
-        inputPanel.add(programPanel,  stretchPanelConstraints);
-        inputPanel.add(resourcePanel, stretchPanelConstraints);
-        inputPanel.add(libraryPanel,  stretchPanelConstraints);
+        JPanel inputOutputPanel = new JPanel(layout);
+        inputOutputPanel.add(programPanel, stretchPanelConstraints);
+        inputOutputPanel.add(libraryPanel, stretchPanelConstraints);
 
-        // Create the keep panel.
-        JPanel keepPanel = new JPanel(layout);
+        // Load the boiler plate options.
+        loadBoilerplateConfiguration();
 
         // Create the boiler plate keep panels.
-        loadBoilerplateKeepClassFileOptions();
+        boilerplateKeepCheckBoxes = new JCheckBox[boilerplateKeep.length];
+        boilerplateKeepTextFields = new JTextField[boilerplateKeep.length];
 
-        boilerplateKeepCheckBoxes = new JCheckBox[boilerplateKeepClassFileOptions.length];
-        boilerplateKeepTextFields = new JTextField[boilerplateKeepClassFileOptions.length];
-
-        String lastPanelName = null;
-        JPanel keepSubpanel  = null;
-        for (int index = 0; index < boilerplateKeepClassFileOptions.length; index++)
-        {
-            KeepClassFileOption keepClassFileOption =
-                boilerplateKeepClassFileOptions[index];
-
-            // The panel structure is derived from the comments.
-            String comments = keepClassFileOption.comments;
-            int dashIndex = comments.indexOf('-');
-            int periodIndex = comments.indexOf('.', dashIndex);
-            String panelName = comments.substring(0, dashIndex).trim();
-            String optionName = comments.substring(dashIndex + 1, periodIndex).trim();
-            if (!panelName.equals(lastPanelName))
-            {
-                // Create a new keep subpanel and add it.
-                keepSubpanel = new JPanel(layout);
-                String titleKey = panelName.toLowerCase().replace(' ', '_');
-                addBorder(keepSubpanel, titleKey);
-                keepPanel.add(keepSubpanel, panelConstraints);
-
-                lastPanelName = panelName;
-            }
-
-            // Add the keep check box to the subpanel.
-            String messageKey = optionName.toLowerCase().replace(' ', '_');
-            boilerplateKeepCheckBoxes[index] = new JCheckBox(msg(messageKey));
-            boilerplateKeepTextFields[index] = new JTextField(40);
-
-            keepSubpanel.add(boilerplateKeepCheckBoxes[index], constraints);
-            keepSubpanel.add(boilerplateKeepTextFields[index], constraintsLastStretch);
-        }
-
-        addBorder(specialKeepPanel, "special");
-
-        keepPanel.add(specialKeepPanel, stretchPanelConstraints);
-
-        // Create the output panel.
         JButton printUsageBrowseButton   = createBrowseButton(printUsageTextField,
                                                               msg("selectUsageFile"));
+
+        JPanel shrinkingOptionsPanel = new JPanel(layout);
+        addBorder(shrinkingOptionsPanel, "options");
+
+        shrinkingOptionsPanel.add(shrinkCheckBox,         constraintsLastStretch);
+        shrinkingOptionsPanel.add(printUsageCheckBox,     constraints);
+        shrinkingOptionsPanel.add(printUsageTextField,    constraintsStretch);
+        shrinkingOptionsPanel.add(printUsageBrowseButton, constraintsLast);
+
+        JPanel shrinkingPanel = new JPanel(layout);
+
+        shrinkingPanel.add(shrinkingOptionsPanel, panelConstraints);
+        addClassSpecifications(boilerplateKeep,
+                               shrinkingPanel,
+                               boilerplateKeepCheckBoxes,
+                               boilerplateKeepTextFields);
+
+        addBorder(additionalKeepPanel, "keepAdditional");
+        shrinkingPanel.add(additionalKeepPanel, stretchPanelConstraints);
+
+        // Create the boiler plate keep names panels.
+        boilerplateKeepNamesCheckBoxes = new JCheckBox[boilerplateKeepNames.length];
+        boilerplateKeepNamesTextFields = new JTextField[boilerplateKeepNames.length];
+
         JButton printMappingBrowseButton = createBrowseButton(printMappingTextField,
                                                               msg("selectPrintMappingFile"));
         JButton applyMappingBrowseButton = createBrowseButton(applyMappingTextField,
                                                               msg("selectApplyMappingFile"));
-        JButton printSeedsBrowseButton   = createBrowseButton(printSeedsTextField,
-                                                              msg("selectSeedsFile"));
 
-        JPanel shrinkingPanel = new JPanel(layout);
-        addBorder(shrinkingPanel, "shrinking");
+        JPanel obfuscationOptionsPanel = new JPanel(layout);
+        addBorder(obfuscationOptionsPanel, "options");
 
-        shrinkingPanel.add(shrinkCheckBox,                         constraintsLastStretch);
-        shrinkingPanel.add(printUsageCheckBox,                     constraints);
-        shrinkingPanel.add(printUsageTextField,                    constraintsStretch);
-        shrinkingPanel.add(printUsageBrowseButton,                 constraintsLast);
+        obfuscationOptionsPanel.add(obfuscateCheckBox,               constraintsLastStretch);
+        obfuscationOptionsPanel.add(printMappingCheckBox,            constraints);
+        obfuscationOptionsPanel.add(printMappingTextField,           constraintsStretch);
+        obfuscationOptionsPanel.add(printMappingBrowseButton,        constraintsLast);
+        obfuscationOptionsPanel.add(applyMappingCheckBox,            constraints);
+        obfuscationOptionsPanel.add(applyMappingTextField,           constraintsStretch);
+        obfuscationOptionsPanel.add(applyMappingBrowseButton,        constraintsLast);
+        obfuscationOptionsPanel.add(useMixedCaseClassNamesCheckBox,  constraintsLastStretch);
+        obfuscationOptionsPanel.add(overloadAggressivelyCheckBox,    constraintsLastStretch);
+        obfuscationOptionsPanel.add(defaultPackageCheckBox,          constraints);
+        obfuscationOptionsPanel.add(defaultPackageTextField,         constraintsLastStretch);
+        obfuscationOptionsPanel.add(keepAttributesCheckBox,          constraints);
+        obfuscationOptionsPanel.add(keepAttributesTextField,         constraintsLastStretch);
+        obfuscationOptionsPanel.add(newSourceFileAttributeCheckBox,  constraints);
+        obfuscationOptionsPanel.add(newSourceFileAttributeTextField, constraintsLastStretch);
 
         JPanel obfuscationPanel = new JPanel(layout);
-        addBorder(obfuscationPanel, "obfuscation");
 
-        obfuscationPanel.add(obfuscateCheckBox,                    constraintsLastStretch);
-        obfuscationPanel.add(printMappingCheckBox,                 constraints);
-        obfuscationPanel.add(printMappingTextField,                constraintsStretch);
-        obfuscationPanel.add(printMappingBrowseButton,             constraintsLast);
-        obfuscationPanel.add(applyMappingCheckBox,                 constraints);
-        obfuscationPanel.add(applyMappingTextField,                constraintsStretch);
-        obfuscationPanel.add(applyMappingBrowseButton,             constraintsLast);
-        obfuscationPanel.add(useMixedCaseClassNamesCheckBox,       constraintsLastStretch);
-        obfuscationPanel.add(overloadAggressivelyCheckBox,         constraintsLastStretch);
-        obfuscationPanel.add(defaultPackageCheckBox,               constraints);
-        obfuscationPanel.add(defaultPackageTextField,              constraintsLastStretch);
-        obfuscationPanel.add(keepAttributesCheckBox,               constraints);
-        obfuscationPanel.add(keepAttributesTextField,              constraintsLastStretch);
-        obfuscationPanel.add(newSourceFileAttributeCheckBox,       constraints);
-        obfuscationPanel.add(newSourceFileAttributeTextField,      constraintsLastStretch);
+        obfuscationPanel.add(obfuscationOptionsPanel, panelConstraints);
+        addClassSpecifications(boilerplateKeepNames,
+                               obfuscationPanel,
+                               boilerplateKeepNamesCheckBoxes,
+                               boilerplateKeepNamesTextFields);
+
+        addBorder(additionalKeepNamesPanel, "keepNamesAdditional");
+        obfuscationPanel.add(additionalKeepNamesPanel, stretchPanelConstraints);
+
+        // Create the boiler plate "no side effect methods" panels.
+        boilerplateNoSideEffectMethodCheckBoxes = new JCheckBox[boilerplateNoSideEffectMethods.length];
+
+        JPanel optimizationOptionsPanel = new JPanel(layout);
+        addBorder(optimizationOptionsPanel, "options");
+
+        optimizationOptionsPanel.add(optimizeCheckBox,                constraintsLastStretch);
+        optimizationOptionsPanel.add(allowAccessModificationCheckBox, constraintsLastStretch);
+
+        JPanel optimizationPanel = new JPanel(layout);
+
+        optimizationPanel.add(optimizationOptionsPanel, panelConstraints);
+        addClassSpecifications(boilerplateNoSideEffectMethods,
+                               optimizationPanel,
+                               boilerplateNoSideEffectMethodCheckBoxes,
+                               null);
+
+        addBorder(additionalNoSideEffectsPanel, "assumeNoSideEffectsAdditional");
+        optimizationPanel.add(additionalNoSideEffectsPanel, stretchPanelConstraints);
+
+        // Create the options panel.
+        JButton printSeedsBrowseButton   = createBrowseButton(printSeedsTextField,
+                                                              msg("selectSeedsFile"));
 
         JPanel consistencyPanel = new JPanel(layout);
         addBorder(consistencyPanel, "consistencyAndCorrectness");
 
-        consistencyPanel.add(verboseCheckBox,                      constraintsLastStretch);
-        consistencyPanel.add(printSeedsCheckBox,                   constraints);
-        consistencyPanel.add(printSeedsTextField,                  constraintsStretch);
-        consistencyPanel.add(printSeedsBrowseButton,               constraintsLast);
-        consistencyPanel.add(noteCheckBox,                         constraintsLastStretch);
-        consistencyPanel.add(warnCheckBox,                         constraintsLastStretch);
-        consistencyPanel.add(ignoreWarningsCheckBox,               constraintsLastStretch);
-        consistencyPanel.add(skipNonPublicLibraryClassesCheckBox,  constraintsLastStretch);
+        consistencyPanel.add(verboseCheckBox,                     constraintsLastStretch);
+        consistencyPanel.add(printSeedsCheckBox,                  constraints);
+        consistencyPanel.add(printSeedsTextField,                 constraintsStretch);
+        consistencyPanel.add(printSeedsBrowseButton,              constraintsLast);
+        consistencyPanel.add(noteCheckBox,                        constraintsLastStretch);
+        consistencyPanel.add(warnCheckBox,                        constraintsLastStretch);
+        consistencyPanel.add(ignoreWarningsCheckBox,              constraintsLastStretch);
+        consistencyPanel.add(skipNonPublicLibraryClassesCheckBox, constraintsLastStretch);
 
         // Collect all components that are followed by text fields and make
         // sure they are equally sized. That way the text fields start at the
         // same horizontal position.
         setCommonPreferredSize(Arrays.asList(new JComponent[] {
-            printUsageCheckBox,
             printMappingCheckBox,
             applyMappingCheckBox,
             defaultPackageCheckBox,
             newSourceFileAttributeCheckBox,
-            printSeedsCheckBox
         }));
 
-        JPanel outputPanel = new JPanel(layout);
-        outputPanel.add(outPanel,         stretchPanelConstraints);
-        outputPanel.add(shrinkingPanel,   panelConstraints);
-        outputPanel.add(obfuscationPanel, panelConstraints);
-        outputPanel.add(consistencyPanel, panelConstraints);
+        JPanel optionsPanel = new JPanel(layout);
+
+        optionsPanel.add(consistencyPanel,  panelConstraints);
 
         // Create the process panel.
         consoleTextArea.setOpaque(false);
@@ -449,41 +476,51 @@ public class ProGuardGUI extends JFrame
 
         // Create the main tabbed pane.
         TabbedPane tabs = new TabbedPane();
-        tabs.add(msg("proGuardTab"), proGuardPanel);
-        tabs.add(msg("inputTab"),    inputPanel);
-        tabs.add(msg("keepTab"),     keepPanel);
-        tabs.add(msg("outputTab"),   outputPanel);
-        tabs.add(msg("processTab"),  processPanel);
-        tabs.add(msg("reTraceTab"),  reTracePanel);
-        tabs.addImage(Toolkit.getDefaultToolkit().createImage(
+        tabs.add(msg("proGuardTab"),     proGuardPanel);
+        tabs.add(msg("inputOutputTab"),  inputOutputPanel);
+        tabs.add(msg("shrinkingTab"),    shrinkingPanel);
+        tabs.add(msg("obfuscationTab"),  obfuscationPanel);
+        tabs.add(msg("optimizationTab"), optimizationPanel);
+        tabs.add(msg("informationTab"),  optionsPanel);
+        tabs.add(msg("processTab"),      processPanel);
+        tabs.add(msg("reTraceTab"),      reTracePanel);
+        tabs.addImage(Toolkit.getDefaultToolkit().getImage(
             this.getClass().getResource(TITLE_IMAGE_FILE)));
 
         // Add the bottom buttons to each panel.
-        proGuardPanel.add(Box.createGlue(),          glueConstraints);
-        proGuardPanel.add(loadButton,                bottomButtonConstraints);
-        proGuardPanel.add(createNextButton(tabs),    lastBottomButtonConstraints);
+        proGuardPanel     .add(Box.createGlue(),           glueConstraints);
+        proGuardPanel     .add(loadButton,                 bottomButtonConstraints);
+        proGuardPanel     .add(createNextButton(tabs),     lastBottomButtonConstraints);
 
-        inputPanel  .add(Box.createGlue(),           glueConstraints);
-        inputPanel  .add(createPreviousButton(tabs), bottomButtonConstraints);
-        inputPanel  .add(createNextButton(tabs),     lastBottomButtonConstraints);
+        inputOutputPanel  .add(Box.createGlue(),           glueConstraints);
+        inputOutputPanel  .add(createPreviousButton(tabs), bottomButtonConstraints);
+        inputOutputPanel  .add(createNextButton(tabs),     lastBottomButtonConstraints);
 
-        keepPanel   .add(Box.createGlue(),           glueConstraints);
-        keepPanel   .add(createPreviousButton(tabs), bottomButtonConstraints);
-        keepPanel   .add(createNextButton(tabs),     lastBottomButtonConstraints);
+        shrinkingPanel    .add(Box.createGlue(),           glueConstraints);
+        shrinkingPanel    .add(createPreviousButton(tabs), bottomButtonConstraints);
+        shrinkingPanel    .add(createNextButton(tabs),     lastBottomButtonConstraints);
 
-        outputPanel .add(Box.createGlue(),           glueConstraints);
-        outputPanel .add(createPreviousButton(tabs), bottomButtonConstraints);
-        outputPanel .add(createNextButton(tabs),     lastBottomButtonConstraints);
+        obfuscationPanel  .add(Box.createGlue(),           glueConstraints);
+        obfuscationPanel  .add(createPreviousButton(tabs), bottomButtonConstraints);
+        obfuscationPanel  .add(createNextButton(tabs),     lastBottomButtonConstraints);
 
-        processPanel.add(Box.createGlue(),           glueConstraints);
-        processPanel.add(createPreviousButton(tabs), bottomButtonConstraints);
-        processPanel.add(viewButton,                 bottomButtonConstraints);
-        processPanel.add(saveButton,                 bottomButtonConstraints);
-        processPanel.add(processButton,              lastBottomButtonConstraints);
+        optimizationPanel .add(Box.createGlue(),           glueConstraints);
+        optimizationPanel .add(createPreviousButton(tabs), bottomButtonConstraints);
+        optimizationPanel .add(createNextButton(tabs),     lastBottomButtonConstraints);
 
-        reTracePanel.add(Box.createGlue(),           glueConstraints);
-        reTracePanel.add(loadStackTraceButton,       bottomButtonConstraints);
-        reTracePanel.add(reTraceButton,              lastBottomButtonConstraints);
+        optionsPanel      .add(Box.createGlue(),           glueConstraints);
+        optionsPanel      .add(createPreviousButton(tabs), bottomButtonConstraints);
+        optionsPanel      .add(createNextButton(tabs),     lastBottomButtonConstraints);
+
+        processPanel      .add(Box.createGlue(),           glueConstraints);
+        processPanel      .add(createPreviousButton(tabs), bottomButtonConstraints);
+        processPanel      .add(viewButton,                 bottomButtonConstraints);
+        processPanel      .add(saveButton,                 bottomButtonConstraints);
+        processPanel      .add(processButton,              lastBottomButtonConstraints);
+
+        reTracePanel      .add(Box.createGlue(),           glueConstraints);
+        reTracePanel      .add(loadStackTraceButton,       bottomButtonConstraints);
+        reTracePanel      .add(reTraceButton,              lastBottomButtonConstraints);
 
         // Initialize the GUI settings to reasonable defaults.
         loadConfiguration(this.getClass().getResource(DEFAULT_CONFIGURATION));
@@ -509,23 +546,102 @@ public class ProGuardGUI extends JFrame
      * Loads the boilerplate keep class file options from the boilerplate file
      * into the boilerplate array.
      */
-    private void loadBoilerplateKeepClassFileOptions()
+    private void loadBoilerplateConfiguration()
     {
         try
         {
             // Parse the boilerplate configuration file.
             ConfigurationParser parser = new ConfigurationParser(
-                this.getClass().getResource(BOILERPLATE_KEEP_CLASS_FILE));
+                this.getClass().getResource(BOILERPLATE_CONFIGURATION));
             Configuration configuration = new Configuration();
             parser.parse(configuration);
 
-            // We're only interested in the keep options.
-            boilerplateKeepClassFileOptions = new KeepClassFileOption[configuration.keepClassFileOptions.size()];
-            configuration.keepClassFileOptions.toArray(boilerplateKeepClassFileOptions);
+            // We're interested in the keep options.
+            boilerplateKeep = new ClassSpecification[configuration.keep.size()];
+            configuration.keep.toArray(boilerplateKeep);
+
+            // We're interested in the keep names options.
+            boilerplateKeepNames = new ClassSpecification[configuration.keepNames.size()];
+            configuration.keepNames.toArray(boilerplateKeepNames);
+
+            // We're interested in the side effects options.
+            boilerplateNoSideEffectMethods = new ClassSpecification[configuration.assumeNoSideEffects.size()];
+            configuration.assumeNoSideEffects.toArray(boilerplateNoSideEffectMethods);
         }
         catch (Exception ex)
         {
             ex.printStackTrace();
+        }
+    }
+
+
+    /**
+     * Creates a panel with the given boiler plate class specifications.
+     */
+    private void addClassSpecifications(ClassSpecification[] boilerplateClassSpecifications,
+                                        JPanel               classSpecificationsPanel,
+                                        JCheckBox[]          boilerplateCheckBoxes,
+                                        JTextField[]         boilerplateTextFields)
+    {
+        // Create some constraints that can be reused.
+        GridBagConstraints constraints = new GridBagConstraints();
+        constraints.anchor = GridBagConstraints.WEST;
+        constraints.insets = new Insets(0, 4, 0, 4);
+
+        GridBagConstraints constraintsLastStretch = new GridBagConstraints();
+        constraintsLastStretch.gridwidth = GridBagConstraints.REMAINDER;
+        constraintsLastStretch.fill      = GridBagConstraints.HORIZONTAL;
+        constraintsLastStretch.weightx   = 1.0;
+        constraintsLastStretch.anchor    = GridBagConstraints.WEST;
+        constraintsLastStretch.insets    = constraints.insets;
+
+        GridBagConstraints panelConstraints = new GridBagConstraints();
+        panelConstraints.gridwidth = GridBagConstraints.REMAINDER;
+        panelConstraints.fill      = GridBagConstraints.HORIZONTAL;
+        panelConstraints.weightx   = 1.0;
+        panelConstraints.anchor    = GridBagConstraints.NORTHWEST;
+        panelConstraints.insets    = constraints.insets;
+
+        GridBagLayout layout = new GridBagLayout();
+
+        String lastPanelName = null;
+        JPanel keepSubpanel  = null;
+        for (int index = 0; index < boilerplateClassSpecifications.length; index++)
+        {
+            ClassSpecification classSpecification =
+                boilerplateClassSpecifications[index];
+
+            // The panel structure is derived from the comments.
+            String comments = classSpecification.comments;
+            int dashIndex = comments.indexOf('-');
+            int periodIndex = comments.indexOf('.', dashIndex);
+            String panelName = comments.substring(0, dashIndex).trim();
+            String optionName = comments.substring(dashIndex + 1, periodIndex).trim();
+            if (!panelName.equals(lastPanelName))
+            {
+                // Create a new keep subpanel and add it.
+                keepSubpanel = new JPanel(layout);
+                String titleKey = "boilerplate_" + panelName.toLowerCase().replace(' ', '_');
+                addBorder(keepSubpanel, titleKey);
+                classSpecificationsPanel.add(keepSubpanel, panelConstraints);
+
+                lastPanelName = panelName;
+            }
+
+            // Add the check box to the subpanel.
+            String messageKey = "boilerplate_" + optionName.toLowerCase().replace(' ', '_');
+            boilerplateCheckBoxes[index] = new JCheckBox(msg(messageKey));
+            keepSubpanel.add(boilerplateCheckBoxes[index],
+                             boilerplateTextFields != null ?
+                                 constraints :
+                                 constraintsLastStretch);
+
+            if (boilerplateTextFields != null)
+            {
+                // Add the text field to the subpanel.
+                boilerplateTextFields[index] = new JTextField(40);
+                keepSubpanel.add(boilerplateTextFields[index], constraintsLastStretch);
+            }
         }
     }
 
@@ -641,25 +757,54 @@ public class ProGuardGUI extends JFrame
     private void setProGuardConfiguration(Configuration configuration)
     {
         // Set up the input and output jars and directories.
-        programPanel .setClassPath(configuration.inJars);
-        resourcePanel.setClassPath(configuration.resourceJars);
-        libraryPanel .setClassPath(configuration.libraryJars);
-        outPanel     .setClassPath(configuration.outJars);
+        programPanel.setClassPath(configuration.programJars);
+        libraryPanel.setClassPath(configuration.libraryJars);
 
         // Set up the boilerplate keep options.
-        for (int index = 0; index < boilerplateKeepClassFileOptions.length; index++)
+        for (int index = 0; index < boilerplateKeep.length; index++)
         {
             String classNames =
-                findKeepClassFileOptions(boilerplateKeepClassFileOptions[index],
-                                         configuration.keepClassFileOptions);
+                findMatchingClassSpecifications(boilerplateKeep[index],
+                                                configuration.keep);
 
             boilerplateKeepCheckBoxes[index].setSelected(classNames != null);
             boilerplateKeepTextFields[index].setText(classNames == null ? "*" : classNames);
         }
 
-        // Set up the special keep options. Note that the matched boilerplate
+        // Set up the additional keep options. Note that the matched boilerplate
         // options have been removed from the list.
-        specialKeepPanel.setKeepClassFileOptions(configuration.keepClassFileOptions);
+        additionalKeepPanel.setClassSpecifications(configuration.keep);
+
+
+        // Set up the boilerplate keep names options.
+        for (int index = 0; index < boilerplateKeepNames.length; index++)
+        {
+            String classNames =
+                findMatchingClassSpecifications(boilerplateKeepNames[index],
+                                                configuration.keepNames);
+
+            boilerplateKeepNamesCheckBoxes[index].setSelected(classNames != null);
+            boilerplateKeepNamesTextFields[index].setText(classNames == null ? "*" : classNames);
+        }
+
+        // Set up the additional keep options. Note that the matched boilerplate
+        // options have been removed from the list.
+        additionalKeepNamesPanel.setClassSpecifications(configuration.keepNames);
+
+
+        // Set up the boilerplate "no side effect methods" options.
+        for (int index = 0; index < boilerplateNoSideEffectMethods.length; index++)
+        {
+            boolean found =
+                findClassSpecification(boilerplateNoSideEffectMethods[index],
+                                       configuration.assumeNoSideEffects);
+
+            boilerplateNoSideEffectMethodCheckBoxes[index].setSelected(found);
+        }
+
+        // Set up the additional keep options. Note that the matched boilerplate
+        // options have been removed from the list.
+        additionalNoSideEffectsPanel.setClassSpecifications(configuration.assumeNoSideEffects);
 
         // Set up the other options.
         printSeedsCheckBox                 .setSelected(configuration.printSeeds   != null);
@@ -671,10 +816,12 @@ public class ProGuardGUI extends JFrame
         warnCheckBox                       .setSelected(configuration.warn);
         noteCheckBox                       .setSelected(configuration.note);
         shrinkCheckBox                     .setSelected(configuration.shrink);
+        optimizeCheckBox                   .setSelected(configuration.optimize);
         obfuscateCheckBox                  .setSelected(configuration.obfuscate);
         useMixedCaseClassNamesCheckBox     .setSelected(configuration.useMixedCaseClassNames);
         overloadAggressivelyCheckBox       .setSelected(configuration.overloadAggressively);
         defaultPackageCheckBox             .setSelected(configuration.defaultPackage != null);
+        allowAccessModificationCheckBox    .setSelected(configuration.allowAccessModification);
         keepAttributesCheckBox             .setSelected(configuration.keepAttributes != null);
         newSourceFileAttributeCheckBox     .setSelected(configuration.newSourceFileAttribute != null);
         skipNonPublicLibraryClassesCheckBox.setSelected(configuration.skipNonPublicLibraryClasses);
@@ -702,36 +849,87 @@ public class ProGuardGUI extends JFrame
         Configuration configuration = new Configuration();
 
         // Get the input and output jars and directories.
-        configuration.inJars       = programPanel .getClassPath();
-        configuration.resourceJars = resourcePanel.getClassPath();
-        configuration.libraryJars  = libraryPanel .getClassPath();
-        configuration.outJars      = outPanel     .getClassPath();
+        configuration.programJars = programPanel.getClassPath();
+        configuration.libraryJars = libraryPanel.getClassPath();
 
         // Collect the boilerplate keep options.
-        List keepClassFileOptions = new ArrayList();
+        List keep = new ArrayList();
 
-        for (int index = 0; index < boilerplateKeepClassFileOptions.length; index++)
+        for (int index = 0; index < boilerplateKeep.length; index++)
         {
             if (boilerplateKeepCheckBoxes[index].isSelected())
             {
-                addKeepClassFileOptions(keepClassFileOptions,
-                                        boilerplateKeepClassFileOptions[index],
-                                        boilerplateKeepTextFields[index].getText());
+                addClassSpecifications(keep,
+                                       boilerplateKeep[index],
+                                       boilerplateKeepTextFields[index].getText());
             }
         }
 
-        // Collect the special keep options.
-        List specialKeepClassFileOptions = specialKeepPanel.getKeepClassFileOptions();
-        if (specialKeepClassFileOptions != null)
+        // Collect the additional keep options.
+        List additionalKeep = additionalKeepPanel.getClassSpecifications();
+        if (additionalKeep != null)
         {
-            keepClassFileOptions.addAll(specialKeepClassFileOptions);
+            keep.addAll(additionalKeep);
         }
 
         // Put the list of keep options in the configuration.
-        if (keepClassFileOptions.size() > 0)
+        if (keep.size() > 0)
         {
-            configuration.keepClassFileOptions = keepClassFileOptions;
+            configuration.keep = keep;
         }
+
+
+        // Collect the boilerplate keep names options.
+        List keepNames = new ArrayList();
+
+        for (int index = 0; index < boilerplateKeepNames.length; index++)
+        {
+            if (boilerplateKeepNamesCheckBoxes[index].isSelected())
+            {
+                addClassSpecifications(keepNames,
+                                       boilerplateKeepNames[index],
+                                       boilerplateKeepNamesTextFields[index].getText());
+            }
+        }
+
+        // Collect the additional keep names options.
+        List additionalKeepNames = additionalKeepNamesPanel.getClassSpecifications();
+        if (additionalKeepNames != null)
+        {
+            keepNames.addAll(additionalKeepNames);
+        }
+
+        // Put the list of keep names options in the configuration.
+        if (keepNames.size() > 0)
+        {
+            configuration.keepNames = keepNames;
+        }
+
+
+        // Collect the boilerplate "no side effect methods" options.
+        List noSideEffectMethods = new ArrayList();
+
+        for (int index = 0; index < boilerplateNoSideEffectMethods.length; index++)
+        {
+            if (boilerplateNoSideEffectMethodCheckBoxes[index].isSelected())
+            {
+                noSideEffectMethods.add(boilerplateNoSideEffectMethods[index]);
+            }
+        }
+
+        // Collect the additional "no side effect methods" options.
+        List additionalNoSideEffectOptions = additionalNoSideEffectsPanel.getClassSpecifications();
+        if (additionalNoSideEffectOptions != null)
+        {
+            noSideEffectMethods.addAll(additionalNoSideEffectOptions);
+        }
+
+        // Put the list of "no side effect methods" options in the configuration.
+        if (noSideEffectMethods.size() > 0)
+        {
+            configuration.assumeNoSideEffects = noSideEffectMethods;
+        }
+
 
         // Get the other options.
         configuration.printSeeds                  = printSeedsCheckBox                 .isSelected() ? printSeedsTextField                                .getText() : null;
@@ -743,10 +941,12 @@ public class ProGuardGUI extends JFrame
         configuration.warn                        = warnCheckBox                       .isSelected();
         configuration.note                        = noteCheckBox                       .isSelected();
         configuration.shrink                      = shrinkCheckBox                     .isSelected();
+        configuration.optimize                    = optimizeCheckBox                   .isSelected();
         configuration.obfuscate                   = obfuscateCheckBox                  .isSelected();
         configuration.useMixedCaseClassNames      = useMixedCaseClassNamesCheckBox     .isSelected();
         configuration.overloadAggressively        = overloadAggressivelyCheckBox       .isSelected();
         configuration.defaultPackage              = defaultPackageCheckBox             .isSelected() ? defaultPackageTextField                            .getText()  : null;
+        configuration.allowAccessModification     = allowAccessModificationCheckBox    .isSelected();
         configuration.keepAttributes              = keepAttributesCheckBox             .isSelected() ? ListUtil.commaSeparatedList(keepAttributesTextField.getText()) : null;
         configuration.newSourceFileAttribute      = newSourceFileAttributeCheckBox     .isSelected() ? newSourceFileAttributeTextField                    .getText()  : null;
         configuration.skipNonPublicLibraryClasses = skipNonPublicLibraryClassesCheckBox.isSelected();
@@ -756,27 +956,55 @@ public class ProGuardGUI extends JFrame
 
 
     /**
+     * Looks in the given list for a ProGuard option that is identical to the
+     * given template. Returns true if it found, and removes the matching option
+     * as a side effect.
+     */
+    private boolean findClassSpecification(ClassSpecification classSpecificationTemplate,
+                                           List                classSpecifications)
+    {
+        if (classSpecifications == null)
+        {
+            return false;
+        }
+
+        for (int index = 0; index < classSpecifications.size(); index++)
+        {
+            if (classSpecificationTemplate.equals(classSpecifications.get(index)))
+            {
+                // Remove the matching option as a side effect.
+                classSpecifications.remove(index);
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+
+    /**
      * Looks in the given list for ProGuard options that match the given template.
-     * Returns a comma-separated string of class file names from matching options
+     * Returns a comma-separated string of class file names from matching options,
      * and removes the matching options as a side effect.
      */
-    private String findKeepClassFileOptions(KeepClassFileOption keepClassFileOptionTemplate,
-                                            List                keepClassFileOptions)
+    private String findMatchingClassSpecifications(ClassSpecification classSpecificationTemplate,
+                                                   List                classSpecifications)
     {
-        if (keepClassFileOptions == null)
+        if (classSpecifications == null)
         {
             return null;
         }
 
         StringBuffer buffer = null;
 
-        for (int index = 0; index < keepClassFileOptions.size(); index++)
+        for (int index = 0; index < classSpecifications.size(); index++)
         {
-            KeepClassFileOption listedKeepClassFileOption =
-                (KeepClassFileOption)keepClassFileOptions.get(index);
-            String className = listedKeepClassFileOption.className;
-            keepClassFileOptionTemplate.className = className;
-            if (keepClassFileOptionTemplate.equals(listedKeepClassFileOption))
+            ClassSpecification listedClassSpecification =
+                (ClassSpecification)classSpecifications.get(index);
+            String className = listedClassSpecification.className;
+            classSpecificationTemplate.className = className;
+            if (classSpecificationTemplate.equals(listedClassSpecification))
             {
                 if (buffer == null)
                 {
@@ -789,7 +1017,7 @@ public class ProGuardGUI extends JFrame
                 buffer.append(className == null ? "*" : ClassUtil.externalClassName(className));
 
                 // Remove the matching option as a side effect.
-                keepClassFileOptions.remove(index--);
+                classSpecifications.remove(index--);
             }
         }
 
@@ -801,29 +1029,29 @@ public class ProGuardGUI extends JFrame
      * Adds ProGuard options to the given list, based on the given option
      * template and the comma-separated list of class names to be filled in.
      */
-    private void addKeepClassFileOptions(List                keepClassFileOptions,
-                                         KeepClassFileOption keepClassFileOptionTemplate,
-                                         String              classNames)
+    private void addClassSpecifications(List               classSpecifications,
+                                        ClassSpecification classSpecificationTemplate,
+                                        String             classNamesString)
     {
-        List keepClassFileStrings = ListUtil.commaSeparatedList(classNames);
+        List classNames = ListUtil.commaSeparatedList(classNamesString);
 
-        for (int index = 0; index < keepClassFileStrings.size(); index++)
+        for (int index = 0; index < classNames.size(); index++)
         {
-            String keepClassFileString = (String)keepClassFileStrings.get(index);
+            String className = (String)classNames.get(index);
 
             // Create a copy of the template.
-            KeepClassFileOption keepClassFileOption =
-                (KeepClassFileOption)keepClassFileOptionTemplate.clone();
+            ClassSpecification classSpecification =
+                (ClassSpecification)classSpecificationTemplate.clone();
 
             // Set the class name in the copy.
-            keepClassFileOption.className =
-                keepClassFileString.equals("") ||
-                keepClassFileString.equals("*") ?
+            classSpecification.className =
+                className.equals("") ||
+                className.equals("*") ?
                     null :
-                    ClassUtil.internalClassName(keepClassFileString);
+                    ClassUtil.internalClassName(className);
 
             // Add the copy to the list.
-            keepClassFileOptions.add(keepClassFileOption);
+            classSpecifications.add(classSpecification);
         }
     }
 
@@ -1017,13 +1245,8 @@ public class ProGuardGUI extends JFrame
                 {
                 }
 
-                try
-                {
-                    outputStream.flush();
-                }
-                catch (IOException ex)
-                {
-                }
+                // Scroll to the top of the configuration.
+                consoleTextArea.setCaretPosition(0);
             }
         }
     }

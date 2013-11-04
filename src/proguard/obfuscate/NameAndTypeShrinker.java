@@ -1,6 +1,6 @@
-/* $Id: NameAndTypeShrinker.java,v 1.13 2003/12/06 22:15:38 eric Exp $
+/* $Id: NameAndTypeShrinker.java,v 1.21 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -221,7 +221,7 @@ public class NameAndTypeShrinker
     }
 
 
-    public void visitConstantValueAttrInfo(ClassFile classFile, ConstantValueAttrInfo constantValueAttrInfo)
+    public void visitConstantValueAttrInfo(ClassFile classFile, FieldInfo fieldInfo, ConstantValueAttrInfo constantValueAttrInfo)
     {
         constantValueAttrInfo.u2attrNameIndex =
             remapCpIndex(constantValueAttrInfo.u2attrNameIndex);
@@ -230,7 +230,7 @@ public class NameAndTypeShrinker
     }
 
 
-    public void visitExceptionsAttrInfo(ClassFile classFile, ExceptionsAttrInfo exceptionsAttrInfo)
+    public void visitExceptionsAttrInfo(ClassFile classFile, MethodInfo methodInfo, ExceptionsAttrInfo exceptionsAttrInfo)
     {
         exceptionsAttrInfo.u2attrNameIndex =
             remapCpIndex(exceptionsAttrInfo.u2attrNameIndex);
@@ -241,33 +241,33 @@ public class NameAndTypeShrinker
     }
 
 
-    public void visitCodeAttrInfo(ClassFile classFile, CodeAttrInfo codeAttrInfo)
+    public void visitCodeAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo)
     {
         codeAttrInfo.u2attrNameIndex =
             remapCpIndex(codeAttrInfo.u2attrNameIndex);
 
         // Remap the constant pool references of the instructions, exceptions,
         // and attributes.
-        codeAttrInfo.instructionsAccept(classFile, this);
-        codeAttrInfo.exceptionsAccept(classFile, this);
-        codeAttrInfo.attributesAccept(classFile, this);
+        codeAttrInfo.instructionsAccept(classFile, methodInfo, this);
+        codeAttrInfo.exceptionsAccept(classFile, methodInfo, this);
+        codeAttrInfo.attributesAccept(classFile, methodInfo, this);
     }
 
 
-    public void visitLineNumberTableAttrInfo(ClassFile classFile, LineNumberTableAttrInfo lineNumberTableAttrInfo)
+    public void visitLineNumberTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LineNumberTableAttrInfo lineNumberTableAttrInfo)
     {
         lineNumberTableAttrInfo.u2attrNameIndex =
             remapCpIndex(lineNumberTableAttrInfo.u2attrNameIndex);
     }
 
 
-    public void visitLocalVariableTableAttrInfo(ClassFile classFile, LocalVariableTableAttrInfo localVariableTableAttrInfo)
+    public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo)
     {
         localVariableTableAttrInfo.u2attrNameIndex =
             remapCpIndex(localVariableTableAttrInfo.u2attrNameIndex);
 
         // Remap the constant pool references of local variables.
-        localVariableTableAttrInfo.localVariablesAccept(classFile, this);
+        localVariableTableAttrInfo.localVariablesAccept(classFile, methodInfo, codeAttrInfo, this);
     }
 
 
@@ -314,15 +314,17 @@ public class NameAndTypeShrinker
 
     // Implementations for InstructionVisitor.
 
-    public void visitInstruction(ClassFile classFile, Instruction instruction)
-    {
-        // Nothing to do.
-    }
+    public void visitSimpleInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, SimpleInstruction simpleInstruction) {}
+    public void visitVariableInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, VariableInstruction variableInstruction) {}
+    public void visitBranchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, BranchInstruction branchInstruction) {}
+    public void visitTableSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, TableSwitchInstruction tableSwitchInstruction) {}
+    public void visitLookUpSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, LookUpSwitchInstruction lookUpSwitchInstruction) {}
 
 
-    public void visitCpInstruction(ClassFile classFile, CpInstruction cpInstruction)
+    public void visitCpInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, CpInstruction cpInstruction)
     {
-        cpInstruction.setCpIndex(remapCpIndex(cpInstruction.getCpIndex()));
+        cpInstruction.cpIndex = remapCpIndex(cpInstruction.cpIndex);
+        cpInstruction.write(codeAttrInfo, offset);
     }
 
 
@@ -352,7 +354,7 @@ public class NameAndTypeShrinker
 
     // Implementations for ExceptionInfoVisitor.
 
-    public void visitExceptionInfo(ClassFile classFile, ExceptionInfo exceptionInfo)
+    public void visitExceptionInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, ExceptionInfo exceptionInfo)
     {
         if (exceptionInfo.u2catchType != 0)
         {
@@ -364,7 +366,7 @@ public class NameAndTypeShrinker
 
     // Implementations for LocalVariableInfoVisitor.
 
-    public void visitLocalVariableInfo(ClassFile classFile, LocalVariableInfo localVariableInfo)
+    public void visitLocalVariableInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableInfo localVariableInfo)
     {
         localVariableInfo.u2nameIndex =
             remapCpIndex(localVariableInfo.u2nameIndex);
@@ -380,7 +382,7 @@ public class NameAndTypeShrinker
      * from the given constant pool.
      * @return the new number of entries.
      */
-    private int shrinkConstantPool(CpInfo[] contantPool, int length)
+    private int shrinkConstantPool(CpInfo[] constantPool, int length)
     {
         if (cpIndexMap == null ||
             cpIndexMap.length < length)
@@ -388,35 +390,33 @@ public class NameAndTypeShrinker
             cpIndexMap = new int[length];
         }
 
-        int     counter        = 0;
-        boolean isPreviousUsed = true;
+        int     counter = 1;
+        boolean isUsed  = false;
 
         // Shift the used constant pool entries together.
-        for (int index = 0; index < length; index++)
+        for (int index = 1; index < length; index++)
         {
             cpIndexMap[index] = counter;
 
-            CpInfo cpInfo = contantPool[index];
+            CpInfo cpInfo = constantPool[index];
 
-            // Check whether it is the second part of a used entry,
-            // or a used entry on its own.
-            if ((cpInfo == null && isPreviousUsed) ||
-                !(cpInfo instanceof NameAndTypeCpInfo) ||
-                NameAndTypeUsageMarker.isUsed(cpInfo))
+            // Don't update the flag if this is the second half of a long entry.
+            if (cpInfo != null)
             {
-                contantPool[counter++] = cpInfo;
-                isPreviousUsed = true;
+                isUsed = cpInfo.getTag() != ClassConstants.CONSTANT_NameAndType ||
+                         NameAndTypeUsageMarker.isUsed(cpInfo);
             }
-            else
+
+            if (isUsed)
             {
-                isPreviousUsed = false;
+                constantPool[counter++] = cpInfo;
             }
         }
 
         // Clear the remaining constant pool elements.
         for (int index = counter; index < length; index++)
         {
-            contantPool[index] = null;
+            constantPool[index] = null;
         }
 
         return counter;

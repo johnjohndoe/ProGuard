@@ -1,6 +1,6 @@
-/* $Id: RefCpInfo.java,v 1.14 2003/12/06 22:15:38 eric Exp $
+/* $Id: RefCpInfo.java,v 1.19 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
@@ -37,20 +37,18 @@ public abstract class RefCpInfo extends CpInfo
     public int u2nameAndTypeIndex;
 
     /**
-     * An extra field pointing to the referenced ProgramClassFile object.
-     * This field is filled out by the <code>{@link
-     * proguard.classfile.util.ClassFileInitializer ClassFileInitializer}</code>.
-     * References to library classes are left blank (<code>null</code>).
+     * An extra field pointing to the referenced ClassFile object.
+     * This field is typically filled out by the <code>{@link
+     * proguard.classfile.util.ClassFileReferenceInitializer ClassFileReferenceInitializer}</code>.
      */
-    public ProgramClassFile referencedClassFile;
+    public ClassFile referencedClassFile;
 
     /**
-     * An extra field optionally pointing to the referenced ProgramMemberInfo object.
-     * This field is filled out by the <code>{@link
-     * proguard.classfile.util.ClassFileInitializer ClassFileInitializer}</code>.
-     * References to library class members are left blank (<code>null</code>).
+     * An extra field optionally pointing to the referenced MemberInfo object.
+     * This field is typically filled out by the <code>{@link
+     * proguard.classfile.util.ClassFileReferenceInitializer ClassFileReferenceInitializer}</code>.
      */
-    public ProgramMemberInfo referencedMemberInfo;
+    public MemberInfo referencedMemberInfo;
 
 
     protected RefCpInfo()

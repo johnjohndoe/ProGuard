@@ -1,6 +1,6 @@
-/* $Id: LongCpInfo.java,v 1.12 2003/12/06 22:15:38 eric Exp $
+/* $Id: LongCpInfo.java,v 1.15 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
@@ -37,8 +37,36 @@ public class LongCpInfo extends CpInfo
     public int u4lowBytes;
 
 
+    /**
+     * Creates a new LongCpInfo with the given long value.
+     */
+    public LongCpInfo(long value)
+    {
+        setValue(value);
+    }
+
+
     protected LongCpInfo()
     {
+    }
+
+
+    /**
+     * Returns the long value of this LongCpInfo.
+     */
+    public long getValue()
+    {
+        return (long)u4highBytes << 32 | (long)u4lowBytes;
+    }
+
+
+    /**
+     * Sets the long value of this LongCpInfo.
+     */
+    public void setValue(long value)
+    {
+        u4highBytes = (int)(value >> 32);
+        u4lowBytes  = (int) value;
     }
 
 

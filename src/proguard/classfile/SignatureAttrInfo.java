@@ -1,6 +1,6 @@
-/* $Id: SignatureAttrInfo.java,v 1.11 2003/12/06 22:15:38 eric Exp $
+/* $Id: SignatureAttrInfo.java,v 1.2 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)

@@ -32,7 +32,7 @@ compiling the source code yourself:
 
     mkdir classes
     javac -sourcepath src -d classes src/proguard/ProGuard.java
-    javac -sourcepath src -d classes src/proguard/ReTrace.java
+    javac -sourcepath src -d classes src/proguard/retrace/ReTrace.java
     javac -sourcepath src -d classes src/proguard/gui/ProGuardGUI.java
 
 If you want to compile the ProGuard Ant task as well:
@@ -48,5 +48,7 @@ If you want to compile the J2ME WTK obfuscator plug-in:
 Note that you'll have to install Ant and the J2ME WTK yourself.
 
 Enjoy!
+
+http://proguard.sourceforge.net/
 
 Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)

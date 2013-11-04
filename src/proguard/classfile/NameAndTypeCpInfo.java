@@ -1,6 +1,6 @@
-/* $Id: NameAndTypeCpInfo.java,v 1.13 2003/12/06 22:15:38 eric Exp $
+/* $Id: NameAndTypeCpInfo.java,v 1.18 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
@@ -39,9 +39,8 @@ public class NameAndTypeCpInfo extends CpInfo implements Cloneable
     /**
      * An extra field pointing to the ClassFile objects referenced in the
      * descriptor string. This field is filled out by the <code>{@link
-     * proguard.classfile.util.ClassFileInitializer ClassFileInitializer}</code>.
+     * proguard.classfile.util.ClassFileReferenceInitializer ClassFileReferenceInitializer}</code>.
      * References to primitive types are ignored.
-     * References to library classes are left blank (<code>null</code>).
      */
     public ClassFile[] referencedClassFiles;
 
@@ -52,14 +51,17 @@ public class NameAndTypeCpInfo extends CpInfo implements Cloneable
 
 
     /**
-     * Constructor used when appending fresh NameAndTypeCpInfo entries to the constant pool.
+     * Creates a new NameAndTypeCpInfo with the given name and type indices.
+     * @param u2nameIndex          the index of the name in the constant pool.
+     * @param u2descriptorIndex    the index of the descriptor in the constant
+     *                             pool.
+     * @param referencedClassFiles the list of class files referenced in the
+     *                             descriptor string.
      */
     public NameAndTypeCpInfo(int         u2nameIndex,
                              int         u2descriptorIndex,
                              ClassFile[] referencedClassFiles)
     {
-        this();
-
         this.u2nameIndex          = u2nameIndex;
         this.u2descriptorIndex    = u2descriptorIndex;
         this.referencedClassFiles = referencedClassFiles;

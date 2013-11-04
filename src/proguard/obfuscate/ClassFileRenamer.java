@@ -1,6 +1,6 @@
-/* $Id: ClassFileRenamer.java,v 1.25 2003/12/06 22:15:38 eric Exp $
+/* $Id: ClassFileRenamer.java,v 1.31 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -41,12 +41,10 @@ public class ClassFileRenamer
              CpInfoVisitor,
              AttrInfoVisitor
 {
+    private MyNameAndTypeTypeRenamer nameAndTypeRenamer = new MyNameAndTypeTypeRenamer();
+
     private boolean openUpPackages;
     private String  newSourceFileAttribute;
-
-
-    private DescriptorClassEnumeration descriptorClassEnumeration =
-        new DescriptorClassEnumeration();
 
 
     /**
@@ -74,7 +72,7 @@ public class ClassFileRenamer
         programClassFile.methodsAccept(this);
 
         // Rename NameAndTypeCpInfo type references in the constant pool.
-        programClassFile.constantPoolEntriesAccept(new MyNameAndTypeTypeRenamer());
+        programClassFile.constantPoolEntriesAccept(nameAndTypeRenamer);
 
         // Rename class references and class member references in the constant pool.
         programClassFile.constantPoolEntriesAccept(this);
@@ -237,7 +235,7 @@ public class ClassFileRenamer
     {
         // The new class member name to be set in this entry's NameAndTypeCpInfo
         // can be retrieved from the referenced class member.
-        ProgramMemberInfo referencedMemberInfo = refCpInfo.referencedMemberInfo;
+        MemberInfo referencedMemberInfo = refCpInfo.referencedMemberInfo;
         if (referencedMemberInfo != null)
         {
             String newMemberName =
@@ -258,11 +256,11 @@ public class ClassFileRenamer
 
     public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo) {}
     public void visitInnerClassesAttrInfo(ClassFile classFile, InnerClassesAttrInfo innerClassesAttrInfo) {}
-    public void visitConstantValueAttrInfo(ClassFile classFile, ConstantValueAttrInfo constantValueAttrInfo) {}
-    public void visitExceptionsAttrInfo(ClassFile classFile, ExceptionsAttrInfo exceptionsAttrInfo) {}
-    public void visitCodeAttrInfo(ClassFile classFile, CodeAttrInfo codeAttrInfo) {}
-    public void visitLineNumberTableAttrInfo(ClassFile classFile, LineNumberTableAttrInfo lineNumberTableAttrInfo) {}
-    public void visitLocalVariableTableAttrInfo(ClassFile classFile, LocalVariableTableAttrInfo localVariableTableAttrInfo) {}
+    public void visitConstantValueAttrInfo(ClassFile classFile, FieldInfo fieldInfo, ConstantValueAttrInfo constantValueAttrInfo) {}
+    public void visitExceptionsAttrInfo(ClassFile classFile, MethodInfo methodInfo, ExceptionsAttrInfo exceptionsAttrInfo) {}
+    public void visitCodeAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo) {}
+    public void visitLineNumberTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LineNumberTableAttrInfo lineNumberTableAttrInfo) {}
+    public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo) {}
     public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo) {}
     public void visitSyntheticAttrInfo(ClassFile classFile, SyntheticAttrInfo syntheticAttrInfo) {}
     public void visitSignatureAttrInfo(ClassFile classFile, SignatureAttrInfo signatureAttrInfo) {}
@@ -285,9 +283,9 @@ public class ClassFileRenamer
     // Small utility methods.
 
     /**
-     * Finds and existing NameAndTypeCpInfo class pool entry, or creates a new one,
-     * for the given name and type.
-     * @return the constant pool index of the Utf8CpInfo.
+     * Finds or creates a NameAndTypeCpInfo constant pool entry with the given
+     * name and type, in the given class file.
+     * @return the constant pool index of the NameAndTypeCpInfo.
      */
     private int createNameAndTypeCpInfo(ProgramClassFile programClassFile,
                                         String           name,
@@ -305,7 +303,8 @@ public class ClassFileRenamer
         {
             CpInfo cpInfo = constantPool[index];
 
-            if (cpInfo != null && cpInfo instanceof NameAndTypeCpInfo)
+            if (cpInfo != null &&
+                cpInfo.getTag() == ClassConstants.CONSTANT_NameAndType)
             {
                 NameAndTypeCpInfo nameAndTypeCpInfo = (NameAndTypeCpInfo)cpInfo;
                 if (nameAndTypeCpInfo.getType(programClassFile).equals(type))
@@ -330,8 +329,8 @@ public class ClassFileRenamer
 
 
     /**
-     * Finds and existing Utf8CpInfo class pool entry, or creates a new one,
-     * for the given string.
+     * Finds or creates an Utf8CpInfo constant pool entry for the given string,
+     * in the given class file.
      * @return the constant pool index of the Utf8CpInfo.
      */
     private int createUtf8CpInfo(ProgramClassFile programClassFile, String string)
@@ -344,7 +343,8 @@ public class ClassFileRenamer
         {
             CpInfo cpInfo = constantPool[index];
 
-            if (cpInfo != null && cpInfo instanceof Utf8CpInfo)
+            if (cpInfo != null &&
+                cpInfo.getTag() == ClassConstants.CONSTANT_Utf8)
             {
                 Utf8CpInfo utf8CpInfo = (Utf8CpInfo)cpInfo;
                 if (utf8CpInfo.getString().equals(string))
@@ -392,14 +392,15 @@ public class ClassFileRenamer
     private String newDescriptor(String      descriptor,
                                  ClassFile[] referencedClassFiles)
     {
+        // If there are no referenced classes, the descriptor doesn't change.
         if (referencedClassFiles == null)
         {
-            // There are no referenced program classes, so the descriptor
-            // doesn't change.
             return null;
         }
 
-        descriptorClassEnumeration.setDescriptor(descriptor);
+        // Unravel and reconstruct the class elements of the descriptor.
+        DescriptorClassEnumeration descriptorClassEnumeration =
+            new DescriptorClassEnumeration(descriptor);
 
         String newDescriptor = descriptorClassEnumeration.nextFluff();
 
@@ -409,18 +410,27 @@ public class ClassFileRenamer
             String className = descriptorClassEnumeration.nextClassName();
             String fluff     = descriptorClassEnumeration.nextFluff();
 
-            ClassFile referencedClassFile = referencedClassFiles[index++];
+            String newClassName = newClassName(className,
+                                               referencedClassFiles[index++]);
 
             // Fall back on the original class name if there is no new name.
-            String newClassName = referencedClassFile != null ?
-                ClassFileObfuscator.newClassName(referencedClassFile) :
-                className;
+            if (newClassName == null)
+            {
+                newClassName = className;
+            }
 
             newDescriptor = newDescriptor + newClassName + fluff;
         }
 
+        // If the descriptor hasn't changed after all, just return null.
+        if (descriptor.equals(newDescriptor))
+        {
+            return null;
+        }
+
         return newDescriptor;
     }
+
 
     /**
      * Returns the new class name based on the given class name and the new
@@ -430,15 +440,20 @@ public class ClassFileRenamer
     private String newClassName(String    className,
                                 ClassFile referencedClassFile)
     {
+        // If there is no referenced class, the descriptor doesn't change.
         if (referencedClassFile == null)
         {
-            // There is no referenced program class, so the descriptor doesn't
-            // change.
             return null;
         }
 
         String newClassName =
             ClassFileObfuscator.newClassName(referencedClassFile);
+
+        // If there is no new class name, the descriptor doesn't change.
+        if (newClassName == null)
+        {
+            return null;
+        }
 
         // Is it an array type?
         if (className.charAt(0) == ClassConstants.INTERNAL_TYPE_ARRAY)
@@ -456,13 +471,11 @@ public class ClassFileRenamer
 
     /**
      * Returns whether the given access flags specify a package visible class
-     * or class member (including protected access).
+     * or class member (including public or protected access).
      */
     private boolean isPackageVisible(int accessFlags)
     {
-        return (accessFlags &
-                (ClassConstants.INTERNAL_ACC_PUBLIC |
-                 ClassConstants.INTERNAL_ACC_PRIVATE)) == 0;
+        return AccessUtil.accessLevel(accessFlags) >= AccessUtil.PACKAGE_VISIBLE;
     }
 
 
@@ -472,9 +485,7 @@ public class ClassFileRenamer
      */
     private int makePublic(int accessFlags)
     {
-        return (accessFlags &
-                ~(ClassConstants.INTERNAL_ACC_PROTECTED |
-                  ClassConstants.INTERNAL_ACC_PRIVATE)) |
-               ClassConstants.INTERNAL_ACC_PUBLIC;
+        return AccessUtil.replaceAccessFlags(accessFlags,
+                                             ClassConstants.INTERNAL_ACC_PUBLIC);
     }
 }

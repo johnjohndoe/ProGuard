@@ -1,6 +1,6 @@
-/* $Id: ProGuardObfuscator.java,v 1.8 2003/12/06 22:15:38 eric Exp $
+/* $Id: ProGuardObfuscator.java,v 1.12 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -47,6 +47,9 @@ import java.util.*;
  */
 public class ProGuardObfuscator implements Obfuscator
 {
+    private static final String DEFAULT_CONFIGURATION = "default.pro";
+
+
     // Implementations for Obfuscator.
 
     public void createScriptFile(File jadFile,
@@ -66,41 +69,37 @@ public class ProGuardObfuscator implements Obfuscator
                     String emptyAPI)
     throws IOException
     {
-        // Create the ProGuard options.
-        Configuration configuration = new Configuration();
+        try
+        {
+            // Create the ProGuard configuration.
+            Configuration configuration = new Configuration();
 
-        configuration.libraryJars  = classPath(classPath);
-        configuration.inJars       = classPath(jarFileName);
-        configuration.resourceJars = classPath(projectDirName + File.separator + "res");
-        configuration.outJars      = classPath(obfuscatedJarFile.getPath());
+            // Parse the default configuration file.
+            ConfigurationParser parser = new ConfigurationParser(this.getClass().getResource(DEFAULT_CONFIGURATION));
+            parser.parse(configuration);
 
-        // We want to keep all public MIDlets:
-        // "-keep public class * extends javax.microedition.midlet.MIDlet".
-        configuration.keepClassFileOptions = new ArrayList(1);
-        configuration.keepClassFileOptions.add(
-            new KeepClassFileOption(ClassConstants.INTERNAL_ACC_PUBLIC,
-                                    0,
-                                    null,
-                                    "javax/microedition/midlet/MIDlet",
-                                    null,
-                                    true,
-                                    false,
-                                    false));
+            // Fill out the library class path.
+            configuration.libraryJars = classPath(classPath);
 
-        // The preverify tool seems to unpack the resulting class files,
-        // so we must not use mixed-case class names on Windows.
-        configuration.useMixedCaseClassNames =
-            !System.getProperty("os.name").regionMatches(true, 0, "windows", 0, 7);
+            // Fill out the program class path (input and output).
+            configuration.programJars = new ClassPath();
+            configuration.programJars.add(new ClassPathEntry(jarFileName, false));
+            configuration.programJars.add(new ClassPathEntry(obfuscatedJarFile.getPath(), true));
 
-        // We'll overload names with different return types.
-        configuration.overloadAggressively = true;
+            // The preverify tool seems to unpack the resulting class files,
+            // so we must not use mixed-case class names on Windows.
+            configuration.useMixedCaseClassNames =
+                !System.getProperty("os.name").regionMatches(true, 0, "windows", 0, 7);
 
-        // We'll move all classes to the root package.
-        configuration.defaultPackage = "";
+            // Run ProGuard with these options.
+            ProGuard proGuard = new ProGuard(configuration);
+            proGuard.execute();
 
-        // Run ProGuard with these options.
-        ProGuard proGuard = new ProGuard(configuration);
-        proGuard.execute();
+        }
+        catch (ParseException ex)
+        {
+            throw new IOException(ex.getMessage());
+        }
     }
 
 
@@ -125,7 +124,8 @@ public class ProGuardObfuscator implements Obfuscator
 
             // Create and add the found class path entry.
             ClassPathEntry classPathEntry =
-                new ClassPathEntry(classPathString.substring(index, next_index));
+                new ClassPathEntry(classPathString.substring(index, next_index),
+                                   false);
 
             classPath.add(classPathEntry);
 

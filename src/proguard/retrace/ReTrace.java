@@ -1,6 +1,6 @@
-/* $Id: ReTrace.java,v 1.3 2003/12/06 22:12:42 eric Exp $
+/* $Id: ReTrace.java,v 1.7 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -34,7 +34,7 @@ import proguard.obfuscate.MappingReader;
 public class ReTrace
 {
     private static final String VERBOSE_OPTION = "-verbose";
-    private static final String SPACES         = "                                                                ";
+
 
     // The class settings.
     private boolean verbose;

@@ -1,6 +1,6 @@
-/* $Id: UsageMarker.java,v 1.23 2003/12/06 22:15:38 eric Exp $
+/* $Id: UsageMarker.java,v 1.29 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -75,9 +75,8 @@ public class UsageMarker
             }
 
             // Give the interfaces preliminary marks.
-            programClassFile.accept(
-                new ClassFileUpDownTraveler(false, false, true, false,
-                                            interfaceUsageMarker));
+            programClassFile.hierarchyAccept(false, false, true, false,
+                                             interfaceUsageMarker);
 
             // Note that the <clinit> method and the parameterless <init> method
             // are 'overridden' from the ones in java.lang.Object, and therefore
@@ -243,14 +242,14 @@ public class UsageMarker
                 (libraryMethodInfo.getAccessFlags() &
                  ClassConstants.INTERNAL_ACC_ABSTRACT) != 0 ?
 
-                (ClassFileVisitor)
-                new ConcreteClassFileDownTraveler(
-                new ClassFileUpDownTraveler(true, true, false, true,
-                new NamedMethodVisitor(this, name, type))) :
+                    (ClassFileVisitor)
+                    new ConcreteClassFileDownTraveler(
+                    new ClassFileHierarchyTraveler(true, true, false, true,
+                    new NamedMethodVisitor(this, name, type))) :
 
-                (ClassFileVisitor)
-                new ClassFileUpDownTraveler(false, false, false, true,
-                new NamedMethodVisitor(this, name, type)));
+                    (ClassFileVisitor)
+                    new ClassFileHierarchyTraveler(false, false, false, true,
+                    new NamedMethodVisitor(this, name, type)));
         }
     }
 
@@ -369,7 +368,7 @@ public class UsageMarker
             // higher up its class hierarchy.
             interfaceMethodrefCpInfo.referencedClassAccept(
                 new ConcreteClassFileDownTraveler(
-                new ClassFileUpDownTraveler(true, true, false, true,
+                new ClassFileHierarchyTraveler(true, true, false, true,
                 new NamedMethodVisitor(this, name, type))));
         }
     }
@@ -399,7 +398,7 @@ public class UsageMarker
             // Mark all overriding implementations of the method,
             // down the class hierarchy.
             methodrefCpInfo.referencedClassAccept(
-                new ClassFileUpDownTraveler(false, false, false, true,
+                new ClassFileHierarchyTraveler(false, false, false, true,
                 new NamedMethodVisitor(this, name, type)));
         }
     }
@@ -458,7 +457,7 @@ public class UsageMarker
     }
 
 
-    public void visitConstantValueAttrInfo(ClassFile classFile, ConstantValueAttrInfo constantValueAttrInfo)
+    public void visitConstantValueAttrInfo(ClassFile classFile, FieldInfo fieldInfo, ConstantValueAttrInfo constantValueAttrInfo)
     {
         markAsUsed(constantValueAttrInfo);
 
@@ -467,7 +466,7 @@ public class UsageMarker
     }
 
 
-    public void visitExceptionsAttrInfo(ClassFile classFile, ExceptionsAttrInfo exceptionsAttrInfo)
+    public void visitExceptionsAttrInfo(ClassFile classFile, MethodInfo methodInfo, ExceptionsAttrInfo exceptionsAttrInfo)
     {
         markAsUsed(exceptionsAttrInfo);
 
@@ -477,19 +476,19 @@ public class UsageMarker
     }
 
 
-    public void visitCodeAttrInfo(ClassFile classFile, CodeAttrInfo codeAttrInfo)
+    public void visitCodeAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo)
     {
         markAsUsed(codeAttrInfo);
 
         markCpEntry(classFile, codeAttrInfo.u2attrNameIndex);
 
-        codeAttrInfo.instructionsAccept(classFile, this);
-        codeAttrInfo.exceptionsAccept(classFile, this);
-        codeAttrInfo.attributesAccept(classFile, this);
+        codeAttrInfo.instructionsAccept(classFile, methodInfo, this);
+        codeAttrInfo.exceptionsAccept(classFile, methodInfo, this);
+        codeAttrInfo.attributesAccept(classFile, methodInfo, this);
     }
 
 
-    public void visitLineNumberTableAttrInfo(ClassFile classFile, LineNumberTableAttrInfo lineNumberTableAttrInfo)
+    public void visitLineNumberTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LineNumberTableAttrInfo lineNumberTableAttrInfo)
     {
         markAsUsed(lineNumberTableAttrInfo);
 
@@ -497,13 +496,13 @@ public class UsageMarker
     }
 
 
-    public void visitLocalVariableTableAttrInfo(ClassFile classFile, LocalVariableTableAttrInfo localVariableTableAttrInfo)
+    public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo)
     {
         markAsUsed(localVariableTableAttrInfo);
 
         markCpEntry(classFile, localVariableTableAttrInfo.u2attrNameIndex);
 
-        localVariableTableAttrInfo.localVariablesAccept(classFile, this);
+        localVariableTableAttrInfo.localVariablesAccept(classFile, methodInfo, codeAttrInfo, this);
     }
 
 
@@ -552,21 +551,22 @@ public class UsageMarker
 
     // Implementations for InstructionVisitor.
 
-    public void visitInstruction(ClassFile classFile, Instruction instruction)
-    {
-        // Just ignore generic instructions.
-    }
+    public void visitSimpleInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, SimpleInstruction simpleInstruction) {}
+    public void visitVariableInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, VariableInstruction variableInstruction) {}
+    public void visitBranchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, BranchInstruction branchInstruction) {}
+    public void visitTableSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, TableSwitchInstruction tableSwitchInstruction) {}
+    public void visitLookUpSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, LookUpSwitchInstruction lookUpSwitchInstruction) {}
 
 
-    public void visitCpInstruction(ClassFile classFile, CpInstruction cpInstruction)
+    public void visitCpInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, CpInstruction cpInstruction)
     {
-        markCpEntry(classFile, cpInstruction.getCpIndex());
+        markCpEntry(classFile, cpInstruction.cpIndex);
     }
 
 
     // Implementations for ExceptionInfoVisitor.
 
-    public void visitExceptionInfo(ClassFile classFile, ExceptionInfo exceptionInfo)
+    public void visitExceptionInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, ExceptionInfo exceptionInfo)
     {
         markAsUsed(exceptionInfo);
 
@@ -611,7 +611,7 @@ public class UsageMarker
 
     // Implementations for LocalVariableInfoVisitor.
 
-    public void visitLocalVariableInfo(ClassFile classFile, LocalVariableInfo localVariableInfo)
+    public void visitLocalVariableInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableInfo localVariableInfo)
     {
         markCpEntry(classFile, localVariableInfo.u2nameIndex);
         markCpEntry(classFile, localVariableInfo.u2descriptorIndex);

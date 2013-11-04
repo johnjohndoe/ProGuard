@@ -1,6 +1,6 @@
-/* $Id: ClassFile.java,v 1.12 2003/02/09 15:22:28 eric Exp $
+/* $Id: ClassFile.java,v 1.17 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
@@ -50,6 +50,12 @@ public interface ClassFile extends VisitorAccepter
     public String getSuperName();
 
     /**
+     * Returns the full internal name of the interface at the given index of
+     * this class.
+     */
+    public String getInterfaceName(int index);
+
+    /**
      * Returns the tag value of the CpEntry at the specified index.
      */
     public int getCpTag(int cpIndex);
@@ -87,6 +93,25 @@ public interface ClassFile extends VisitorAccepter
      */
     public ClassFile getSuperClass();
 
+    /**
+     * Returns the interface at the given index.
+     */
+    public ClassFile getInterface(int index);
+
+    /**
+     * Returns whether this class extends the given class.
+     * A class is always considered to extend itself.
+     * Interfaces are considered to only extend the root Object class.
+     */
+    public boolean extends_(ClassFile classFile);
+
+    /**
+     * Returns whether this class implements the given class.
+     * A class is always considered to implement itself.
+     * Interfaces are considered to implement all their superinterfaces.
+     */
+    public boolean implements_(ClassFile classFile);
+
 
     // Methods for getting specific class members.
 
@@ -107,6 +132,21 @@ public interface ClassFile extends VisitorAccepter
      * Accepts the given class file visitor.
      */
     public void accept(ClassFileVisitor classFileVisitor);
+
+    /**
+     * Accepts the given class file visitor in the class hierarchy.
+     * @param visitThisClass   specifies whether to visit this class.
+     * @param visitSuperClass  specifies whether to visit the super classes.
+     * @param visitInterfaces  specifies whether to visit the interfaces.
+     * @param visitSubclasses  specifies whether to visit the subclasses.
+     * @param classFileVisitor the <code>ClassFileVisitor</code> that will
+     *                         visit the class hierarchy.
+     */
+    public void hierarchyAccept(boolean          visitThisClass,
+                                boolean          visitSuperClass,
+                                boolean          visitInterfaces,
+                                boolean          visitSubclasses,
+                                ClassFileVisitor classFileVisitor);
 
     /**
      * Lets the given constant pool entry visitor visit all constant pool entries

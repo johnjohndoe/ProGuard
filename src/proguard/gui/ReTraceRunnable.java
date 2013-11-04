@@ -1,6 +1,6 @@
-/* $Id: ReTraceRunnable.java,v 1.3 2003/12/06 22:15:38 eric Exp $
+/* $Id: ReTraceRunnable.java,v 1.6 2004/08/21 21:36:03 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -129,6 +129,7 @@ class ReTraceRunnable implements Runnable
         System.setErr(oldErr);
 
         consoleTextArea.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+        consoleTextArea.setCaretPosition(0);
 
         // Reset the global static redirection lock.
         ProGuardGUI.systemOutRedirected = false;

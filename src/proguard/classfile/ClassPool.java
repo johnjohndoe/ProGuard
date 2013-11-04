@@ -1,6 +1,6 @@
-/* $Id: ClassPool.java,v 1.13 2003/04/15 19:02:09 eric Exp $
+/* $Id: ClassPool.java,v 1.15 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
@@ -52,7 +52,7 @@ public class ClassPool
             // We'll put the original one back.
             classFiles.put(name, previousClassFile);
         }
-        
+
         return previousClassFile;
     }
 

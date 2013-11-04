@@ -1,6 +1,6 @@
-/* $Id: NameFactory.java,v 1.9 2003/02/11 18:06:45 eric Exp $
+/* $Id: NameFactory.java,v 1.12 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -121,7 +121,7 @@ class NameFactory
     }
 
 
-    private static void main(String[] args)
+    public static void main(String[] args)
     {
         System.out.println("Some mixed-case names:");
         printNameSamples(new NameFactory(true), 60);

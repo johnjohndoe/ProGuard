@@ -1,6 +1,6 @@
-/* $Id: AttrInfoVisitor.java,v 1.7 2003/11/10 16:50:56 eric Exp $
+/* $Id: AttrInfoVisitor.java,v 1.10 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -31,16 +31,20 @@ import proguard.classfile.*;
  */
 public interface AttrInfoVisitor
 {
-    public void visitUnknownAttrInfo(           ClassFile classFile, UnknownAttrInfo            unknownAttrInfo);
-    public void visitInnerClassesAttrInfo(      ClassFile classFile, InnerClassesAttrInfo       innerClassesAttrInfo);
-    public void visitConstantValueAttrInfo(     ClassFile classFile, ConstantValueAttrInfo      constantValueAttrInfo);
-    public void visitExceptionsAttrInfo(        ClassFile classFile, ExceptionsAttrInfo         exceptionsAttrInfo);
-    public void visitCodeAttrInfo(              ClassFile classFile, CodeAttrInfo               codeAttrInfo);
-    public void visitLineNumberTableAttrInfo(   ClassFile classFile, LineNumberTableAttrInfo    lineNumberTableAttrInfo);
-    public void visitLocalVariableTableAttrInfo(ClassFile classFile, LocalVariableTableAttrInfo localVariableTableAttrInfo);
-    public void visitSourceFileAttrInfo(        ClassFile classFile, SourceFileAttrInfo         sourceFileAttrInfo);
-    public void visitSourceDirAttrInfo(         ClassFile classFile, SourceDirAttrInfo          sourceDirAttrInfo);
-    public void visitDeprecatedAttrInfo(        ClassFile classFile, DeprecatedAttrInfo         deprecatedAttrInfo);
-    public void visitSyntheticAttrInfo(         ClassFile classFile, SyntheticAttrInfo          syntheticAttrInfo);
-    public void visitSignatureAttrInfo(         ClassFile classFile, SignatureAttrInfo          syntheticAttrInfo);
+    public void visitUnknownAttrInfo(           ClassFile classFile, UnknownAttrInfo      unknownAttrInfo);
+    public void visitInnerClassesAttrInfo(      ClassFile classFile, InnerClassesAttrInfo innerClassesAttrInfo);
+
+    public void visitConstantValueAttrInfo(     ClassFile classFile, FieldInfo fieldInfo, ConstantValueAttrInfo constantValueAttrInfo);
+
+    public void visitExceptionsAttrInfo(        ClassFile classFile, MethodInfo methodInfo, ExceptionsAttrInfo exceptionsAttrInfo);
+    public void visitCodeAttrInfo(              ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo       codeAttrInfo);
+
+    public void visitLineNumberTableAttrInfo(   ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LineNumberTableAttrInfo    lineNumberTableAttrInfo);
+    public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo);
+
+    public void visitSourceFileAttrInfo(        ClassFile classFile, SourceFileAttrInfo sourceFileAttrInfo);
+    public void visitSourceDirAttrInfo(         ClassFile classFile, SourceDirAttrInfo  sourceDirAttrInfo);
+    public void visitDeprecatedAttrInfo(        ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo);
+    public void visitSyntheticAttrInfo(         ClassFile classFile, SyntheticAttrInfo  syntheticAttrInfo);
+    public void visitSignatureAttrInfo(         ClassFile classFile, SignatureAttrInfo  syntheticAttrInfo);
 }

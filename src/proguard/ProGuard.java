@@ -1,6 +1,6 @@
-/* $Id: ProGuard.java,v 1.52 2003/12/06 22:12:42 eric Exp $
+/* $Id: ProGuard.java,v 1.73 2004/09/12 11:38:29 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -21,30 +21,32 @@
 package proguard;
 
 import proguard.classfile.*;
-import proguard.classfile.io.*;
+import proguard.classfile.editor.*;
+import proguard.classfile.instruction.*;
 import proguard.classfile.util.*;
 import proguard.classfile.visitor.*;
+import proguard.io.*;
 import proguard.obfuscate.*;
+import proguard.optimize.*;
+import proguard.optimize.evaluation.*;
+import proguard.optimize.peephole.*;
 import proguard.shrink.*;
-import proguard.util.*;
 
 import java.io.*;
-import java.util.jar.*;
 
 
 /**
- * Tool for obfuscating and shrinking Java class files.
+ * Tool for shrinking, optimizing, and obfuscating Java class files.
  *
  * @author Eric Lafortune
  */
 public class ProGuard
 {
-    public static final String VERSION = "ProGuard, version 2.1";
+    public static final String VERSION = "ProGuard, version 3.0.7";
 
     private Configuration configuration;
     private ClassPool     programClassPool = new ClassPool();
     private ClassPool     libraryClassPool = new ClassPool();
-    private Manifest      manifest;
 
 
     /**
@@ -58,6 +60,67 @@ public class ProGuard
 
 
     /**
+     * Performs all subsequent ProGuard operations.
+     */
+    public void execute() throws IOException
+    {
+        System.out.println(VERSION);
+
+        readInput();
+
+        if (configuration.shrink   ||
+            configuration.optimize ||
+            configuration.obfuscate)
+        {
+            initialize();
+        }
+
+        if (configuration.printSeeds != null)
+        {
+            printSeeds();
+        }
+
+        if (configuration.shrink)
+        {
+            shrink();
+        }
+
+        if (configuration.optimize)
+        {
+            optimize();
+
+            // Shrink again, if we may.
+            if (configuration.shrink)
+            {
+                shrink();
+            }
+        }
+
+        if (configuration.obfuscate)
+        {
+            obfuscate();
+        }
+
+        if (configuration.shrink   ||
+            configuration.optimize ||
+            configuration.obfuscate)
+        {
+            sortConstantPools();
+        }
+
+        if (configuration.programJars.hasOutput())
+        {
+            writeOutput();
+        }
+
+        if (configuration.dump != null)
+        {
+            dump();
+        }
+    }
+
+
+    /**
      * Reads the input jars (or directories).
      */
     private void readInput() throws IOException
@@ -67,30 +130,35 @@ public class ProGuard
             System.out.println("Reading jars...");
         }
 
-        // Check if we have at least some input jars.
-        if (configuration.inJars == null)
+        // Check if we have at least some program jars.
+        if (configuration.programJars == null)
         {
             throw new IOException("The input is empty. You have to specify one or more '-injars' options.");
         }
 
-        // Read all program jars.
-        if (configuration.inJars != null)
-        {
-            readClassPath(configuration.inJars, false, false,
-                          createDataEntryClassPoolFiller(false));
-        }
+        // Read the input program jars.
+        readInput("Reading program ",
+                  configuration.programJars,
+                  createDataEntryClassPoolFiller(false));
 
         // Check if we have at least some input class files.
         if (programClassPool.size() == 0)
         {
-            throw new IOException("The input jars are empty. Did you specify the proper '-injars' options?");
+            throw new IOException("The input doesn't contain any class files. Did you specify the proper '-injars' options?");
         }
 
         // Read all library jars.
         if (configuration.libraryJars != null)
         {
-            readClassPath(configuration.libraryJars, true, false,
-                          createDataEntryClassPoolFiller(true));
+            readInput("Reading library ",
+                      configuration.libraryJars,
+                      createDataEntryClassPoolFiller(true));
+        }
+
+        // The defaultPackage option implies the allowAccessModification option.
+        if (configuration.defaultPackage != null)
+        {
+            configuration.allowAccessModification = true;
         }
     }
 
@@ -110,79 +178,69 @@ public class ProGuard
         // which are then decoded to class files by a class file reader,
         // which are then put in the class pool by a class pool filler.
         return
-            new DataEntryClassFileFilter(
-                new ClassFileReader(
-                    new ClassPoolFiller(classPool,
-                                        configuration.note),
-                    isLibrary,
-                    configuration.skipNonPublicLibraryClasses));
+            new ClassFileFilter(
+            new ClassFileReader(isLibrary,
+                                configuration.skipNonPublicLibraryClasses,
+            new ClassPoolFiller(classPool, configuration.note)));
     }
 
 
     /**
-     * Reads the given class path.
+     * Reads all input entries from the given class path.
      */
-    private void readClassPath(ClassPath       classPath,
-                               boolean         isLibrary,
-                               boolean         isResource,
-                               DataEntryReader reader) throws IOException
+    private void readInput(String          messagePrefix,
+                           ClassPath       classPath,
+                           DataEntryReader reader) throws IOException
     {
-        for (int index = 0; index < classPath.size(); index++)
+        readInput(messagePrefix,
+                  classPath,
+                  0,
+                  classPath.size(),
+                  reader);
+    }
+
+
+    /**
+     * Reads all input entries from the given section of the given class path.
+     */
+    private void readInput(String          messagePrefix,
+                           ClassPath       classPath,
+                           int             fromIndex,
+                           int             toIndex,
+                           DataEntryReader reader) throws IOException
+    {
+        for (int index = fromIndex; index < toIndex; index++)
         {
-            ClassPathEntry entry = (ClassPathEntry)classPath.get(index);
-            readClassPathEntry(entry, isLibrary, isResource, reader);
+            ClassPathEntry entry = classPath.get(index);
+            if (!entry.isOutput())
+            {
+                readInput(messagePrefix, entry, reader);
+            }
         }
     }
 
 
     /**
-     * Reads the given class path entry.
+     * Reads the given input class path entry.
      */
-    private void readClassPathEntry(ClassPathEntry  classPathEntry,
-                                    boolean         isLibrary,
-                                    boolean         isResource,
-                                    DataEntryReader reader) throws IOException
+    private void readInput(String          messagePrefix,
+                           ClassPathEntry  classPathEntry,
+                           DataEntryReader dataEntryReader) throws IOException
     {
         try
         {
-            File jarFile = new File(classPathEntry.getName());
-            boolean isDirectory = jarFile.isDirectory();
+            // Create a reader that can unwrap jars, wars, ears, and zips.
+            DataEntryReader reader =
+                DataEntryReaderFactory.createDataEntryReader(messagePrefix,
+                                                             classPathEntry,
+                                                             dataEntryReader);
 
-            System.out.println((isResource ? "Adding resources from " : "Reading " +
-                                (isLibrary ? "library " : "program ")) +
-                               (isDirectory ? "directory" : "jar") +
-                               " [" + classPathEntry.getName() + "]" +
-                               (classPathEntry.getFilter() != null ? " (filtered)" : ""));
-
-            // Filter the reader if required.
-            if (classPathEntry.getFilter() != null)
-            {
-                reader = new FilteredDataEntryReader(
-                             new FileNameListMatcher(classPathEntry.getFilter()),
-                                                     reader,
-                                                     null);
-            }
-
-            // Filter out any manifest files.
-            DataEntryManifestFileFilter manifestFilter =
-                new DataEntryManifestFileFilter(reader);
-
-            reader = manifestFilter;
-
-            // Create the appropriate data entry pump, depending on whether the
-            // file is actually a directory or a jar.
-            DataEntryPump pump = isDirectory ?
-                (DataEntryPump)new DirectoryReader(jarFile) :
-                (DataEntryPump)new JarReader(jarFile);
+            // Create the data entry pump.
+            DirectoryPump directoryPump =
+                new DirectoryPump(new File(classPathEntry.getName()));
 
             // Pump the data entries into the reader.
-            pump.pumpDataEntries(reader);
-
-            // Get the program's manifest if we hadn't found one yet.
-            if (!isLibrary && !isResource && manifest == null)
-            {
-                manifest = manifestFilter.getManifest();
-            }
+            directoryPump.pumpDataEntries(reader);
         }
         catch (IOException ex)
         {
@@ -196,23 +254,32 @@ public class ProGuard
      */
     private void initialize() throws IOException
     {
-        // First the class file hierarchy.
-        ClassFileHierarchyInitializer hierarchyInitializer =
+        // Initialize the class hierarchy for program class files.
+        ClassFileHierarchyInitializer classFileHierarchyInitializer =
             new ClassFileHierarchyInitializer(programClassPool,
                                               libraryClassPool,
                                               configuration.warn);
 
-        programClassPool.classFilesAccept(hierarchyInitializer);
+        programClassPool.classFilesAccept(classFileHierarchyInitializer);
 
-        // Then the class item references.
-        ClassFileReferenceInitializer referenceInitializer =
+        // Initialize the rest of the class hierarchy.
+        ClassFileHierarchyInitializer classFileHierarchyInitializer2 =
+            new ClassFileHierarchyInitializer(programClassPool,
+                                              libraryClassPool,
+                                              false);
+
+        libraryClassPool.classFilesAccept(classFileHierarchyInitializer2);
+
+        // Initialize the other class references.
+        ClassFileReferenceInitializer classFileReferenceInitializer =
             new ClassFileReferenceInitializer(programClassPool,
+                                              libraryClassPool,
                                               configuration.warn,
                                               configuration.note);
 
-        programClassPool.classFilesAccept(referenceInitializer);
+        programClassPool.classFilesAccept(classFileReferenceInitializer);
 
-        int noteCount = referenceInitializer.getNoteCount();
+        int noteCount = classFileReferenceInitializer.getNoteCount();
         if (noteCount > 0)
         {
             System.err.println("Note: there were " + noteCount +
@@ -221,26 +288,26 @@ public class ProGuard
             System.err.println("      their implementations (using '-keep').");
         }
 
-        int classFileWarningCount = hierarchyInitializer.getWarningCount();
-        if (classFileWarningCount > 0)
+        int hierarchyWarningCount = classFileHierarchyInitializer.getWarningCount();
+        if (hierarchyWarningCount > 0)
         {
-            System.err.println("Warning: there were " + classFileWarningCount +
+            System.err.println("Warning: there were " + hierarchyWarningCount +
                                " unresolved references to superclasses or interfaces.");
             System.err.println("         You may need to specify additional library jars (using '-libraryjars'),");
             System.err.println("         or perhaps the '-dontskipnonpubliclibraryclasses' option.");
         }
 
-        int memberWarningCount = referenceInitializer.getWarningCount();
-        if (memberWarningCount > 0)
+        int referenceWarningCount = classFileReferenceInitializer.getWarningCount();
+        if (referenceWarningCount > 0)
         {
-            System.err.println("Warning: there were " + memberWarningCount +
+            System.err.println("Warning: there were " + referenceWarningCount +
                                " unresolved references to program class members.");
             System.err.println("         Your input class files appear to be inconsistent.");
             System.err.println("         You may need to recompile them and try again.");
         }
 
-        if ((classFileWarningCount > 0 ||
-             memberWarningCount > 0) &&
+        if ((hierarchyWarningCount > 0 ||
+             referenceWarningCount > 0) &&
             !configuration.ignoreWarnings)
         {
             System.err.println("         If you are sure the mentioned classes are not used anyway,");
@@ -255,10 +322,17 @@ public class ProGuard
                     System.out.println("    Original number of library classes: "+libraryClassPool.size());
         }
 
+        // Reinitialize the library class pool with only those library classes
+        // whose hierarchies are referenced by the program classes.
         ClassPool newLibraryClassPool = new ClassPool();
-        libraryClassPool.classFilesAccept(
-            new SubclassedClassFileFilter(
-            new ClassPoolFiller(newLibraryClassPool, false)));
+        programClassPool.classFilesAccept(
+            new AllCpInfoVisitor(
+            new ReferencedClassFileVisitor(
+            new LibraryClassFileFilter(
+            new ClassFileHierarchyTraveler(true, true, true, false,
+            new LibraryClassFileFilter(
+            new ClassPoolFiller(newLibraryClassPool, false)))))));
+
         libraryClassPool = newLibraryClassPool;
 
         if (configuration.verbose)
@@ -280,20 +354,26 @@ public class ProGuard
         }
 
         // Check if we have at least some keep commands.
-        if (configuration.keepClassFileOptions == null)
+        if (configuration.keep == null)
         {
-            throw new IOException("You have to specify '-keep' options for shrinking and obfuscation.");
+            throw new IOException("You have to specify '-keep' options for the shrinking step.");
         }
 
         PrintStream ps = configuration.printSeeds.length() > 0 ?
             new PrintStream(new BufferedOutputStream(new FileOutputStream(configuration.printSeeds))) :
             System.out;
 
-        // Print out items that are used as seeds.
-        for (int index = 0; index < configuration.keepClassFileOptions.size(); index++) {
-            KeepCommand command = new KeepCommand((KeepClassFileOption)configuration.keepClassFileOptions.get(index));
-            command.executeCheckingPhase(programClassPool, libraryClassPool, ps);
-        }
+        // Create a visitor for printing out the seeds. Note that we're only
+        // printing out the program elements that are preserved against shrinking.
+        SimpleClassFilePrinter printer = new SimpleClassFilePrinter(false, ps);
+        ClassPoolVisitor classPoolvisitor =
+            ClassSpecificationVisitorFactory.createClassPoolVisitor(configuration.keep,
+                                                                    new ProgramClassFileFilter(printer),
+                                                                    new ProgramMemberInfoFilter(printer));
+
+        // Print out the seeds.
+        programClassPool.accept(classPoolvisitor);
+        libraryClassPool.accept(classPoolvisitor);
 
         if (ps != System.out)
         {
@@ -313,16 +393,25 @@ public class ProGuard
         }
 
         // Check if we have at least some keep commands.
-        if (configuration.keepClassFileOptions == null)
+        if (configuration.keep == null)
         {
             throw new IOException("You have to specify '-keep' options for the shrinking step.");
         }
 
-        // Mark elements that have to be kept.
-        for (int index = 0; index < configuration.keepClassFileOptions.size(); index++) {
-            KeepCommand command = new KeepCommand((KeepClassFileOption)configuration.keepClassFileOptions.get(index));
-            command.executeShrinkingPhase(programClassPool, libraryClassPool);
-        }
+        // Clean up any old visitor info.
+        ClassFileCleaner classFileCleaner = new ClassFileCleaner();
+        programClassPool.classFilesAccept(classFileCleaner);
+        libraryClassPool.classFilesAccept(classFileCleaner);
+
+        // Create a visitor for marking the seeds.
+        UsageMarker usageMarker = new UsageMarker();
+        ClassPoolVisitor classPoolvisitor =
+            ClassSpecificationVisitorFactory.createClassPoolVisitor(configuration.keep,
+                                                                    usageMarker,
+                                                                    usageMarker);
+        // Mark the seeds.
+        programClassPool.accept(classPoolvisitor);
+        libraryClassPool.accept(classPoolvisitor);
 
         // Mark interfaces that have to be kept.
         programClassPool.classFilesAccept(new InterfaceUsageMarker());
@@ -362,7 +451,7 @@ public class ProGuard
             new UsedClassFileFilter(
             new MultiClassFileVisitor(
             new ClassFileVisitor[] {
-                new ClassFileShrinker(),
+                new ClassFileShrinker(1024),
                 new ClassPoolFiller(newProgramClassPool, false)
             })));
         programClassPool = newProgramClassPool;
@@ -381,6 +470,108 @@ public class ProGuard
 
 
     /**
+     * Performs the optimization step.
+     */
+    private void optimize() throws IOException
+    {
+        if (configuration.verbose)
+        {
+            System.out.println("Optimizing...");
+        }
+
+        // Clean up any old visitor info.
+        ClassFileCleaner classFileCleaner = new ClassFileCleaner();
+        programClassPool.classFilesAccept(classFileCleaner);
+        libraryClassPool.classFilesAccept(classFileCleaner);
+
+        // Check if we have at least some keep commands.
+        if (configuration.keep == null)
+        {
+            throw new IOException("You have to specify '-keep' options for the optimization step.");
+        }
+
+        // Create a visitor for marking the seeds.
+        KeepMarker keepMarker = new KeepMarker();
+        ClassPoolVisitor classPoolvisitor =
+            ClassSpecificationVisitorFactory.createClassPoolVisitor(configuration.keep,
+                                                                    keepMarker,
+                                                                    keepMarker);
+
+        // Mark the seeds.
+        programClassPool.accept(classPoolvisitor);
+        libraryClassPool.accept(classPoolvisitor);
+
+        // Make class files and methods final, as far as possible.
+        programClassPool.classFilesAccept(new ClassFileFinalizer());
+
+        // Mark all fields that are write-only.
+        programClassPool.classFilesAccept(
+            new AllMethodVisitor(
+            new AllAttrInfoVisitor(
+            new AllInstructionVisitor(
+            new WriteOnlyFieldMarker()))));
+
+        if (configuration.assumeNoSideEffects != null)
+        {
+            // Create a visitor for marking methods that don't have any side effects.
+            NoSideEffectMethodMarker noSideEffectMethodMarker = new NoSideEffectMethodMarker();
+            ClassPoolVisitor noClassPoolvisitor =
+                ClassSpecificationVisitorFactory.createClassPoolVisitor(configuration.assumeNoSideEffects,
+                                                                        null,
+                                                                        noSideEffectMethodMarker);
+
+            // Mark the seeds.
+            programClassPool.accept(noClassPoolvisitor);
+            libraryClassPool.accept(noClassPoolvisitor);
+        }
+
+        // Mark all methods that have side effects.
+        programClassPool.accept(new SideEffectMethodMarker());
+
+        // Perform partial evaluation.
+        programClassPool.classFilesAccept(new AllMethodVisitor(
+                                          new PartialEvaluator()));
+
+        // Create a branch target marker and a code attribute editor that can
+        // be reused for all code attributes.
+        BranchTargetFinder branchTargetFinder = new BranchTargetFinder(1024);
+        CodeAttrInfoEditor codeAttrInfoEditor = new CodeAttrInfoEditor(1024);
+
+        // Visit all code attributes.
+        // First let the branch marker mark all branch targets.
+        // Then perform peephole optimisations on the instructions:
+        // - Remove push/pop instruction pairs.
+        // - Remove load/store instruction pairs.
+        // - Replace store/load instruction pairs by dup/store instructions.
+        // - Replace branches to return instructions by return instructions.
+        // - Remove nop instructions.
+        // - Inline simple getters and setters.
+        // Finally apply all changes to the code.
+        programClassPool.classFilesAccept(
+            new AllMethodVisitor(
+            new AllAttrInfoVisitor(
+            new MultiAttrInfoVisitor(
+            new AttrInfoVisitor[]
+            {
+                branchTargetFinder,
+                new CodeAttrInfoEditorResetter(codeAttrInfoEditor),
+                new AllInstructionVisitor(
+                new MultiInstructionVisitor(
+                new InstructionVisitor[]
+                {
+                    new PushPopRemover(branchTargetFinder, codeAttrInfoEditor),
+                    new LoadStoreRemover(branchTargetFinder, codeAttrInfoEditor),
+                    new StoreLoadReplacer(branchTargetFinder, codeAttrInfoEditor),
+                    new GotoReturnReplacer(codeAttrInfoEditor),
+                    new NopRemover(codeAttrInfoEditor),
+                    new GetterSetterInliner(codeAttrInfoEditor, configuration.allowAccessModification),
+                })),
+                codeAttrInfoEditor
+            }))));
+    }
+
+
+    /**
      * Performs the obfuscation step.
      */
     private void obfuscate() throws IOException
@@ -391,26 +582,39 @@ public class ProGuard
         }
 
         // Check if we have at least some keep commands.
-        if (configuration.keepClassFileOptions == null)
+        if (configuration.keep      == null &&
+            configuration.keepNames == null)
         {
             throw new IOException("You have to specify '-keep' options for the obfuscation step.");
         }
 
         // Clean up any old visitor info.
-        programClassPool.classFilesAccept(new ClassFileCleaner());
-        libraryClassPool.classFilesAccept(new ClassFileCleaner());
+        ClassFileCleaner classFileCleaner = new ClassFileCleaner();
+        programClassPool.classFilesAccept(classFileCleaner);
+        libraryClassPool.classFilesAccept(classFileCleaner);
 
         // Link all class members that should get the same names.
         programClassPool.classFilesAccept(new BottomClassFileFilter(
                                           new MemberInfoLinker()));
 
-        // Mark element names that have to be kept.
-        for (int index = 0; index < configuration.keepClassFileOptions.size(); index++) {
-            KeepCommand command = new KeepCommand((KeepClassFileOption)configuration.keepClassFileOptions.get(index));
-            command.executeObfuscationPhase(programClassPool, libraryClassPool);
-        }
+        // Create a visitor for marking the seeds.
+        NameMarker nameMarker = new NameMarker();
+        ClassPoolVisitor classPoolvisitor =
+            new MultiClassPoolVisitor(new ClassPoolVisitor[]
+            {
+                ClassSpecificationVisitorFactory.createClassPoolVisitor(configuration.keep,
+                                                                        nameMarker,
+                                                                        nameMarker),
+                ClassSpecificationVisitorFactory.createClassPoolVisitor(configuration.keepNames,
+                                                                        nameMarker,
+                                                                        nameMarker)
+            });
 
-        // Apply a given mapping, if any.
+        // Mark the seeds.
+        programClassPool.accept(classPoolvisitor);
+        libraryClassPool.accept(classPoolvisitor);
+
+        // Apply the mapping, if one has been specified.
         if (configuration.applyMapping != null)
         {
             if (configuration.verbose)
@@ -418,8 +622,13 @@ public class ProGuard
                 System.out.println("Applying mapping...");
             }
 
-            MappingReader reader = new MappingReader(configuration.applyMapping);
-            MappingKeeper keeper = new MappingKeeper(programClassPool);
+            MappingReader    reader = new MappingReader(configuration.applyMapping);
+            MappingProcessor keeper =
+                new MultiMappingProcessor(new MappingProcessor[]
+                {
+                    new MappingKeeper(programClassPool),
+                    new MappingKeeper(libraryClassPool),
+                });
 
             reader.pump(keeper);
         }
@@ -487,7 +696,16 @@ public class ProGuard
 
         // Mark Utf8 constant pool entries that have to be kept and remove the other ones.
         programClassPool.classFilesAccept(new Utf8UsageMarker());
-        programClassPool.classFilesAccept(new Utf8Shrinker());
+        programClassPool.classFilesAccept(new Utf8Shrinker(1024));
+    }
+
+
+    /**
+     * Sorts the constant pools of all program class files.
+     */
+    private void sortConstantPools()
+    {
+        programClassPool.classFilesAccept(new ConstantPoolSorter(1024));
     }
 
 
@@ -501,143 +719,124 @@ public class ProGuard
             System.out.println("Writing jars...");
         }
 
+        ClassPath programJars = configuration.programJars;
+
+        // Perform a check on the first jar.
+        ClassPathEntry firstEntry = programJars.get(0);
+        if (firstEntry.isOutput())
+        {
+            throw new IOException("The output jar [" + firstEntry.getName() +
+                                  "] must be specified after an input jar, or it will be empty.");
+        }
+
         // Perform some checks on the output jars.
-        for (int outIndex = 0; outIndex < configuration.outJars.size(); outIndex++)
+        for (int index = 0; index < programJars.size() - 1; index++)
         {
-            ClassPathEntry outEntry = configuration.outJars.get(outIndex);
-
-            // Check if all but the last output jars have filters.
-            if (outIndex < configuration.outJars.size() - 1 &&
-                outEntry.getFilter() == null)
+            ClassPathEntry entry = programJars.get(index);
+            if (entry.isOutput())
             {
-                throw new IOException("The output jar [" + outEntry.getName() +
-                                      "] must have a filter, or all subsequent jars will be empty.");
-            }
-
-            // Check if the output jar name is different from the input jar names.
-            for (int inIndex = 0; inIndex < configuration.inJars.size(); inIndex++)
-            {
-                ClassPathEntry inEntry = configuration.inJars.get(inIndex);
-
-                if (outEntry.getName().equals(inEntry.getName()))
+                // Check if all but the last output jars have filters.
+                if (entry.getFilter()    == null &&
+                    entry.getJarFilter() == null &&
+                    entry.getWarFilter() == null &&
+                    entry.getEarFilter() == null &&
+                    entry.getZipFilter() == null &&
+                    programJars.get(index + 1).isOutput())
                 {
-                    throw new IOException("The output jar [" + outEntry.getName() +
-                                          "] must be different from all input jars.");
+                    throw new IOException("The output jar [" + entry.getName() +
+                                          "] must have a filter, or all subsequent jars will be empty.");
+                }
+
+                // Check if the output jar name is different from the input jar names.
+                for (int inIndex = 0; inIndex < programJars.size(); inIndex++)
+                {
+                    ClassPathEntry otherEntry = programJars.get(inIndex);
+
+                    if (!otherEntry.isOutput() &&
+                        entry.getName().equals(otherEntry.getName()))
+                    {
+                        throw new IOException("The output jar [" + entry.getName() +
+                                              "] must be different from all input jars.");
+                    }
                 }
             }
         }
 
-        // Set up the output jars.
-        DataEntryWriter dataEntryWriter = createClassPathWriter(configuration.outJars);
+        int firstInputIndex = 0;
+        int lastInputIndex  = 0;
 
-        try
+        // Go over all program class path entries.
+        for (int index = 0; index < programJars.size(); index++)
         {
-            // Write all Java class files.
-            programClassPool.classFilesAccept(
-                new ClassFileWriter(dataEntryWriter));
-
-            // Use the program jars as default resource jars.
-            ClassPath resourceJars = configuration.resourceJars != null ?
-                configuration.resourceJars :
-                configuration.inJars;
-
-            // Copy the resource files, if any.
-            if (resourceJars != null)
+            // Is it an input entry?
+            ClassPathEntry entry = programJars.get(index);
+            if (!entry.isOutput())
             {
-                // Prepare a data entry reader to filter all resource files,
-                // which are then copied to the jar writer.
-                DataEntryReader reader =
-                    new DataEntryResourceFileFilter(
-                        new DataEntryCopier(dataEntryWriter));
-
-                readClassPath(resourceJars, false, true, reader);
+                // Remember the index of the last input entry.
+                lastInputIndex = index;
             }
-        }
-        catch (Exception ex)
-        {
-            ex.printStackTrace();
-            throw new IOException("Can't write output jars (" + ex.getMessage() + ")");
-        }
-        finally
-        {
-            try
+            else
             {
-                if (dataEntryWriter != null)
+                // Check if this the last output entry in a series.
+                int nextIndex = index + 1;
+                if (nextIndex == programJars.size() ||
+                    !programJars.get(nextIndex).isOutput())
                 {
-                    dataEntryWriter.close();
+                    // Write the processed input entries to the output entries.
+                    writeOutput(programJars,
+                                firstInputIndex,
+                                lastInputIndex + 1,
+                                nextIndex);
+
+                    // Start with the next series of input entries.
+                    firstInputIndex = nextIndex;
                 }
-            }
-            catch (IOException ex)
-            {
             }
         }
     }
 
 
+
+
     /**
-     * Creates a DataEntryWriter that can write to the given class path entry.
+     * Transfers the specified input jars to the specified output jars.
      */
-    private DataEntryWriter createClassPathWriter(ClassPath classPath)
+    private void writeOutput(ClassPath classPath,
+                             int       fromInputIndex,
+                             int       fromOutputIndex,
+                             int       toOutputIndex)
     throws IOException
     {
-        DataEntryWriter writer = null;
-
         try
         {
-            // Create a chain of writers, one for each class path entry.
-            for (int index = classPath.size() - 1; index >= 0; index--)
-            {
-                ClassPathEntry entry = classPath.get(index);
-                writer = createClassPathEntryWriter(entry, writer);
-            }
+            // Construct the writer that can write jars, wars, ears, zips, and
+            // directories, cascading over the specified output entries.
+            DataEntryWriter writer =
+                DataEntryWriterFactory.createDataEntryWriter(classPath,
+                                                             fromOutputIndex,
+                                                             toOutputIndex);
 
-            return writer;
+            // Create the reader that can write class files and copy resource
+            // files to the above writer.
+            DataEntryReader reader =
+                new ClassFileFilter(new ClassFileRewriter(programClassPool,
+                                                          writer),
+                                    new DataEntryCopier(writer));
+
+            // Read and handle the specified input entries.
+            readInput("Copying resources from program ",
+                      classPath,
+                      fromInputIndex,
+                      fromOutputIndex,
+                      reader);
+
+            // Close all output entries.
+            writer.close();
         }
         catch (IOException ex)
         {
-            // See if we can close the writers we had constructed so far,
-            // even though they will not contain anything at this point.
-            if (writer != null)
-            {
-                writer.close();
-            }
-
-            throw new IOException("Can't open output jars (" + ex.getMessage() + ")");
+            throw new IOException("Can't write [" + classPath.get(fromOutputIndex).getName() + "] (" + ex.getMessage() + ")");
         }
-    }
-
-
-    /**
-     * Creates a DataEntryWriter that can write to the given class path entry,
-     * or delegate to another DataEntryWriter if its filters don't match.
-     */
-    private DataEntryWriter createClassPathEntryWriter(ClassPathEntry  classPathEntry,
-                                                       DataEntryWriter nonMatchingWriter)
-    throws IOException
-    {
-        File file = new File(classPathEntry.getName());
-        boolean isDirectory = file.isDirectory();
-
-        System.out.println("Writing output " +
-                           (isDirectory ? "directory" : "jar") +
-                           " [" + classPathEntry.getName() + "]" +
-                           (classPathEntry.getFilter() != null ? " (filtered)" : ""));
-
-        // Create a different writer depending on whether the file is a
-        // directory or a jar.
-        DataEntryWriter matchingWriter = isDirectory ?
-            (DataEntryWriter)new DirectoryWriter(file) :
-            (DataEntryWriter)new JarWriter(file,
-                                           manifest,
-                                           ProGuard.VERSION);
-
-        // Filter the writer, if required.
-        return classPathEntry.getFilter() != null ?
-            new FilteredDataEntryWriter(
-                new FileNameListMatcher(classPathEntry.getFilter()),
-                                        matchingWriter,
-                                        nonMatchingWriter) :
-            matchingWriter;
     }
 
 
@@ -665,51 +864,10 @@ public class ProGuard
 
 
     /**
-     * Performs all subsequent ProGuard operations.
-     */
-    public void execute() throws IOException
-    {
-        readInput();
-
-        if (configuration.shrink || configuration.obfuscate)
-        {
-            initialize();
-        }
-
-        if (configuration.printSeeds != null)
-        {
-            printSeeds();
-        }
-
-        if (configuration.shrink)
-        {
-            shrink();
-        }
-
-        if (configuration.obfuscate)
-        {
-            obfuscate();
-        }
-
-        if (configuration.outJars != null)
-        {
-            writeOutput();
-        }
-
-        if (configuration.dump != null)
-        {
-            dump();
-        }
-    }
-
-
-    /**
      * The main method for ProGuard.
      */
     public static void main(String[] args)
     {
-        System.out.println(VERSION);
-
         if (args.length == 0)
         {
             System.out.println("Usage: java proguard.ProGuard [options ...]");

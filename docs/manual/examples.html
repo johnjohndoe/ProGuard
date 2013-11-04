@@ -25,6 +25,7 @@ Some typical useful configurations:
 <li><a href="#beans">Processing bean classes</a>
 <li><a href="#rmi">Processing RMI code</a>
 <li><a href="#stacktrace">Producing useful obfuscated stack traces</a>
+<li><a href="#multiple">Processing multiple applications at once</a>
 <li><a href="#incremental">Incremental obfuscation</a>
 <li><a href="#deadcode">Finding dead code</a>
 <li><a href="#structure">Printing out the internal structure of class files</a>
@@ -32,8 +33,8 @@ Some typical useful configurations:
 
 <a name="application">&nbsp;</a>
 <h3>A typical application</h3>
-To shrink and obfuscate the ProGuard application itself, one would typically
-create a configuration file <code>proguard.pro</code> and then type:
+To shrink, optimize, and obfuscate the ProGuard application itself, one would
+typically create a configuration file <code>proguard.pro</code> and then type:
 <pre>
 java -jar proguard.jar @proguard.pro
 </pre>
@@ -41,12 +42,13 @@ java -jar proguard.jar @proguard.pro
 
 The configuration file would contain the following options:
 <pre>
--libraryjars  &lt;java.home&gt;/lib/rt.jar
 -injars       proguard.jar
--outjar       proguard_out.jar
+-outjars      proguard_out.jar
+-libraryjars  &lt;java.home&gt;/lib/rt.jar
 -printmapping proguard.map
 -overloadaggressively
 -defaultpackage ''
+-allowaccessmodification
 
 -keep public class proguard.ProGuard {
     public static void main(java.lang.String[]);
@@ -63,11 +65,12 @@ The access modifiers <code>public</code> and <code>static</code> are not
 really required in this case, since we know a priori that the specified class
 and method have the proper access flags. It just looks more familiar this way.
 <p>
-We're using the <code>-overloadaggressively</code> and
-<code>-defaultpackage</code> options to shave off some extra bytes, but we
-could leave them out as well. The <code>-defaultpackage</code> directive moves
-all classes to the given package, in this case the root package. Only
-<code>proguard.ProGuard</code> keeps its original name.
+We're using the <code>-overloadaggressively</code>,
+<code>-defaultpackage</code>, and <code>-allowaccessmodification</code>
+options to shave off some extra bytes, but we could leave them out as well.
+The <code>-defaultpackage</code> directive moves all classes to the given
+package, in this case the root package. Only <code>proguard.ProGuard</code>
+keeps its original name.
 <p>
 We're writing out an obfuscation mapping file with <code>-printmapping</code>,
 for de-obfuscating any stack traces later on, or for incremental obfuscation of
@@ -80,11 +83,12 @@ like ProGuard, that is not required.
 
 <a name="applet">&nbsp;</a>
 <h3>A typical applet</h3>
-These options shrink and obfuscate the applet <code>mypackage.MyApplet</code>:
+These options shrink, optimize, and obfuscate the applet
+<code>mypackage.MyApplet</code>:
 <pre>
--libraryjars &lt;java.home&gt;/lib/rt.jar
 -injars      in.jar
--outjar      out.jar
+-outjars     out.jar
+-libraryjars &lt;java.home&gt;/lib/rt.jar
 
 -keep public class mypackage.MyApplet
 </pre>
@@ -99,31 +103,34 @@ classes</a>, or <a href="#beans">bean classes</a>.
 
 <a name="midlet">&nbsp;</a>
 <h3>A typical midlet</h3>
-These options shrink and obfuscate the J2ME midlet
+These options shrink, optimize, and obfuscate the J2ME midlet
 <code>mypackage.MyMIDlet</code>:
 <pre>
--libraryjars /usr/local/java/wtk104/lib/midpapi.zip
 -injars      in.jar
--outjar      out.jar
+-outjars     out.jar
+-libraryjars /usr/local/java/wtk2.1/lib/midpapi20.jar
+-libraryjars /usr/local/java/wtk2.1/lib/cldcapi11.jar
 -overloadaggressively
 -defaultpackage ''
+-allowaccessmodification
 
 -keep public class mypackage.MyMIDlet
 </pre>
 <p>
-Note how we're now targeting the J2ME run-time environment
-<code>midpapi.zip</code>, instead of the J2SE run-time environment
-<code>rt.jar</code>.
+Note how we're now targeting the J2ME run-time environment of
+<code>midpapi20.jar</code> and <code>cldcapi11.jar</code>, instead of the J2SE
+run-time environment <code>rt.jar</code>. You can target other J2ME
+environments by picking the appropriate jars.
 <p>
 The typical midlet methods will be preserved automatically, since
 <code>mypackage.MyMIDlet</code> is an extension of the <code>MIDlet</code>
-class in the library <code>midpapi.zip</code>.
+class in the library <code>midpapi20.jar</code>.
 <p>
 If applicable, you should add directives for processing <a
 href="#native">native methods</a>, <a href="#serializable">serializable
 classes</a>, or <a href="#beans">bean classes</a>.
 <p>
-You should preverify your midlets <i>after</i> having processed them, using
+You must preverify your midlets <i>after</i> having processed them, using
 J2ME's <code>preverify</code> tool. Because this tool unpacks your processed
 jars, you should use ProGuard's <code>-dontusemixedcaseclassnames</code>
 option on platforms with case-insensitive filing systems, such as Windows.
@@ -135,12 +142,12 @@ href="http://developers.sun.com/">developers.sun.com</a>.
 
 <a name="applications">&nbsp;</a>
 <h3>All possible applications in the input jars</h3>
-These options shrink and obfuscate all public applications in
+These options shrink, optimize, and obfuscate all public applications in
 <code>in.jar</code>:
 <pre>
--libraryjars &lt;java.home&gt;/lib/rt.jar
 -injars      in.jar
--outjar      out.jar
+-outjars     out.jar
+-libraryjars &lt;java.home&gt;/lib/rt.jar
 -printseeds
 
 -keepclasseswithmembers public class * {
@@ -160,11 +167,12 @@ classes</a>, or <a href="#beans">bean classes</a>.
 
 <a name="applets">&nbsp;</a>
 <h3>All possible applets in the input jars</h3>
-These options shrink and obfuscate all public applets in <code>in.jar</code>:
+These options shrink, optimize, and obfuscate all public applets in
+<code>in.jar</code>:
 <pre>
--libraryjars &lt;java.home&gt;/lib/rt.jar
 -injars      in.jar
--outjar      out.jar
+-outjars     out.jar
+-libraryjars &lt;java.home&gt;/lib/rt.jar
 -printseeds
 
 -keep public class * extends java.applet.Applet
@@ -181,14 +189,16 @@ classes</a>, or <a href="#beans">bean classes</a>.
 
 <a name="midlets">&nbsp;</a>
 <h3>All possible midlets in the input jars</h3>
-These options shrink and obfuscate all public J2ME midlets in
+These options shrink, optimize, and obfuscate all public J2ME midlets in
 <code>in.jar</code>:
 <pre>
--libraryjars /wtk104/lib/midpapi.zip
 -injars      in.jar
--outjar      out.jar
+-outjars     out.jar
+-libraryjars /usr/local/java/wtk2.1/lib/midpapi20.jar
+-libraryjars /usr/local/java/wtk2.1/lib/cldcapi11.jar
 -overloadaggressively
 -defaultpackage ''
+-allowaccessmodification
 -printseeds
 
 -keep public class * extends javax.microedition.midlet.MIDlet
@@ -203,19 +213,20 @@ If applicable, you should add directives for processing <a
 href="#native">native methods</a>, <a href="#serializable">serializable
 classes</a>, or <a href="#beans">bean classes</a>.
 <p>
-You should preverify your midlets <i>after</i> having processed them, using
+You must preverify your midlets <i>after</i> having processed them, using
 J2ME's <code>preverify</code> tool. Because this tool unpacks your processed
 jars, you should use ProGuard's <code>-dontusemixedcaseclassnames</code>
 option on platforms with case-insensitive filing systems, such as Windows.
 
 <a name="servlets">&nbsp;</a>
 <h3>All possible servlets in the input jars</h3>
-These options shrink and obfuscate all public servlets in <code>in.jar</code>:
+These options shrink, optimize, and obfuscate all public servlets in
+<code>in.jar</code>:
 <pre>
+-injars      in.jar
+-outjars     out.jar
 -libraryjars &lt;java.home&gt;/lib/rt.jar
 -libraryjars /usr/local/java/servlet/servlet.jar
--injars      in.jar
--outjar      out.jar
 -printseeds
 
 -keep public class * implements javax.servlet.Servlet
@@ -239,13 +250,13 @@ classes</a>, or <a href="#beans">bean classes</a>.
 
 <a name="library">&nbsp;</a>
 <h3>Processing a library</h3>
-These options shrink and obfuscate an entire library, keeping all public and
-protected classes and class members, native method names, and serialization
-code:
+These options shrink, optimize, and obfuscate an entire library, keeping all
+public and protected classes and class members, native method names, and
+serialization code:
 <pre>
--libraryjars  &lt;java.home&gt;/lib/rt.jar
 -injars       in.jar
--outjar       out.jar
+-outjars      out.jar
+-libraryjars  &lt;java.home&gt;/lib/rt.jar
 -printmapping out.map
 
 -renamesourcefileattribute SourceFile
@@ -499,36 +510,80 @@ their original names, so we're saving the mapping to a file
 <code>out.map</code>. The information can then be used by the <a
 href="retrace/index.html">ReTrace</a> tool to restore the original stack trace.
 
+<a name="multiple">&nbsp;</a>
+<h3>Processing multiple applications at once</h3>
+You can process several independent applications (or applets, midlets,...) in
+one go, in order to save time and effort. ProGuard's input and output handling
+offers various ways to keep the output nicely structured.
+<p>
+The easiest way is to specify your input jars (and/or wars, ears, zips, and
+directories) and a single output directory. ProGuard will then reconstruct the
+input in this directory, using the original jar names. For example, showing
+just the input and output options:
+<pre>
+-injars  application1.jar
+-injars  application2.jar
+-injars  application3.jar
+-injars  application.war
+-outjars processed_applications
+</pre>
+<p>
+After processing, the directory <code>processed_applications</code> will
+contain the processed application jars and war, with their original names.
+<p>
+If you want explicit control over the output names, or if you want to combine
+input jars (and/or wars, ears, zips, or directories) into output jars (and/or
+wars, ears, zips, or directories), you can group the <code>-injars</code> and
+<code>-outjars</code> options. For example:
+<pre>
+-injars  application1.jar
+-injars  application2.jar
+-injars  application3.jar
+-outjars application_out1.war
+
+-injars  application.war
+-outjars application_out2.war
+</pre>
+<p>
+This configuration creates two wars: one containing all processed application
+jars, and one containing the processed contents of the input war.
+<p>
+Note that ProGuard will try to package output archives in a sensible way,
+reconstructing the input entries as much as required. If you want even greater
+control, you can add filters to the input and the output, filtering out zips,
+ears, wars, jars, and/or ordinary files.
+
 <a name="incremental">&nbsp;</a>
 <h3>Incremental obfuscation</h3>
 After having <a href="#application">processed an application</a>, e.g.
-ProGuard itself, one can still incrementally add other pieces of code that
+ProGuard itself, you can still incrementally add other pieces of code that
 depend on it, e.g. the ProGuard GUI:
 <pre>
--libraryjars  &lt;java.home&gt;/lib/rt.jar
 -injars       proguardgui.jar
--injars       proguard.jar
+-outjars      proguardgui_out.jar
+-libraryjars  &lt;java.home&gt;/lib/rt.jar
+-libraryjars  proguard.jar
 -applymapping proguard.map
--outjars      proguardgui_out.jar(proguard/gui/**)
 
 -keep public class proguard.gui.ProGuardGUI {
     public static void main(java.lang.String[]);
 }
 </pre>
 <p>
-We're reading both unprocessed input jars. The <code>-applymapping</code>
-option then makes sure the ProGuard part of the code is obfuscated with the
-previously produced obfuscation mapping. We're filtering the output jar, only
-keeping the additional GUI files. The final application consists of the
-obfuscated ProGuard jar and the additional obfuscated GUI jar.
+We're reading both unprocessed jars: the new one as the input jar, and the old
+one as a library jar. The <code>-applymapping</code> option then makes sure
+the ProGuard part of the code gets the previously produced obfuscation
+mapping. The final application will consist of the obfuscated ProGuard jar and
+the additional obfuscated GUI jar.
 
 <a name="deadcode">&nbsp;</a>
 <h3>Finding dead code</h3>
 These options list unused fields and methods in the application
 <code>mypackage.MyApplication</code>:
 <pre>
--libraryjars &lt;java.home&gt;/lib/rt.jar
 -injars      in.jar
+-libraryjars &lt;java.home&gt;/lib/rt.jar
+-dontoptimize
 -dontobfuscate
 -printusage
 
@@ -539,7 +594,8 @@ These options list unused fields and methods in the application
 <p>
 We're not specifying an output jar, just printing out some results.
 <p>
-We're saving a little bit of time by not passing through the obfuscation phase.
+We're saving a little bit of time by skipping the optimization and obfuscation
+steps.
 
 <a name="structure">&nbsp;</a>
 <h3>Printing out the internal structure of class files</h3>
@@ -548,6 +604,7 @@ jar:
 <pre>
 -injars in.jar
 -dontshrink
+-dontoptimize
 -dontobfuscate
 -dump
 </pre>

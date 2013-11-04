@@ -1,6 +1,6 @@
-/* $Id: ConfigurationConstants.java,v 1.1 2003/08/22 17:11:15 eric Exp $
+/* $Id: ConfigurationConstants.java,v 1.7 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -32,14 +32,15 @@ class ConfigurationConstants
     public static final String INCLUDE_DIRECTIVE                           = "-include";
     public static final String LIBRARYJARS_OPTION                          = "-libraryjars";
     public static final String INJARS_OPTION                               = "-injars";
-    public static final String RESOURCEJARS_OPTION                         = "-resourcejars";
     public static final String OUTJARS_OPTION                              = "-outjars";
+    public static final String RESOURCEJARS_OPTION                         = "-resourcejars";
     public static final String KEEP_OPTION                                 = "-keep";
     public static final String KEEP_CLASS_MEMBERS_OPTION                   = "-keepclassmembers";
     public static final String KEEP_CLASSES_WITH_MEMBERS_OPTION            = "-keepclasseswithmembers";
     public static final String KEEP_NAMES_OPTION                           = "-keepnames";
     public static final String KEEP_CLASS_MEMBER_NAMES_OPTION              = "-keepclassmembernames";
     public static final String KEEP_CLASSES_WITH_MEMBER_NAMES_OPTION       = "-keepclasseswithmembernames";
+    public static final String ASSUME_NO_SIDE_EFFECTS_OPTION               = "-assumenosideeffects";
     public static final String KEEP_ATTRIBUTES_OPTION                      = "-keepattributes";
     public static final String RENAME_SOURCE_FILE_ATTRIBUTE_OPTION         = "-renamesourcefileattribute";
     public static final String PRINT_SEEDS_OPTION                          = "-printseeds";
@@ -52,10 +53,12 @@ class ConfigurationConstants
     public static final String DONT_WARN_OPTION                            = "-dontwarn";
     public static final String DONT_NOTE_OPTION                            = "-dontnote";
     public static final String DONT_SHRINK_OPTION                          = "-dontshrink";
+    public static final String DONT_OPTIMIZE_OPTION                        = "-dontoptimize";
     public static final String DONT_OBFUSCATE_OPTION                       = "-dontobfuscate";
     public static final String DONT_USE_MIXED_CASE_CLASS_NAMES_OPTION      = "-dontusemixedcaseclassnames";
     public static final String OVERLOAD_AGGRESSIVELY_OPTION                = "-overloadaggressively";
     public static final String DEFAULT_PACKAGE_OPTION                      = "-defaultpackage";
+    public static final String ALLOW_ACCESS_MODIFICATION_OPTION            = "-allowaccessmodification";
     public static final String DONT_SKIP_NON_PUBLIC_LIBRARY_CLASSES_OPTION = "-dontskipnonpubliclibraryclasses";
 
     public static final String ANY_ATTRIBUTE_KEYWORD       = "*";
@@ -71,7 +74,6 @@ class ConfigurationConstants
     public static final String ANY_CLASS_KEYWORD       = "*";
     public static final String IMPLEMENTS_KEYWORD      = "implements";
     public static final String EXTENDS_KEYWORD         = "extends";
-    public static final String AS_KEYWORD              = "as";
     public static final String OPEN_KEYWORD            = "{";
     public static final String ANY_CLASS_MEMBER_KEYWORD  = "*";
     public static final String ANY_FIELD_KEYWORD       = "<fields>";

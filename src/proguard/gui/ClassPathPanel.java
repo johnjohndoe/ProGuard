@@ -1,6 +1,6 @@
-/* $Id: ClassPathPanel.java,v 1.8 2003/12/19 23:15:20 eric Exp $
+/* $Id: ClassPathPanel.java,v 1.14 2004/08/21 21:35:28 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -37,15 +37,19 @@ import proguard.*;
 class ClassPathPanel extends ListPanel
 {
     private JFrame       owner;
+    private boolean      inputAndOutput;
     private JFileChooser chooser;
-    private StringDialog filterDialog;
+    private FilterDialog filterDialog;
 
 
-    public ClassPathPanel(JFrame owner)
+    public ClassPathPanel(JFrame owner, boolean inputAndOutput)
     {
         super();
 
-        this.owner = owner;
+        super.firstSelectionButton = inputAndOutput ? 3 : 2;
+
+        this.owner          = owner;
+        this.inputAndOutput = inputAndOutput;
 
         list.setCellRenderer(new MyListCellRenderer());
 
@@ -53,13 +57,17 @@ class ClassPathPanel extends ListPanel
         chooser.setMultiSelectionEnabled(true);
         chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
         chooser.addChoosableFileFilter(
-            new ExtensionFileFilter(GUIResources.getMessage("jarZipExtensions"),
-                                    new String[] { ".jar", ".zip" }));
+            new ExtensionFileFilter(GUIResources.getMessage("jarWarEarZipExtensions"),
+                                    new String[] { ".jar", ".war", ".ear", ".zip" }));
         chooser.setApproveButtonText(GUIResources.getMessage("ok"));
 
-        filterDialog = new StringDialog(owner, GUIResources.getMessage("enterFilter"));
+        filterDialog = new FilterDialog(owner, GUIResources.getMessage("enterFilter"));
 
-        addAddButton();
+        addAddButton(inputAndOutput, false);
+        if (inputAndOutput)
+        {
+            addAddButton(inputAndOutput, true);
+        }
         addEditButton();
         addFilterButton();
         addRemoveButton();
@@ -70,9 +78,13 @@ class ClassPathPanel extends ListPanel
     }
 
 
-    protected void addAddButton()
+    protected void addAddButton(boolean       inputAndOutput,
+                                final boolean isOutput)
     {
-        JButton addButton = new JButton(GUIResources.getMessage("add"));
+        JButton addButton = new JButton(GUIResources.getMessage(inputAndOutput ?
+                                                                isOutput ? "addOutput" :
+                                                                           "addInput" :
+                                                                           "add"));
         addButton.addActionListener(new ActionListener()
         {
             public void actionPerformed(ActionEvent e)
@@ -85,7 +97,7 @@ class ClassPathPanel extends ListPanel
                 if (returnValue == JFileChooser.APPROVE_OPTION)
                 {
                     File[] selectedFiles = chooser.getSelectedFiles();
-                    ClassPathEntry[] entries = classPathEntries(selectedFiles);
+                    ClassPathEntry[] entries = classPathEntries(selectedFiles, isOutput);
 
                     // Add the new elements.
                     addElements(entries);
@@ -104,6 +116,8 @@ class ClassPathPanel extends ListPanel
         {
             public void actionPerformed(ActionEvent e)
             {
+                boolean isOutput = false;
+
                 int[] selectedIndices = list.getSelectedIndices();
 
                 // Copy the Object array into a File array.
@@ -112,6 +126,8 @@ class ClassPathPanel extends ListPanel
                 {
                     ClassPathEntry entry =
                         (ClassPathEntry)listModel.getElementAt(selectedIndices[index]);
+
+                    isOutput = entry.isOutput();
 
                     selectedFiles[index] = new File(entry.getName());
                 }
@@ -128,7 +144,7 @@ class ClassPathPanel extends ListPanel
                 if (returnValue == JFileChooser.APPROVE_OPTION)
                 {
                     selectedFiles = chooser.getSelectedFiles();
-                    ClassPathEntry[] entries = classPathEntries(selectedFiles);
+                    ClassPathEntry[] entries = classPathEntries(selectedFiles, isOutput);
 
                     // If there are the same number of files selected now as
                     // there were before, we can just replace the old ones.
@@ -164,15 +180,14 @@ class ClassPathPanel extends ListPanel
                 {
                     int[] selectedIndices = list.getSelectedIndices();
 
-                    ClassPathEntry firstEntry =
-                        (ClassPathEntry)listModel.getElementAt(selectedIndices[0]);
-                    filterDialog.setString(firstEntry.getFilter());
+                    // Put the filters of the first selected entry in the dialog.
+                    getFiltersFrom(selectedIndices[0]);
 
                     int returnValue = filterDialog.showDialog();
-                    if (returnValue == StringDialog.APPROVE_OPTION)
+                    if (returnValue == FilterDialog.APPROVE_OPTION)
                     {
-                        setFiltersAt(selectedIndices,
-                                     filterDialog.getString());
+                        // Apply the entered filters to all selected entries.
+                        setFiltersAt(selectedIndices);
                     }
                 }
             }
@@ -184,8 +199,6 @@ class ClassPathPanel extends ListPanel
 
     /**
      * Sets the ClassPath to be represented in this panel.
-     *
-     * @param elementList
      */
     public void setClassPath(ClassPath classPath)
     {
@@ -215,7 +228,7 @@ class ClassPathPanel extends ListPanel
         {
             return null;
         }
-        
+
         ClassPath classPath = new ClassPath();
         for (int index = 0; index < size; index++)
         {
@@ -230,27 +243,47 @@ class ClassPathPanel extends ListPanel
      * Converts the given array of File objects into a corresponding array of
      * ClassPathEntry objects.
      */
-    private ClassPathEntry[] classPathEntries(File[] files)
+    private ClassPathEntry[] classPathEntries(File[] files, boolean isOutput)
     {
         ClassPathEntry[] entries = new ClassPathEntry[files.length];
         for (int index = 0; index < entries.length; index++)
         {
-            entries[index] = new ClassPathEntry(files[index].toString());
+            entries[index] = new ClassPathEntry(files[index].toString(), isOutput);
         }
         return entries;
     }
 
 
     /**
-     * Applies the given filter to the specified class path entries.
-     * Any previously set filter is discarded.
+     * Sets up the filter dialog with the filters from the specified class path
+     * entry.
      */
-    private void setFiltersAt(int[] indices, String filter)
+    private void getFiltersFrom(int index)
+    {
+        ClassPathEntry firstEntry = (ClassPathEntry)listModel.get(index);
+
+        filterDialog.setFilter(firstEntry.getFilter());
+        filterDialog.setJarFilter(firstEntry.getJarFilter());
+        filterDialog.setWarFilter(firstEntry.getWarFilter());
+        filterDialog.setEarFilter(firstEntry.getEarFilter());
+        filterDialog.setZipFilter(firstEntry.getZipFilter());
+    }
+
+
+    /**
+     * Applies the entered filter to the specified class path entries.
+     * Any previously set filters are discarded.
+     */
+    private void setFiltersAt(int[] indices)
     {
         for (int index = indices.length - 1; index >= 0; index--)
         {
             ClassPathEntry entry = (ClassPathEntry)listModel.get(indices[index]);
-            entry.setFilter(filter);
+            entry.setFilter(filterDialog.getFilter());
+            entry.setJarFilter(filterDialog.getJarFilter());
+            entry.setWarFilter(filterDialog.getWarFilter());
+            entry.setEarFilter(filterDialog.getEarFilter());
+            entry.setZipFilter(filterDialog.getZipFilter());
         }
 
         // Make sure they are selected and thus repainted.
@@ -263,9 +296,14 @@ class ClassPathPanel extends ListPanel
      */
     private class MyListCellRenderer implements ListCellRenderer
     {
-        JPanel cellPanel    = new JPanel(new GridBagLayout());
-        JLabel jarNameLabel = new JLabel("", JLabel.RIGHT);
-        JLabel filterLabel  = new JLabel("", JLabel.RIGHT);
+        private static final String ARROW_IMAGE_FILE = "arrow.gif";
+
+        private JPanel cellPanel    = new JPanel(new GridBagLayout());
+        private JLabel iconLabel    = new JLabel("", JLabel.RIGHT);
+        private JLabel jarNameLabel = new JLabel("", JLabel.RIGHT);
+        private JLabel filterLabel  = new JLabel("", JLabel.RIGHT);
+
+        private Icon arrowIcon;
 
 
         public MyListCellRenderer()
@@ -281,6 +319,9 @@ class ClassPathPanel extends ListPanel
             filterLabelConstraints.anchor              = GridBagConstraints.EAST;
             filterLabelConstraints.insets              = jarNameLabelConstraints.insets;
 
+            arrowIcon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(this.getClass().getResource(ARROW_IMAGE_FILE)));
+
+            cellPanel.add(iconLabel,    jarNameLabelConstraints);
             cellPanel.add(jarNameLabel, jarNameLabelConstraints);
             cellPanel.add(filterLabel,  filterLabelConstraints);
         }
@@ -296,11 +337,35 @@ class ClassPathPanel extends ListPanel
         {
             ClassPathEntry entry = (ClassPathEntry)value;
 
-            jarNameLabel.setText(entry.getName());
-            filterLabel.setText(entry.getFilter() != null ?
-                                ("(" + entry.getFilter() + ")") :
-                                "");
+            // Prepend an arrow to the output entries.
+            if (inputAndOutput && entry.isOutput())
+            {
+                iconLabel.setIcon(arrowIcon);
+            }
+            else
+            {
+                iconLabel.setIcon(null);
+            }
 
+            // Set the entry name text.
+            jarNameLabel.setText(entry.getName());
+
+            // Set the filter text.
+            StringBuffer filter = null;
+            filter = appendFilter(filter, entry.getZipFilter());
+            filter = appendFilter(filter, entry.getEarFilter());
+            filter = appendFilter(filter, entry.getWarFilter());
+            filter = appendFilter(filter, entry.getJarFilter());
+            filter = appendFilter(filter, entry.getFilter());
+
+            if (filter != null)
+            {
+                filter.append(')');
+            }
+
+            filterLabel.setText(filter != null ? filter.toString() : "");
+
+            // Set the colors.
             if (isSelected)
             {
                 cellPanel.setBackground(list.getSelectionBackground());
@@ -314,9 +379,37 @@ class ClassPathPanel extends ListPanel
                 filterLabel.setForeground(list.getForeground());
             }
 
+            // Make the font color red if this is an input file that can't be read.
+            if (!(inputAndOutput && entry.isOutput()) &&
+                !new File(entry.getName()).canRead())
+            {
+                jarNameLabel.setForeground(Color.red);
+            }
+
             cellPanel.setOpaque(true);
 
             return cellPanel;
+        }
+
+
+        private StringBuffer appendFilter(StringBuffer filter, String additionalFilter)
+        {
+            if (filter != null)
+            {
+                filter.append(';');
+            }
+
+            if (additionalFilter != null)
+            {
+                if (filter == null)
+                {
+                    filter = new StringBuffer().append('(');
+                }
+
+                filter.append(additionalFilter);
+            }
+
+            return filter;
         }
     }
 }

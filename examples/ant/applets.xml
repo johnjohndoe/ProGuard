@@ -1,24 +1,26 @@
 <!-- This Ant build file illustrates how to process applets.
-     Usage: ant -f examples/ant/applets.pro -->
+     Usage: ant -f applets.xml -->
 
 <project name="Applets" default="obfuscate" basedir="../..">
 
 <target name="obfuscate">
-   <taskdef name="proguard" classname="proguard.ant.ProGuardTask"
-            classpath="/usr/local/java/proguard/lib/proguard.jar" />
+  <taskdef resource="proguard/ant/task.properties"
+           classpath="lib/proguard.jar" />
 
-   <proguard printseeds="on"
-             outjar="out.jar">
-      <libraryjar name="${java.home}/lib/rt.jar" />
-      <!-- Specify your library jars here. -->
-      <!-- Specify your input jars here. -->
-      <injar name="in.jar" />
+  <proguard printseeds="on">
 
-      <!-- Keep all public applets. -->
-      <keep access="public" extends="java.applet.Applet" />
+    <!-- Specify the input jars, output jars, and library jars. -->
+    <injar  file="in.jar" />
+    <outjar file="out.jar" />
 
-      <!-- Your application may contain more items that need to be preserved;
-        typically classes that are dynamically created using Class.forName -->
+    <libraryjar file="${java.home}/lib/rt.jar" />
+
+    <!-- Preserve all public applets. -->
+    <keep access="public" extends="java.applet.Applet" />
+
+    <!-- Your application may contain more items that need to be preserved;
+         typically classes that are dynamically created using Class.forName -->
+
    </proguard>
 </target>
 

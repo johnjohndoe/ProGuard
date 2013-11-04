@@ -1,6 +1,6 @@
-/* $Id: ConfigurationWriter.java,v 1.4 2003/12/06 22:12:42 eric Exp $
+/* $Id: ConfigurationWriter.java,v 1.10 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -35,6 +35,28 @@ import java.util.*;
  */
 public class ConfigurationWriter
 {
+    private static final String[] KEEP_NAMES_OPTIONS = new String[]
+    {
+        ConfigurationConstants.KEEP_NAMES_OPTION,
+        ConfigurationConstants.KEEP_CLASS_MEMBER_NAMES_OPTION,
+        ConfigurationConstants.KEEP_CLASSES_WITH_MEMBER_NAMES_OPTION
+    };
+
+    private static final String[] KEEP_OPTIONS = new String[]
+    {
+        ConfigurationConstants.KEEP_OPTION,
+        ConfigurationConstants.KEEP_CLASS_MEMBERS_OPTION,
+        ConfigurationConstants.KEEP_CLASSES_WITH_MEMBERS_OPTION
+    };
+
+    private static final String[] ASSUME_NO_SIDE_EFFECT_OPTIONS = new String[]
+    {
+        ConfigurationConstants.ASSUME_NO_SIDE_EFFECTS_OPTION,
+        ConfigurationConstants.ASSUME_NO_SIDE_EFFECTS_OPTION,
+        ConfigurationConstants.ASSUME_NO_SIDE_EFFECTS_OPTION
+    };
+
+
     private PrintWriter writer;
 
 
@@ -81,11 +103,16 @@ public class ConfigurationWriter
      */
     public void write(Configuration configuration) throws IOException
     {
-        // Write the input jars and directories.
-        writeJarOptions(ConfigurationConstants.INJARS_OPTION,       configuration.inJars);
-        writeJarOptions(ConfigurationConstants.RESOURCEJARS_OPTION, configuration.resourceJars);
-        writeJarOptions(ConfigurationConstants.LIBRARYJARS_OPTION,  configuration.libraryJars);
-        writeJarOptions(ConfigurationConstants.OUTJARS_OPTION,      configuration.outJars);
+        // Write the program class path (input and output entries).
+        writeJarOptions(ConfigurationConstants.INJARS_OPTION,
+                        ConfigurationConstants.OUTJARS_OPTION,
+                        configuration.programJars);
+        writer.println();
+
+        // Write the library class path (output entries only).
+        writeJarOptions(ConfigurationConstants.LIBRARYJARS_OPTION,
+                        ConfigurationConstants.LIBRARYJARS_OPTION,
+                        configuration.libraryJars);
         writer.println();
 
         // Write the other options.
@@ -98,37 +125,54 @@ public class ConfigurationWriter
         writeOption(ConfigurationConstants.DONT_WARN_OPTION,                            !configuration.warn);
         writeOption(ConfigurationConstants.DONT_NOTE_OPTION,                            !configuration.note);
         writeOption(ConfigurationConstants.DONT_SHRINK_OPTION,                          !configuration.shrink);
+        writeOption(ConfigurationConstants.DONT_OPTIMIZE_OPTION ,                       !configuration.optimize);
         writeOption(ConfigurationConstants.DONT_OBFUSCATE_OPTION,                       !configuration.obfuscate);
         writeOption(ConfigurationConstants.DONT_USE_MIXED_CASE_CLASS_NAMES_OPTION,      !configuration.useMixedCaseClassNames);
         writeOption(ConfigurationConstants.OVERLOAD_AGGRESSIVELY_OPTION,                configuration.overloadAggressively);
         writeOption(ConfigurationConstants.DEFAULT_PACKAGE_OPTION,                      configuration.defaultPackage);
+        writeOption(ConfigurationConstants.ALLOW_ACCESS_MODIFICATION_OPTION,            configuration.allowAccessModification);
         writeOption(ConfigurationConstants.KEEP_ATTRIBUTES_OPTION,                      ListUtil.commaSeparatedString(configuration.keepAttributes));
         writeOption(ConfigurationConstants.RENAME_SOURCE_FILE_ATTRIBUTE_OPTION,         configuration.newSourceFileAttribute);
         writeOption(ConfigurationConstants.DONT_SKIP_NON_PUBLIC_LIBRARY_CLASSES_OPTION, !configuration.skipNonPublicLibraryClasses);
         writer.println();
 
         // Write the keep options.
-        writeKeepClassFileOptions(configuration.keepClassFileOptions);
-    }
+        writeOptions(KEEP_OPTIONS, configuration.keep);
+
+        // Write the keep names options.
+        writeOptions(KEEP_NAMES_OPTIONS, configuration.keepNames);
+
+        // Write the "no side effect methods" options.
+        writeOptions(ASSUME_NO_SIDE_EFFECT_OPTIONS, configuration.assumeNoSideEffects);
+}
 
 
-    private void writeJarOptions(String optionName, ClassPath classPath)
-    throws IOException
+    private void writeJarOptions(String    inputEntryOptionName,
+                                 String    outputEntryOptionName,
+                                 ClassPath classPath)
     {
         if (classPath != null)
         {
             for (int index = 0; index < classPath.size(); index++)
             {
                 ClassPathEntry entry = classPath.get(index);
+                String optionName = entry.isOutput() ?
+                     outputEntryOptionName :
+                     inputEntryOptionName;
 
                 writer.print(optionName + " " + quotedString(entry.getName()));
 
-                // Append the filter, if any.
-                String filter = entry.getFilter();
-                if (filter != null)
+                // Append the filters, if any.
+                boolean filtered = false;
+
+                filtered = writeFilter(filtered, entry.getZipFilter());
+                filtered = writeFilter(filtered, entry.getEarFilter());
+                filtered = writeFilter(filtered, entry.getWarFilter());
+                filtered = writeFilter(filtered, entry.getJarFilter());
+                filtered = writeFilter(filtered, entry.getFilter());
+
+                if (filtered)
                 {
-                    writer.print(ConfigurationConstants.OPEN_ARGUMENTS_KEYWORD);
-                    writer.print(quotedString(filter));
                     writer.print(ConfigurationConstants.CLOSE_ARGUMENTS_KEYWORD);
                 }
 
@@ -138,8 +182,30 @@ public class ConfigurationWriter
     }
 
 
+    private boolean writeFilter(boolean filtered, String filter)
+    {
+        if (filtered)
+        {
+            writer.print(ConfigurationConstants.SEPARATOR_KEYWORD);
+        }
+
+        if (filter != null)
+        {
+            if (!filtered)
+            {
+                writer.print(ConfigurationConstants.OPEN_ARGUMENTS_KEYWORD);
+            }
+
+            writer.print(quotedString(filter));
+
+            filtered = true;
+        }
+
+        return filtered;
+    }
+
+
     private void writeOption(String optionName, boolean flag)
-    throws IOException
     {
         if (flag)
         {
@@ -149,7 +215,6 @@ public class ConfigurationWriter
 
 
     private void writeOption(String optionName, String arguments)
-    throws IOException
     {
         if (arguments != null)
         {
@@ -158,31 +223,45 @@ public class ConfigurationWriter
     }
 
 
-    private void writeKeepClassFileOption(KeepClassFileOption keepClassFileOption)
-    throws IOException
+    private void writeOptions(String[] optionNames,
+                              List     classSpecifications)
+    {
+        if (classSpecifications != null)
+        {
+            for (int index = 0; index < classSpecifications.size(); index++)
+            {
+                writeOption(optionNames,
+                                              (ClassSpecification)classSpecifications.get(index));
+            }
+        }
+    }
+
+
+    private void writeOption(String[]           optionNames,
+                             ClassSpecification classSpecification)
     {
         writer.println();
 
         // Write out the comments for this option.
-        writeComments(keepClassFileOption.comments);
+        writeComments(classSpecification.comments);
 
-        // Write out the proper keep option name.
-        writeKeepOptionName(keepClassFileOption.markClassFiles,
-                            keepClassFileOption.markConditionally,
-                            keepClassFileOption.onlyKeepNames);
+        // Write out the proper class specification option name.
+        writer.print(optionNames[classSpecification.markConditionally ? 2 :
+                                 classSpecification.markClassFiles    ? 0 :
+                                                                        1]);
 
         writer.print(" ");
 
         // Write out the class access flags.
-        writer.print(ClassUtil.externalClassAccessFlags(keepClassFileOption.requiredUnsetAccessFlags,
+        writer.print(ClassUtil.externalClassAccessFlags(classSpecification.requiredUnsetAccessFlags,
                                                         ConfigurationConstants.NEGATOR_KEYWORD));
 
-        writer.print(ClassUtil.externalClassAccessFlags(keepClassFileOption.requiredSetAccessFlags));
+        writer.print(ClassUtil.externalClassAccessFlags(classSpecification.requiredSetAccessFlags));
 
         // Write out the class keyword, if we didn't write the interface
         // keyword earlier.
-        if (((keepClassFileOption.requiredSetAccessFlags |
-              keepClassFileOption.requiredUnsetAccessFlags) &
+        if (((classSpecification.requiredSetAccessFlags |
+              classSpecification.requiredUnsetAccessFlags) &
              ClassConstants.INTERNAL_ACC_INTERFACE) == 0)
         {
             writer.print("class");
@@ -191,31 +270,25 @@ public class ConfigurationWriter
         writer.print(" ");
 
         // Write out the class name.
-        writer.print(keepClassFileOption.className != null ?
-            ClassUtil.externalClassName(keepClassFileOption.className) :
+        writer.print(classSpecification.className != null ?
+            ClassUtil.externalClassName(classSpecification.className) :
             "*");
 
         // Write out the extends template, if any.
-        if (keepClassFileOption.extendsClassName != null)
+        if (classSpecification.extendsClassName != null)
         {
-            writer.print(" extends " + ClassUtil.externalClassName(keepClassFileOption.extendsClassName));
-        }
-
-        // Write out the as directive, if any.
-        if (keepClassFileOption.asClassName != null)
-        {
-            writer.print(" as " + ClassUtil.externalClassName(keepClassFileOption.asClassName));
+            writer.print(" extends " + ClassUtil.externalClassName(classSpecification.extendsClassName));
         }
 
         // Write out the keep field and keep method options, if any.
-        if (keepClassFileOption.keepFieldOptions  != null ||
-            keepClassFileOption.keepMethodOptions != null)
+        if (classSpecification.fieldSpecifications  != null ||
+            classSpecification.methodSpecifications != null)
         {
             writer.println(" {");
 
-            writeKeepFieldOptions( keepClassFileOption.keepFieldOptions);
-            writeKeepMethodOptions(keepClassFileOption.keepMethodOptions,
-                                   keepClassFileOption.className);
+            writeFieldSpecification( classSpecification.fieldSpecifications);
+            writeMethodSpecification(classSpecification.methodSpecifications,
+                                   classSpecification.className);
             writer.println("}");
         }
         else
@@ -248,42 +321,29 @@ public class ConfigurationWriter
     }
 
 
-    private void writeKeepOptionName(boolean markClassFiles, boolean markConditionally, boolean onlyKeepNames)
+    private void writeFieldSpecification(List classMemberSpecifications)
     {
-        writer.print(onlyKeepNames ?
-            (markConditionally ? ConfigurationConstants.KEEP_CLASSES_WITH_MEMBER_NAMES_OPTION :
-             markClassFiles    ? ConfigurationConstants.KEEP_NAMES_OPTION                     :
-                                 ConfigurationConstants.KEEP_CLASS_MEMBER_NAMES_OPTION) :
-            (markConditionally ? ConfigurationConstants.KEEP_CLASSES_WITH_MEMBERS_OPTION :
-             markClassFiles    ? ConfigurationConstants.KEEP_OPTION                      :
-                                 ConfigurationConstants.KEEP_CLASS_MEMBERS_OPTION));
-    }
-
-
-    private void writeKeepFieldOptions(List keepClassMemberOptions)
-    throws IOException
-    {
-        if (keepClassMemberOptions != null)
+        if (classMemberSpecifications != null)
         {
-            for (int index = 0; index < keepClassMemberOptions.size(); index++)
+            for (int index = 0; index < classMemberSpecifications.size(); index++)
             {
-                KeepClassMemberOption keepClassMemberOption =
-                    (KeepClassMemberOption)keepClassMemberOptions.get(index);
+                ClassMemberSpecification classMemberSpecification =
+                    (ClassMemberSpecification)classMemberSpecifications.get(index);
 
                 writer.print("    ");
 
                 // Write out the field access flags.
-                writer.print(ClassUtil.externalFieldAccessFlags(keepClassMemberOption.requiredUnsetAccessFlags,
+                writer.print(ClassUtil.externalFieldAccessFlags(classMemberSpecification.requiredUnsetAccessFlags,
                                                                 ConfigurationConstants.NEGATOR_KEYWORD));
 
-                writer.print(ClassUtil.externalFieldAccessFlags(keepClassMemberOption.requiredSetAccessFlags));
+                writer.print(ClassUtil.externalFieldAccessFlags(classMemberSpecification.requiredSetAccessFlags));
 
                 // Write out the field name and descriptor.
-                writer.print(keepClassMemberOption.name       != null ||
-                             keepClassMemberOption.descriptor != null ?
+                writer.print(classMemberSpecification.name       != null ||
+                             classMemberSpecification.descriptor != null ?
                     ClassUtil.externalFullFieldDescription(0,
-                                                           keepClassMemberOption.name,
-                                                           keepClassMemberOption.descriptor) :
+                                                           classMemberSpecification.name,
+                                                           classMemberSpecification.descriptor) :
                     ConfigurationConstants.ANY_FIELD_KEYWORD);
 
                 writer.println(";");
@@ -292,31 +352,30 @@ public class ConfigurationWriter
     }
 
 
-    private void writeKeepMethodOptions(List keepClassMemberOptions, String className)
-    throws IOException
+    private void writeMethodSpecification(List classMemberSpecifications, String className)
     {
-        if (keepClassMemberOptions != null)
+        if (classMemberSpecifications != null)
         {
-            for (int index = 0; index < keepClassMemberOptions.size(); index++)
+            for (int index = 0; index < classMemberSpecifications.size(); index++)
             {
-                KeepClassMemberOption keepClassMemberOption =
-                    (KeepClassMemberOption)keepClassMemberOptions.get(index);
+                ClassMemberSpecification classMemberSpecification =
+                    (ClassMemberSpecification)classMemberSpecifications.get(index);
 
                 writer.print("    ");
 
                 // Write out the method access flags.
-                writer.print(ClassUtil.externalMethodAccessFlags(keepClassMemberOption.requiredUnsetAccessFlags,
+                writer.print(ClassUtil.externalMethodAccessFlags(classMemberSpecification.requiredUnsetAccessFlags,
                                                                  ConfigurationConstants.NEGATOR_KEYWORD));
 
-                writer.print(ClassUtil.externalMethodAccessFlags(keepClassMemberOption.requiredSetAccessFlags));
+                writer.print(ClassUtil.externalMethodAccessFlags(classMemberSpecification.requiredSetAccessFlags));
 
                 // Write out the method name and descriptor.
-                writer.print(keepClassMemberOption.name       != null ||
-                             keepClassMemberOption.descriptor != null ?
+                writer.print(classMemberSpecification.name       != null ||
+                             classMemberSpecification.descriptor != null ?
                     ClassUtil.externalFullMethodDescription(className,
                                                             0,
-                                                            keepClassMemberOption.name,
-                                                            keepClassMemberOption.descriptor) :
+                                                            classMemberSpecification.name,
+                                                            classMemberSpecification.descriptor) :
                     ConfigurationConstants.ANY_METHOD_KEYWORD);
 
                 writer.println(";");
@@ -334,23 +393,10 @@ public class ConfigurationWriter
     }
 
 
-    private void writeKeepClassFileOptions(List keepClassFileOptions)
-    throws IOException
-    {
-        if (keepClassFileOptions != null)
-        {
-            for (int index = 0; index < keepClassFileOptions.size(); index++)
-            {
-                writeKeepClassFileOption((KeepClassFileOption)keepClassFileOptions.get(index));
-            }
-        }
-    }
-
-
     /**
      * A main method for testing configuration writing.
      */
-    private static void main(String[] args) {
+    public static void main(String[] args) {
         try
         {
             ConfigurationWriter writer = new ConfigurationWriter(args[0]);

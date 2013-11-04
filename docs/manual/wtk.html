@@ -14,11 +14,11 @@
 (WTK).
 <p>
 
-The WTK already comes with a plug-in for ProGuard as of version 2.0.
-Alternatively, ProGuard offers its own implementation. The latter
-implementation is somewhat more efficient: it invokes the ProGuard engine
-directly, instead of writing out a configuration file and running ProGuard in
-a separate virtual machine.
+The WTK already comes with a plug-in for ProGuard. Alternatively, ProGuard
+offers its own implementation. The latter implementation solves some problems
+and is somewhat more efficient. It invokes the ProGuard engine directly,
+instead of writing out a configuration file and running ProGuard in a separate
+virtual machine.
 <p>
 
 In order to integrate this plug-in in the toolkit, you'll have to put the
@@ -45,6 +45,9 @@ the build process. The build process is started from the WTK menu bar:
 This option will compile, shrink, obfuscate, verify, and install your midlets
 for testing.
 <p>
+Should you ever need to customize your ProGuard configuration for the J2ME WTK,
+you can adapt the configuration file <code>proguard/wtk/default.pro</code>
+that's inside the <code>proguard.jar</code>.
 
 <hr>
 <address>

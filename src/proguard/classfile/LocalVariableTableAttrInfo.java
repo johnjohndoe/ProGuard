@@ -1,6 +1,6 @@
-/* $Id: LocalVariableTableAttrInfo.java,v 1.10 2003/12/06 22:15:38 eric Exp $
+/* $Id: LocalVariableTableAttrInfo.java,v 1.13 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
@@ -81,22 +81,22 @@ public class LocalVariableTableAttrInfo extends AttrInfo
         }
     }
 
-    public void accept(ClassFile classFile, AttrInfoVisitor attrInfoVisitor)
+    public void accept(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, AttrInfoVisitor attrInfoVisitor)
     {
-        attrInfoVisitor.visitLocalVariableTableAttrInfo(classFile, this);
+        attrInfoVisitor.visitLocalVariableTableAttrInfo(classFile, methodInfo, codeAttrInfo, this);
     }
 
 
     /**
      * Applies the given visitor to all local variables.
      */
-    public void localVariablesAccept(ClassFile classFile, LocalVariableInfoVisitor localVariableInfoVisitor)
+    public void localVariablesAccept(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableInfoVisitor localVariableInfoVisitor)
     {
         for (int i = 0; i < u2localVariableTableLength; i++)
         {
             // We don't need double dispatching here, since there is only one
             // type of LocalVariableInfo.
-            localVariableInfoVisitor.visitLocalVariableInfo(classFile, localVariableTable[i]);
+            localVariableInfoVisitor.visitLocalVariableInfo(classFile, methodInfo, codeAttrInfo, localVariableTable[i]);
         }
     }
 }

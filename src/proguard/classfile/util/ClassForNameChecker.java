@@ -1,6 +1,6 @@
-/* $Id: ClassForNameChecker.java,v 1.4 2003/12/06 22:15:38 eric Exp $
+/* $Id: ClassForNameChecker.java,v 1.9 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -155,10 +155,10 @@ implements CpInfoVisitor,
 
     public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo) {}
     public void visitInnerClassesAttrInfo(ClassFile classFile, InnerClassesAttrInfo innerClassesAttrInfo) {}
-    public void visitConstantValueAttrInfo(ClassFile classFile, ConstantValueAttrInfo constantValueAttrInfo) {}
-    public void visitExceptionsAttrInfo(ClassFile classFile, ExceptionsAttrInfo exceptionsAttrInfo) {}
-    public void visitLineNumberTableAttrInfo(ClassFile classFile, LineNumberTableAttrInfo lineNumberTableAttrInfo) {}
-    public void visitLocalVariableTableAttrInfo(ClassFile classFile, LocalVariableTableAttrInfo localVariableTableAttrInfo) {}
+    public void visitConstantValueAttrInfo(ClassFile classFile, FieldInfo fieldInfo, ConstantValueAttrInfo constantValueAttrInfo) {}
+    public void visitExceptionsAttrInfo(ClassFile classFile, MethodInfo methodInfo, ExceptionsAttrInfo exceptionsAttrInfo) {}
+    public void visitLineNumberTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LineNumberTableAttrInfo lineNumberTableAttrInfo) {}
+    public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo) {}
     public void visitSourceFileAttrInfo(ClassFile classFile, SourceFileAttrInfo sourceFileAttrInfo) {}
     public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo) {}
     public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo) {}
@@ -170,41 +170,47 @@ implements CpInfoVisitor,
      * Checks whether the given code is an implementation of class$(String) or
      * class$(String, boolean).
      */
-    public void visitCodeAttrInfo(ClassFile classFile, CodeAttrInfo codeAttrInfo)
+    public void visitCodeAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo)
     {
         // Check whether the first instruction recalls the first argument of
         // this method.
         firstInstructionOk = false;
-        codeAttrInfo.instructionAccept(classFile, this, 0);
+        codeAttrInfo.instructionAccept(classFile, methodInfo, this, 0);
 
         // Continue checking whether the second instruction invokes
         // Class.forName.
         if (firstInstructionOk)
         {
-            codeAttrInfo.instructionAccept(classFile, this, 1);
+            codeAttrInfo.instructionAccept(classFile, methodInfo, this, 1);
         }
     }
 
 
     // Implementations for InstructionVisitor.
 
+    public void visitSimpleInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, SimpleInstruction simpleInstruction) {}
+    public void visitBranchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, BranchInstruction branchInstruction) {}
+    public void visitTableSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, TableSwitchInstruction tableSwitchInstruction) {}
+    public void visitLookUpSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, LookUpSwitchInstruction lookUpSwitchInstruction) {}
+
+
     /**
      * Checks whether this is a valid first instruction for a .class implementation.
      */
-    public void visitInstruction(ClassFile classFile, Instruction instruction)
+    public void visitVariableInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, VariableInstruction variableInstruction)
     {
-        firstInstructionOk = instruction.getOpcode() == Instruction.OP_ALOAD_0;
+        firstInstructionOk = variableInstruction.opcode == InstructionConstants.OP_ALOAD_0;
     }
 
     /**
      * Checks whether this is a valid second instruction for a .class implementation.
      */
-    public void visitCpInstruction(ClassFile classFile, CpInstruction cpInstruction)
+    public void visitCpInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, CpInstruction cpInstruction)
     {
         if (firstInstructionOk &&
-            cpInstruction.getOpcode() == Instruction.OP_INVOKESTATIC)
+            cpInstruction.opcode == InstructionConstants.OP_INVOKESTATIC)
         {
-            classFile.constantPoolEntryAccept(this, cpInstruction.getCpIndex());
+            classFile.constantPoolEntryAccept(this, cpInstruction.cpIndex);
         }
     }
 }

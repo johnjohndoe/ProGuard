@@ -1,6 +1,6 @@
-/* $Id: ListPanel.java,v 1.4 2003/12/06 22:12:42 eric Exp $
+/* $Id: ListPanel.java,v 1.8 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -142,12 +142,9 @@ abstract class ListPanel extends JPanel
      *
      * @param buttonText the button text.
      * @param panel      the other ListPanel.
-     * @param remove     specifies whether to remove the entry from this
-     *                   ListPanel after having copied it.
      */
     public void addCopyToPanelButton(String          buttonText,
-                                     final ListPanel panel,
-                                     final boolean   remove)
+                                     final ListPanel panel)
     {
         JButton moveButton = new JButton(buttonText);
         moveButton.addActionListener(new ActionListener()
@@ -157,11 +154,8 @@ abstract class ListPanel extends JPanel
                 int[]    selectedIndices  = list.getSelectedIndices();
                 Object[] selectedElements = list.getSelectedValues();
 
-                if (remove)
-                {
-                    // Remove the selected elements from this panel.
-                    removeElementsAt(selectedIndices);
-                }
+                // Remove the selected elements from this panel.
+                removeElementsAt(selectedIndices);
 
                 // Add the elements to the other panel.
                 panel.addElements(selectedElements);

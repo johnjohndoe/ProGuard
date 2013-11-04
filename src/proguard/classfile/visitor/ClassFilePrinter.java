@@ -1,6 +1,6 @@
-/* $Id: ClassFilePrinter.java,v 1.15 2003/12/06 22:15:38 eric Exp $
+/* $Id: ClassFilePrinter.java,v 1.22 2004/09/12 11:38:29 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -298,7 +298,7 @@ public class ClassFilePrinter
     }
 
 
-    public void visitConstantValueAttrInfo(ClassFile classFile, ConstantValueAttrInfo constantValueAttrInfo)
+    public void visitConstantValueAttrInfo(ClassFile classFile, FieldInfo fieldInfo, ConstantValueAttrInfo constantValueAttrInfo)
     {
         println(visitorInfo(constantValueAttrInfo) +
                 " Constant value attribute:");
@@ -307,7 +307,7 @@ public class ClassFilePrinter
     }
 
 
-    public void visitExceptionsAttrInfo(ClassFile classFile, ExceptionsAttrInfo exceptionsAttrInfo)
+    public void visitExceptionsAttrInfo(ClassFile classFile, MethodInfo methodInfo, ExceptionsAttrInfo exceptionsAttrInfo)
     {
         println(visitorInfo(exceptionsAttrInfo) +
                 " Exceptions attribute (count = " + exceptionsAttrInfo.u2numberOfExceptions + ")");
@@ -318,35 +318,32 @@ public class ClassFilePrinter
     }
 
 
-    public void visitCodeAttrInfo(ClassFile classFile, CodeAttrInfo codeAttrInfo)
+    public void visitCodeAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo)
     {
         println(visitorInfo(codeAttrInfo) +
-                " Code attribute instructions (code length = "+
-                codeAttrInfo.u4codeLength + "):");
+                " Code attribute instructions (code length = "+ codeAttrInfo.u4codeLength +
+                ", locals = "+ codeAttrInfo.u2maxLocals +
+                ", stack = "+ codeAttrInfo.u2maxStack + "):");
 
         indent();
-        indent();
-        codeAttrInfo.instructionsAccept(classFile, this);
-        outdent();
+
+        codeAttrInfo.instructionsAccept(classFile, methodInfo, this);
 
         println("Code attribute exceptions (count = " +
                 codeAttrInfo.u2exceptionTableLength + "):");
 
-        indent();
-        codeAttrInfo.exceptionsAccept(classFile, this);
-        outdent();
+        codeAttrInfo.exceptionsAccept(classFile, methodInfo, this);
 
         println("Code attribute attributes (attribute count = " +
                 codeAttrInfo.u2attributesCount + "):");
 
-        indent();
-        codeAttrInfo.attributesAccept(classFile, this);
-        outdent();
+        codeAttrInfo.attributesAccept(classFile, methodInfo, this);
+
         outdent();
     }
 
 
-    public void visitLineNumberTableAttrInfo(ClassFile classFile, LineNumberTableAttrInfo lineNumberTableAttrInfo)
+    public void visitLineNumberTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LineNumberTableAttrInfo lineNumberTableAttrInfo)
     {
         println(visitorInfo(lineNumberTableAttrInfo) +
                 " Line number table attribute (count = " + lineNumberTableAttrInfo.u2lineNumberTableLength + ")");
@@ -354,7 +351,7 @@ public class ClassFilePrinter
     }
 
 
-    public void visitLocalVariableTableAttrInfo(ClassFile classFile, LocalVariableTableAttrInfo localVariableTableAttrInfo)
+    public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo)
     {
         println(visitorInfo(localVariableTableAttrInfo) +
                 " Local variable table attribute (count = "+localVariableTableAttrInfo.u2localVariableTableLength + ")");
@@ -411,31 +408,48 @@ public class ClassFilePrinter
 
     // Implementations for InstructionVisitor.
 
-    public void visitInstruction(ClassFile classFile, Instruction instruction)
+    public void visitSimpleInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, SimpleInstruction simpleInstruction)
     {
-        // Just ignore generic instructions.
+        println(InstructionFactory.create(codeAttrInfo.code, offset).toString(offset));
     }
 
 
-    public void visitCpInstruction(ClassFile classFile, CpInstruction cpInstruction)
+    public void visitVariableInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, VariableInstruction variableInstruction)
     {
-        Instruction in = (Instruction)cpInstruction;
-        println("- CpInstruction ["+in.getOpcode()+
-                "] at offset ["+in.getOffset()+
-                "], wide = ["+in.isWide()+
-                "], CpIndex = ["+cpInstruction.getCpIndex()+
-                "]");
-        //println("      - CpInstruction [" +
-        //           cpInstruction.getCpIndex() + "]");
+        println(InstructionFactory.create(codeAttrInfo.code, offset).toString(offset));
+    }
+
+
+    public void visitCpInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, CpInstruction cpInstruction)
+    {
+        println(InstructionFactory.create(codeAttrInfo.code, offset).toString(offset));
+
         indent();
-        classFile.constantPoolEntryAccept(this, cpInstruction.getCpIndex());
+        classFile.constantPoolEntryAccept(this, cpInstruction.cpIndex);
         outdent();
+    }
+
+
+    public void visitBranchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, BranchInstruction branchInstruction)
+    {
+        println(InstructionFactory.create(codeAttrInfo.code, offset).toString(offset));
+    }
+
+    public void visitTableSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, TableSwitchInstruction tableSwitchInstruction)
+    {
+        println(InstructionFactory.create(codeAttrInfo.code, offset).toString(offset));
+    }
+
+
+    public void visitLookUpSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, LookUpSwitchInstruction lookUpSwitchInstruction)
+    {
+        println(InstructionFactory.create(codeAttrInfo.code, offset).toString(offset));
     }
 
 
     // Implementations for ExceptionInfoVisitor.
 
-    public void visitExceptionInfo(ClassFile classFile, ExceptionInfo exceptionInfo)
+    public void visitExceptionInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, ExceptionInfo exceptionInfo)
     {
         println(visitorInfo(exceptionInfo) +
                 " ExceptionInfo:");

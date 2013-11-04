@@ -1,6 +1,6 @@
-/* $Id: ClassPath.java,v 1.3 2003/12/06 22:12:42 eric Exp $
+/* $Id: ClassPath.java,v 1.6 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -33,7 +33,24 @@ public class ClassPath
     private List classPathEntries = new ArrayList();
 
 
-    // Delegates to List
+    /**
+     * Returns whether the class path contains any output entries.
+     */
+    public boolean hasOutput()
+    {
+        for (int index = 0; index < classPathEntries.size(); index++)
+        {
+            if (((ClassPathEntry)classPathEntries.get(index)).isOutput())
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+
+    // Delegates to List.
 
     public void clear()
     {

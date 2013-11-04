@@ -1,6 +1,6 @@
-/* $Id: ExceptionInfo.java,v 1.10 2003/12/06 22:15:38 eric Exp $
+/* $Id: ExceptionInfo.java,v 1.13 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
@@ -57,8 +57,8 @@ public class ExceptionInfo implements VisitorAccepter
 
     private void read(DataInput din) throws IOException
     {
-        u2startpc = din.readUnsignedShort();
-        u2endpc = din.readUnsignedShort();
+        u2startpc   = din.readUnsignedShort();
+        u2endpc     = din.readUnsignedShort();
         u2handlerpc = din.readUnsignedShort();
         u2catchType = din.readUnsignedShort();
     }

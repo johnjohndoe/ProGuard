@@ -1,6 +1,6 @@
-/* $Id: LibraryClassFile.java,v 1.22 2003/12/06 22:15:38 eric Exp $
+/* $Id: LibraryClassFile.java,v 1.29 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
@@ -53,22 +53,19 @@ public class LibraryClassFile implements ClassFile
 
     /**
      * An extra field pointing to the superclass of this class.
-     * This field is filled out by the <code>{@link
-     * proguard.classfile.util.ClassFileInitializer ClassFileInitializer}</code>.
+     * This field is filled out by the <code>{@link ClassFileReferenceInitializer}</code>.
      */
     public ClassFile   superClass          = null;
 
     /**
      * An extra field pointing to the interfaces of this class.
-     * This field is filled out by the <code>{@link
-     * proguard.classfile.util.ClassFileInitializer ClassFileInitializer}</code>.
+     * This field is filled out by the <code>{@link ClassFileReferenceInitializer}</code>.
      */
     public ClassFile[] interfaceClasses    = null;
 
     /**
      * An extra field pointing to the subclasses of this class.
-     * This field is filled out by the <code>{@link
-     * proguard.classfile.util.ClassFileInitializer ClassFileInitializer}</code>.
+     * This field is filled out by the <code>{@link ClassFileReferenceInitializer}</code>.
      */
     public ClassFile[] subClasses          = null;
 
@@ -321,6 +318,11 @@ public class LibraryClassFile implements ClassFile
         return superClassName;
     }
 
+    public String getInterfaceName(int index)
+    {
+        return interfaceNames[index];
+    }
+
     public int getCpTag(int cpIndex)
     {
         return -1;
@@ -371,10 +373,54 @@ public class LibraryClassFile implements ClassFile
     }
 
 
+    public ClassFile getInterface(int index)
+    {
+        return interfaceClasses[index];
+    }
+
+
+    public boolean extends_(ClassFile classFile)
+    {
+        if (this.equals(classFile))
+        {
+            return true;
+        }
+
+        ClassFile superClass = getSuperClass();
+        return superClass != null &&
+               superClass.extends_(classFile);
+    }
+
+
+    public boolean implements_(ClassFile classFile)
+    {
+        if (this.equals(classFile))
+        {
+            return true;
+        }
+
+        if (interfaceClasses != null)
+        {
+            for (int i = 0; i < interfaceClasses.length; i++)
+            {
+                ClassFile interfaceClass = getInterface(i);
+                if (interfaceClass != null &&
+                    interfaceClass.implements_(classFile))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+
     public FieldInfo findField(String name, String descriptor)
     {
         return findLibraryField(name, descriptor);
     }
+
 
     public MethodInfo findMethod(String name, String descriptor)
     {
@@ -386,6 +432,71 @@ public class LibraryClassFile implements ClassFile
     {
         classFileVisitor.visitLibraryClassFile(this);
     }
+
+
+    public void hierarchyAccept(boolean          visitThisClass,
+                                boolean          visitSuperClass,
+                                boolean          visitInterfaces,
+                                boolean          visitSubclasses,
+                                ClassFileVisitor classFileVisitor)
+    {
+        // First visit the current classfile.
+        if (visitThisClass)
+        {
+            accept(classFileVisitor);
+        }
+
+        // Then visit its superclass, recursively.
+        if (visitSuperClass)
+        {
+            if (superClass != null)
+            {
+                superClass.hierarchyAccept(true,
+                                           true,
+                                           visitInterfaces,
+                                           false,
+                                           classFileVisitor);
+            }
+        }
+
+        // Then visit its interfaces, recursively.
+        if (visitInterfaces)
+        {
+            if (interfaceClasses != null)
+            {
+                for (int i = 0; i < interfaceClasses.length; i++)
+                {
+                    ClassFile interfaceClass = getInterface(i);
+                    if (interfaceClass != null)
+                    {
+                        interfaceClass.hierarchyAccept(true,
+                                                       true,
+                                                       true,
+                                                       false,
+                                                       classFileVisitor);
+                    }
+                }
+            }
+        }
+
+        // Then visit its subclasses, recursively.
+        if (visitSubclasses)
+        {
+            if (subClasses != null)
+            {
+                for (int i = 0; i < subClasses.length; i++)
+                {
+                    ClassFile subClass = subClasses[i];
+                    subClass.hierarchyAccept(true,
+                                             false,
+                                             false,
+                                             true,
+                                             classFileVisitor);
+                }
+            }
+        }
+    }
+
 
     public void constantPoolEntriesAccept(CpInfoVisitor cpInfoVisitor)
     {

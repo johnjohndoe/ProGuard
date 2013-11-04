@@ -1,26 +1,29 @@
 <!-- This Ant build file illustrates how to process servlets.
-     Usage: ant -f examples/ant/servlets.pro -->
+     Usage: ant -f servlets.xml -->
 
 <project name="Servlets" default="obfuscate" basedir="../..">
 
 <target name="obfuscate">
-   <taskdef name="proguard" classname="proguard.ant.ProGuardTask"
-            classpath="/usr/local/java/proguard/lib/proguard.jar" />
+  <taskdef resource="proguard/ant/task.properties"
+           classpath="lib/proguard.jar" />
 
-   <proguard printseeds="on"
-             outjar="out.jar">
-      <libraryjar name="${java.home}/lib/rt.jar" />
-      <libraryjar name="/usr/local/java/servlet/servlet.jar" />
-      <!-- Specify your library jars here. -->
-      <!-- Specify your input jars here. -->
-      <injar name="in.jar" />
+  <proguard printseeds="on">
 
-      <!-- Keep all public servlets. -->
-      <keep access="public" implements="javax.servlet.Servlet" />
+    <!-- Specify the input jars, output jars, and library jars. -->
 
-      <!-- Your application may contain more items that need to be preserved;
-        typically classes that are dynamically created using Class.forName -->
-   </proguard>
+    <injar  file="in.jar" />
+    <outjar file="out.jar" />
+
+    <libraryjar file="${java.home}/lib/rt.jar" />
+
+    <!-- Keep all public servlets. -->
+
+    <keep access="public" implements="javax.servlet.Servlet" />
+
+    <!-- Your application may contain more items that need to be preserved;
+         typically classes that are dynamically created using Class.forName -->
+ 
+  </proguard>
 </target>
 
 </project>

@@ -1,6 +1,6 @@
-/* $Id: ClassFileClassForNameReferenceInitializer.java,v 1.3 2003/12/06 22:15:38 eric Exp $
+/* $Id: ClassFileClassForNameReferenceInitializer.java,v 1.12 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -36,7 +36,7 @@ import proguard.classfile.visitor.*;
  * <p>
  * The class file hierarchy must be initialized before using this visitor.
  *
- * @see ClassFileHierarchyInitializer
+ * @see ClassFileReferenceInitializer
  *
  * @author Eric Lafortune
  */
@@ -94,13 +94,19 @@ implements InstructionVisitor,
 
     // Implementations for InstructionVisitor.
 
-    public void visitInstruction(ClassFile classFile, Instruction instruction)
+    public void visitSimpleInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, SimpleInstruction simpleInstruction) {}
+    public void visitBranchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, BranchInstruction branchInstruction) {}
+    public void visitTableSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, TableSwitchInstruction tableSwitchInstruction) {}
+    public void visitLookUpSwitchInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, LookUpSwitchInstruction lookUpSwitchInstruction) {}
+
+
+    public void visitVariableInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, VariableInstruction variableInstruction)
     {
         // Just ignore generic instructions and reset the constant pool indices.
-        switch (instruction.getOpcode())
+        switch (variableInstruction.opcode)
         {
-            case Instruction.OP_ICONST_0:
-            case Instruction.OP_ICONST_1:
+            case InstructionConstants.OP_ICONST_0:
+            case InstructionConstants.OP_ICONST_1:
                 // Still remember any loaded string; this instruction may be
                 // setting up the second argument for class$(String, boolean).
                 break;
@@ -115,14 +121,14 @@ implements InstructionVisitor,
     }
 
 
-    public void visitCpInstruction(ClassFile classFile, CpInstruction cpInstruction)
+    public void visitCpInstruction(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, int offset, CpInstruction cpInstruction)
     {
-        int currentCpIndex = cpInstruction.getCpIndex();
+        int currentCpIndex = cpInstruction.cpIndex;
 
-        switch (cpInstruction.getOpcode())
+        switch (cpInstruction.opcode)
         {
-            case Instruction.OP_LDC:
-            case Instruction.OP_LDC_WIDE:
+            case InstructionConstants.OP_LDC:
+            case InstructionConstants.OP_LDC_W:
                 // Are we loading a constant String?
                 int currentCpTag = classFile.getCpTag(currentCpIndex);
                 if (currentCpTag == ClassConstants.CONSTANT_String)
@@ -136,7 +142,7 @@ implements InstructionVisitor,
                 invokevirtualMethodRefCpIndex = -1;
                 break;
 
-            case Instruction.OP_INVOKESTATIC:
+            case InstructionConstants.OP_INVOKESTATIC:
                 // Are we invoking a static method that might have a constant
                 // String argument?
                 if (ldcStringCpIndex > 0)
@@ -162,7 +168,7 @@ implements InstructionVisitor,
                 invokevirtualMethodRefCpIndex = -1;
                 break;
 
-            case Instruction.OP_INVOKEVIRTUAL:
+            case InstructionConstants.OP_INVOKEVIRTUAL:
                 // Are we invoking a virtual method right after a static method?
                 if (invokestaticMethodRefCpIndex > 0)
                 {
@@ -178,7 +184,7 @@ implements InstructionVisitor,
                 ldcStringCpIndex = -1;
                 break;
 
-            case Instruction.OP_CHECKCAST:
+            case InstructionConstants.OP_CHECKCAST:
                 // Are we checking a cast right after a static method and a
                 // virtual method?
                 if (invokestaticMethodRefCpIndex  > 0 &&

@@ -1,6 +1,6 @@
-/* $Id: MemberInfoLinker.java,v 1.4 2003/12/06 22:15:38 eric Exp $
+/* $Id: MemberInfoLinker.java,v 1.7 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -53,8 +53,8 @@ public class MemberInfoLinker
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
         // Collect all members in this class's name space.
-        programClassFile.accept(new ClassFileUpDownTraveler(true, true, true, false,
-                                new AllMemberInfoVisitor(this)));
+        programClassFile.hierarchyAccept(true, true, true, false,
+                                         new AllMemberInfoVisitor(this));
 
         // Clean up for obfuscation of the next name space.
         memberInfoMap.clear();

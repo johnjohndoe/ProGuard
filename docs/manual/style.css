@@ -15,6 +15,14 @@ h2 {
   padding: 10px;
 }
 
+dt {
+  padding: 6px;
+}
+
+dd {
+  padding: 6px;
+}
+
 pre {
   padding: 10px;
   background: #E0E0E0;

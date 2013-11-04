@@ -15,6 +15,8 @@
 <ol>
 <li><a href="#shrinking">What is shrinking?</a>
 <li><a href="#obfuscation">What is obfuscation?</a>
+<li><a href="#optimization">What kind of optimizations does <b>ProGuard</b>
+    support?</a>
 <li><a href="#jdk1.4">Does <b>ProGuard</b> work with JDK1.4? JDK1.5?</a>
 <li><a href="#j2me">Does <b>ProGuard</b> work with J2ME?</a>
 <li><a href="#ant">Does <b>ProGuard</b> have support for Ant?</a>
@@ -36,9 +38,9 @@ files). Complete programs or program libraries are usually zipped up and
 distributed as Java archives (.jar files). Bytecode is more compact than Java
 source code, but it may still contain a lot of unused code, especially if it
 uses program libraries. Shrinking programs such as <b>ProGuard</b> can analyze
-bytecode and remove unused packages, classes, fields, and methods. The program
-remains functionally equivalent, including the information given in exception
-stack traces.
+bytecode and remove unused classes, fields, and methods. The program remains
+functionally equivalent, including the information given in exception stack
+traces.
 
 <a name="obfuscation">&nbsp;</a>
 <h3>What is obfuscation?</h3>
@@ -52,6 +54,32 @@ it much harder to reverse-engineer the code. It further compacts the code as a
 bonus. The program remains functionally equivalent, except for the class
 names, method names, and line numbers given in exception stack traces.
 
+<a name="optimization">&nbsp;</a>
+<h3>What kind of optimizations does <b>ProGuard</b> support?</h3>
+Apart from removing unused classes, fields, and methods in the shrinking step,
+<b>ProGuard</b> can also perform optimizations at the bytecode level, inside
+methods:
+<ul>
+<li>Evaluating constant expressions.
+<li>Removing unnecessary computations.
+<li>Removing unnecessary field accesses.
+<li>Removing unnecessary method calls.
+<li>Removing unnecessary branches.
+<li>Removing unnecessary comparisons and instanceof tests.
+<li>Removing write-only fields.
+<li>Various peephole optimizations like push/pop simplification.
+<li>Making classes and methods final when possible.
+<li>Inlining simple getters and setters when possible.
+<li>Optionally removing logging code.
+</ul>
+The positive effects of these optimizations will depend on your code and on
+the virtual machine on which the code is executed. Simple virtual machines may
+benefit more than advanced virtual machines with sophisticated JIT compilers.
+At the very least, your bytecode may become a bit smaller.
+<p>
+A notable optimization that isn't supported yet is the inlining of constant
+fields that are not marked as final.
+
 <a name="jdk1.4">&nbsp;</a>
 <h3>Does <b>ProGuard</b> work with JDK1.4? JDK1.5?</h3>
 Yes. Class files compiled with JDK1.4 are targeted at JRE1.2 by default. Class
@@ -62,16 +90,19 @@ older class files. <b>ProGuard</b> handles all versions correctly.
 <a name="j2me">&nbsp;</a>
 <h3>Does <b>ProGuard</b> work with J2ME?</h3>
 Yes. <b>ProGuard</b> itself runs in J2SE, but you can freely specify the
-run-time environment at which your programs are targeted, including J2ME. More
-specifically, you'll specify <code>midpapi.zip</code> as the run-time library,
-instead of J2SE's traditional <code>rt.jar</code>. All of <b>ProGuard</b>'s
-powerful configuration options remain available. The <a
+run-time environment at which your programs are targeted, including J2ME. For
+instance, you can specify <code>midpapi20.jar</code> and
+<code>cldcapi11.jar</code> as the run-time libraries, instead of J2SE's
+traditional <code>rt.jar</code>. All of <b>ProGuard</b>'s powerful
+configuration options remain available. The <a
 href="manual/examples.html">example section</a> of the <a
 href="manual/index.html">ProGuard User Manual</a> illustrates how to process
 <a href="manual/examples.html#midlet">a single midlet</a> or <a
 href="manual/examples.html#midlets">all midlets</a> in your input jar, for
-instance. In addition, <b>ProGuard</b> provides an obfuscator plug-in for the
-J2ME Wireless Toolkit.
+instance.
+<p>
+In addition, <b>ProGuard</b> provides an obfuscator plug-in for the J2ME
+Wireless Toolkit.
 
 <a name="ant">&nbsp;</a>
 <h3>Does <b>ProGuard</b> have support for Ant?</h3>
@@ -105,15 +136,15 @@ accordingly.
 <a name="resource">&nbsp;</a>
 <h3>Does <b>ProGuard</b> handle resource files?</h3>
 Yes, in the sense that <b>ProGuard</b> copies all non-class resource files
-from the given resource jars to the output jar. Their names and contents remain
+from the given input jars to the output jars. Their names and contents remain
 unchanged.
 
 <a name="encrypt">&nbsp;</a>
 <h3>Does <b>ProGuard</b> encrypt strings constants?</h3>
 No. Storing encrypted string constants in program code is fairly futile, since
 the encryption has to be perfectly reversible by definition. Moreover, the
-decryption costs additional memory and computation at run-time. If it is ever
-implemented, a tool to decrypt the strings will be provided.
+decryption costs additional memory and computation at run-time. If this feature
+is ever incorporated, I'll provide a tool to decrypt the strings as well.
 
 <a name="incremental">&nbsp;</a>
 <h3>Does <b>ProGuard</b> support incremental obfuscation?</h3>

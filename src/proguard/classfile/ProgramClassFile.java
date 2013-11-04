@@ -1,6 +1,6 @@
-/* $Id: ProgramClassFile.java,v 1.20 2003/12/06 22:15:38 eric Exp $
+/* $Id: ProgramClassFile.java,v 1.28 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
@@ -57,10 +57,9 @@ public class ProgramClassFile implements ClassFile
 
     /**
      * An extra field pointing to the subclasses of this class.
-     * This field is filled out by the <code>{@link
-     * proguard.classfile.util.ClassFileInitializer ClassFileInitializer}</code>.
+     * This field is filled out by the <code>{@link ClassFileReferenceInitializer}</code>.
      */
-    public ClassFile[]  subClasses = null;
+    public ClassFile[] subClasses = null;
 
     /**
      * An extra field in which visitors can store information.
@@ -111,6 +110,7 @@ public class ProgramClassFile implements ClassFile
         for (int i = 1; i < u2constantPoolCount; i++)
         {
             constantPool[i] = CpInfo.create(din);
+
             int tag = constantPool[i].getTag();
             if (tag == ClassConstants.CONSTANT_Long ||
                 tag == ClassConstants.CONSTANT_Double)
@@ -284,6 +284,11 @@ public class ProgramClassFile implements ClassFile
         return u2superClass == 0 ? null : getCpClassNameString(u2superClass);
     }
 
+    public String getInterfaceName(int index)
+    {
+        return getCpClassNameString(u2interfaces[index]);
+    }
+
     public int getCpTag(int cpIndex)
     {
         return constantPool[cpIndex].getTag();
@@ -339,10 +344,51 @@ public class ProgramClassFile implements ClassFile
     }
 
 
+    public ClassFile getInterface(int index)
+    {
+        return ((ClassCpInfo)constantPool[u2interfaces[index]]).referencedClassFile;
+    }
+
+
+    public boolean extends_(ClassFile classFile)
+    {
+        if (this.equals(classFile))
+        {
+            return true;
+        }
+
+        ClassFile superClass = getSuperClass();
+        return superClass != null &&
+               superClass.extends_(classFile);
+    }
+
+
+    public boolean implements_(ClassFile classFile)
+    {
+        if (this.equals(classFile))
+        {
+            return true;
+        }
+
+        for (int i = 0; i < u2interfacesCount; i++)
+        {
+            ClassFile interfaceClass = getInterface(i);
+            if (interfaceClass != null &&
+                interfaceClass.implements_(classFile))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+
     public FieldInfo findField(String name, String descriptor)
     {
         return findProgramField(name, descriptor);
     }
+
 
     public MethodInfo findMethod(String name, String descriptor)
     {
@@ -354,6 +400,69 @@ public class ProgramClassFile implements ClassFile
     {
         classFileVisitor.visitProgramClassFile(this);
     }
+
+
+    public void hierarchyAccept(boolean          visitThisClass,
+                                boolean          visitSuperClass,
+                                boolean          visitInterfaces,
+                                boolean          visitSubclasses,
+                                ClassFileVisitor classFileVisitor)
+    {
+        // First visit the current classfile.
+        if (visitThisClass)
+        {
+            accept(classFileVisitor);
+        }
+
+        // Then visit its superclass, recursively.
+        if (visitSuperClass)
+        {
+            ClassFile superClass = getSuperClass();
+            if (superClass != null)
+            {
+                superClass.hierarchyAccept(true,
+                                           true,
+                                           visitInterfaces,
+                                           false,
+                                           classFileVisitor);
+            }
+        }
+
+        // Then visit its interfaces, recursively.
+        if (visitInterfaces)
+        {
+            for (int i = 0; i < u2interfacesCount; i++)
+            {
+                ClassFile interfaceClass = getInterface(i);
+                if (interfaceClass != null)
+                {
+                    interfaceClass.hierarchyAccept(true,
+                                                   true,
+                                                   true,
+                                                   false,
+                                                   classFileVisitor);
+                }
+            }
+        }
+
+        // Then visit its subclasses, recursively.
+        if (visitSubclasses)
+        {
+            if (subClasses != null)
+            {
+                for (int i = 0; i < subClasses.length; i++)
+                {
+                    ClassFile subClass = subClasses[i];
+                    subClass.hierarchyAccept(true,
+                                             false,
+                                             false,
+                                             true,
+                                             classFileVisitor);
+                }
+            }
+        }
+    }
+
 
     public void constantPoolEntriesAccept(CpInfoVisitor cpInfoVisitor)
     {

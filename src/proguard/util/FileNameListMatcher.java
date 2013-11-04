@@ -1,6 +1,6 @@
-/* $Id: FileNameListMatcher.java,v 1.2 2003/12/06 22:12:42 eric Exp $
+/* $Id: FileNameListMatcher.java,v 1.5 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -24,7 +24,7 @@ import java.util.List;
 
 
 /**
- * This RegularExpressionMatcher tests whether file names match any entry in a
+ * This StringMatcher tests whether file names match any entry in a
  * given list of regular expressions.
  *
  * @see BasicListMatcher
@@ -58,7 +58,7 @@ public class FileNameListMatcher extends BasicListMatcher
 
     // Overridden method of BasicListMatcher
 
-    protected RegularExpressionMatcher createRegularExpressionMatcher(String regularExpression)
+    protected StringMatcher createBasicMatcher(String regularExpression)
     {
         return new FileNameMatcher(regularExpression);
     }
@@ -67,7 +67,7 @@ public class FileNameListMatcher extends BasicListMatcher
     /**
      * A main method for testing file name matching.
      */
-    private static void main(String[] args)
+    public static void main(String[] args)
     {
         try
         {

@@ -29,8 +29,41 @@ If you're still working with an older version of <b>ProGuard</b>, check out
 the summary of changes below, to see if you're missing something essential.
 Better look at the up-to-date <a
 href="http://proguard.sourceforge.net/downloads.html">on-line version</a> if
-you're reading a local copy of this page.
+you're reading a local copy of this page. The download section may also contain
+updates with sub-minor version numbers. These versions are typically released
+shortly after their parent versions, for applying emergency fixes.
 <p>
+
+<h3>Version 3.0</h3>
+<ul>
+<li>Added bytecode optimization step, inbetween shrinking step and obfuscation
+    step.
+<li>Generalized filtered recursive reading and writing of jars, wars, ears,
+    zips, and directories.
+<li>Added support for grouping input and output jars, wars, ears, zips, and
+    directories.
+<li>Added support for applying mapping files to library classes.
+<li>Removed <code>-resourcejars</code> option. Resources should now be read
+    using regular <code>-injars</code> options, using filters if necessary.
+<li>Rewrote Ant task. Input and output modification dates are not checked at
+    the moment. Minor changes in XML schema:
+    <ul>
+    <li>Filters now specified using attributes.
+    <li>'<code>outjars</code>' now nested element instead of attribute.
+    <li>'<code>type</code>' attribute of <code>&lt;method&gt;</code> element no
+        longer defaults to '<code>void</code>'.
+    <li><code>&lt;</code> and <code>&gt;</code> characters now have to be
+        encoded in embedded configurations.
+    <li><code>&lt;proguardconfiguration&gt;</code> task no longer accepts
+        attributes.
+    </ul>
+<li>Updated J2ME WTK plugin, now customizable through configuration file.
+<li>Updated GUI.
+<li>Fixed various processing bugs.
+<li>Fixed ReTrace parsing bugs.
+<li>Improved jar compression.
+<li>Updated documentation and examples.
+</ul>
 
 <h3>Version 2.1</h3>
 <ul>

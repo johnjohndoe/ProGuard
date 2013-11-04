@@ -1,8 +1,8 @@
-/* $Id: ClassFileInitializer.java,v 1.11 2002/07/13 16:55:21 eric Exp $
+/* $Id: ClassFileInitializer.java,v 1.16 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
- * Copyright (C) 2002 Eric Lafortune (eric@graphics.cornell.edu)
+ * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -21,14 +21,34 @@
 package proguard.classfile.util;
 
 import proguard.classfile.*;
-import proguard.classfile.instruction.*;
 import proguard.classfile.visitor.*;
-
-import java.util.*;
 
 
 /**
- * This ClassFileVisitor initializes itself and all of its elements.
+ * This ClassFileVisitor initializes the references and the class hierarchy of
+ * all class files it visits.
+ * <p>
+ * Visited class files are added to the subclass list of their superclasses and
+ * interfaces. These subclass lists make it more convenient to travel down the
+ * class hierarchy.
+ * <p>
+ * All class constant pool entries get direct references to the corresponding
+ * classes. These references make it more convenient to travel up and across
+ * the class hierarchy.
+ * <p>
+ * All field and method reference constant pool entries get direct references
+ * to the corresponding classes, fields, and methods.
+ * <p>
+ * All name and type constant pool entries get a list of direct references to
+ * the classes listed in the type.
+ * <p>
+ * Visited library class files get direct references to their superclasses and
+ * interfaces, replacing the superclass names and interface names. The direct
+ * references are equivalent to the names, but they are more efficient to work
+ * with.
+ * <p>
+ * This visitor optionally prints warnings if some items can't be found, and
+ * notes on the usage of <code>(SomeClass)Class.forName(variable).newInstance()</code>.
  *
  * @author Eric Lafortune
  */
@@ -36,39 +56,26 @@ public class ClassFileInitializer
   implements ClassFileVisitor,
              MemberInfoVisitor,
              CpInfoVisitor,
-             AttrInfoVisitor,
-             InstructionVisitor
+             AttrInfoVisitor
 {
-    // A visitor info flag to indicate the visitor accepter has been initialized.
+    // A visitor info flag to indicate the class file has been initialized.
     private static final Object INITIALIZED = new Object();
 
+    // A reusable object for checking whether referenced methods are Class.forName,...
+    private ClassFileClassForNameReferenceInitializer classFileClassForNameReferenceInitializer;
 
     private ClassPool programClassPool;
     private ClassPool libraryClassPool;
     private boolean   warn;
-    private boolean   note;
-    private int       classFileWarningCount;
-    private int       memberWarningCount;
-    private int       noteCount;
 
-    // A field acting as a parameter to the visitProgramClassFile and
-    // visitLibraryClassFile methods.
-    private ClassFile subclass;
-
-    // Helper class for checking whether refernced methods are Class.forName,...
-    private MyClassForNameFinder classForNameFinder = new MyClassForNameFinder();
-
-    // Fields to remember the previous StringCpInfo and MethodRefCpInfo objects
-    // while visiting all instructions (to find Class.forName, class$, and
-    // Class.newInstance invocations, and possible class casts afterwards).
-    private int ldcStringCpIndex              = -1;
-    private int invokestaticMethodRefCpIndex  = -1;
-    private int invokevirtualMethodRefCpIndex = -1;
+    // Counters for warnings.
+    private int hierarchyWarningCount;
+    private int referenceWarningCount;
 
 
     /**
-     * Creates a new ClassFileInitializer that initializes all visited class files,
-     * printing warnings if some items can't be found.
+     * Creates a new ClassFileInitializer that initializes the hierarchy
+     * of all visited class files, printing warnings if some classes can't be found.
      */
     public ClassFileInitializer(ClassPool programClassPool,
                                 ClassPool libraryClassPool)
@@ -78,8 +85,9 @@ public class ClassFileInitializer
 
 
     /**
-     * Creates a new ClassFileInitializer that initializes all visited class files.
-     * If desired, the initializer will print warnings if some items can't be found.
+     * Creates a new ClassFileInitializer that initializes the hierarchy
+     * of all visited class files, optionally printing warnings if some classes
+     * can't be found.
      */
     public ClassFileInitializer(ClassPool programClassPool,
                                 ClassPool libraryClassPool,
@@ -89,17 +97,19 @@ public class ClassFileInitializer
         this.programClassPool = programClassPool;
         this.libraryClassPool = libraryClassPool;
         this.warn             = warn;
-        this.note             = note;
+
+        classFileClassForNameReferenceInitializer =
+            new ClassFileClassForNameReferenceInitializer(programClassPool, note);
     }
 
 
     /**
      * Returns the number of warnings printed about unresolved references to
-     * super classes or interfaces.
+     * superclasses or interfaces.
      */
-    public int getClassFileWarningCount()
+    public int getHierarchyWarningCount()
     {
-        return classFileWarningCount;
+        return hierarchyWarningCount;
     }
 
 
@@ -107,9 +117,9 @@ public class ClassFileInitializer
      * Returns the number of warnings printed about unresolved references to
      * class members in program class files.
      */
-    public int getMemberWarningCount()
+    public int getReferenceWarningCount()
     {
-        return memberWarningCount;
+        return referenceWarningCount;
     }
 
 
@@ -119,92 +129,71 @@ public class ClassFileInitializer
      */
     public int getNoteCount()
     {
-        return noteCount;
+        return classFileClassForNameReferenceInitializer.getNoteCount();
     }
 
 
-    // Implementations for ClassFileVisitor
+    // Implementations for ClassFileVisitor.
 
     public void visitProgramClassFile(ProgramClassFile programClassFile)
     {
-        // Is this some other classes superclass?
-        if (subclass != null)
-        {
-            programClassFile.addSubClass(subclass);
-        }
-
-        // Didn't we initialize this class before?
+        // Haven't we initialized this class before?
         if (!isInitialized(programClassFile))
         {
             // Mark this class.
             markAsInitialized(programClassFile);
 
-            // Start marking superclasses and interfaces of this class.
-            ClassFile oldSubclass = subclass;
-            subclass = programClassFile;
-
-            // Initialize the superclass recursively.
-            if (programClassFile.u2superClass != 0)
-            {
-                initializeCpEntry(programClassFile,
-                                  programClassFile.u2superClass);
-            }
-
-            // Initialize the interfaces recursively.
-            for (int i = 0; i < programClassFile.u2interfacesCount; i++)
-            {
-                initializeCpEntry(programClassFile,
-                                  programClassFile.u2interfaces[i]);
-            }
-
-            // Stop marking superclasses and interfaces of this class.
-            subclass = null;
-
             // Initialize the constant pool entries.
             programClassFile.constantPoolEntriesAccept(this);
+
+            // Add this class to the subclasses of its superclass.
+            if (programClassFile.u2superClass != 0)
+            {
+                addSubclass(programClassFile,
+                            programClassFile.getSuperClass(),
+                            programClassFile.getSuperName());
+            }
+
+            // Add this class to the subclasses of its interfaces.
+            for (int i = 0; i < programClassFile.u2interfacesCount; i++)
+            {
+                addSubclass(programClassFile,
+                            programClassFile.getInterface(i),
+                            programClassFile.getInterfaceName(i));
+            }
 
             // Initialize all fields and methods.
             programClassFile.fieldsAccept(this);
             programClassFile.methodsAccept(this);
-
-            // Restore the subclass marking.
-            subclass = oldSubclass;
         }
     }
 
 
     public void visitLibraryClassFile(LibraryClassFile libraryClassFile)
     {
-        // Is this some other classes superclass?
-        if (subclass != null)
-        {
-            libraryClassFile.addSubClass(subclass);
-        }
-
-        // Didn't we initialize this class before?
+        // Haven't we initialized this class before?
         if (!isInitialized(libraryClassFile))
         {
             // Mark this class.
             markAsInitialized(libraryClassFile);
 
-            // Start marking superclasses and interfaces of this class.
-            ClassFile oldSubclass = subclass;
-            subclass = libraryClassFile;
-
-            // See if we can find the superclass.
+            // Have a closer look at the superclass.
             String superClassName = libraryClassFile.superClassName;
             if (superClassName != null)
             {
-                // Find and initialize the corresponding class file, and save
-                // a reference to it.
-                libraryClassFile.superClass =
-                    findAndInitializeClassFile(libraryClassFile,
-                                               superClassName,
-                                               null,
-                                               libraryClassPool);
+                // Find and initialize the super class.
+                ClassFile superClass = findAndInitializeClass(superClassName);
+
+                // Add this class to the subclasses of its superclass,
+                addSubclass(libraryClassFile,
+                            superClass,
+                            superClassName);
+
+                // Keep a reference to the superclass.
+                libraryClassFile.superClass = superClass;
             }
 
-            // See if we can find the interfaces.
+            // Have a closer look at the interface classes.
             if (libraryClassFile.interfaceNames != null)
             {
                 String[]    interfaceNames   = libraryClassFile.interfaceNames;
@@ -212,20 +201,21 @@ public class ClassFileInitializer
 
                 for (int i = 0; i < interfaceNames.length; i++)
                 {
-                    // Find and initialize the corresponding class file, and
-                    // save a reference to it.
-                    interfaceClasses[i] =
-                        findAndInitializeClassFile(libraryClassFile,
-                                                   interfaceNames[i],
-                                                   null,
-                                                   libraryClassPool);
+                    // Find and initialize the interface class.
+                    String    interfaceName  = interfaceNames[i];
+                    ClassFile interfaceClass = findAndInitializeClass(interfaceName);
+
+                    // Add this class to the subclasses of the interface class.
+                    addSubclass(libraryClassFile,
+                                interfaceClass,
+                                interfaceName);
+
+                    // Keep a reference to the interface class.
+                    interfaceClasses[i] = interfaceClass;
                 }
 
                 libraryClassFile.interfaceClasses = interfaceClasses;
             }
-
-            // Stop marking superclasses and interfaces of this class.
-            subclass = oldSubclass;
 
             // Discard the name Strings. From now on, we'll use the object
             // references.
@@ -235,11 +225,11 @@ public class ClassFileInitializer
     }
 
 
-    // Implementations for MemberInfoVisitor
+    // Implementations for MemberInfoVisitor.
 
-    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programfieldInfo)
+    public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
     {
-        visitMemberInfo(programClassFile, programfieldInfo);
+        visitMemberInfo(programClassFile, programFieldInfo);
     }
 
 
@@ -254,8 +244,8 @@ public class ClassFileInitializer
         programMemberInfo.referencedClassFiles =
             findReferencedClassFiles(programMemberInfo.getDescriptor(programClassFile));
 
-      // Initialize the attributes.
-      programMemberInfo.attributesAccept(programClassFile, this);
+        // Initialize the attributes.
+        programMemberInfo.attributesAccept(programClassFile, this);
     }
 
 
@@ -263,7 +253,7 @@ public class ClassFileInitializer
     public void visitLibraryMethodInfo(LibraryClassFile libraryClassFile, LibraryMethodInfo libraryMethodInfo) {}
 
 
-    // Implementations for CpInfoVisitor
+    // Implementations for CpInfoVisitor.
 
     public void visitIntegerCpInfo(ClassFile classFile, IntegerCpInfo integerCpInfo) {}
     public void visitLongCpInfo(ClassFile classFile, LongCpInfo longCpInfo) {}
@@ -296,55 +286,53 @@ public class ClassFileInitializer
         String className = refCpInfo.getClassName(classFile);
 
         // See if we can find the referenced class file.
-        // Only look for referenced class files in the program class pool.
-        // Unresolved references are assumed to refer to library class files.
-        ProgramClassFile referencedClassFile =
-            (ProgramClassFile)programClassPool.getClass(className);
+        // Unresolved references are assumed to refer to library class files
+        // that will not change anyway.
+        ClassFile referencedClassFile = findClass(className);
+
         if (referencedClassFile != null)
         {
-            // Make sure the referenced class and its super classes are initialized.
-            referencedClassFile.accept(this);
-
             String name = refCpInfo.getName(classFile);
             String type = refCpInfo.getType(classFile);
 
             // For efficiency, first see if we can find the member in the
             // referenced class itself.
-            ProgramMemberInfo referencedMemberInfo = isFieldRef ?
-                (ProgramMemberInfo)referencedClassFile.findField(name, type) :
-                (ProgramMemberInfo)referencedClassFile.findMethod(name, type);
+            MemberInfo referencedMemberInfo = isFieldRef ?
+                (MemberInfo)referencedClassFile.findField(name, type) :
+                (MemberInfo)referencedClassFile.findMethod(name, type);
 
             if (referencedMemberInfo != null)
             {
                 // Save the references.
                 refCpInfo.referencedClassFile  = referencedClassFile;
                 refCpInfo.referencedMemberInfo = referencedMemberInfo;
+
                 return;
             }
 
             // We didn't find the member yet. Organize a search in the hierarchy
-            // of super classes and interfaces. This can happen with classes
-            // compiled in JDK 1.4.
+            // of superclasses and interfaces. This can happen with classes
+            // compiled with "-target 1.2" (the default in JDK 1.4).
             MyMemberFinder memberFinder = new MyMemberFinder();
             try {
-                referencedClassFile.accept(
-                    new ClassFileUpDownTraveler(true, true, true, false,
-                        isFieldRef ?
-                            (ClassFileVisitor)new NamedFieldVisitor(memberFinder, name, type) :
-                            (ClassFileVisitor)new NamedMethodVisitor(memberFinder, name, type)));
+                referencedClassFile.hierarchyAccept(true, true, true, false,
+                    isFieldRef ?
+                        (ClassFileVisitor)new NamedFieldVisitor(memberFinder, name, type) :
+                        (ClassFileVisitor)new NamedMethodVisitor(memberFinder, name, type));
             }
             catch (MyMemberFinder.MemberFoundException ex)
             {
                 // Save the references.
                 refCpInfo.referencedClassFile  = memberFinder.programClassFile;
                 refCpInfo.referencedMemberInfo = memberFinder.programMemberInfo;
+
                 return;
             }
 
             // We've visited the entire hierarchy and still no member...
             if (warn)
             {
-                memberWarningCount++;
+                referenceWarningCount++;
                 System.err.println("Warning: " +
                                    ClassUtil.externalClassName(classFile.getName()) +
                                    ": can't find referenced " +
@@ -360,22 +348,8 @@ public class ClassFileInitializer
 
     public void visitClassCpInfo(ClassFile classFile, ClassCpInfo classCpInfo)
     {
-        // Didn't we initialize this entry before (for the superclass or interfaces)?
-        if (!isInitialized(classCpInfo))
-        {
-            // Mark this entry.
-            markAsInitialized(classCpInfo);
-
-            // Find and initialize the corresponding class file, and save a
-            // reference to it.
-            classCpInfo.referencedClassFile =
-                findAndInitializeClassFile(classFile,
-                                           classCpInfo.getName(classFile),
-                                           programClassPool,
-                                           subclass != null ?
-                                               libraryClassPool :
-                                               null);
-        }
+        classCpInfo.referencedClassFile =
+            findAndInitializeClass(classCpInfo.getName(classFile));
     }
 
 
@@ -386,266 +360,44 @@ public class ClassFileInitializer
     }
 
 
-    // Implementations for AttrInfoVisitor
+    // Implementations for AttrInfoVisitor.
 
-    public void visitAttrInfo(ClassFile classFile, AttrInfo attrInfo) {}
+    public void visitUnknownAttrInfo(ClassFile classFile, UnknownAttrInfo unknownAttrInfo) {}
     public void visitInnerClassesAttrInfo(ClassFile classFile, InnerClassesAttrInfo innerClassesAttrInfo) {}
-    public void visitConstantValueAttrInfo(ClassFile classFile, ConstantValueAttrInfo constantValueAttrInfo) {}
-    public void visitExceptionsAttrInfo(ClassFile classFile, ExceptionsAttrInfo exceptionsAttrInfo) {}
-    public void visitLineNumberTableAttrInfo(ClassFile classFile, LineNumberTableAttrInfo lineNumberTableAttrInfo) {}
-    public void visitLocalVariableTableAttrInfo(ClassFile classFile, LocalVariableTableAttrInfo localVariableTableAttrInfo) {}
+    public void visitConstantValueAttrInfo(ClassFile classFile, FieldInfo fieldInfo, ConstantValueAttrInfo constantValueAttrInfo) {}
+    public void visitExceptionsAttrInfo(ClassFile classFile, MethodInfo methodInfo, ExceptionsAttrInfo exceptionsAttrInfo) {}
+    public void visitLineNumberTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LineNumberTableAttrInfo lineNumberTableAttrInfo) {}
+    public void visitLocalVariableTableAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, LocalVariableTableAttrInfo localVariableTableAttrInfo) {}
     public void visitSourceFileAttrInfo(ClassFile classFile, SourceFileAttrInfo sourceFileAttrInfo) {}
+    public void visitSourceDirAttrInfo(ClassFile classFile, SourceDirAttrInfo sourceDirAttrInfo) {}
     public void visitDeprecatedAttrInfo(ClassFile classFile, DeprecatedAttrInfo deprecatedAttrInfo) {}
     public void visitSyntheticAttrInfo(ClassFile classFile, SyntheticAttrInfo syntheticAttrInfo) {}
+    public void visitSignatureAttrInfo(ClassFile classFile, SignatureAttrInfo signatureAttrInfo) {}
 
 
-    public void visitCodeAttrInfo(ClassFile classFile, CodeAttrInfo codeAttrInfo)
+    public void visitCodeAttrInfo(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo)
     {
-        codeAttrInfo.instructionsAccept(classFile, this);
-    }
-
-
-    // Implementations for InstructionVisitor
-
-    public void visitInstruction(ClassFile classFile, Instruction instruction)
-    {
-        // Just ignore generic instructions and reset the constant pool indices.
-        ldcStringCpIndex              = -1;
-        invokestaticMethodRefCpIndex  = -1;
-        invokevirtualMethodRefCpIndex = -1;
-    }
-
-
-    public void visitCpInstruction(ClassFile classFile, CpInstruction cpInstruction)
-    {
-        int currentCpIndex = cpInstruction.getCpIndex();
-
-        switch (cpInstruction.getOpcode())
-        {
-            case Instruction.OP_LDC:
-            case Instruction.OP_LDC_WIDE:
-                // Are we loading a constant String?
-                int currentCpTag = classFile.getCpTag(currentCpIndex);
-                if (currentCpTag == ClassConstants.CONSTANT_String)
-                {
-                    // Remember it; it might be the argument of Class.forName.
-                    ldcStringCpIndex = currentCpIndex;
-                }
-                invokestaticMethodRefCpIndex  = -1;
-                invokevirtualMethodRefCpIndex = -1;
-                break;
-
-            case Instruction.OP_INVOKESTATIC:
-                // Are we invoking a static method that might have a constant
-                // String argument?
-                if (ldcStringCpIndex > 0)
-                {
-                    classForNameFinder.reset();
-                    // First check whether the method reference points to Class.forName.
-                    classFile.constantPoolEntryAccept(classForNameFinder, currentCpIndex);
-                    // Then fill out the class file reference in the String, if applicable.
-                    classFile.constantPoolEntryAccept(classForNameFinder, ldcStringCpIndex);
-
-                    invokestaticMethodRefCpIndex = -1;
-                }
-                else
-                {
-                    // Just remember it; it might still be a Class.forName.
-                    invokestaticMethodRefCpIndex = currentCpIndex;
-                }
-
-                ldcStringCpIndex              = -1;
-                invokevirtualMethodRefCpIndex = -1;
-                break;
-
-            case Instruction.OP_INVOKEVIRTUAL:
-                // Are we invoking a virtual method right after a static method?
-                if (invokestaticMethodRefCpIndex > 0)
-                {
-                    // Remember it; it might be Class.newInstance after a Class.forName.
-                    invokevirtualMethodRefCpIndex = currentCpIndex;
-                }
-                else
-                {
-                    invokestaticMethodRefCpIndex  = -1;
-                    invokevirtualMethodRefCpIndex = -1;
-                }
-
-                ldcStringCpIndex = -1;
-                break;
-
-            case Instruction.OP_CHECKCAST:
-                // Are we checking a cast right after a static method and a
-                // virtual method?
-                if (invokestaticMethodRefCpIndex  > 0 &&
-                    invokevirtualMethodRefCpIndex > 0)
-                {
-                    classForNameFinder.reset();
-                    // First check whether the first method reference points to Class.forName.
-                    classFile.constantPoolEntryAccept(classForNameFinder, invokestaticMethodRefCpIndex);
-                    // Then check whether the second method reference points to Class.newInstance.
-                    classFile.constantPoolEntryAccept(classForNameFinder, invokevirtualMethodRefCpIndex);
-                    // Then figure out which class is being cast to.
-                    classFile.constantPoolEntryAccept(classForNameFinder, currentCpIndex);
-                }
-
-                ldcStringCpIndex              = -1;
-                invokestaticMethodRefCpIndex  = -1;
-                invokevirtualMethodRefCpIndex = -1;
-                break;
-
-            default:
-                // Nothing interesting; just forget about previous indices.
-                ldcStringCpIndex              = -1;
-                invokestaticMethodRefCpIndex  = -1;
-                invokevirtualMethodRefCpIndex = -1;
-                break;
-        }
-    }
-
-
-    /**
-     * This CpInfoVisitor is designed to visit one or two method references first,
-     * and then a string or a class reference.
-     * If the method reference is Class.forName or .class, the class file
-     * reference of the string is filled out.
-     * If the method reference is Class.forName and then Class.newInstance,
-     * a note of it is made.
-     */
-    private class MyClassForNameFinder implements CpInfoVisitor
-    {
-        private boolean isClassForNameInvocation;
-        private boolean isDotClassInvocation;
-        private boolean isClassForNameInstanceInvocation;
-
-        public void reset()
-        {
-            isClassForNameInvocation         = false;
-            isDotClassInvocation             = false;
-            isClassForNameInstanceInvocation = false;
-        }
-
-
-        public void visitIntegerCpInfo(ClassFile classFile, IntegerCpInfo integerCpInfo) {}
-        public void visitLongCpInfo(ClassFile classFile, LongCpInfo longCpInfo) {}
-        public void visitFloatCpInfo(ClassFile classFile, FloatCpInfo floatCpInfo) {}
-        public void visitDoubleCpInfo(ClassFile classFile, DoubleCpInfo doubleCpInfo) {}
-        public void visitUtf8CpInfo(ClassFile classFile, Utf8CpInfo utf8CpInfo) {}
-        public void visitFieldrefCpInfo(ClassFile classFile, FieldrefCpInfo fieldrefCpInfo) {}
-        public void visitInterfaceMethodrefCpInfo(ClassFile classFile, InterfaceMethodrefCpInfo interfaceMethodrefCpInfo) {}
-        public void visitNameAndTypeCpInfo(ClassFile classFile, NameAndTypeCpInfo nameAndTypeCpInfo) {}
-
-
-        public void visitMethodrefCpInfo(ClassFile classFile, MethodrefCpInfo methodrefCpInfo)
-        {
-            String className  = methodrefCpInfo.getClassName(classFile);
-            String methodName = methodrefCpInfo.getName(classFile);
-            String methodType = methodrefCpInfo.getType(classFile);
-
-            // Is it a reference to Class.newInstance, following a reference to
-            // Class.forName?
-            isClassForNameInstanceInvocation =
-                isClassForNameInvocation                                              &&
-                className .equals(ClassConstants.INTERNAL_CLASS_NAME_JAVA_LANG_CLASS) &&
-                methodName.equals(ClassConstants.INTERNAL_METHOD_NAME_NEW_INSTANCE)   &&
-                methodType.equals(ClassConstants.INTERNAL_METHOD_TYPE_NEW_INSTANCE);
-
-            // Is it a reference to Class.forName?
-            isClassForNameInvocation =
-                className .equals(ClassConstants.INTERNAL_CLASS_NAME_JAVA_LANG_CLASS) &&
-                methodName.equals(ClassConstants.INTERNAL_METHOD_NAME_CLASS_FOR_NAME) &&
-                methodType.equals(ClassConstants.INTERNAL_METHOD_TYPE_CLASS_FOR_NAME);
-
-            // Is it a reference to .class?
-            // Note that .class is implemented as "static Class class$(String)".
-            isDotClassInvocation =
-                className .equals(classFile.getName())                           &&
-                methodName.equals(ClassConstants.INTERNAL_METHOD_NAME_DOT_CLASS) &&
-                methodType.equals(ClassConstants.INTERNAL_METHOD_TYPE_DOT_CLASS);
-        }
-
-
-        public void visitStringCpInfo(ClassFile classFile, StringCpInfo stringCpInfo)
-        {
-            if (isClassForNameInvocation ||
-                isDotClassInvocation)
-            {
-                // Find and initialize the corresponding class file, and save a
-                // reference to it.
-                String externalClassName = stringCpInfo.getString(classFile);
-                String internalClassName = ClassUtil.internalClassName(externalClassName);
-
-                stringCpInfo.referencedClassFile =
-                    findAndInitializeClassFile(classFile,
-                                               internalClassName,
-                                               programClassPool,
-                                               null);
-            }
-        }
-
-
-        public void visitClassCpInfo(ClassFile classFile, ClassCpInfo classCpInfo)
-        {
-            if (isClassForNameInstanceInvocation)
-            {
-                if (note)
-                {
-                    noteCount++;
-                    System.err.println("Note: " +
-                                       ClassUtil.externalClassName(classFile.getName()) +
-                                       " calls '(" +
-                                       ClassUtil.externalClassName(classCpInfo.getName(classFile)) +
-                                       ")Class.forName(variable).newInstance()'");
-                }
-            }
-        }
+        codeAttrInfo.instructionsAccept(classFile, methodInfo, classFileClassForNameReferenceInitializer);
     }
 
 
     // Small utility methods.
 
     /**
-     * Finds and intializes a given class.
+     * Finds and initializes a class with the given name.
+     *
+     * @see #findClass(String)
      */
-    private ClassFile findAndInitializeClassFile(ClassFile classFile,
-                                                 String    className,
-                                                 ClassPool programClassPool,
-                                                 ClassPool libraryClassPool)
+    private ClassFile findAndInitializeClass(String name)
     {
-        ClassFile referencedClassFile = null;
+        // Try to find the class file.
+        ClassFile referencedClassFile = findClass(name);
 
-        // Do we have a program class pool to look in?
-        if (programClassPool != null)
+        // Did we find the referenced class file in either class pool?
+        if (referencedClassFile != null)
         {
-            referencedClassFile = programClassPool.getClass(className);
-        }
-
-        // Do we have a library class pool to look in?
-        if (libraryClassPool != null)
-        {
-            // Did we find a referenced class file yet?
-            if (referencedClassFile == null)
-            {
-                // Try to find one in the library class pool.
-                referencedClassFile = libraryClassPool.getClass(className);
-            }
-
-            // Did we find a referenced class file in either class pool?
-            if (referencedClassFile != null)
-            {
-                // Descend to initialize it.
-                referencedClassFile.accept(this);
-            }
-            else if (warn)
-            {
-                // We're only warning if we were asked to look in the library
-                // class pool and still didn't find the class file.
-                classFileWarningCount++;
-                System.err.println("Warning: " +
-                                   ClassUtil.externalClassName(classFile.getName()) +
-                                   ": can't find superclass or interface " +
-                                   ClassUtil.externalClassName(className));
-            }
+            // Initialize it.
+            referencedClassFile.accept(this);
         }
 
         return referencedClassFile;
@@ -672,7 +424,7 @@ public class ClassFileInitializer
             {
                 String name = enumeration.nextClassName();
 
-                ClassFile referencedClassFile = programClassPool.getClass(name);
+                ClassFile referencedClassFile = findClass(name);
 
                 if (referencedClassFile != null)
                 {
@@ -692,28 +444,58 @@ public class ClassFileInitializer
 
 
     /**
-     * Initializes the given constant pool entry of the given class.
+     * Returns the class with the given name, either for the program class pool
+     * or from the library class pool, or <code>null</code> if it can't be found.
      */
-    private void initializeCpEntry(ClassFile classFile, int index)
+    private ClassFile findClass(String name)
     {
-         classFile.constantPoolEntryAccept(this, index);
+        // First look for the class in the program class pool.
+        ClassFile classFile = programClassPool.getClass(name);
+
+        // Otherwise look for the class in the library class pool.
+        if (classFile == null)
+        {
+            classFile = libraryClassPool.getClass(name);
+        }
+
+        return classFile;
     }
 
 
-    static void markAsInitialized(VisitorAccepter visitorAccepter)
+    private static void markAsInitialized(VisitorAccepter visitorAccepter)
     {
         visitorAccepter.setVisitorInfo(INITIALIZED);
     }
 
 
-    static boolean isInitialized(VisitorAccepter visitorAccepter)
+    private static boolean isInitialized(VisitorAccepter visitorAccepter)
     {
         return visitorAccepter.getVisitorInfo() == INITIALIZED;
     }
 
 
+    private void addSubclass(ClassFile subclass,
+                             ClassFile classFile,
+                             String    className)
+    {
+        if (classFile != null)
+        {
+            classFile.addSubClass(subclass);
+        }
+        else if (warn)
+        {
+            // We didn't find the superclass or interface. Print a warning.
+            hierarchyWarningCount++;
+            System.err.println("Warning: " +
+                               ClassUtil.externalClassName(subclass.getName()) +
+                               ": can't find superclass or interface " +
+                               ClassUtil.externalClassName(className));
+        }
+    }
+
+
     /**
-     * A utility class that throws a MemberFoundException whenever it visits
+     * This utility class throws a MemberFoundException whenever it visits
      * a member. For program class files, it then also stores the class file
      * and member info.
      */
@@ -726,7 +508,7 @@ public class ClassFileInitializer
         private ProgramMemberInfo programMemberInfo;
 
 
-        // Implementations for MemberInfoVisitor
+        // Implementations for MemberInfoVisitor.
 
         public void visitProgramFieldInfo(ProgramClassFile programClassFile, ProgramFieldInfo programFieldInfo)
         {

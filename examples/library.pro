@@ -5,12 +5,13 @@
 #     java -jar proguard.jar @library.pro
 #
 
-# Specify the library jars, input jars, and output jar.
+# Specify the input jars, output jars, and library jars.
 # In this case, the input jar is the program library that we want to process.
 
+-injars  in.jar
+-outjars out.jar
+
 -libraryjars  <java.home>/lib/rt.jar
--injars       in.jar
--outjar       out.jar
 
 # Save the obfuscation mapping to a file, so we can de-obfuscate any stack
 # traces later on. Keep a fixed source file attribute and all line number
@@ -19,8 +20,7 @@
 
 -printmapping out.map
 -renamesourcefileattribute SourceFile
--keepattributes SourceFile,LineNumberTable,Deprecated,Signature
-
+-keepattributes InnerClasses,SourceFile,LineNumberTable,Deprecated
 
 # Preserve all public classes, and their public and protected fields and
 # methods.
@@ -29,7 +29,6 @@
     public protected *;
 }
 
-
 # Preserve all .class method names.
 
 -keepclassmembernames class * {
@@ -37,13 +36,11 @@
     java.lang.Class class$(java.lang.String, boolean);
 }
 
-
 # Preserve all native method names and the names of their classes.
 
 -keepclasseswithmembernames class * {
     native <methods>;
 }
-
 
 # Explicitly preserve all serialization members. The Serializable interface
 # is only a marker interface, so it wouldn't save them.
@@ -58,7 +55,6 @@
     Object writeReplace();
     Object readResolve();
 }
-
 
 # Your library may contain more items that need to be preserved; 
 # typically classes that are dynamically created using Class.forName:

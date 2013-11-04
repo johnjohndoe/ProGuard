@@ -1,6 +1,6 @@
-/* $Id: MappingReader.java,v 1.4 2003/12/06 22:12:42 eric Exp $
+/* $Id: MappingReader.java,v 1.8 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -113,6 +113,8 @@ public class MappingReader
         // See if we can parse "___ -> ___:", containing the original
         // class name and the new class name.
 
+        line = line.trim();
+
         int arrowIndex = line.indexOf("->");
         if (arrowIndex < 0)
         {
@@ -145,8 +147,10 @@ public class MappingReader
                                            MappingProcessor mappingProcessor)
     {
         // See if we can parse "    ___:___:___ ___ -> ___",
-        // containing the line numbers, the return type, the original
+        // containing the optional line numbers, the return type, the original
         // field/method name (including arguments), and the new method name.
+
+        line = line.trim();
 
         int colonIndex1 = line.indexOf(':');
         int colonIndex2 = line.indexOf(':', colonIndex1 + 1);

@@ -1,6 +1,6 @@
-/* $Id: ConstantTiming.java,v 1.5 2003/12/13 20:09:41 eric Exp $
+/* $Id: ConstantTiming.java,v 1.7 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002-2003 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -41,7 +41,7 @@ public class ConstantTiming implements Timing
 
     /**
      * Creates a new ConstantTiming with a given value.
-     * @param timing the constant calue of the timing.
+     * @param timing the constant value of the timing.
      */
     public ConstantTiming(double timing)
     {

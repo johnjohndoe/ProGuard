@@ -1,6 +1,6 @@
-/* $Id: AttrInfo.java,v 1.17 2003/12/06 22:15:38 eric Exp $
+/* $Id: AttrInfo.java,v 1.20 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
@@ -126,8 +126,40 @@ public abstract class AttrInfo implements VisitorAccepter
 
     /**
      * Accepts the given visitor.
+     * This default implementation does nothing, which is useful for attributes
+     * that require a context.
      */
-    public abstract void accept(ClassFile classFile, AttrInfoVisitor attrInfoVisitor);
+    public void accept(ClassFile classFile, AttrInfoVisitor attrInfoVisitor)
+    {
+        // Do nothing.
+    }
+
+    /**
+     * Accepts the given visitor in the context of a field.
+     * This default implementation ignores the context.
+     */
+    public void accept(ClassFile classFile, FieldInfo fieldInfo, AttrInfoVisitor attrInfoVisitor)
+    {
+        accept(classFile, attrInfoVisitor);
+    }
+
+    /**
+     * Accepts the given visitor in the context of a method.
+     * This default implementation ignores the context.
+     */
+    public void accept(ClassFile classFile, MethodInfo methodInfo, AttrInfoVisitor attrInfoVisitor)
+    {
+        accept(classFile, attrInfoVisitor);
+    }
+
+    /**
+     * Accepts the given visitor in the context of a method's code.
+     * This default implementation ignores the code.
+     */
+    public void accept(ClassFile classFile, MethodInfo methodInfo, CodeAttrInfo codeAttrInfo, AttrInfoVisitor attrInfoVisitor)
+    {
+        accept(classFile, methodInfo, attrInfoVisitor);
+    }
 
 
     // Implementations for VisitorAccepter.

@@ -1,6 +1,6 @@
-/* $Id: ProgramMemberInfo.java,v 1.18 2003/12/06 22:15:38 eric Exp $
+/* $Id: ProgramMemberInfo.java,v 1.24 2004/08/15 12:39:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 1999      Mark Welsh (markw@retrologic.com)
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
@@ -43,7 +43,7 @@ abstract public class ProgramMemberInfo implements MemberInfo
     /**
      * An extra field pointing to the ClassFile objects referenced in the
      * descriptor string. This field is filled out by the <code>{@link
-     * proguard.classfile.util.ClassFileInitializer ClassFileInitializer}</code>.
+     * proguard.classfile.util.ClassFileReferenceInitializer ClassFileReferenceInitializer}</code>.
      * References to primitive types are ignored.
      * References to library classes are left blank (<code>null</code>).
      */
@@ -116,13 +116,8 @@ abstract public class ProgramMemberInfo implements MemberInfo
      * Lets the given attribute info visitor visit all the attributes of
      * this member info.
      */
-    public void attributesAccept(ProgramClassFile programClassFile,
-                                 AttrInfoVisitor  attrInfoVisitor) {
-        for (int i = 0; i < u2attributesCount; i++)
-        {
-            attributes[i].accept(programClassFile, attrInfoVisitor);
-        }
-    }
+    public abstract void attributesAccept(ProgramClassFile programClassFile,
+                                          AttrInfoVisitor  attrInfoVisitor);
 
 
     /**
@@ -191,6 +186,11 @@ abstract public class ProgramMemberInfo implements MemberInfo
     public String getDescriptor(ClassFile classFile)
     {
         return classFile.getCpString(u2descriptorIndex);
+    }
+
+    public void accept(ClassFile classFile, MemberInfoVisitor memberInfoVisitor)
+    {
+        accept((ProgramClassFile)classFile, memberInfoVisitor);
     }
 
 

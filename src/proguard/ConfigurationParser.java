@@ -1,6 +1,6 @@
-/* $Id: ConfigurationParser.java,v 1.5 2003/12/06 22:12:42 eric Exp $
+/* $Id: ConfigurationParser.java,v 1.15 2004/08/28 17:03:30 eric Exp $
  *
- * ProGuard -- obfuscation and shrinking package for Java class files.
+ * ProGuard -- shrinking, optimization, and obfuscation of Java class files.
  *
  * Copyright (c) 2002-2004 Eric Lafortune (eric@graphics.cornell.edu)
  *
@@ -90,16 +90,17 @@ public class ConfigurationParser
                      ConfigurationConstants.INCLUDE_DIRECTIVE                          .startsWith(nextWord)) parseIncludeArgument();
 
             // Then configuration options with or without arguments.
-            else if (ConfigurationConstants.LIBRARYJARS_OPTION                         .startsWith(nextWord)) configuration.libraryJars                 = parseClassPathArgument(configuration.libraryJars);
-            else if (ConfigurationConstants.INJARS_OPTION                              .startsWith(nextWord)) configuration.inJars                      = parseClassPathArgument(configuration.inJars);
-            else if (ConfigurationConstants.RESOURCEJARS_OPTION                        .startsWith(nextWord)) configuration.resourceJars                = parseClassPathArgument(configuration.resourceJars);
-            else if (ConfigurationConstants.OUTJARS_OPTION                             .startsWith(nextWord)) configuration.outJars                     = parseClassPathArgument(configuration.outJars);
-            else if (ConfigurationConstants.KEEP_OPTION                                .startsWith(nextWord)) configuration.keepClassFileOptions        = parseKeepArguments(configuration.keepClassFileOptions, true,  false, false);
-            else if (ConfigurationConstants.KEEP_CLASS_MEMBERS_OPTION                  .startsWith(nextWord)) configuration.keepClassFileOptions        = parseKeepArguments(configuration.keepClassFileOptions, false, false, false);
-            else if (ConfigurationConstants.KEEP_CLASSES_WITH_MEMBERS_OPTION           .startsWith(nextWord)) configuration.keepClassFileOptions        = parseKeepArguments(configuration.keepClassFileOptions, false, true,  false);
-            else if (ConfigurationConstants.KEEP_NAMES_OPTION                          .startsWith(nextWord)) configuration.keepClassFileOptions        = parseKeepArguments(configuration.keepClassFileOptions, true,  false, true);
-            else if (ConfigurationConstants.KEEP_CLASS_MEMBER_NAMES_OPTION             .startsWith(nextWord)) configuration.keepClassFileOptions        = parseKeepArguments(configuration.keepClassFileOptions, false, false, true);
-            else if (ConfigurationConstants.KEEP_CLASSES_WITH_MEMBER_NAMES_OPTION      .startsWith(nextWord)) configuration.keepClassFileOptions        = parseKeepArguments(configuration.keepClassFileOptions, false, true,  true);
+            else if (ConfigurationConstants.LIBRARYJARS_OPTION                         .startsWith(nextWord)) configuration.libraryJars                 = parseClassPathArgument(configuration.libraryJars, false);
+            else if (ConfigurationConstants.INJARS_OPTION                              .startsWith(nextWord)) configuration.programJars                 = parseClassPathArgument(configuration.programJars, false);
+            else if (ConfigurationConstants.OUTJARS_OPTION                             .startsWith(nextWord)) configuration.programJars                 = parseClassPathArgument(configuration.programJars, true);
+            else if (ConfigurationConstants.RESOURCEJARS_OPTION                        .startsWith(nextWord)) throw new ParseException("The '-resourcejars' option is no longer supported. Please use the '-injars' option for all input");
+            else if (ConfigurationConstants.KEEP_OPTION                                .startsWith(nextWord)) configuration.keep                        = parseClassSpecificationArguments(configuration.keep, true,  false);
+            else if (ConfigurationConstants.KEEP_CLASS_MEMBERS_OPTION                  .startsWith(nextWord)) configuration.keep                        = parseClassSpecificationArguments(configuration.keep, false, false);
+            else if (ConfigurationConstants.KEEP_CLASSES_WITH_MEMBERS_OPTION           .startsWith(nextWord)) configuration.keep                        = parseClassSpecificationArguments(configuration.keep, false, true);
+            else if (ConfigurationConstants.KEEP_NAMES_OPTION                          .startsWith(nextWord)) configuration.keepNames                   = parseClassSpecificationArguments(configuration.keepNames, true,  false);
+            else if (ConfigurationConstants.KEEP_CLASS_MEMBER_NAMES_OPTION             .startsWith(nextWord)) configuration.keepNames                   = parseClassSpecificationArguments(configuration.keepNames, false, false);
+            else if (ConfigurationConstants.KEEP_CLASSES_WITH_MEMBER_NAMES_OPTION      .startsWith(nextWord)) configuration.keepNames                   = parseClassSpecificationArguments(configuration.keepNames, false, true);
+            else if (ConfigurationConstants.ASSUME_NO_SIDE_EFFECTS_OPTION              .startsWith(nextWord)) configuration.assumeNoSideEffects         = parseClassSpecificationArguments(configuration.assumeNoSideEffects, false, false);
             else if (ConfigurationConstants.KEEP_ATTRIBUTES_OPTION                     .startsWith(nextWord)) configuration.keepAttributes              = parseKeepAttributesArguments(configuration.keepAttributes);
             else if (ConfigurationConstants.RENAME_SOURCE_FILE_ATTRIBUTE_OPTION        .startsWith(nextWord)) configuration.newSourceFileAttribute      = parseOptionalArgument();
             else if (ConfigurationConstants.PRINT_SEEDS_OPTION                         .startsWith(nextWord)) configuration.printSeeds                  = parseOptionalArgument();
@@ -112,10 +113,12 @@ public class ConfigurationParser
             else if (ConfigurationConstants.DONT_WARN_OPTION                           .startsWith(nextWord)) configuration.warn                        = parseNoArgument(false);
             else if (ConfigurationConstants.DONT_NOTE_OPTION                           .startsWith(nextWord)) configuration.note                        = parseNoArgument(false);
             else if (ConfigurationConstants.DONT_SHRINK_OPTION                         .startsWith(nextWord)) configuration.shrink                      = parseNoArgument(false);
+            else if (ConfigurationConstants.DONT_OPTIMIZE_OPTION                       .startsWith(nextWord)) configuration.optimize                    = parseNoArgument(false);
             else if (ConfigurationConstants.DONT_OBFUSCATE_OPTION                      .startsWith(nextWord)) configuration.obfuscate                   = parseNoArgument(false);
             else if (ConfigurationConstants.DONT_USE_MIXED_CASE_CLASS_NAMES_OPTION     .startsWith(nextWord)) configuration.useMixedCaseClassNames      = parseNoArgument(false);
             else if (ConfigurationConstants.OVERLOAD_AGGRESSIVELY_OPTION               .startsWith(nextWord)) configuration.overloadAggressively        = parseNoArgument(true);
             else if (ConfigurationConstants.DEFAULT_PACKAGE_OPTION                     .startsWith(nextWord)) configuration.defaultPackage              = ClassUtil.internalClassName(parseOptionalArgument());
+            else if (ConfigurationConstants.ALLOW_ACCESS_MODIFICATION_OPTION           .startsWith(nextWord)) configuration.allowAccessModification     = parseNoArgument(true);
             else if (ConfigurationConstants.DONT_SKIP_NON_PUBLIC_LIBRARY_CLASSES_OPTION.startsWith(nextWord)) configuration.skipNonPublicLibraryClasses = parseNoArgument(false);
             else
             {
@@ -137,7 +140,8 @@ public class ConfigurationParser
     }
 
 
-    private ClassPath parseClassPathArgument(ClassPath classPath)
+    private ClassPath parseClassPathArgument(ClassPath classPath,
+                                             boolean   isOutput)
     throws ParseException, IOException
     {
         // Create a new List if necessary.
@@ -152,17 +156,55 @@ public class ConfigurationParser
             readNextWord("jar or directory name");
 
             // Create a new class path entry.
-            ClassPathEntry entry = new ClassPathEntry(replaceSystemProperties(nextWord));
+            ClassPathEntry entry = new ClassPathEntry(replaceSystemProperties(nextWord),
+                                                      isOutput);
 
             // Read the opening parenthesis or the separator, if any.
             readNextWord();
 
             // Read the optional filters.
             if (!configurationEnd() &&
-                nextWord.equals(ConfigurationConstants.OPEN_ARGUMENTS_KEYWORD))
+                ConfigurationConstants.OPEN_ARGUMENTS_KEYWORD.equals(nextWord))
             {
-                // Apply the filter to the class path entry.
-                entry.setFilter(ListUtil.commaSeparatedString(parseCommaSeparatedList(false, true, false)));
+                // Read all filters in an array.
+                String[] filters = new String[5];
+
+                int counter = 0;
+                do
+                {
+                    // Read the filter.
+                    filters[counter++] = ListUtil.commaSeparatedString(parseCommaSeparatedList(false, true));
+                }
+                while (counter < filters.length &&
+                       ConfigurationConstants.SEPARATOR_KEYWORD.equals(nextWord));
+
+                // Make sure there is a closing parenthesis.
+                if (!ConfigurationConstants.CLOSE_ARGUMENTS_KEYWORD.equals(nextWord))
+                {
+                    throw new ParseException("Expecting separating '" + ConfigurationConstants.ARGUMENT_SEPARATOR_KEYWORD +
+                                             "' or '" + ConfigurationConstants.SEPARATOR_KEYWORD +
+                                             "', or closing '" + ConfigurationConstants.CLOSE_ARGUMENTS_KEYWORD +
+                                             "' before " + reader.locationDescription());
+                }
+
+                // Set all filters from the array on the entry.
+                entry.setFilter(filters[--counter]);
+                if (counter > 0)
+                {
+                    entry.setJarFilter(filters[--counter]);
+                    if (counter > 0)
+                    {
+                        entry.setWarFilter(filters[--counter]);
+                        if (counter > 0)
+                        {
+                            entry.setEarFilter(filters[--counter]);
+                            if (counter > 0)
+                            {
+                                entry.setZipFilter(filters[--counter]);
+                            }
+                        }
+                    }
+                }
 
                 // Read the separator, if any.
                 readNextWord();
@@ -238,7 +280,7 @@ public class ConfigurationParser
 
 
     private String parseOptionalArgument()
-    throws ParseException, IOException
+    throws IOException
     {
         readNextWord();
 
@@ -257,7 +299,7 @@ public class ConfigurationParser
 
 
     private boolean parseNoArgument(boolean value)
-    throws ParseException, IOException
+    throws IOException
     {
         readNextWord();
 
@@ -265,36 +307,33 @@ public class ConfigurationParser
     }
 
 
-    private List parseKeepArguments(List    keepClassFileOptions,
-                                    boolean markClassFiles,
-                                    boolean markClassFilesConditionally,
-                                    boolean onlyKeepNames)
+    private List parseClassSpecificationArguments(List    classSpecifications,
+                                                  boolean markClassFiles,
+                                                  boolean markConditionally)
     throws ParseException, IOException
     {
         // Create a new List if necessary.
-        if (keepClassFileOptions == null)
+        if (classSpecifications == null)
         {
-            keepClassFileOptions = new ArrayList();
+            classSpecifications = new ArrayList();
         }
 
         // Read and add the keep configuration.
-        keepClassFileOptions.add(parseKeepArguments(markClassFiles,
-                                                    markClassFilesConditionally,
-                                                    onlyKeepNames));
+        classSpecifications.add(parseClassSpecificationArguments(markClassFiles,
+                                                                 markConditionally));
 
-        return keepClassFileOptions;
+        return classSpecifications;
     }
 
 
-    private KeepClassFileOption parseKeepArguments(boolean markClassFiles,
-                                                   boolean markClassFilesConditionally,
-                                                   boolean onlyKeepNames)
+    private ClassSpecification parseClassSpecificationArguments(boolean markClassFiles,
+                                                                boolean markConditionally)
     throws ParseException, IOException
     {
-        // Remember the comments preceeding this keep option.
+        // Remember the comments preceeding this option.
         String comments = lastComments;
 
-        // Parse the class flag specification part, if any.
+        // Parse the class access modifiers, if any.
         int requiredSetClassAccessFlags   = 0;
         int requiredUnsetClassAccessFlags = 0;
 
@@ -305,7 +344,7 @@ public class ConfigurationParser
 
             if (ConfigurationConstants.CLASS_KEYWORD.equals(nextWord))
             {
-                // The class keyword. Stop parsing the class flags.
+                // The class keyword. Stop parsing the class access modifiers.
                 break;
             }
 
@@ -339,8 +378,6 @@ public class ConfigurationParser
 
             if (ClassConstants.EXTERNAL_ACC_INTERFACE.equals(strippedWord))
             {
-                accessFlag = ClassConstants.INTERNAL_ACC_INTERFACE;
-
                 // The interface keyword. Stop parsing the class flags.
                 break;
             }
@@ -358,7 +395,6 @@ public class ConfigurationParser
         readNextWord();
 
         String extendsClassName = null;
-        String asClassName      = null;
 
         if (!configurationEnd())
         {
@@ -374,263 +410,258 @@ public class ConfigurationParser
             }
         }
 
+        // Create the basic class specification.
+        ClassSpecification classSpecification =
+            new ClassSpecification(requiredSetClassAccessFlags,
+                                   requiredUnsetClassAccessFlags,
+                                   className,
+                                   extendsClassName,
+                                   markClassFiles,
+                                   markConditionally,
+                                   comments);
+
+
+        // Now modify this ClassSpecification, adding any class members.
         if (!configurationEnd())
         {
-            // Parse the 'as ...' part, if any.
-            if (ConfigurationConstants.AS_KEYWORD.equals(nextWord))
-            {
-                readNextWord("new class name");
-                checkJavaIdentifier("new class name");
-                asClassName = ClassUtil.internalClassName(nextWord);
-
-                readNextWord();
-            }
-        }
-
-        // Create the essential specification for keeping the class or classes.
-        KeepClassFileOption keepClassFileOption =
-            new KeepClassFileOption(requiredSetClassAccessFlags,
-                                    requiredUnsetClassAccessFlags,
-                                    className,
-                                    extendsClassName,
-                                    asClassName,
-                                    markClassFiles,
-                                    markClassFilesConditionally,
-                                    onlyKeepNames,
-                                    comments);
-
-
-        // Now modify this KeepClassFileOption, for keeping any class members.
-        // Parse the class member opening part, if any.
-        if (!configurationEnd())
-        {
+            // Check the class member opening part.
             if (!ConfigurationConstants.OPEN_KEYWORD.equals(nextWord))
             {
                 throw new ParseException("Expecting opening '" + ConfigurationConstants.OPEN_KEYWORD +
                                          "' at " + reader.locationDescription());
             }
 
-            while (true)
+            // Parse all class members.
+            while (parseClassMemberSpecificationArguments(externalClassName,
+                                                          classSpecification));
+        }
+
+        return classSpecification;
+    }
+
+
+    private boolean parseClassMemberSpecificationArguments(String             externalClassName,
+                                                           ClassSpecification classSpecification) throws ParseException, IOException
+    {
+        // Parse the class member access modifiers, if any.
+        int requiredSetMemberAccessFlags   = 0;
+        int requiredUnsetMemberAccessFlags = 0;
+
+        while (true)
+        {
+            readNextWord("class member description" +
+                         " or closing '" + ConfigurationConstants.CLOSE_KEYWORD + "'");
+
+            if (requiredSetMemberAccessFlags   == 0 &&
+                requiredUnsetMemberAccessFlags == 0 &&
+                ConfigurationConstants.CLOSE_KEYWORD.equals(nextWord))
             {
-                // Parse the class member flag specification part, if any.
-                int requiredSetMemberAccessFlags   = 0;
-                int requiredUnsetMemberAccessFlags = 0;
+                // The closing brace. Stop parsing the class members.
+                readNextWord();
 
-                while (true)
-                {
-                    readNextWord("class member description" +
-                                 " or closing '" + ConfigurationConstants.CLOSE_KEYWORD + "'");
+                return false;
+            }
 
-                    if (requiredSetMemberAccessFlags   == 0 &&
-                        requiredUnsetMemberAccessFlags == 0 &&
-                        ConfigurationConstants.CLOSE_KEYWORD.equals(nextWord))
-                    {
-                        // The closing brace. Stop parsing the class members.
-                        readNextWord();
-                        return keepClassFileOption;
-                    }
+            String strippedWord = nextWord.startsWith("!") ?
+                nextWord.substring(1) :
+                nextWord;
 
-                    String strippedWord = nextWord.startsWith("!") ?
-                        nextWord.substring(1) :
-                        nextWord;
+            int accessFlag =
+                strippedWord.equals(ClassConstants.EXTERNAL_ACC_PUBLIC)       ? ClassConstants.INTERNAL_ACC_PUBLIC       :
+                strippedWord.equals(ClassConstants.EXTERNAL_ACC_PRIVATE)      ? ClassConstants.INTERNAL_ACC_PRIVATE      :
+                strippedWord.equals(ClassConstants.EXTERNAL_ACC_PROTECTED)    ? ClassConstants.INTERNAL_ACC_PROTECTED    :
+                strippedWord.equals(ClassConstants.EXTERNAL_ACC_STATIC)       ? ClassConstants.INTERNAL_ACC_STATIC       :
+                strippedWord.equals(ClassConstants.EXTERNAL_ACC_FINAL)        ? ClassConstants.INTERNAL_ACC_FINAL        :
+                strippedWord.equals(ClassConstants.EXTERNAL_ACC_SYNCHRONIZED) ? ClassConstants.INTERNAL_ACC_SYNCHRONIZED :
+                strippedWord.equals(ClassConstants.EXTERNAL_ACC_VOLATILE)     ? ClassConstants.INTERNAL_ACC_VOLATILE     :
+                strippedWord.equals(ClassConstants.EXTERNAL_ACC_TRANSIENT)    ? ClassConstants.INTERNAL_ACC_TRANSIENT    :
+                strippedWord.equals(ClassConstants.EXTERNAL_ACC_NATIVE)       ? ClassConstants.INTERNAL_ACC_NATIVE       :
+                strippedWord.equals(ClassConstants.EXTERNAL_ACC_ABSTRACT)     ? ClassConstants.INTERNAL_ACC_ABSTRACT     :
+                strippedWord.equals(ClassConstants.EXTERNAL_ACC_STRICT)       ? ClassConstants.INTERNAL_ACC_STRICT       :
+                                                                                0;
+            if (accessFlag == 0)
+            {
+                // Not a class member access modifier. Stop parsing them.
+                break;
+            }
 
-                    int accessFlag =
-                        strippedWord.equals(ClassConstants.EXTERNAL_ACC_PUBLIC)       ? ClassConstants.INTERNAL_ACC_PUBLIC       :
-                        strippedWord.equals(ClassConstants.EXTERNAL_ACC_PRIVATE)      ? ClassConstants.INTERNAL_ACC_PRIVATE      :
-                        strippedWord.equals(ClassConstants.EXTERNAL_ACC_PROTECTED)    ? ClassConstants.INTERNAL_ACC_PROTECTED    :
-                        strippedWord.equals(ClassConstants.EXTERNAL_ACC_STATIC)       ? ClassConstants.INTERNAL_ACC_STATIC       :
-                        strippedWord.equals(ClassConstants.EXTERNAL_ACC_FINAL)        ? ClassConstants.INTERNAL_ACC_FINAL        :
-                        strippedWord.equals(ClassConstants.EXTERNAL_ACC_SYNCHRONIZED) ? ClassConstants.INTERNAL_ACC_SYNCHRONIZED :
-                        strippedWord.equals(ClassConstants.EXTERNAL_ACC_VOLATILE)     ? ClassConstants.INTERNAL_ACC_VOLATILE     :
-                        strippedWord.equals(ClassConstants.EXTERNAL_ACC_TRANSIENT)    ? ClassConstants.INTERNAL_ACC_TRANSIENT    :
-                        strippedWord.equals(ClassConstants.EXTERNAL_ACC_NATIVE)       ? ClassConstants.INTERNAL_ACC_NATIVE       :
-                        strippedWord.equals(ClassConstants.EXTERNAL_ACC_ABSTRACT)     ? ClassConstants.INTERNAL_ACC_ABSTRACT     :
-                        strippedWord.equals(ClassConstants.EXTERNAL_ACC_STRICT)       ? ClassConstants.INTERNAL_ACC_STRICT       :
-                                                                                        0;
-                    if (accessFlag == 0)
-                    {
-                        // Not a class member flag. Stop parsing them.
-                        break;
-                    }
+            if (strippedWord == nextWord)
+            {
+                requiredSetMemberAccessFlags   |= accessFlag;
+            }
+            else
+            {
+                requiredUnsetMemberAccessFlags |= accessFlag;
+            }
 
-                    if (strippedWord == nextWord)
-                    {
-                        requiredSetMemberAccessFlags   |= accessFlag;
-                    }
-                    else
-                    {
-                        requiredUnsetMemberAccessFlags |= accessFlag;
-                    }
-
-                    // Make sure the user doesn't try to set and unset the same
-                    // access flags simultaneously.
-                    if ((requiredSetMemberAccessFlags &
-                         requiredUnsetMemberAccessFlags) != 0)
-                    {
-                        throw new ParseException("Conflicting class member access modifiers for " +
-                                                 reader.locationDescription());
-                    }
-                }
-
-                // Parse the class member type and name part.
-
-                // Did we get a special wildcard?
-                if (ConfigurationConstants.ANY_CLASS_MEMBER_KEYWORD.equals(nextWord) ||
-                    ConfigurationConstants.ANY_FIELD_KEYWORD       .equals(nextWord) ||
-                    ConfigurationConstants.ANY_METHOD_KEYWORD      .equals(nextWord))
-                {
-                    // Act acording to the type of wildcard..
-                    if (ConfigurationConstants.ANY_CLASS_MEMBER_KEYWORD.equals(nextWord))
-                    {
-                        checkFieldAccessFlags(requiredSetMemberAccessFlags,
-                                              requiredUnsetMemberAccessFlags);
-                        checkMethodAccessFlags(requiredSetMemberAccessFlags,
-                                               requiredUnsetMemberAccessFlags);
-
-                        keepClassFileOption.addField(
-                            new KeepClassMemberOption(requiredSetMemberAccessFlags,
-                                                      requiredUnsetMemberAccessFlags,
-                                                      null,
-                                                      null,
-                                                      null));
-                        keepClassFileOption.addMethod(
-                            new KeepClassMemberOption(requiredSetMemberAccessFlags,
-                                                      requiredUnsetMemberAccessFlags,
-                                                      null,
-                                                      null,
-                                                      null));
-                    }
-                    else if (ConfigurationConstants.ANY_FIELD_KEYWORD.equals(nextWord))
-                    {
-                        checkFieldAccessFlags(requiredSetMemberAccessFlags,
-                                              requiredUnsetMemberAccessFlags);
-
-                        keepClassFileOption.addField(
-                            new KeepClassMemberOption(requiredSetMemberAccessFlags,
-                                                      requiredUnsetMemberAccessFlags,
-                                                      null,
-                                                      null,
-                                                      null));
-                    }
-                    else if (ConfigurationConstants.ANY_METHOD_KEYWORD.equals(nextWord))
-                    {
-                        checkMethodAccessFlags(requiredSetMemberAccessFlags,
-                                               requiredUnsetMemberAccessFlags);
-
-                        keepClassFileOption.addMethod(
-                            new KeepClassMemberOption(requiredSetMemberAccessFlags,
-                                                      requiredUnsetMemberAccessFlags,
-                                                      null,
-                                                      null,
-                                                      null));
-                    }
-
-                    // We still have to read the closing separator.
-                    readNextWord("separator '" + ConfigurationConstants.SEPARATOR_KEYWORD + "'");
-
-                    if (!ConfigurationConstants.SEPARATOR_KEYWORD.equals(nextWord))
-                    {
-                        throw new ParseException("Expecting separator '" + ConfigurationConstants.SEPARATOR_KEYWORD +
-                                                 "' before " + reader.locationDescription());
-                    }
-                }
-                else
-                {
-                    // Make sure we have a proper type.
-                    checkJavaIdentifier("class member type");
-                    String type = nextWord;
-
-                    readNextWord("class member name");
-                    String name = nextWord;
-
-                    // Did we get just one word before the opening parenthesis?
-                    if (ConfigurationConstants.OPEN_ARGUMENTS_KEYWORD.equals(name))
-                    {
-                        // This must be a constructor then.
-                        // Make sure the type is a proper constructor name.
-                        if (!(type.equals(ClassConstants.INTERNAL_METHOD_NAME_INIT) ||
-                              type.equals(externalClassName) ||
-                              type.equals(ClassUtil.externalShortClassName(externalClassName))))
-                        {
-                            throw new ParseException("Expecting type and name " +
-                                                     "instead of just '" + type +
-                                                     "' before " + reader.locationDescription());
-                        }
-
-                        // Assign the fixed constructor type and name.
-                        type = ClassConstants.EXTERNAL_TYPE_VOID;
-                        name = ClassConstants.INTERNAL_METHOD_NAME_INIT;
-                    }
-                    else
-                    {
-                        // It's not a constructor.
-                        // Make sure we have a proper name.
-                        checkJavaIdentifier("class member name");
-
-                        // Read the opening parenthesis or the separating
-                        // semi-colon.
-                        readNextWord("opening '" + ConfigurationConstants.OPEN_ARGUMENTS_KEYWORD +
-                                     "' or separator '" + ConfigurationConstants.SEPARATOR_KEYWORD + "'");
-                    }
-
-                    // Are we looking at a field, a method, or something else?
-                    if (ConfigurationConstants.SEPARATOR_KEYWORD.equals(nextWord))
-                    {
-                        // It's a field.
-                        checkFieldAccessFlags(requiredSetMemberAccessFlags,
-                                              requiredUnsetMemberAccessFlags);
-
-                        // We already have a field descriptor.
-                        String descriptor = ClassUtil.internalType(type);
-
-                        // Keep the field.
-                        keepClassFileOption.addField(
-                            new KeepClassMemberOption(requiredSetMemberAccessFlags,
-                                                      requiredUnsetMemberAccessFlags,
-                                                      name,
-                                                      descriptor,
-                                                      null));
-                    }
-                    else if (ConfigurationConstants.OPEN_ARGUMENTS_KEYWORD.equals(nextWord))
-                    {
-                        // It's a method.
-                        checkMethodAccessFlags(requiredSetMemberAccessFlags,
-                                               requiredUnsetMemberAccessFlags);
-
-                        // Parse the method arguments.
-                        String descriptor =
-                            ClassUtil.internalMethodDescriptor(type,
-                                                               parseCommaSeparatedList(true, false, true));
-
-                        // Read the separator after the closing parenthesis.
-                        readNextWord("separator '" + ConfigurationConstants.SEPARATOR_KEYWORD + "'");
-
-                        if (!ConfigurationConstants.SEPARATOR_KEYWORD.equals(nextWord))
-                        {
-                            throw new ParseException("Expecting separator '" + ConfigurationConstants.SEPARATOR_KEYWORD +
-                                                     "' before " + reader.locationDescription());
-                        }
-
-                        // Keep the method.
-                        keepClassFileOption.addMethod(
-                            new KeepClassMemberOption(requiredSetMemberAccessFlags,
-                                                      requiredUnsetMemberAccessFlags,
-                                                      name,
-                                                      descriptor,
-                                                      null));
-                    }
-                    else
-                    {
-                        // It doesn't look like a field or a method.
-                        throw new ParseException("Expecting opening '" + ConfigurationConstants.OPEN_ARGUMENTS_KEYWORD +
-                                                 "' or separator '" + ConfigurationConstants.SEPARATOR_KEYWORD +
-                                                 "' before " + reader.locationDescription());
-                    }
-                }
+            // Make sure the user doesn't try to set and unset the same
+            // access flags simultaneously.
+            if ((requiredSetMemberAccessFlags &
+                 requiredUnsetMemberAccessFlags) != 0)
+            {
+                throw new ParseException("Conflicting class member access modifiers for " +
+                                         reader.locationDescription());
             }
         }
 
-        return keepClassFileOption;
+        // Parse the class member type and name part.
+
+        // Did we get a special wildcard?
+        if (ConfigurationConstants.ANY_CLASS_MEMBER_KEYWORD.equals(nextWord) ||
+            ConfigurationConstants.ANY_FIELD_KEYWORD       .equals(nextWord) ||
+            ConfigurationConstants.ANY_METHOD_KEYWORD      .equals(nextWord))
+        {
+            // Act according to the type of wildcard..
+            if (ConfigurationConstants.ANY_CLASS_MEMBER_KEYWORD.equals(nextWord))
+            {
+                checkFieldAccessFlags(requiredSetMemberAccessFlags,
+                                      requiredUnsetMemberAccessFlags);
+                checkMethodAccessFlags(requiredSetMemberAccessFlags,
+                                       requiredUnsetMemberAccessFlags);
+
+                classSpecification.addField(
+                    new ClassMemberSpecification(requiredSetMemberAccessFlags,
+                                                 requiredUnsetMemberAccessFlags,
+                                                 null,
+                                                 null));
+                classSpecification.addMethod(
+                    new ClassMemberSpecification(requiredSetMemberAccessFlags,
+                                                 requiredUnsetMemberAccessFlags,
+                                                 null,
+                                                 null));
+            }
+            else if (ConfigurationConstants.ANY_FIELD_KEYWORD.equals(nextWord))
+            {
+                checkFieldAccessFlags(requiredSetMemberAccessFlags,
+                                      requiredUnsetMemberAccessFlags);
+
+                classSpecification.addField(
+                    new ClassMemberSpecification(requiredSetMemberAccessFlags,
+                                                 requiredUnsetMemberAccessFlags,
+                                                 null,
+                                                 null));
+            }
+            else if (ConfigurationConstants.ANY_METHOD_KEYWORD.equals(nextWord))
+            {
+                checkMethodAccessFlags(requiredSetMemberAccessFlags,
+                                       requiredUnsetMemberAccessFlags);
+
+                classSpecification.addMethod(
+                    new ClassMemberSpecification(requiredSetMemberAccessFlags,
+                                                 requiredUnsetMemberAccessFlags,
+                                                 null,
+                                                 null));
+            }
+
+            // We still have to read the closing separator.
+            readNextWord("separator '" + ConfigurationConstants.SEPARATOR_KEYWORD + "'");
+
+            if (!ConfigurationConstants.SEPARATOR_KEYWORD.equals(nextWord))
+            {
+                throw new ParseException("Expecting separator '" + ConfigurationConstants.SEPARATOR_KEYWORD +
+                                         "' before " + reader.locationDescription());
+            }
+        }
+        else
+        {
+            // Make sure we have a proper type.
+            checkJavaIdentifier("class member type");
+            String type = nextWord;
+
+            readNextWord("class member name");
+            String name = nextWord;
+
+            // Did we get just one word before the opening parenthesis?
+            if (ConfigurationConstants.OPEN_ARGUMENTS_KEYWORD.equals(name))
+            {
+                // This must be a constructor then.
+                // Make sure the type is a proper constructor name.
+                if (!(type.equals(ClassConstants.INTERNAL_METHOD_NAME_INIT) ||
+                      type.equals(externalClassName) ||
+                      type.equals(ClassUtil.externalShortClassName(externalClassName))))
+                {
+                    throw new ParseException("Expecting type and name " +
+                                             "instead of just '" + type +
+                                             "' before " + reader.locationDescription());
+                }
+
+                // Assign the fixed constructor type and name.
+                type = ClassConstants.EXTERNAL_TYPE_VOID;
+                name = ClassConstants.INTERNAL_METHOD_NAME_INIT;
+            }
+            else
+            {
+                // It's not a constructor.
+                // Make sure we have a proper name.
+                checkJavaIdentifier("class member name");
+
+                // Read the opening parenthesis or the separating
+                // semi-colon.
+                readNextWord("opening '" + ConfigurationConstants.OPEN_ARGUMENTS_KEYWORD +
+                             "' or separator '" + ConfigurationConstants.SEPARATOR_KEYWORD + "'");
+            }
+
+            // Are we looking at a field, a method, or something else?
+            if (ConfigurationConstants.SEPARATOR_KEYWORD.equals(nextWord))
+            {
+                // It's a field.
+                checkFieldAccessFlags(requiredSetMemberAccessFlags,
+                                      requiredUnsetMemberAccessFlags);
+
+                // We already have a field descriptor.
+                String descriptor = ClassUtil.internalType(type);
+
+                // Add the field.
+                classSpecification.addField(
+                    new ClassMemberSpecification(requiredSetMemberAccessFlags,
+                                                 requiredUnsetMemberAccessFlags,
+                                                 name,
+                                                 descriptor));
+            }
+            else if (ConfigurationConstants.OPEN_ARGUMENTS_KEYWORD.equals(nextWord))
+            {
+                // It's a method.
+                checkMethodAccessFlags(requiredSetMemberAccessFlags,
+                                       requiredUnsetMemberAccessFlags);
+
+                // Parse the method arguments.
+                String descriptor =
+                    ClassUtil.internalMethodDescriptor(type,
+                                                       parseCommaSeparatedList(true, false));
+
+                if (!ConfigurationConstants.CLOSE_ARGUMENTS_KEYWORD.equals(nextWord))
+                {
+                    throw new ParseException("Expecting separating '" + ConfigurationConstants.ARGUMENT_SEPARATOR_KEYWORD +
+                                             "' or closing '" + ConfigurationConstants.CLOSE_ARGUMENTS_KEYWORD +
+                                             "' before " + reader.locationDescription());
+                }
+
+                // Read the separator after the closing parenthesis.
+                readNextWord("separator '" + ConfigurationConstants.SEPARATOR_KEYWORD + "'");
+
+                if (!ConfigurationConstants.SEPARATOR_KEYWORD.equals(nextWord))
+                {
+                    throw new ParseException("Expecting separator '" + ConfigurationConstants.SEPARATOR_KEYWORD +
+                                             "' before " + reader.locationDescription());
+                }
+
+                // Add the method.
+                classSpecification.addMethod(
+                    new ClassMemberSpecification(requiredSetMemberAccessFlags,
+                                                 requiredUnsetMemberAccessFlags,
+                                                 name,
+                                                 descriptor));
+            }
+            else
+            {
+                // It doesn't look like a field or a method.
+                throw new ParseException("Expecting opening '" + ConfigurationConstants.OPEN_ARGUMENTS_KEYWORD +
+                                         "' or separator '" + ConfigurationConstants.SEPARATOR_KEYWORD +
+                                         "' before " + reader.locationDescription());
+            }
+        }
+
+        return true;
     }
 
 
@@ -639,8 +670,7 @@ public class ConfigurationParser
      * optionally ending after the closing parenthesis.
      */
     private List parseCommaSeparatedList(boolean checkJavaIdentifiers,
-                                         boolean replaceSystemProperties,
-                                         boolean endWithClosingParenthesis)
+                                         boolean replaceSystemProperties)
     throws ParseException, IOException
     {
         List arguments = new ArrayList();
@@ -650,9 +680,9 @@ public class ConfigurationParser
             // Read an argument.
             readNextWord("argument");
 
-            if (endWithClosingParenthesis &&
-                arguments.size() == 0     &&
-                ConfigurationConstants.CLOSE_ARGUMENTS_KEYWORD.equals(nextWord))
+            if (arguments.size() == 0 &&
+                (ConfigurationConstants.CLOSE_ARGUMENTS_KEYWORD.equals(nextWord) ||
+                 ConfigurationConstants.SEPARATOR_KEYWORD.equals(nextWord)))
             {
                 break;
             }
@@ -670,21 +700,12 @@ public class ConfigurationParser
             arguments.add(nextWord);
 
             // Read a comma (or a closing parenthesis, or a different word).
-            readNextWord("separating '" + ConfigurationConstants.ARGUMENT_SEPARATOR_KEYWORD + "'" +
-                         (endWithClosingParenthesis ?
-                             " or closing '" + ConfigurationConstants.CLOSE_ARGUMENTS_KEYWORD + "'" :
-                             ""));
+            readNextWord("separating '" + ConfigurationConstants.ARGUMENT_SEPARATOR_KEYWORD +
+                         "' or closing '" + ConfigurationConstants.CLOSE_ARGUMENTS_KEYWORD +
+                         "'");
 
             if (!ConfigurationConstants.ARGUMENT_SEPARATOR_KEYWORD.equals(nextWord))
             {
-                if (endWithClosingParenthesis &&
-                    !ConfigurationConstants.CLOSE_ARGUMENTS_KEYWORD.equals(nextWord))
-                {
-                    throw new ParseException("Expecting separating '" + ConfigurationConstants.ARGUMENT_SEPARATOR_KEYWORD +
-                                             "' or closing '" + ConfigurationConstants.CLOSE_ARGUMENTS_KEYWORD +
-                                             "' before " + reader.locationDescription());
-                }
-
                 break;
             }
         }
@@ -861,7 +882,7 @@ public class ConfigurationParser
     /**
      * A main method for testing configuration parsing.
      */
-    private static void main(String[] args) {
+    public static void main(String[] args) {
         try
         {
             ConfigurationParser parser = new ConfigurationParser(args);
