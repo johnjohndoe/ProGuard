@@ -66,7 +66,7 @@ implements   ConstantVisitor,
         referencingClass = clazz;
 
         // Remember the specified class, since it might be different from
-        // the referenced class that acutally contains the class member.
+        // the referenced class that actually contains the class member.
         clazz.constantPoolEntryAccept(refConstant.u2classIndex, referencedClassFinder);
 
         // Make sure the access flags of the referenced class member are
@@ -91,8 +91,8 @@ implements   ConstantVisitor,
 
     public void visitProgramClass(ProgramClass programClass)
     {
-        int currentAccessFlags  = programClass.getAccessFlags();
-        int currentAccessLevel  = AccessUtil.accessLevel(currentAccessFlags);
+        int currentAccessFlags = programClass.getAccessFlags();
+        int currentAccessLevel = AccessUtil.accessLevel(currentAccessFlags);
 
         // Compute the required access level.
         Clazz referencingClass = this.referencingClass;
@@ -117,8 +117,8 @@ implements   ConstantVisitor,
 
     public void visitProgramMember(ProgramClass programClass, ProgramMember programMember)
     {
-        int currentAccessFlags  = programMember.getAccessFlags();
-        int currentAccessLevel  = AccessUtil.accessLevel(currentAccessFlags);
+        int currentAccessFlags = programMember.getAccessFlags();
+        int currentAccessLevel = AccessUtil.accessLevel(currentAccessFlags);
 
         // Compute the required access level.
         int requiredAccessLevel =

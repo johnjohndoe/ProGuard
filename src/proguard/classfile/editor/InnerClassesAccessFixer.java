@@ -76,6 +76,8 @@ implements   InnerClassesInfoVisitor,
 
     public void visitProgramClass(ProgramClass programClass)
     {
-        innerClassAccessFlags = programClass.u2accessFlags;
+        innerClassAccessFlags =
+            AccessUtil.replaceAccessFlags(innerClassAccessFlags,
+                                          programClass.u2accessFlags);
     }
 }

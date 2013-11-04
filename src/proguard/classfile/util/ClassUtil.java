@@ -869,6 +869,21 @@ public class ClassUtil
         {
             string.append(prefix).append(ClassConstants.EXTERNAL_ACC_PUBLIC).append(' ');
         }
+        if ((accessFlags & ClassConstants.INTERNAL_ACC_PRIVATE) != 0)
+        {
+            // Only in InnerClasses attributes.
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_PRIVATE).append(' ');
+        }
+        if ((accessFlags & ClassConstants.INTERNAL_ACC_PROTECTED) != 0)
+        {
+            // Only in InnerClasses attributes.
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_PROTECTED).append(' ');
+        }
+        if ((accessFlags & ClassConstants.INTERNAL_ACC_STATIC) != 0)
+        {
+            // Only in InnerClasses attributes.
+            string.append(prefix).append(ClassConstants.EXTERNAL_ACC_STATIC).append(' ');
+        }
         if ((accessFlags & ClassConstants.INTERNAL_ACC_FINAL) != 0)
         {
             string.append(prefix).append(ClassConstants.EXTERNAL_ACC_FINAL).append(' ');
