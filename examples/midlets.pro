@@ -3,7 +3,6 @@
 # Usage:
 #     java -jar proguard.jar @midlets.pro
 #
-# You should still apply the preverify tool after having processed your code.
 
 # Specify the input jars, output jars, and library jars.
 
@@ -31,7 +30,7 @@
 -allowaccessmodification
 
 # On Windows, you can't use mixed case class names,
-# for the sake of the preverify tool.
+# should you still want to use the preverify tool.
 #
 # -dontusemixedcaseclassnames
 

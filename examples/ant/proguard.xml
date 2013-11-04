@@ -11,17 +11,24 @@
 
   <proguard printmapping="proguard.map"
             overloadaggressively="on"
-            repackageclasses=""
-            allowaccessmodification="on">
+            repackageclasses="">
 
     <!-- Specify the input jars, output jars, and library jars. -->
 
     <injar  file="lib/proguard.jar" />
+    <injar  file="lib/proguardgui.jar" filter="!META-INF/**" />
+    <injar  file="lib/retrace.jar"     filter="!META-INF/**" />
+
     <outjar file="examples/ant/proguard_out.jar" />
 
     <libraryjar file="${java.home}/lib/rt.jar" />
     <libraryjar file="/usr/local/java/ant1.6.5/lib/ant.jar" />
     <libraryjar file="/usr/local/java/wtk2.1/wtklib/kenv.zip" />
+
+    <!-- Adapt the resource file names, based on the corresponding obfuscated
+         class names. -->
+
+    <adaptresourcefilenames filter="**.properties,**.gif,**.jpg" />
 
     <!-- The main seeds: ProGuard and its companion tool ReTrace. -->
 

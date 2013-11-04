@@ -38,18 +38,7 @@ extends      SimplifiedVisitor
 implements   AttributeVisitor,
              InstructionVisitor
 {
-    private int       variablesSize;
     private boolean[] variableUsed = new boolean[ClassConstants.TYPICAL_VARIABLES_SIZE];
-
-
-    /**
-     * Returns the size of the variables frame of the most recently visited
-     * code attribute.
-     */
-    public int getVariablesSize()
-    {
-        return variablesSize;
-    }
 
 
     /**
@@ -82,8 +71,6 @@ implements   AttributeVisitor,
                 variableUsed[index] = false;
             }
         }
-
-        variablesSize = maxLocals;
 
         codeAttribute.instructionsAccept(clazz, method, this);
     }

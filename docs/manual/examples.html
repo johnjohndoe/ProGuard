@@ -162,11 +162,6 @@ option.
 <p>
 If applicable, you should add options for processing <a href="#native">native
 methods</a> and <a href="#resourcefiles">resource files</a>.
-<p>
-Please note the in-depth article <a
-href="http://developers.sun.com/techtopics/mobility/midp/ttips/proguard/">"Obfuscating
-MIDlet Suites with ProGuard"</a> at <a
-href="http://developers.sun.com/">developers.sun.com</a>.
 
 <a name="applications">&nbsp;</a>
 <h3>All possible applications in the input jars</h3>
@@ -352,7 +347,7 @@ other obfuscators may rely on the original method names. It may therefore be
 helpful to preserve them, in case these other obfuscators are ever used for
 further obfuscation of the library.
 <p>
-The "Exceptions" attribute is has to be preserved, so the compiler knows which
+The "Exceptions" attribute has to be preserved, so the compiler knows which
 exceptions methods may throw.
 <p>
 The "InnerClasses" attribute (or more precisely, its source name part) has to
@@ -389,10 +384,10 @@ href="usage.html#keepclasseswithmembernames"><code>-keepclasseswithmembernames</
 We don't want to preserve all classes or all native methods; we just want to
 keep the relevant names from being obfuscated.
 <p>
-ProGuard doesn't have your native code, so it can't automatically preserve the
-classes or class members that are invoked by the native code. These are entry
-points, which you'll have to specify explicitly. <a href="callback">Callback
-methods</a> are discussed below as a typical example.
+ProGuard doesn't look at your native code, so it won't automatically preserve
+the classes or class members that are invoked by the native code. These are
+entry points, which you'll have to specify explicitly.  <a
+href="callback">Callback methods</a> are discussed below as a typical example.
 
 <a name="callback">&nbsp;</a>
 <h3>Processing callback methods</h3>

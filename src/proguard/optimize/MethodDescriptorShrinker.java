@@ -21,7 +21,7 @@
 package proguard.optimize;
 
 import proguard.classfile.*;
-import proguard.classfile.attribute.Attribute;
+import proguard.classfile.attribute.*;
 import proguard.classfile.attribute.annotation.*;
 import proguard.classfile.attribute.visitor.AttributeVisitor;
 import proguard.classfile.editor.ConstantPoolEditor;
@@ -79,34 +79,20 @@ implements   MemberVisitor,
     {
         // Update the descriptor if it has any unused parameters.
         String descriptor    = programMethod.getDescriptor(programClass);
-        String newDescriptor = shrinkDescriptor(programClass, programMethod);
+        String newDescriptor = shrinkDescriptor(programMethod, descriptor);
+
         if (!descriptor.equals(newDescriptor))
         {
-            // Shrink the parameter annotations.
+            // Shrink the signature and parameter annotations.
             programMethod.attributesAccept(programClass, this);
 
-            String name = programMethod.getName(programClass);
-            String newName;
+            String name    = programMethod.getName(programClass);
+            String newName = name;
 
-            // Is it a class instance initializer?
-            if (name.equals(ClassConstants.INTERNAL_METHOD_NAME_INIT))
+            // Append a code, if the method isn't a class instance initializer.
+            if (!name.equals(ClassConstants.INTERNAL_METHOD_NAME_INIT))
             {
-                // Is there already another initializer with the same descriptor?
-                if (programClass.findMethod(name, newDescriptor) != null)
-                {
-                    // Cancel the shrinking. Mark all parameters.
-                    ParameterUsageMarker.markUsedParameters(programMethod, -1L);
-
-                    return;
-                }
-
-                // We have to keep the initializer's name.
-                newName = name;
-            }
-            else
-            {
-                // Create a unique name.
-                newName = name + ClassConstants.SPECIAL_MEMBER_SEPARATOR + Long.toHexString(Math.abs((descriptor).hashCode()));
+                newName += ClassConstants.SPECIAL_MEMBER_SEPARATOR + Long.toHexString(Math.abs((descriptor).hashCode()));
             }
 
             if (DEBUG)
@@ -126,10 +112,13 @@ implements   MemberVisitor,
                 constantPoolEditor.addUtf8Constant(programClass, newName);
             }
 
-            // Clear the unused referenced classes.
-            shrinkReferencedClasses(programClass, programMethod);
+            // Update the referenced classes.
+            programMethod.referencedClasses =
+                shrinkReferencedClasses(programMethod,
+                                        descriptor,
+                                        programMethod.referencedClasses);
 
-            // Update the descriptor.
+            // Finally, update the descriptor itself.
             programMethod.u2descriptorIndex =
                 constantPoolEditor.addUtf8Constant(programClass, newDescriptor);
 
@@ -145,6 +134,25 @@ implements   MemberVisitor,
     // Implementations for AttributeVisitor.
 
     public void visitAnyAttribute(Clazz clazz, Attribute attribute) {}
+
+
+    public void visitSignatureAttribute(Clazz clazz, Method method, SignatureAttribute signatureAttribute)
+    {
+        // Compute the new signature.
+        String signature    = clazz.getString(signatureAttribute.u2signatureIndex);
+        String newSignature = shrinkDescriptor(method, signature);
+
+        // Update the signature.
+        signatureAttribute.u2signatureIndex =
+            constantPoolEditor.addUtf8Constant((ProgramClass)clazz,
+                                               newSignature);
+
+        // Update the referenced classes.
+        signatureAttribute.referencedClasses =
+            shrinkReferencedClasses(method,
+                                    signature,
+                                    signatureAttribute.referencedClasses);
+    }
 
 
     public void visitAnyParameterAnnotationsAttribute(Clazz clazz, Method method, ParameterAnnotationsAttribute parameterAnnotationsAttribute)
@@ -195,10 +203,9 @@ implements   MemberVisitor,
     // Small utility methods.
 
     /**
-     * Returns a shrunk descriptor of the given method.
+     * Returns a shrunk descriptor or signature of the given method.
      */
-    public static String shrinkDescriptor(ProgramClass  clazz,
-                                          ProgramMethod method)
+    private String shrinkDescriptor(Method method, String descriptor)
     {
         // All parameters of non-static methods are shifted by one in the local
         // variable frame.
@@ -208,16 +215,10 @@ implements   MemberVisitor,
 
         // Go over the parameters.
         InternalTypeEnumeration internalTypeEnumeration =
-            new InternalTypeEnumeration(method.getDescriptor(clazz));
+            new InternalTypeEnumeration(descriptor);
 
         StringBuffer newDescriptorBuffer = new StringBuffer();
         newDescriptorBuffer.append(ClassConstants.INTERNAL_METHOD_ARGUMENTS_OPEN);
-
-        if (DEBUG)
-        {
-            System.out.println("MethodDescriptorShrinker: "+method.getName(clazz)+method.getDescriptor(clazz));
-            System.out.println("  parameter size = " + ParameterUsageMarker.getParameterSize(method));
-        }
 
         while (internalTypeEnumeration.hasMoreTypes())
         {
@@ -228,7 +229,7 @@ implements   MemberVisitor,
             }
             else if (DEBUG)
             {
-                System.out.println("  Deleting parameter #"+parameterIndex+" ("+type+")");
+                System.out.println("  Deleting parameter #"+parameterIndex+" ["+type+"]");
             }
 
             parameterIndex += ClassUtil.isInternalCategory2Type(type) ? 2 : 1;
@@ -244,11 +245,10 @@ implements   MemberVisitor,
     /**
      * Shrinks the array of referenced classes of the given method.
      */
-    private static void shrinkReferencedClasses(ProgramClass  clazz,
-                                                ProgramMethod method)
+    private Clazz[] shrinkReferencedClasses(Method  method,
+                                            String  descriptor,
+                                            Clazz[] referencedClasses)
     {
-        Clazz[] referencedClasses = method.referencedClasses;
-
         if (referencedClasses != null)
         {
             // All parameters of non-static methods are shifted by one in the local
@@ -261,27 +261,28 @@ implements   MemberVisitor,
             int newReferencedClassIndex = 0;
 
             // Go over the parameters.
-            String descriptor = method.getDescriptor(clazz);
             InternalTypeEnumeration internalTypeEnumeration =
                 new InternalTypeEnumeration(descriptor);
 
             while (internalTypeEnumeration.hasMoreTypes())
             {
-                String type = internalTypeEnumeration.nextType();
-                if (ClassUtil.isInternalArrayType(type))
-                {
-                    type = ClassUtil.internalTypeFromArrayType(type);
-                }
+                // Consider the classes referenced by this parameter type.
+                String type       = internalTypeEnumeration.nextType();
+                int    classCount = new DescriptorClassEnumeration(type).classCount();
 
-                if (ClassUtil.isInternalClassType(type))
+                if (ParameterUsageMarker.isParameterUsed(method, parameterIndex))
                 {
-                    if (ParameterUsageMarker.isParameterUsed(method, parameterIndex))
+                    // Copy the referenced classes.
+                    for (int counter = 0; counter < classCount; counter++)
                     {
                         referencedClasses[newReferencedClassIndex++] =
-                            referencedClasses[referencedClassIndex];
+                            referencedClasses[referencedClassIndex++];
                     }
-
-                    referencedClassIndex++;
+                }
+                else
+                {
+                    // Skip the referenced classes.
+                    referencedClassIndex += classCount;
                 }
 
                 parameterIndex += ClassUtil.isInternalCategory2Type(type) ? 2 : 1;
@@ -289,17 +290,11 @@ implements   MemberVisitor,
 
             // Also look at the return value.
             String type = internalTypeEnumeration.returnType();
-            if (ClassUtil.isInternalArrayType(type))
-            {
-                type = ClassUtil.internalTypeFromArrayType(type);
-            }
-
-            if (ClassUtil.isInternalClassType(type))
+            int count = new DescriptorClassEnumeration(type).classCount();
+            for (int counter = 0; counter < count; counter++)
             {
                 referencedClasses[newReferencedClassIndex++] =
-                    referencedClasses[referencedClassIndex];
-
-                referencedClassIndex++;
+                    referencedClasses[referencedClassIndex++];
             }
 
             // Clear the unused entries.
@@ -308,5 +303,7 @@ implements   MemberVisitor,
                 referencedClasses[newReferencedClassIndex++] = null;
             }
         }
+
+        return referencedClasses;
     }
 }

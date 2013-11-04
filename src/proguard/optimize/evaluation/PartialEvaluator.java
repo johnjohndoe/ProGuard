@@ -60,17 +60,15 @@ implements   AttributeVisitor,
     private final InvocationUnit invocationUnit;
     private final boolean        evaluateAllCode;
 
-    private InstructionOffsetValue[] varProducerValues     = new InstructionOffsetValue[ClassConstants.TYPICAL_CODE_LENGTH];
-    private InstructionOffsetValue[] stackProducerValues   = new InstructionOffsetValue[ClassConstants.TYPICAL_CODE_LENGTH];
-    private InstructionOffsetValue[] branchOriginValues    = new InstructionOffsetValue[ClassConstants.TYPICAL_CODE_LENGTH];
-    private InstructionOffsetValue[] branchTargetValues    = new InstructionOffsetValue[ClassConstants.TYPICAL_CODE_LENGTH];
-    private TracedVariables[]        variablesBefore       = new TracedVariables[ClassConstants.TYPICAL_CODE_LENGTH];
-    private TracedStack[]            stacksBefore          = new TracedStack[ClassConstants.TYPICAL_CODE_LENGTH];
-    private TracedVariables[]        variablesAfter        = new TracedVariables[ClassConstants.TYPICAL_CODE_LENGTH];
-    private TracedStack[]            stacksAfter           = new TracedStack[ClassConstants.TYPICAL_CODE_LENGTH];
-    private boolean[]                generalizedContexts   = new boolean[ClassConstants.TYPICAL_CODE_LENGTH];
-    private int[]                    evaluationCounts      = new int[ClassConstants.TYPICAL_CODE_LENGTH];
-    private int[]                    initializedVariables  = new int[ClassConstants.TYPICAL_CODE_LENGTH];
+    private InstructionOffsetValue[] branchOriginValues   = new InstructionOffsetValue[ClassConstants.TYPICAL_CODE_LENGTH];
+    private InstructionOffsetValue[] branchTargetValues   = new InstructionOffsetValue[ClassConstants.TYPICAL_CODE_LENGTH];
+    private TracedVariables[]        variablesBefore      = new TracedVariables[ClassConstants.TYPICAL_CODE_LENGTH];
+    private TracedStack[]            stacksBefore         = new TracedStack[ClassConstants.TYPICAL_CODE_LENGTH];
+    private TracedVariables[]        variablesAfter       = new TracedVariables[ClassConstants.TYPICAL_CODE_LENGTH];
+    private TracedStack[]            stacksAfter          = new TracedStack[ClassConstants.TYPICAL_CODE_LENGTH];
+    private boolean[]                generalizedContexts  = new boolean[ClassConstants.TYPICAL_CODE_LENGTH];
+    private int[]                    evaluationCounts     = new int[ClassConstants.TYPICAL_CODE_LENGTH];
+    private int[]                    initializedVariables = new int[ClassConstants.TYPICAL_CODE_LENGTH];
     private boolean                  evaluateExceptions;
 
     private final BasicBranchUnit    branchUnit;
@@ -210,18 +208,6 @@ implements   AttributeVisitor,
 
                 if (isTraced(offset))
                 {
-                    InstructionOffsetValue varProducerOffsets = varProducerOffsets(offset);
-                    if (varProducerOffsets.instructionOffsetCount() > 0)
-                    {
-                        System.out.println("     has overall been using information from instructions setting vars: "+varProducerOffsets);
-                    }
-
-                    InstructionOffsetValue stackProducerOffsets = stackProducerOffsets(offset);
-                    if (stackProducerOffsets.instructionOffsetCount() > 0)
-                    {
-                        System.out.println("     has overall been using information from instructions setting stack: "+stackProducerOffsets);
-                    }
-
                     int initializationOffset = branchTargetFinder.initializationOffset(offset);
                     if (initializationOffset != NONE)
                     {
@@ -280,6 +266,16 @@ implements   AttributeVisitor,
     {
         return branchTargetFinder.isBranchTarget(instructionOffset) ||
                branchTargetFinder.isExceptionHandler(instructionOffset);
+    }
+
+
+    /**
+     * Returns whether the instruction at the given offset is the start of a
+     * subroutine.
+     */
+    public boolean isSubroutineStart(int instructionOffset)
+    {
+        return branchTargetFinder.isSubroutineStart(instructionOffset);
     }
 
 
@@ -378,16 +374,6 @@ implements   AttributeVisitor,
 
 
     /**
-     * Returns the instruction offsets that set the variable that is being
-     * used at the given instruction offset.
-     */
-    public InstructionOffsetValue varProducerOffsets(int instructionOffset)
-    {
-        return varProducerValues[instructionOffset];
-    }
-
-
-    /**
      * Returns the stack before execution of the instruction at the given
      * offset.
      */
@@ -404,16 +390,6 @@ implements   AttributeVisitor,
     public TracedStack getStackAfter(int instructionOffset)
     {
         return stacksAfter[instructionOffset];
-    }
-
-
-    /**
-     * Returns the instruction offsets that set the stack entries that are being
-     * used at the given instruction offset.
-     */
-    public InstructionOffsetValue stackProducerOffsets(int instructionOffset)
-    {
-        return stackProducerValues[instructionOffset];
     }
 
 
@@ -534,9 +510,9 @@ implements   AttributeVisitor,
     private void pushInstructionBlock(TracedVariables variables,
                                       TracedStack     stack,
                                       int             startOffset,
-                                      java.util.Stack instructionBlockStack)
+                                      java.util.Stack instructionBlocKStack)
     {
-        instructionBlockStack.push(new MyInstructionBlock(variables,
+        instructionBlocKStack.push(new MyInstructionBlock(variables,
                                                           stack,
                                                           startOffset));
     }
@@ -696,8 +672,6 @@ implements   AttributeVisitor,
 
             // Reset the trace value.
             InstructionOffsetValue traceValue = InstructionOffsetValue.EMPTY_VALUE;
-            variables.setCollectedProducerValue(traceValue);
-            stack.setCollectedProducerValue(traceValue);
 
             // Reset the initialization flag.
             variables.resetInitialization();
@@ -741,12 +715,6 @@ implements   AttributeVisitor,
             }
 
             // Collect the offsets of the instructions whose results were used.
-            InstructionOffsetValue variablesTraceValue = variables.getCollectedProducerValue().instructionOffsetValue();
-            InstructionOffsetValue stackTraceValue     = stack.getCollectedProducerValue().instructionOffsetValue();
-            varProducerValues[instructionOffset] =
-                varProducerValues[instructionOffset].generalize(variablesTraceValue).instructionOffsetValue();
-            stackProducerValues[instructionOffset] =
-                stackProducerValues[instructionOffset].generalize(stackTraceValue).instructionOffsetValue();
             initializedVariables[instructionOffset] = variables.getInitializationIndex();
 
             // Collect the branch targets from the branch unit.
@@ -754,32 +722,13 @@ implements   AttributeVisitor,
             int branchTargetCount = branchTargets.instructionOffsetCount();
 
             // Stop tracing.
-            variables.setCollectedProducerValue(traceValue);
-            stack.setCollectedProducerValue(traceValue);
             branchUnit.setTraceBranchTargets(traceValue);
 
             if (DEBUG)
             {
-                if (variablesTraceValue.instructionOffsetCount() > 0)
-                {
-                    System.out.println("     has used information from instructions setting vars: "+variablesTraceValue);
-                }
-                if (stackTraceValue.instructionOffsetCount() > 0)
-                {
-                    System.out.println("     has used information from instructions setting stack: "+stackTraceValue);
-                }
                 if (branchUnit.wasCalled())
                 {
                     System.out.println("     is branching to "+branchTargets);
-                }
-
-                if (varProducerValues[instructionOffset].instructionOffsetCount() > 0)
-                {
-                    System.out.println("     has up till now been using information from instructions setting vars: "+varProducerValues[instructionOffset]);
-                }
-                if (stackProducerValues[instructionOffset].instructionOffsetCount() > 0)
-                {
-                    System.out.println("     has up till now been using information from instructions setting stack: "+stackProducerValues[instructionOffset]);
                 }
                 if (branchTargetValues[instructionOffset] != null)
                 {
@@ -925,8 +874,6 @@ implements   AttributeVisitor,
         if (variablesAfter.length < codeLength)
         {
             // Create new arrays.
-            varProducerValues    = new InstructionOffsetValue[codeLength];
-            stackProducerValues  = new InstructionOffsetValue[codeLength];
             branchOriginValues   = new InstructionOffsetValue[codeLength];
             branchTargetValues   = new InstructionOffsetValue[codeLength];
             variablesBefore      = new TracedVariables[codeLength];
@@ -940,8 +887,6 @@ implements   AttributeVisitor,
             // Reset the arrays.
             for (int index = 0; index < codeLength; index++)
             {
-                varProducerValues[index]    = InstructionOffsetValue.EMPTY_VALUE;
-                stackProducerValues[index]  = InstructionOffsetValue.EMPTY_VALUE;
                 initializedVariables[index] = NONE;
             }
         }
@@ -950,8 +895,6 @@ implements   AttributeVisitor,
             // Reset the arrays.
             for (int index = 0; index < codeLength; index++)
             {
-                varProducerValues[index]    = InstructionOffsetValue.EMPTY_VALUE;
-                stackProducerValues[index]  = InstructionOffsetValue.EMPTY_VALUE;
                 branchOriginValues[index]   = null;
                 branchTargetValues[index]   = null;
                 generalizedContexts[index]  = false;
@@ -986,10 +929,6 @@ implements   AttributeVisitor,
         // Remember this instruction's offset with any stored value.
         Value storeValue = new InstructionOffsetValue(AT_METHOD_ENTRY);
         parameters.setProducerValue(storeValue);
-
-        // Reset the trace value.
-        InstructionOffsetValue traceValue = InstructionOffsetValue.EMPTY_VALUE;
-        parameters.setCollectedProducerValue(traceValue);
 
         // Initialize the method parameters.
         invocationUnit.enterMethod(clazz, method, parameters);

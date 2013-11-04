@@ -163,11 +163,12 @@ public interface ClassConstants
     public static final int ELEMENT_VALUE_ANNOTATION      = '@';
     public static final int ELEMENT_VALUE_ARRAY           = '[';
 
-    public static final char EXTERNAL_PACKAGE_SEPARATOR = '.';
-    public static final char INTERNAL_PACKAGE_SEPARATOR = '/';
-    public static final char INNER_CLASS_SEPARATOR      = '$';
-    public static final char SPECIAL_CLASS_CHARACTER    = '-';
-    public static final char SPECIAL_MEMBER_SEPARATOR   = '$';
+    public static final char EXTERNAL_PACKAGE_SEPARATOR     = '.';
+    public static final char EXTERNAL_INNER_CLASS_SEPARATOR = '.';
+    public static final char INTERNAL_PACKAGE_SEPARATOR     = '/';
+    public static final char INTERNAL_INNER_CLASS_SEPARATOR = '$';
+    public static final char SPECIAL_CLASS_CHARACTER        = '-';
+    public static final char SPECIAL_MEMBER_SEPARATOR       = '$';
 
     public static final char EXTERNAL_METHOD_ARGUMENTS_OPEN      = '(';
     public static final char EXTERNAL_METHOD_ARGUMENTS_CLOSE     = ')';
@@ -211,20 +212,22 @@ public interface ClassConstants
     public static final String INTERNAL_METHOD_NAME_NEW_INSTANCE = "newInstance";
     public static final String INTERNAL_METHOD_TYPE_NEW_INSTANCE = "()Ljava/lang/Object;";
 
-    public static final char INTERNAL_TYPE_VOID          = 'V';
-    public static final char INTERNAL_TYPE_BOOLEAN       = 'Z';
-    public static final char INTERNAL_TYPE_BYTE          = 'B';
-    public static final char INTERNAL_TYPE_CHAR          = 'C';
-    public static final char INTERNAL_TYPE_SHORT         = 'S';
-    public static final char INTERNAL_TYPE_INT           = 'I';
-    public static final char INTERNAL_TYPE_LONG          = 'J';
-    public static final char INTERNAL_TYPE_FLOAT         = 'F';
-    public static final char INTERNAL_TYPE_DOUBLE        = 'D';
-    public static final char INTERNAL_TYPE_CLASS_START   = 'L';
-    public static final char INTERNAL_TYPE_CLASS_END     = ';';
-    public static final char INTERNAL_TYPE_ARRAY         = '[';
-    public static final char INTERNAL_TYPE_GENERIC_START = '<';
-    public static final char INTERNAL_TYPE_GENERIC_END   = '>';
+    public static final char INTERNAL_TYPE_VOID                   = 'V';
+    public static final char INTERNAL_TYPE_BOOLEAN                = 'Z';
+    public static final char INTERNAL_TYPE_BYTE                   = 'B';
+    public static final char INTERNAL_TYPE_CHAR                   = 'C';
+    public static final char INTERNAL_TYPE_SHORT                  = 'S';
+    public static final char INTERNAL_TYPE_INT                    = 'I';
+    public static final char INTERNAL_TYPE_LONG                   = 'J';
+    public static final char INTERNAL_TYPE_FLOAT                  = 'F';
+    public static final char INTERNAL_TYPE_DOUBLE                 = 'D';
+    public static final char INTERNAL_TYPE_CLASS_START            = 'L';
+    public static final char INTERNAL_TYPE_CLASS_END              = ';';
+    public static final char INTERNAL_TYPE_ARRAY                  = '[';
+    public static final char INTERNAL_TYPE_GENERIC_VARIABLE_START = 'T';
+    public static final char INTERNAL_TYPE_GENERIC_START          = '<';
+    public static final char INTERNAL_TYPE_GENERIC_BOUND          = ':';
+    public static final char INTERNAL_TYPE_GENERIC_END            = '>';
 
     public static final String EXTERNAL_TYPE_JAVA_LANG_OBJECT = "java.lang.Object";
     public static final String EXTERNAL_PACKAGE_JAVA_LANG     = "java.lang.";

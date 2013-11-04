@@ -25,9 +25,9 @@ import proguard.classfile.attribute.*;
 import proguard.classfile.attribute.annotation.*;
 import proguard.classfile.attribute.annotation.visitor.*;
 import proguard.classfile.attribute.visitor.AttributeVisitor;
-import proguard.classfile.constant.Constant;
-import proguard.classfile.editor.ConstantPoolRemapper;
-import proguard.classfile.util.SimplifiedVisitor;
+import proguard.classfile.constant.*;
+import proguard.classfile.editor.*;
+import proguard.classfile.util.*;
 import proguard.classfile.visitor.*;
 
 /**
@@ -101,6 +101,9 @@ implements   ClassVisitor,
         // Remap all constant pool references.
         constantPoolRemapper.setConstantIndexMap(constantIndexMap);
         constantPoolRemapper.visitProgramClass(programClass);
+
+        // Remove the unused interfaces from the class signature.
+        programClass.attributesAccept(new SignatureShrinker());
 
         // Compact the extra field pointing to the subclasses of this class.
         programClass.subClasses =
@@ -212,6 +215,73 @@ implements   ClassVisitor,
 
         // Shrink the element values themselves.
         annotation.elementValuesAccept(clazz, this);
+    }
+
+
+    /**
+     * This AttributeVisitor updates the Utf8 constants of class signatures,
+     * removing any unused interfaces.
+     */
+    private class SignatureShrinker
+    extends       SimplifiedVisitor
+    implements    AttributeVisitor
+    {
+        public void visitAnyAttribute(Clazz clazz, Attribute attribute) {}
+
+
+        public void visitSignatureAttribute(Clazz clazz, SignatureAttribute  signatureAttribute)
+        {
+            String  signature         = clazz.getString(signatureAttribute.u2signatureIndex);
+            Clazz[] referencedClasses = signatureAttribute.referencedClasses;
+
+            // Go over the generic definitions, superclass and implemented interfaces.
+            InternalTypeEnumeration internalTypeEnumeration =
+                new InternalTypeEnumeration(signature);
+
+            StringBuffer newSignatureBuffer = new StringBuffer();
+
+            int referencedClassIndex    = 0;
+            int newReferencedClassIndex = 0;
+
+            while (internalTypeEnumeration.hasMoreTypes())
+            {
+                // Consider the classes referenced by this signature.
+                String type       = internalTypeEnumeration.nextType();
+                int    classCount = new DescriptorClassEnumeration(type).classCount();
+
+                Clazz referencedClass = referencedClasses[referencedClassIndex];
+                if (referencedClass == null ||
+                    usageMarker.isUsed(referencedClass))
+                {
+                    // Append the superclass or interface.
+                    newSignatureBuffer.append(type);
+
+                    // Copy the referenced classes.
+                    for (int counter = 0; counter < classCount; counter++)
+                    {
+                        referencedClasses[newReferencedClassIndex++] =
+                            referencedClasses[referencedClassIndex++];
+                    }
+                }
+                else
+                {
+                    // Skip the referenced classes.
+                    referencedClassIndex += classCount;
+                }
+            }
+
+            if (newReferencedClassIndex < referencedClassIndex)
+            {
+                // Update the signature.
+                ((Utf8Constant)((ProgramClass)clazz).constantPool[signatureAttribute.u2signatureIndex]).setString(newSignatureBuffer.toString());
+
+                // Clear the unused entries.
+                while (newReferencedClassIndex < referencedClassIndex)
+                {
+                    referencedClasses[newReferencedClassIndex++] = null;
+                }
+            }
+        }
     }
 
 

@@ -1594,24 +1594,24 @@ public class InstructionSequenceConstants
                 new SimpleInstruction(InstructionConstants.OP_LCONST_0),
             },
         },
-        {   // ... % 1f = 0f
-            {
-                new SimpleInstruction(InstructionConstants.OP_FCONST_1),
-                new SimpleInstruction(InstructionConstants.OP_FREM),
-            },{
-                new SimpleInstruction(InstructionConstants.OP_POP),
-                new SimpleInstruction(InstructionConstants.OP_FCONST_0),
-            },
-        },
-        {   // ... % 1d = 0d
-            {
-                new SimpleInstruction(InstructionConstants.OP_DCONST_1),
-                new SimpleInstruction(InstructionConstants.OP_DREM),
-            },{
-                new SimpleInstruction(InstructionConstants.OP_POP2),
-                new SimpleInstruction(InstructionConstants.OP_DCONST_0),
-            },
-        },
+//        {   // ... % 1f = 0f
+//            {
+//                new SimpleInstruction(InstructionConstants.OP_FCONST_1),
+//                new SimpleInstruction(InstructionConstants.OP_FREM),
+//            },{
+//                new SimpleInstruction(InstructionConstants.OP_POP),
+//                new SimpleInstruction(InstructionConstants.OP_FCONST_0),
+//            },
+//        },
+//        {   // ... % 1d = 0d
+//            {
+//                new SimpleInstruction(InstructionConstants.OP_DCONST_1),
+//                new SimpleInstruction(InstructionConstants.OP_DREM),
+//            },{
+//                new SimpleInstruction(InstructionConstants.OP_POP2),
+//                new SimpleInstruction(InstructionConstants.OP_DCONST_0),
+//            },
+//        },
         {   // -(-...) = ...
             {
                 new SimpleInstruction(InstructionConstants.OP_INEG),

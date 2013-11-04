@@ -138,7 +138,7 @@ implements   AttributeVisitor,
             else if ((referencedClass.getAccessFlags() & ClassConstants.INTERNAL_ACC_INTERFACE) != 0)
             {
                 int invokeinterfaceConstant =
-                    (ClassUtil.internalMethodParameterSize(referencedMethod.getDescriptor(referencedMethodClass)) + 1) << 8;
+                    (ClassUtil.internalMethodParameterSize(referencedMethod.getDescriptor(referencedMethodClass), false)) << 8;
 
                 // But is it not an interface invocation, or is the parameter
                 // size incorrect?
@@ -247,7 +247,7 @@ implements   AttributeVisitor,
         System.out.println("     Method   = "+referencedMethod);
         if ((referencedClass.getAccessFlags() & ClassConstants.INTERNAL_ACC_INTERFACE) != 0)
         {
-            System.out.println("     Parameter size   = "+(ClassUtil.internalMethodParameterSize(referencedMethod.getDescriptor(referencedMethodClass)+1)));
+            System.out.println("     Parameter size   = "+(ClassUtil.internalMethodParameterSize(referencedMethod.getDescriptor(referencedMethodClass), false)));
         }
         System.out.println("  Replacement instruction = "+replacementInstruction.toString(offset));
     }

@@ -34,9 +34,6 @@ public class ClassUtil
 {
     private static final String EMPTY_STRING = "";
 
-    private static final InternalTypeEnumeration internalTypeEnumeration = new InternalTypeEnumeration();
-    private static final ExternalTypeEnumeration externalTypeEnumeration = new ExternalTypeEnumeration();
-
 
     /**
      * Checks whether the given class magic number is correct.
@@ -435,7 +432,8 @@ public class ClassUtil
      */
     public static int internalMethodParameterCount(String internalMethodDescriptor)
     {
-        internalTypeEnumeration.setDescriptor(internalMethodDescriptor);
+        InternalTypeEnumeration internalTypeEnumeration =
+            new InternalTypeEnumeration(internalMethodDescriptor);
 
         int counter = 0;
         while (internalTypeEnumeration.hasMoreTypes())
@@ -452,7 +450,7 @@ public class ClassUtil
     /**
      * Returns the size taken up on the stack by the parameters of the given
      * internal method descriptor. This accounts for long and double parameters
-     * taking up two spaces.
+     * taking up two entries.
      * @param internalMethodDescriptor the internal method descriptor,
      *                                 e.g. "<code>(ID)Z</code>".
      * @return the size taken up on the stack,
@@ -460,9 +458,49 @@ public class ClassUtil
      */
     public static int internalMethodParameterSize(String internalMethodDescriptor)
     {
-        internalTypeEnumeration.setDescriptor(internalMethodDescriptor);
+        return internalMethodParameterSize(internalMethodDescriptor, true);
+    }
 
-        int size = 0;
+
+    /**
+     * Returns the size taken up on the stack by the parameters of the given
+     * internal method descriptor. This accounts for long and double parameters
+     * taking up two entries, and a non-static method taking up an additional
+     * entry.
+     * @param internalMethodDescriptor the internal method descriptor,
+     *                                 e.g. "<code>(ID)Z</code>".
+     * @param accessFlags              the access flags of the method,
+     *                                 e.g. 0.
+     * @return the size taken up on the stack,
+     *                                 e.g. 4.
+     */
+    public static int internalMethodParameterSize(String internalMethodDescriptor,
+                                                  int    accessFlags)
+    {
+        return internalMethodParameterSize(internalMethodDescriptor,
+                                           (accessFlags & ClassConstants.INTERNAL_ACC_STATIC) != 0);
+    }
+
+
+    /**
+     * Returns the size taken up on the stack by the parameters of the given
+     * internal method descriptor. This accounts for long and double parameters
+     * taking up two spaces, and a non-static method taking up an additional
+     * entry.
+     * @param internalMethodDescriptor the internal method descriptor,
+     *                                 e.g. "<code>(ID)Z</code>".
+     * @param isStatic                 specifies whether the method is static,
+     *                                 e.g. false.
+     * @return the size taken up on the stack,
+     *                                 e.g. 4.
+     */
+    public static int internalMethodParameterSize(String  internalMethodDescriptor,
+                                                  boolean isStatic)
+    {
+        InternalTypeEnumeration internalTypeEnumeration =
+            new InternalTypeEnumeration(internalMethodDescriptor);
+
+        int size = isStatic ? 0 : 1;
         while (internalTypeEnumeration.hasMoreTypes())
         {
             String internalType = internalTypeEnumeration.nextType();
@@ -477,7 +515,7 @@ public class ClassUtil
     /**
      * Returns the size taken up on the stack by the given internal type.
      * The size is 1, except for long and double types, for which it is 2,
-     * and for the void type, for which 0 is returned
+     * and for the void type, for which 0 is returned.
      * @param internalType the internal type,
      *                     e.g. "<code>I</code>".
      * @return the size taken up on the stack,
@@ -683,7 +721,9 @@ public class ClassUtil
      */
     public static String externalMethodName(String externalMethodNameAndArguments)
     {
-        externalTypeEnumeration.setDescriptor(externalMethodNameAndArguments);
+        ExternalTypeEnumeration externalTypeEnumeration =
+            new ExternalTypeEnumeration(externalMethodNameAndArguments);
+
         return externalTypeEnumeration.methodName();
     }
 
@@ -704,7 +744,9 @@ public class ClassUtil
         StringBuffer internalMethodDescriptor = new StringBuffer();
         internalMethodDescriptor.append(ClassConstants.INTERNAL_METHOD_ARGUMENTS_OPEN);
 
-        externalTypeEnumeration.setDescriptor(externalMethodNameAndArguments);
+        ExternalTypeEnumeration externalTypeEnumeration =
+            new ExternalTypeEnumeration(externalMethodNameAndArguments);
+
         while (externalTypeEnumeration.hasMoreTypes())
         {
             internalMethodDescriptor.append(internalType(externalTypeEnumeration.nextType()));
@@ -1025,7 +1067,9 @@ public class ClassUtil
     {
         StringBuffer externalMethodNameAndArguments = new StringBuffer();
 
-        internalTypeEnumeration.setDescriptor(internalMethodDescriptor);
+        InternalTypeEnumeration internalTypeEnumeration =
+            new InternalTypeEnumeration(internalMethodDescriptor);
+
         while (internalTypeEnumeration.hasMoreTypes())
         {
             externalMethodNameAndArguments.append(externalType(internalTypeEnumeration.nextType()));

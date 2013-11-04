@@ -24,7 +24,7 @@ import proguard.classfile.*;
 import proguard.classfile.attribute.*;
 import proguard.classfile.attribute.visitor.AttributeVisitor;
 import proguard.classfile.editor.VariableEditor;
-import proguard.classfile.util.SimplifiedVisitor;
+import proguard.classfile.util.*;
 import proguard.classfile.visitor.MemberVisitor;
 import proguard.optimize.info.ParameterUsageMarker;
 
@@ -76,25 +76,31 @@ implements   AttributeVisitor
 
     public void visitCodeAttribute(Clazz clazz, Method method, CodeAttribute codeAttribute)
     {
-        if ((method.getAccessFlags() & ClassConstants.INTERNAL_ACC_ABSTRACT) == 0)
+        // Get the original parameter size that was saved.
+        int oldParameterSize = ParameterUsageMarker.getParameterSize(method);
+
+        // Compute the new parameter size from the shrunk descriptor.
+        int newParameterSize =
+            ClassUtil.internalMethodParameterSize(method.getDescriptor(clazz),
+                                                  method.getAccessFlags());
+
+        if (oldParameterSize > newParameterSize)
         {
             // Get the total size of the local variable frame.
-            int variablesSize = codeAttribute.u2maxLocals;
-
-            // The descriptor may have been been shrunk already, so get the
-            // original parameter size.
-            int parameterSize = ParameterUsageMarker.getParameterSize(method);
+            int maxLocals = codeAttribute.u2maxLocals;
 
             if (DEBUG)
             {
                 System.out.println("ParameterShrinker: "+clazz.getName()+"."+method.getName(clazz)+method.getDescriptor(clazz));
-                System.out.println("  parameter size = " + parameterSize);
+                System.out.println("  Old parameter size = " + oldParameterSize);
+                System.out.println("  New parameter size = " + newParameterSize);
+                System.out.println("  Max locals         = " + maxLocals);
             }
 
             // Delete unused variables from the local variable frame.
-            variableEditor.reset(variablesSize);
+            variableEditor.reset(maxLocals);
 
-            for (int parameterIndex = 0; parameterIndex < parameterSize; parameterIndex++)
+            for (int parameterIndex = 0; parameterIndex < oldParameterSize; parameterIndex++)
             {
                 // Is the variable not required as a parameter?
                 if (!ParameterUsageMarker.isParameterUsed(method, parameterIndex))

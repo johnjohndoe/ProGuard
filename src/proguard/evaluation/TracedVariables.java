@@ -23,8 +23,8 @@ package proguard.evaluation;
 import proguard.evaluation.value.Value;
 
 /**
- * This Variables class saves additional information with variables, to keep track
- * of their origins.
+ * This Variables class saves additional information with variables, to keep
+ * track of their origins.
  * <p>
  * The Variables class stores a given producer Value along with each Value it
  * stores. It then generalizes a given collected Value with the producer Value
@@ -42,27 +42,29 @@ public class TracedVariables extends Variables
 
 
     private Value     producerValue;
-    private Value     collectedProducerValue;
-    private final Variables producerVariables;
-    private final Variables consumerVariables;
+    private Variables producerVariables;
     private int       initializationIndex;
 
 
+    /**
+     * Creates a new TracedVariables with a given size.
+     */
     public TracedVariables(int size)
     {
         super(size);
 
         producerVariables = new Variables(size);
-        consumerVariables = new Variables(size);
     }
 
 
+    /**
+     * Creates a new TracedVariables that is a copy of the given TracedVariables.
+     */
     public TracedVariables(TracedVariables tracedVariables)
     {
         super(tracedVariables);
 
         producerVariables = new Variables(tracedVariables.producerVariables);
-        consumerVariables = new Variables(tracedVariables.consumerVariables);
     }
 
 
@@ -76,21 +78,6 @@ public class TracedVariables extends Variables
 
 
     /**
-     * Sets the initial Value with which all values stored along with load
-     * instructions will be generalized.
-     */
-    public void setCollectedProducerValue(Value collectedProducerValue)
-    {
-        this.collectedProducerValue = collectedProducerValue;
-    }
-
-    public Value getCollectedProducerValue()
-    {
-        return collectedProducerValue;
-    }
-
-
-    /**
      * Resets the initialization index.
      */
     public void resetInitialization()
@@ -98,6 +85,10 @@ public class TracedVariables extends Variables
         initializationIndex = NONE;
     }
 
+
+    /**
+     * Returns the most recent initialization index since it has been reset.
+     */
     public int getInitializationIndex()
     {
         return initializationIndex;
@@ -127,30 +118,6 @@ public class TracedVariables extends Variables
     }
 
 
-    /**
-     * Gets the consumer Value for the specified variable, without disturbing it.
-     * @param index the variable index.
-     * @return the producer value of the given variable.
-     */
-    public Value getConsumerValue(int index)
-    {
-        return ((MutableValue)consumerVariables.getValue(index)).getContainedValue();
-    }
-
-
-    /**
-     * Sets the specified consumer Value for the given variable, without
-     * disturbing it.
-     * @param index the variable index.
-     * @param value the consumer value to set.
-     */
-    public void setConsumerValue(int index, Value value)
-    {
-        ((MutableValue)consumerVariables.getValue(index)).setContainedValue(value);
-        consumerVariables.store(index, new MutableValue());
-    }
-
-
     // Implementations for Variables.
 
     public void reset(int size)
@@ -158,7 +125,6 @@ public class TracedVariables extends Variables
         super.reset(size);
 
         producerVariables.reset(size);
-        consumerVariables.reset(size);
     }
 
     public void initialize(TracedVariables other)
@@ -166,7 +132,6 @@ public class TracedVariables extends Variables
         super.initialize(other);
 
         producerVariables.initialize(other.producerVariables);
-        consumerVariables.initialize(other.consumerVariables);
     }
 
     public boolean generalize(TracedVariables other,
@@ -184,12 +149,10 @@ public class TracedVariables extends Variables
                 if (values[index] == null)
                 {
                     producerVariables.values[index] = null;
-                    consumerVariables.values[index] = null;
 
                     if (clearConflictingOtherVariables)
                     {
                         other.producerVariables.values[index] = null;
-                        other.consumerVariables.values[index] = null;
                     }
                 }
             }
@@ -215,31 +178,11 @@ public class TracedVariables extends Variables
         // Store the producer value in its producer variable.
         producerVariables.store(index, producerValue);
 
-        // Reserve a space for the consumer value.
-        MutableValue mutableValue = new MutableValue();
-        consumerVariables.store(index, mutableValue);
-
         // Account for the extra space required by Category 2 values.
         if (value.isCategory2())
         {
             producerVariables.store(index+1, producerValue);
-            consumerVariables.store(index+1, mutableValue);
         }
-    }
-
-    public Value load(int index)
-    {
-        // Load and accumulate the producer value of the variable.
-        if (collectedProducerValue != null)
-        {
-            collectedProducerValue = collectedProducerValue.generalize(producerVariables.load(index));
-        }
-
-        // Generalize the consumer value of the variable.
-        ((MutableValue)consumerVariables.load(index)).generalizeContainedValue(producerValue);
-
-        // Return the value itself.
-        return super.load(index);
     }
 
 
@@ -256,16 +199,14 @@ public class TracedVariables extends Variables
         TracedVariables other = (TracedVariables)object;
 
         return super.equals(object) &&
-               this.producerVariables.equals(other.producerVariables) /*&&
-               this.consumerVariables.equals(other.consumerVariables)*/;
+               this.producerVariables.equals(other.producerVariables);
     }
 
 
     public int hashCode()
     {
         return super.hashCode() ^
-               producerVariables.hashCode() /*^
-               consumerVariables.hashCode()*/;
+               producerVariables.hashCode();
     }
 
 
@@ -277,13 +218,10 @@ public class TracedVariables extends Variables
         {
             Value value         = this.values[index];
             Value producerValue = producerVariables.getValue(index);
-            Value consumerValue = consumerVariables.getValue(index);
             buffer = buffer.append('[')
                            .append(producerValue == null ? "empty" : producerValue.toString())
                            .append('>')
                            .append(value         == null ? "empty" : value.toString())
-                           .append('>')
-                           .append(consumerValue == null ? "empty" : consumerValue.toString())
                            .append(']');
         }
 

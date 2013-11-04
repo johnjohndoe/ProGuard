@@ -22,7 +22,8 @@
     application?</a>
 <li><a href="#jdk1.4">Does <b>ProGuard</b> work with Java 2? Java 5? Java
     6?</a>
-<li><a href="#j2me">Does <b>ProGuard</b> work with Java Micro Edition?</a>
+<li><a href="#jme">Does <b>ProGuard</b> work with Java Micro Edition?</a>
+<li><a href="#blackberry">Does <b>ProGuard</b> work for Blackberry code?</a>
 <li><a href="#ant">Does <b>ProGuard</b> have support for Ant?</a>
 <li><a href="#gui">Does <b>ProGuard</b> come with a GUI?</a>
 <li><a href="#forname">Does <b>ProGuard</b> handle <code>Class.forName</code>
@@ -80,8 +81,8 @@ class files at Java 6.
 
 Apart from removing unused classes, fields, and methods in the shrinking step,
 <b>ProGuard</b> can also perform optimizations at the bytecode level, inside
-methods. Thanks to techniques like control flow analysis, data flow analysis,
-partial evaluation, and liveness analysis, <b>ProGuard</b> can:
+and across methods. Thanks to techniques like control flow analysis, data flow
+analysis, partial evaluation, and liveness analysis, <b>ProGuard</b> can:
 
 <ul>
 <li>Evaluate constant expressions.
@@ -127,7 +128,7 @@ introduced some small differences in the class file format. Java 5 added
 attributes for generics and for annotations. Java 6 introduced preverification
 attributes. <b>ProGuard</b> handles all versions correctly.
 
-<a name="j2me">&nbsp;</a>
+<a name="jme">&nbsp;</a>
 <h3>Does <b>ProGuard</b> work with Java Micro Edition?</h3>
 
 Yes. <b>ProGuard</b> itself runs in Java Standard Edition, but you can freely
@@ -138,6 +139,17 @@ preverifier.
 <p>
 <b>ProGuard</b> also comes with an obfuscator plug-in for the JME Wireless
 Toolkit.
+
+<a name="blackberry">&nbsp;</a>
+<h3>Does <b>ProGuard</b> work with Blackberry code?</h3>
+
+It should. RIM's proprietary <code>rapc</code> compiler converts ordinary JME
+jar files into cod files that run on Blackberry devices. The compiler performs
+quite a few optimizations, but preprocessing the jar files with
+<b>ProGuard</b> can generally still reduce the final code size by a few
+percent. However, the <code>rapc</code> compiler also seems to contain some
+bugs. It sometimes fails on obfuscated code that is valid and accepted by other
+JME tools and VMs. Your mileage may therefore vary.
 
 <a name="ant">&nbsp;</a>
 <h3>Does <b>ProGuard</b> have support for Ant?</h3>

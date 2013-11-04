@@ -24,42 +24,26 @@ import proguard.classfile.ClassConstants;
 
 /**
  * A <code>DescriptorClassEnumeration</code> provides an enumeration of all
- * classes mentioned in a given descriptor string.
- * <p>
- * A <code>DescriptorClassEnumeration</code> object can be reused for processing
- * different subsequent descriptors, by means of the <code>setDescriptor</code>
- * method.
+ * classes mentioned in a given descriptor or signature.
  *
  * @author Eric Lafortune
  */
 public class DescriptorClassEnumeration
 {
-    private String descriptor;
-    private int    index;
+    private String  descriptor;
+
+    private int     index;
+    private int     nestingLevel;
+    private boolean isInnerClassName;
+    private String  accumulatedClassName;
 
 
+    /**
+     * Creates a new DescriptorClassEnumeration for the given descriptor.
+     */
     public DescriptorClassEnumeration(String descriptor)
     {
-        setDescriptor(descriptor);
-    }
-
-
-    DescriptorClassEnumeration()
-    {
-    }
-
-
-    void setDescriptor(String descriptor)
-    {
         this.descriptor = descriptor;
-
-        reset();
-    }
-
-
-    public void reset()
-    {
-        index = 0;
     }
 
 
@@ -71,11 +55,13 @@ public class DescriptorClassEnumeration
     {
         int count = 0;
 
-        while (nextClassNameStartIndex() >= 0)
+        nextFluff();
+        while (hasMoreClassNames())
         {
             count++;
 
-            nextClassNameEndIndex();
+            nextClassName();
+            nextFluff();
         }
 
         index = 0;
@@ -84,60 +70,122 @@ public class DescriptorClassEnumeration
     }
 
 
+    /**
+     * Returns whether the enumeration can provide more class names from the
+     * descriptor.
+     */
     public boolean hasMoreClassNames()
     {
-        return index >= 0 && nextClassNameStartIndex() >= 0;
+        return index < descriptor.length();
     }
 
 
+    /**
+     * Returns the next fluff (surrounding class names) from the descriptor.
+     */
     public String nextFluff()
     {
         int fluffStartIndex = index;
-        int fluffEndIndex   = nextClassNameStartIndex() + 1;
 
-        // There may be fluff at the end of the descriptor.
-        if (fluffEndIndex == 0)
+        // Find the first token marking the start of a class name 'L' or '.'.
+        loop: while (index < descriptor.length())
         {
-            fluffEndIndex = descriptor.length();
-        }
-
-        return descriptor.substring(fluffStartIndex, fluffEndIndex);
-    }
-
-
-    public String nextClassName()
-    {
-        int classNameStartIndex = nextClassNameStartIndex() + 1;
-        int classNameEndIndex   = nextClassNameEndIndex();
-
-        return descriptor.substring(classNameStartIndex, classNameEndIndex);
-    }
-
-
-    private int nextClassNameStartIndex()
-    {
-        index = descriptor.indexOf(ClassConstants.INTERNAL_TYPE_CLASS_START, index);
-
-        return index;
-    }
-
-
-    private int nextClassNameEndIndex()
-    {
-        while (++index < descriptor.length())
-        {
-            char c = descriptor.charAt(index);
-            if (c == ClassConstants.INTERNAL_TYPE_CLASS_END ||
-                c == ClassConstants.INTERNAL_TYPE_GENERIC_START)
+            switch (descriptor.charAt(index++))
             {
-                return index;
+                case ClassConstants.INTERNAL_TYPE_GENERIC_START:
+                {
+                    nestingLevel++;
+                    break;
+                }
+                case ClassConstants.INTERNAL_TYPE_GENERIC_END:
+                {
+                    nestingLevel--;
+                    break;
+                }
+                case ClassConstants.INTERNAL_TYPE_GENERIC_BOUND:
+                {
+                    continue loop;
+                }
+                case ClassConstants.INTERNAL_TYPE_CLASS_START:
+                {
+                    // We've found the start of an ordinary class name.
+                    nestingLevel += 2;
+                    isInnerClassName = false;
+                    break loop;
+                }
+                case ClassConstants.INTERNAL_TYPE_CLASS_END:
+                {
+                    nestingLevel -= 2;
+                    break;
+                }
+                case ClassConstants.EXTERNAL_INNER_CLASS_SEPARATOR:
+                {
+                    // We've found the start of an inner class name in a signature.
+                    isInnerClassName = true;
+                    break loop;
+                }
+                case ClassConstants.INTERNAL_TYPE_GENERIC_VARIABLE_START:
+                {
+                    // We've found the start of a type identifier. Skip to the end.
+                    while (descriptor.charAt(index++) != ClassConstants.INTERNAL_TYPE_CLASS_END);
+                    break;
+                }
+            }
+
+            if (nestingLevel == 1 &&
+                descriptor.charAt(index) != ClassConstants.INTERNAL_TYPE_GENERIC_END)
+            {
+                // We're at the start of a type parameter. Skip to the start
+                // of the bounds.
+                while (descriptor.charAt(index++) != ClassConstants.INTERNAL_TYPE_GENERIC_BOUND);
             }
         }
 
-        throw new IllegalArgumentException("Missing class name terminator in descriptor ["+descriptor+"]");
+        return descriptor.substring(fluffStartIndex, index);
     }
 
 
+    /**
+     * Returns the next class name from the descriptor.
+     */
+    public String nextClassName()
+    {
+        int classNameStartIndex = index;
+
+        // Find the first token marking the end of a class name '<' or ';'.
+        loop: while (true)
+        {
+            switch (descriptor.charAt(index))
+            {
+                case ClassConstants.INTERNAL_TYPE_GENERIC_START:
+                case ClassConstants.INTERNAL_TYPE_CLASS_END:
+                {
+                    break loop;
+                }
+            }
+
+            index++;
+        }
+
+        String className = descriptor.substring(classNameStartIndex, index);
+
+        // Recompose the inner class name if necessary.
+        accumulatedClassName = isInnerClassName ?
+            accumulatedClassName + ClassConstants.INTERNAL_INNER_CLASS_SEPARATOR + className :
+            className;
+
+        return accumulatedClassName;
+    }
+
+
+    /**
+     * Returns whether the most recently returned class name was a recomposed
+     * inner class name from a signature.
+     */
+    public boolean isInnerClassName()
+    {
+        return isInnerClassName;
+    }
 
 
     /**
@@ -153,8 +201,8 @@ public class DescriptorClassEnumeration
             System.out.println("  Fluff: ["+enumeration.nextFluff()+"]");
             while (enumeration.hasMoreClassNames())
             {
-                System.out.println(" Name:  ["+enumeration.nextClassName()+"]");
-                System.out.println(" Fluff: ["+enumeration.nextFluff()+"]");
+                System.out.println("  Name:  ["+enumeration.nextClassName()+"]");
+                System.out.println("  Fluff: ["+enumeration.nextFluff()+"]");
             }
         }
         catch (Exception ex)

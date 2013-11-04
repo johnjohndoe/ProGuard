@@ -21,7 +21,6 @@
 package proguard.classfile.editor;
 
 import proguard.classfile.*;
-import proguard.classfile.visitor.ClassPrinter;
 import proguard.classfile.attribute.*;
 import proguard.classfile.attribute.preverification.*;
 import proguard.classfile.attribute.preverification.visitor.*;
@@ -53,6 +52,7 @@ implements   AttributeVisitor,
     private static       boolean DEBUG = true;
     //*/
 
+    private boolean updateFrameSizes;
 
     private int     codeLength;
     private boolean modified;
@@ -61,7 +61,7 @@ implements   AttributeVisitor,
     /*private*/public Instruction[]    preInsertions  = new Instruction[ClassConstants.TYPICAL_CODE_LENGTH];
     /*private*/public Instruction[]    replacements   = new Instruction[ClassConstants.TYPICAL_CODE_LENGTH];
     /*private*/public Instruction[]    postInsertions = new Instruction[ClassConstants.TYPICAL_CODE_LENGTH];
-    private boolean[]        deleted = new boolean[ClassConstants.TYPICAL_CODE_LENGTH];
+    /*private*/public boolean[]        deleted        = new boolean[ClassConstants.TYPICAL_CODE_LENGTH];
 
     private int[]   instructionOffsetMap = new int[ClassConstants.TYPICAL_CODE_LENGTH];
     private int     newOffset;
@@ -72,6 +72,18 @@ implements   AttributeVisitor,
     private final StackSizeUpdater    stackSizeUpdater    = new StackSizeUpdater();
     private final VariableSizeUpdater variableSizeUpdater = new VariableSizeUpdater();
     private final InstructionWriter   instructionWriter   = new InstructionWriter();
+
+
+    public CodeAttributeEditor()
+    {
+        this(true);
+    }
+
+
+    public CodeAttributeEditor(boolean updateFrameSizes)
+    {
+        this.updateFrameSizes = updateFrameSizes;
+    }
 
 
     /**
@@ -115,11 +127,6 @@ implements   AttributeVisitor,
      */
     public void insertBeforeInstruction(int instructionOffset, Instruction instruction)
     {
-        if (DEBUG)
-        {
-            System.out.println("Inserting instruction before ["+instructionOffset+"]: "+instruction);
-        }
-
         if (instructionOffset < 0 ||
             instructionOffset >= codeLength)
         {
@@ -248,11 +255,6 @@ implements   AttributeVisitor,
             System.err.println("  Method      = ["+method.getName(clazz)+method.getDescriptor(clazz)+"]");
             System.err.println("  Exception   = ["+ex.getClass().getName()+"] ("+ex.getMessage()+")");
 
-            if (DEBUG)
-            {
-                method.accept(clazz, new ClassPrinter());
-            }
-
             throw ex;
         }
     }
@@ -278,8 +280,7 @@ implements   AttributeVisitor,
             performSimpleReplacements(codeAttribute);
 
             // Update the maximum stack size and local variable frame size.
-            stackSizeUpdater.visitCodeAttribute(clazz, method, codeAttribute);
-            variableSizeUpdater.visitCodeAttribute(clazz, method, codeAttribute);
+            updateFrameSizes(clazz, method, codeAttribute);
         }
         else
         {
@@ -296,14 +297,23 @@ implements   AttributeVisitor,
                                       codeAttribute.u2exceptionTableLength);
 
             // Update the maximum stack size and local variable frame size.
-            stackSizeUpdater.visitCodeAttribute(clazz, method, codeAttribute);
-            variableSizeUpdater.visitCodeAttribute(clazz, method, codeAttribute);
+            updateFrameSizes(clazz, method, codeAttribute);
 
             // Remap the line number table and the local variable table.
             codeAttribute.attributesAccept(clazz, method, this);
 
             // Make sure instructions are widened if necessary.
             instructionWriter.visitCodeAttribute(clazz, method, codeAttribute);
+        }
+    }
+
+
+    private void updateFrameSizes(Clazz clazz, Method method, CodeAttribute codeAttribute)
+    {
+        if (updateFrameSizes)
+        {
+            stackSizeUpdater.visitCodeAttribute(clazz, method, codeAttribute);
+            variableSizeUpdater.visitCodeAttribute(clazz, method, codeAttribute);
         }
     }
 
@@ -414,6 +424,11 @@ implements   AttributeVisitor,
             if (replacementInstruction != null)
             {
                 replacementInstruction.write(codeAttribute, offset);
+
+                if (DEBUG)
+                {
+                    System.out.println("  Replaced "+replacementInstruction.toString(newOffset));
+                }
             }
         }
     }
@@ -434,8 +449,7 @@ implements   AttributeVisitor,
         int    oldLength = codeAttribute.u4codeLength;
 
         // Make sure there is a sufficiently large instruction offset map.
-        if (instructionOffsetMap == null ||
-            instructionOffsetMap.length < oldLength + 1)
+        if (instructionOffsetMap.length < oldLength + 1)
         {
             instructionOffsetMap = new int[oldLength + 1];
         }
@@ -870,8 +884,7 @@ implements   AttributeVisitor,
      */
     private int remapBranchOffset(int offset, int branchOffset)
     {
-        return remapInstructionOffset(offset + branchOffset) -
-               remapInstructionOffset(offset);
+        return remapInstructionOffset(offset + branchOffset) - newOffset;
     }
 
 

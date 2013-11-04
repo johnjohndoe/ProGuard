@@ -55,9 +55,9 @@ final class ClassSpecificationDialog extends JDialog
     private final JRadioButton keepClassMembersRadioButton       = new JRadioButton(msg("keepClassMembers"));
     private final JRadioButton keepClassesWithMembersRadioButton = new JRadioButton(msg("keepClassesWithMembers"));
 
-    private final JRadioButton allowShrinkingRadioButton    = new JRadioButton(msg("allowShrinking"));
-    private final JRadioButton allowOptimizationRadioButton = new JRadioButton(msg("allowOptimization"));
-    private final JRadioButton allowObfuscationRadioButton  = new JRadioButton(msg("allowObfuscation"));
+    private final JCheckBox allowShrinkingCheckBox    = new JCheckBox(msg("allowShrinking"));
+    private final JCheckBox allowOptimizationCheckBox = new JCheckBox(msg("allowOptimization"));
+    private final JCheckBox allowObfuscationCheckBox  = new JCheckBox(msg("allowObfuscation"));
 
 
     private final JRadioButton[] publicRadioButtons;
@@ -179,9 +179,9 @@ final class ClassSpecificationDialog extends JDialog
         allowOptionPanel.setBorder(BorderFactory.createTitledBorder(etchedBorder,
                                                                     msg("allowTitle")));
 
-        allowOptionPanel.add(tip(allowShrinkingRadioButton,    "allowShrinkingTip"),    constraintsLastStretch);
-        allowOptionPanel.add(tip(allowOptimizationRadioButton, "allowOptimizationTip"), constraintsLastStretch);
-        allowOptionPanel.add(tip(allowObfuscationRadioButton,  "allowObfuscationTip"),  constraintsLastStretch);
+        allowOptionPanel.add(tip(allowShrinkingCheckBox,    "allowShrinkingTip"),    constraintsLastStretch);
+        allowOptionPanel.add(tip(allowOptimizationCheckBox, "allowOptimizationTip"), constraintsLastStretch);
+        allowOptionPanel.add(tip(allowObfuscationCheckBox,  "allowObfuscationTip"),  constraintsLastStretch);
 
         // Create the access panel.
         JPanel accessPanel = new JPanel(layout);
@@ -241,8 +241,8 @@ final class ClassSpecificationDialog extends JDialog
             {
                 boolean visible = !allowOptionPanel.isVisible();
 
-                allowOptionPanel.setVisible(visible);
-                annotationTypePanel.setVisible(visible);
+                allowOptionPanel          .setVisible(visible);
+                annotationTypePanel       .setVisible(visible);
                 extendsAnnotationTypePanel.setVisible(visible);
 
                 advancedButton.setText(msg(visible ? "basic" : "advanced"));
@@ -292,7 +292,7 @@ final class ClassSpecificationDialog extends JDialog
         mainPanel.add(okButton,                           okButtonConstraints);
         mainPanel.add(cancelButton,                       cancelButtonConstraints);
 
-        getContentPane().add(mainPanel);
+        getContentPane().add(new JScrollPane(mainPanel));
     }
 
 
@@ -361,9 +361,9 @@ final class ClassSpecificationDialog extends JDialog
         keepOptionRadioButton.setSelected(true);
 
         // Set the allow radio buttons.
-        allowShrinkingRadioButton   .setSelected(allowShrinking);
-        allowOptimizationRadioButton.setSelected(allowOptimization);
-        allowObfuscationRadioButton .setSelected(allowObfuscation);
+        allowShrinkingCheckBox   .setSelected(allowShrinking);
+        allowOptimizationCheckBox.setSelected(allowOptimization);
+        allowObfuscationCheckBox .setSelected(allowObfuscation);
 
         setClassSpecification(keepSpecification);
     }
@@ -409,9 +409,9 @@ final class ClassSpecificationDialog extends JDialog
     {
         boolean markClasses       = !keepClassMembersRadioButton     .isSelected();
         boolean markConditionally = keepClassesWithMembersRadioButton.isSelected();
-        boolean allowShrinking    = allowShrinkingRadioButton        .isSelected();
-        boolean allowOptimization = allowOptimizationRadioButton     .isSelected();
-        boolean allowObfuscation  = allowObfuscationRadioButton      .isSelected();
+        boolean allowShrinking    = allowShrinkingCheckBox           .isSelected();
+        boolean allowOptimization = allowOptimizationCheckBox        .isSelected();
+        boolean allowObfuscation  = allowObfuscationCheckBox         .isSelected();
 
         return new KeepSpecification(markClasses,
                                      markConditionally,

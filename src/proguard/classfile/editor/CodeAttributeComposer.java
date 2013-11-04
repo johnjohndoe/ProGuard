@@ -54,7 +54,10 @@ implements   AttributeVisitor,
 
 
     private static final int MAXIMUM_LEVELS = 32;
+    private static final int INVALID        = -1;
 
+
+    private boolean allowExternalExceptionHandlers;
 
     private int maximumCodeLength;
     private int codeLength;
@@ -74,6 +77,26 @@ implements   AttributeVisitor,
 
     private final StackSizeUpdater    stackSizeUpdater    = new StackSizeUpdater();
     private final VariableSizeUpdater variableSizeUpdater = new VariableSizeUpdater();
+
+
+    /**
+     * Creates a new CodeAttributeComposer that doesn't allow external exception
+     * handlers.
+     */
+    public CodeAttributeComposer()
+    {
+        this(false);
+    }
+
+
+    /**
+     * Creates a new CodeAttributeComposer that optionally allows external
+     * exception handlers.
+     */
+    public CodeAttributeComposer(boolean allowExternalExceptionHandlers)
+    {
+        this.allowExternalExceptionHandlers = allowExternalExceptionHandlers;
+    }
 
 
     /**
@@ -120,6 +143,12 @@ implements   AttributeVisitor,
         if (instructionOffsetMap[level].length <= maximumCodeFragmentLength)
         {
             instructionOffsetMap[level] = new int[maximumCodeFragmentLength + 1];
+        }
+
+        // Initialize the offset map.
+        for (int index = 0; index <= maximumCodeFragmentLength; index++)
+        {
+            instructionOffsetMap[level][index] = INVALID;
         }
 
         // Remember the location of the code fragment.
@@ -257,6 +286,29 @@ implements   AttributeVisitor,
         // actual length of this code fragment.
         maximumCodeLength += codeLength - codeFragmentOffsets[level] -
                              codeFragmentLengths[level];
+
+        // Try to remap the exception handlers that couldn't be remapped before.
+        if (allowExternalExceptionHandlers)
+        {
+            for (int index = 0; index < exceptionTableLength; index++)
+            {
+                ExceptionInfo exceptionInfo = exceptionTable[index];
+
+                // Unmapped exception handlers are still negated.
+                int handlerPC = -exceptionInfo.u2handlerPC;
+                if (handlerPC > 0)
+                {
+                    if (instructionOffsetMap[level][handlerPC] < codeLength)
+                    {
+                        exceptionInfo.u2handlerPC = remapInstructionOffset(handlerPC);
+                    }
+                    else if (level == 0)
+                    {
+                        throw new IllegalStateException("Couldn't remap exception handler offset ["+handlerPC+"]");
+                    }
+                }
+            }
+        }
 
         level--;
     }
@@ -412,9 +464,17 @@ implements   AttributeVisitor,
     {
         // Remap the code offsets. Note that the instruction offset map also has
         // an entry for the first offset after the code, for u2endPC.
-        exceptionInfo.u2startPC   = remapInstructionOffset(exceptionInfo.u2startPC);
-        exceptionInfo.u2endPC     = remapInstructionOffset(exceptionInfo.u2endPC);
-        exceptionInfo.u2handlerPC = remapInstructionOffset(exceptionInfo.u2handlerPC);
+        exceptionInfo.u2startPC = remapInstructionOffset(exceptionInfo.u2startPC);
+        exceptionInfo.u2endPC   = remapInstructionOffset(exceptionInfo.u2endPC);
+
+        // See if we can remap the handler right away. Unmapped exception
+        // handlers are negated, in order to mark them as external.
+        int handlerPC = exceptionInfo.u2handlerPC;
+        exceptionInfo.u2handlerPC =
+            allowExternalExceptionHandlers &&
+            instructionOffsetMap[level][handlerPC] >= codeLength ?
+                -handlerPC :
+                remapInstructionOffset(handlerPC);
     }
 
 
@@ -561,10 +621,16 @@ implements   AttributeVisitor,
         if (oldInstructionOffset < 0 ||
             oldInstructionOffset > codeFragmentLengths[level])
         {
-            throw new IllegalArgumentException("Invalid instruction offset ["+oldInstructionOffset +"] in code fragment with length ["+codeFragmentLengths[level]+"]");
+            throw new IllegalArgumentException("Instruction offset ["+oldInstructionOffset +"] out of range in code fragment with length ["+codeFragmentLengths[level]+"] at level "+level);
         }
 
-        return instructionOffsetMap[level][oldInstructionOffset];
+        int newInstructionOffset = instructionOffsetMap[level][oldInstructionOffset];
+        if (newInstructionOffset == INVALID)
+        {
+            throw new IllegalArgumentException("Invalid instruction offset ["+oldInstructionOffset +"] in code fragment at level "+level);
+        }
+
+        return newInstructionOffset;
     }
 
 

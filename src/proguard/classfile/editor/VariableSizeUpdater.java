@@ -57,18 +57,14 @@ implements   AttributeVisitor,
 //            method.getName(clazz).equals("abc");
 
         // The minimum variable size is determined by the arguments.
-        codeAttribute.u2maxLocals = ClassUtil.internalMethodParameterSize(method.getDescriptor(clazz));
-
-        // Non-static methods also have the 'this' variable.
-        if ((method.getAccessFlags() & ClassConstants.INTERNAL_ACC_STATIC) == 0)
-        {
-            codeAttribute.u2maxLocals++;
-        }
+        codeAttribute.u2maxLocals =
+            ClassUtil.internalMethodParameterSize(method.getDescriptor(clazz),
+                                                  method.getAccessFlags());
 
         if (DEBUG)
         {
             System.out.println("VariableSizeUpdater: "+clazz.getName()+"."+method.getName(clazz)+method.getDescriptor(clazz));
-            System.out.println("Max locals: "+codeAttribute.u2maxLocals+" <- parameters");
+            System.out.println("  Max locals: "+codeAttribute.u2maxLocals+" <- parameters");
         }
 
         // Go over all instructions.

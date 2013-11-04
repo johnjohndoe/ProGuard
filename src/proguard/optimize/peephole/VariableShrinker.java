@@ -80,30 +80,28 @@ implements   AttributeVisitor
     {
         if ((method.getAccessFlags() & ClassConstants.INTERNAL_ACC_ABSTRACT) == 0)
         {
-            // Figure out the local variables that are used by the code.
-            variableUsageMarker.visitCodeAttribute(clazz, method, codeAttribute);
+            // Compute the parameter size.
+            int parameterSize =
+                ClassUtil.internalMethodParameterSize(method.getDescriptor(clazz),
+                                                      method.getAccessFlags());
 
             // Get the total size of the local variable frame.
-            int variablesSize = variableUsageMarker.getVariablesSize();
-
-            // The descriptor may have been been shrunk already, so get the
-            // original parameter size.
-            int parameterSize = ClassUtil.internalMethodParameterSize(method.getDescriptor(clazz));
+            int maxLocals = codeAttribute.u2maxLocals;
 
             if (DEBUG)
             {
                 System.out.println("VariableShrinker: "+clazz.getName()+"."+method.getName(clazz)+method.getDescriptor(clazz));
-                System.out.println("  parameter size = " + parameterSize);
-                System.out.println("  variables size = " + variablesSize);
+                System.out.println("  Parameter size = " + parameterSize);
+                System.out.println("  Max locals     = " + maxLocals);
             }
 
-            // Make sure the size of the local variable frame is set correctly.
-            codeAttribute.u2maxLocals = variablesSize;
+            // Figure out the local variables that are used by the code.
+            variableUsageMarker.visitCodeAttribute(clazz, method, codeAttribute);
 
             // Delete unused local variables from the local variable frame.
-            variableEditor.reset(variablesSize);
+            variableEditor.reset(maxLocals);
 
-            for (int variableIndex = parameterSize+1; variableIndex < variablesSize; variableIndex++)
+            for (int variableIndex = parameterSize+1; variableIndex < maxLocals; variableIndex++)
             {
                 // Is the variable not required?
                 if (!variableUsageMarker.isVariableUsed(variableIndex))

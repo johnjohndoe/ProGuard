@@ -42,6 +42,32 @@ interest too, because they typically contain any less urgent bug fixes
 collected since the previous release.
 <p>
 
+<h3><div>Mar 2008</div> Version 4.2</h3>
+<ul>
+<li>Refined data flow analysis in optimization step.
+<li>Fixed handling of exceptions when inlining subroutines.
+<li>Fixed inlining of incompatible code constructs between different java
+    versions.
+<li>Fixed computation of local variable frame size.
+<li>Fixed optimization of infinite loops.
+<li>Fixed optimization of subroutine invocations.
+<li>Fixed optimization of floating point remainder computations.
+<li>Fixed removal of unused parameters in method descriptors containing arrays
+    of longs or doubles.
+<li>Added undocumented java system properties
+    <code>maximum.inlined.code.length</code> (default is 8) and
+    <code>maximum.resulting.code.length</code> (defaults are 8000 for JSE and
+    2000 for JME), for expert users who read release notes.
+<li>Fixed processing of generic types in Signature attributes in shrinking and
+    optimization steps.
+<li>Fixed processing of inner class names in Signature attributes in obfuscation
+    step.
+<li>Improved adapting resource file names following obfuscated class names.
+<li>Fixed interpretation of package names in GUI.
+<li>Fixed default settings for Xlets in GUI.
+<li>Updated documentation and examples.
+</ul>
+
 <h3><div>Dec 2007</div> Version 4.1</h3>
 <ul>
 <li>Fixed shrinking of default annotation element values.

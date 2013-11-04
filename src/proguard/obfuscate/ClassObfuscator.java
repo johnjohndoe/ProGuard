@@ -130,7 +130,7 @@ implements   ClassVisitor,
             // the outer class prefix, if any, or it may be the fixed base
             // package, if classes are to be repackaged.
             String newPackagePrefix = newClassName != null ?
-                newClassName + ClassConstants.INNER_CLASS_SEPARATOR :
+                newClassName + ClassConstants.INTERNAL_INNER_CLASS_SEPARATOR :
                 newPackagePrefix(ClassUtil.internalPackagePrefix(programClass.getName()));
 
             // Come up with a new class name.

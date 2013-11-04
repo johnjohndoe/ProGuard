@@ -45,7 +45,10 @@ implements   MemberVisitor
 
     public void visitProgramMethod(ProgramClass programClass, ProgramMethod programMethod)
     {
-        int parameterSize = parameterSize(programClass, programMethod);
+        int parameterSize =
+            ClassUtil.internalMethodParameterSize(programMethod.getDescriptor(programClass),
+                                                  programMethod.getAccessFlags());
+
         if (parameterSize > 0)
         {
             // Is it a native method?
@@ -209,12 +212,8 @@ implements   MemberVisitor
      */
     private int parameterSize(Clazz clazz, Method method)
     {
-        int parameterSize = ClassUtil.internalMethodParameterSize(method.getDescriptor(clazz));
-        if ((method.getAccessFlags() & ClassConstants.INTERNAL_ACC_STATIC) == 0)
-        {
-            parameterSize++;
-        }
 
-        return parameterSize;
+        return ClassUtil.internalMethodParameterSize(method.getDescriptor(clazz),
+                                                     method.getAccessFlags());
     }
 }

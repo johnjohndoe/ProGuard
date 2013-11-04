@@ -1092,8 +1092,8 @@ public class ProGuardGUI extends JFrame
         configuration.overloadAggressively             = overloadAggressivelyCheckBox            .isSelected();
         configuration.useUniqueClassMemberNames        = useUniqueClassMemberNamesCheckBox       .isSelected();
         configuration.useMixedCaseClassNames           = useMixedCaseClassNamesCheckBox          .isSelected();
-        configuration.flattenPackageHierarchy          = flattenPackageHierarchyCheckBox         .isSelected() ? ClassUtil.externalClassName(flattenPackageHierarchyTextField  .getText()) : null;
-        configuration.repackageClasses                 = repackageClassesCheckBox                .isSelected() ? ClassUtil.externalClassName(repackageClassesTextField         .getText()) : null;
+        configuration.flattenPackageHierarchy          = flattenPackageHierarchyCheckBox         .isSelected() ? ClassUtil.internalClassName(flattenPackageHierarchyTextField  .getText()) : null;
+        configuration.repackageClasses                 = repackageClassesCheckBox                .isSelected() ? ClassUtil.internalClassName(repackageClassesTextField         .getText()) : null;
         configuration.keepAttributes                   = keepAttributesCheckBox                  .isSelected() ? ListUtil.commaSeparatedList(keepAttributesTextField           .getText()) : null;
         configuration.newSourceFileAttribute           = newSourceFileAttributeCheckBox          .isSelected() ? newSourceFileAttributeTextField                               .getText()  : null;
         configuration.adaptResourceFileNames           = adaptResourceFileNamesCheckBox          .isSelected() ? ListUtil.commaSeparatedList(adaptResourceFileNamesTextField   .getText()) : null;

@@ -265,7 +265,7 @@ final class MemberSpecificationDialog extends JDialog
         mainPanel.add(okButton,                           okButtonConstraints);
         mainPanel.add(cancelButton,                       cancelButtonConstraints);
 
-        getContentPane().add(mainPanel);
+        getContentPane().add(new JScrollPane(mainPanel));
     }
 
 

@@ -48,31 +48,58 @@ public class DataEntryRenamer implements DataEntryReader
 
     public void read(DataEntry dataEntry) throws IOException
     {
+        // Delegate to the actual data entry reader.
+        dataEntryReader.read(renamedDataEntry(dataEntry));
+    }
+
+
+    /**
+     * Create a renamed data entry, if possible.
+     */
+    private DataEntry renamedDataEntry(DataEntry dataEntry)
+    {
         String dataEntryName = dataEntry.getName();
 
-        int suffixIndex = dataEntryName.lastIndexOf('.');
-
-        String className = suffixIndex > 0 ?
-            dataEntryName.substring(0, suffixIndex) :
-            dataEntryName;
-
-        // Find the class corrsponding to the data entry.
-        Clazz clazz = classPool.getClass(className);
-        if (clazz != null)
+        // Try to find a corresponding class name by removing increasingly
+        // long suffixes,
+        for (int suffixIndex = dataEntryName.length() - 1;
+             suffixIndex > 0;
+             suffixIndex--)
         {
-            // Rename the data entry if necessary.
-            String newClassName = clazz.getName();
-            if (!className.equals(newClassName))
+            char c = dataEntryName.charAt(suffixIndex);
+            if (!Character.isJavaIdentifierPart(c))
             {
-                String newDataEntryName =  suffixIndex > 0 ?
-                    newClassName + dataEntryName.substring(suffixIndex) :
-                    newClassName;
+                // Stop looking at the first package separator.
+                if (c == ClassConstants.INTERNAL_PACKAGE_SEPARATOR)
+                {
+                    break;
+                }
 
-                dataEntry = new RenamedDataEntry(dataEntry, newDataEntryName);
+                // Chop off the suffix.
+                String className = dataEntryName.substring(0, suffixIndex);
+
+                // Is there a class corresponding to the data entry?
+                Clazz clazz = classPool.getClass(className);
+                if (clazz != null)
+                {
+                    // Did the class get a new name?
+                    String newClassName = clazz.getName();
+                    if (!className.equals(newClassName))
+                    {
+                        // Return a renamed data entry.
+                        String newDataEntryName =  suffixIndex > 0 ?
+                            newClassName + dataEntryName.substring(suffixIndex) :
+                            newClassName;
+
+                        return new RenamedDataEntry(dataEntry, newDataEntryName);
+                    }
+
+                    // Otherwise stop looking.
+                    break;
+                }
             }
         }
 
-        // Delegate to the actual data entry reader.
-        dataEntryReader.read(dataEntry);
+        return dataEntry;
     }
 }

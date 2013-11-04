@@ -426,6 +426,8 @@ implements   ClassVisitor,
         DescriptorClassEnumeration enumeration =
             new DescriptorClassEnumeration(descriptor);
 
+        enumeration.nextFluff();
+
         if (enumeration.hasMoreClassNames())
         {
             return findClass(enumeration.nextClassName());
@@ -453,7 +455,8 @@ implements   ClassVisitor,
 
             for (int index = 0; index < classCount; index++)
             {
-                String name = enumeration.nextClassName();
+                String fluff = enumeration.nextFluff();
+                String name  = enumeration.nextClassName();
 
                 Clazz referencedClass = findClass(name);
 

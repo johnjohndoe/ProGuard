@@ -173,14 +173,14 @@ public class ConfigurationTask extends Task
     }
 
 
-    public void addConfiguredAdaptResourceFileNames(FilterElement filterElement)
+    public void addConfiguredAdaptresourcefilenames(FilterElement filterElement)
     {
         configuration.adaptResourceFileNames = extendFilter(configuration.adaptResourceFileNames,
                                                             filterElement);
     }
 
 
-    public void addConfiguredAdaptResourceFileContents(FilterElement filterElement)
+    public void addConfiguredAdaptresourcefilecontents(FilterElement filterElement)
     {
         configuration.adaptResourceFileContents = extendFilter(configuration.adaptResourceFileContents,
                                                                filterElement);

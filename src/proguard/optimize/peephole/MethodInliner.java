@@ -35,8 +35,8 @@ import proguard.optimize.info.*;
 import java.util.Stack;
 
 /**
- * This AttributeVisitor inlines short methods in the code attributes that it
- * visits.
+ * This AttributeVisitor inlines short methods or methods that are only invoked
+ * once, in the code attributes that it visits.
  *
  * @author Eric Lafortune
  */
@@ -48,9 +48,11 @@ implements   AttributeVisitor,
              ConstantVisitor,
              MemberVisitor
 {
-    private static final int MAXIMUM_INLINING_CODE_LENGTH  = 8;
-    private static final int MAXIMUM_CODE_EXPANSION        = 2;
-    private static final int MAXIMUM_EXTRA_CODE_LENGTH     = 128;
+    private static final int MAXIMUM_INLINED_CODE_LENGTH       = Integer.parseInt(System.getProperty("maximum.inlined.code.length",      "8"));
+    private static final int MAXIMUM_RESULTING_CODE_LENGTH_JSE = Integer.parseInt(System.getProperty("maximum.resulting.code.length", "8000"));
+    private static final int MAXIMUM_RESULTING_CODE_LENGTH_JME = Integer.parseInt(System.getProperty("maximum.resulting.code.length", "2000"));
+    private static final int MAXIMUM_CODE_EXPANSION            = 2;
+    private static final int MAXIMUM_EXTRA_CODE_LENGTH         = 128;
 
     //*
     private static final boolean DEBUG = false;
@@ -59,6 +61,7 @@ implements   AttributeVisitor,
     //*/
 
 
+    private final boolean            microEdition;
     private final boolean            allowAccessModification;
     private final boolean            inlineSingleInvocations;
     private final InstructionVisitor extraInlinedInvocationVisitor;
@@ -69,45 +72,59 @@ implements   AttributeVisitor,
     private final ConstantAdder         constantAdder         = new ConstantAdder();
     private final StackSizeComputer     stackSizeComputer     = new StackSizeComputer();
 
-    private Clazz   targetClass;
-    private Method  targetMethod;
-    private boolean inlining;
-    private Stack   inliningMethods = new Stack();
-    private boolean emptyInvokingStack;
-    private int     uninitializedObjectCount;
-    private int     variableOffset;
-    private boolean inlined;
-    private boolean inlinedAny;
+    private ProgramClass  targetClass;
+    private ProgramMethod targetMethod;
+    private int           estimatedResultingCodeLength;
+    private boolean       inlining;
+    private Stack         inliningMethods = new Stack();
+    private boolean       emptyInvokingStack;
+    private int           uninitializedObjectCount;
+    private int           variableOffset;
+    private boolean       inlined;
+    private boolean       inlinedAny;
 
 
     /**
      * Creates a new MethodInliner.
+     * @param microEdition            indicates whether the resulting code is
+     *                                targeted at Java Micro Edition.
      * @param allowAccessModification indicates whether the access modifiers of
      *                                classes and class members can be changed
      *                                in order to inline methods.
+     * @param inlineSingleInvocations indicates whether the single invocations
+     *                                should be inlined, or, alternatively,
+     *                                short methods.
      */
-    public MethodInliner(boolean allowAccessModification,
+    public MethodInliner(boolean microEdition,
+                         boolean allowAccessModification,
                          boolean inlineSingleInvocations)
     {
-        this(allowAccessModification, inlineSingleInvocations, null);
+        this(microEdition,
+             allowAccessModification,
+             inlineSingleInvocations,
+             null);
     }
 
 
     /**
      * Creates a new MethodInliner.
+     * @param microEdition            indicates whether the resulting code is
+     *                                targeted at Java Micro Edition.
      * @param allowAccessModification indicates whether the access modifiers of
      *                                classes and class members can be changed
      *                                in order to inline methods.
-     * @param allowAccessModification indicates whether the single invocations
+     * @param inlineSingleInvocations indicates whether the single invocations
      *                                should be inlined, or, alternatively,
      *                                short methods.
      * @param extraInlinedInvocationVisitor an optional extra visitor for all
      *                                      inlined invocation instructions.
      */
-    public MethodInliner(boolean            allowAccessModification,
+    public MethodInliner(boolean            microEdition,
+                         boolean            allowAccessModification,
                          boolean            inlineSingleInvocations,
                          InstructionVisitor extraInlinedInvocationVisitor)
     {
+        this.microEdition                  = microEdition;
         this.allowAccessModification       = allowAccessModification;
         this.inlineSingleInvocations       = inlineSingleInvocations;
         this.extraInlinedInvocationVisitor = extraInlinedInvocationVisitor;
@@ -127,13 +144,14 @@ implements   AttributeVisitor,
 //                clazz.getName().equals("abc/Def") &&
 //                method.getName(clazz).equals("abc");
 
-            targetClass              = clazz;
-            targetMethod             = method;
+            targetClass                  = (ProgramClass)clazz;
+            targetMethod                 = (ProgramMethod)method;
+            estimatedResultingCodeLength = codeAttribute.u4codeLength;
             inliningMethods.clear();
-            uninitializedObjectCount = method.getName(clazz).equals(ClassConstants.INTERNAL_METHOD_NAME_INIT) ? 1 : 0;
-            inlinedAny               = false;
+            uninitializedObjectCount     = method.getName(clazz).equals(ClassConstants.INTERNAL_METHOD_NAME_INIT) ? 1 : 0;
+            inlinedAny                   = false;
             codeAttributeComposer.reset();
-            constantAdder.setTargetClass((ProgramClass)clazz);
+            constantAdder.setTargetClass(targetClass);
             stackSizeComputer.visitCodeAttribute(clazz, method, codeAttribute);
 
             // Append the body of the code.
@@ -157,10 +175,13 @@ implements   AttributeVisitor,
         }
 
         // Only inline the method if it is invoked once or if it is short.
-        // TODO: Check total code length after inlining.
-        else if (inlineSingleInvocations ?
-            MethodInvocationMarker.getInvocationCount(method) == 1 :
-            codeAttribute.u4codeLength <= MAXIMUM_INLINING_CODE_LENGTH)
+        else if ((inlineSingleInvocations ?
+                      MethodInvocationMarker.getInvocationCount(method) == 1 :
+                      codeAttribute.u4codeLength <= MAXIMUM_INLINED_CODE_LENGTH) &&
+                 estimatedResultingCodeLength + codeAttribute.u4codeLength <
+                 (microEdition ?
+                     MAXIMUM_RESULTING_CODE_LENGTH_JME :
+                     MAXIMUM_RESULTING_CODE_LENGTH_JSE))
         {
             if (DEBUG)
             {
@@ -168,6 +189,11 @@ implements   AttributeVisitor,
                                    clazz.getName()+"."+method.getName(clazz)+method.getDescriptor(clazz)+"] in ["+
                                    targetClass.getName()+"."+targetMethod.getName(targetClass)+targetMethod.getDescriptor(targetClass)+"]");
             }
+
+            // Ignore the removal of the original method invocation,
+            // the addition of the parameter setup, and
+            // the modification of a few inlined instructions.
+            estimatedResultingCodeLength += codeAttribute.u4codeLength;
 
             // Append instructions to store the parameters.
             storeParameters(clazz, method);
@@ -478,6 +504,11 @@ implements   AttributeVisitor,
 
             // Only inline the method if it isn't recursing.
             !inliningMethods.contains(programMethod)                                               &&
+
+            // Only inline the method if its target class has at least the
+            // same version number as the source class, in order to avoid
+            // introducing incompatible constructs.
+            targetClass.u4version >= programClass.u4version                                        &&
 
             // Only inline the method if it doesn't invoke a super method, or if
             // it is in the same class.

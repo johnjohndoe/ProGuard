@@ -63,11 +63,7 @@ implements   InvocationUnit,
             (method.getAccessFlags() & ClassConstants.INTERNAL_ACC_STATIC) != 0;
 
         // Count the number of parameters, taking into account their categories.
-        int parameterSize = ClassUtil.internalMethodParameterSize(descriptor);
-        if (!isStatic)
-        {
-            parameterSize++;
-        }
+        int parameterSize = ClassUtil.internalMethodParameterSize(descriptor, isStatic);
 
         // Reuse the existing parameters object, ensuring the right size.
         variables.reset(parameterSize);

@@ -309,7 +309,7 @@ implements   ClassVisitor,
             innerNameIndex  != 0)
         {
             String newInnerName = clazz.getClassName(innerClassIndex);
-            int index = newInnerName.lastIndexOf(ClassConstants.INNER_CLASS_SEPARATOR);
+            int index = newInnerName.lastIndexOf(ClassConstants.INTERNAL_INNER_CLASS_SEPARATOR);
             if (index >= 0)
             {
                 innerClassesInfo.u2innerNameIndex =
@@ -490,11 +490,19 @@ implements   ClassVisitor,
         int index = 0;
         while (descriptorClassEnumeration.hasMoreClassNames())
         {
-            String className = descriptorClassEnumeration.nextClassName();
-            String fluff     = descriptorClassEnumeration.nextFluff();
+            String  className        = descriptorClassEnumeration.nextClassName();
+            boolean isInnerClassName = descriptorClassEnumeration.isInnerClassName();
+            String  fluff            = descriptorClassEnumeration.nextFluff();
 
             String newClassName = newClassName(className,
                                                referencedClasses[index++]);
+
+            // Strip the outer class name again, if it's an inner class.
+            if (isInnerClassName)
+            {
+                newClassName =
+                    newClassName.substring(newClassName.lastIndexOf(ClassConstants.INTERNAL_INNER_CLASS_SEPARATOR)+1);
+            }
 
             newDescriptorBuffer.append(newClassName);
             newDescriptorBuffer.append(fluff);

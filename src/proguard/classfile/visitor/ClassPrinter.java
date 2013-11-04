@@ -556,7 +556,7 @@ implements   ClassVisitor,
     public void visitRuntimeVisibleParameterAnnotationsAttribute(Clazz clazz, Method method, RuntimeVisibleParameterAnnotationsAttribute runtimeVisibleParameterAnnotationsAttribute)
     {
         println(visitorInfo(runtimeVisibleParameterAnnotationsAttribute) +
-                " Runtime visible parameter annotations attribute:");
+                " Runtime visible parameter annotations attribute (parameter count = " + runtimeVisibleParameterAnnotationsAttribute.u2parametersCount + "):");
 
         indent();
         runtimeVisibleParameterAnnotationsAttribute.annotationsAccept(clazz, method, this);
@@ -567,7 +567,7 @@ implements   ClassVisitor,
     public void visitRuntimeInvisibleParameterAnnotationsAttribute(Clazz clazz, Method method, RuntimeInvisibleParameterAnnotationsAttribute runtimeInvisibleParameterAnnotationsAttribute)
     {
         println(visitorInfo(runtimeInvisibleParameterAnnotationsAttribute) +
-                " Runtime invisible parameter annotations attribute:");
+                " Runtime invisible parameter annotations attribute (parameter count = " + runtimeInvisibleParameterAnnotationsAttribute.u2parametersCount + "):");
 
         indent();
         runtimeInvisibleParameterAnnotationsAttribute.annotationsAccept(clazz, method, this);

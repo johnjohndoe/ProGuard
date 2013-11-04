@@ -27,7 +27,7 @@ import proguard.classfile.editor.CodeAttributeComposer;
 import proguard.classfile.instruction.*;
 import proguard.classfile.instruction.visitor.InstructionVisitor;
 import proguard.classfile.util.SimplifiedVisitor;
-import proguard.classfile.visitor.ExceptionExcludedOffsetFilter;
+import proguard.classfile.visitor.*;
 import proguard.optimize.peephole.BranchTargetFinder;
 
 /**
@@ -50,10 +50,11 @@ implements   AttributeVisitor,
 
 
     private final BranchTargetFinder    branchTargetFinder    = new BranchTargetFinder();
-    private final CodeAttributeComposer codeAttributeComposer = new CodeAttributeComposer();
+    private final CodeAttributeComposer codeAttributeComposer = new CodeAttributeComposer(true);
 
-    private boolean              inlinedAny;
-    private ExceptionInfoVisitor subroutineExceptionInliner;
+    private ExceptionInfoVisitor subroutineExceptionInliner = this;
+    private int                  clipStart                  = 0;
+    private int                  clipEnd                    = Integer.MAX_VALUE;
 
 
     // Implementations for AttributeVisitor.
@@ -67,6 +68,11 @@ implements   AttributeVisitor,
 //            clazz.getName().equals("abc/Def") &&
 //            method.getName(clazz).equals("abc");
 
+        if (DEBUG)
+        {
+            method.accept(clazz, new ClassPrinter());
+        }
+
         branchTargetFinder.visitCodeAttribute(clazz, method, codeAttribute);
 
         // Don't bother if there aren't any subroutines anyway.
@@ -75,17 +81,65 @@ implements   AttributeVisitor,
             return;
         }
 
-        inlinedAny                 = false;
-        subroutineExceptionInliner = this;
-        codeAttributeComposer.reset();
+        if (DEBUG)
+        {
+            System.out.println("SubroutineInliner: processing ["+clazz.getName()+"."+method.getName(clazz)+method.getDescriptor(clazz)+"]");
+        }
 
         // Append the body of the code.
-        copyCode(clazz, method, codeAttribute);
+        codeAttributeComposer.reset();
+        codeAttributeComposer.beginCodeFragment(codeAttribute.u4codeLength);
 
-        // Update the code attribute if any code has been inlined.
-        if (inlinedAny)
+        // Copy the non-subroutine instructions.
+        int offset  = 0;
+        while (offset < codeAttribute.u4codeLength)
         {
-            codeAttributeComposer.visitCodeAttribute(clazz, method, codeAttribute);
+            Instruction instruction = InstructionFactory.create(codeAttribute.code, offset);
+            int instructionLength = instruction.length(offset);
+
+            // Is this returning subroutine?
+            if (branchTargetFinder.isSubroutine(offset) &&
+                branchTargetFinder.isSubroutineReturning(offset))
+            {
+                // Skip the subroutine.
+                if (DEBUG)
+                {
+                    System.out.println("  Skipping original subroutine instruction "+instruction.toString(offset));
+                }
+
+                // Append a label at this offset instead.
+                codeAttributeComposer.appendLabel(offset);
+            }
+            else
+            {
+                // Copy the instruction, inlining any subroutine call recursively.
+                instruction.accept(clazz, method, codeAttribute, offset, this);
+            }
+
+            offset += instructionLength;
+        }
+
+        // Copy the exceptions. Note that exceptions with empty try blocks
+        // are automatically removed.
+        codeAttribute.exceptionsAccept(clazz,
+                                       method,
+                                       subroutineExceptionInliner);
+
+        if (DEBUG)
+        {
+            System.out.println("  Appending label after code at ["+offset+"]");
+        }
+
+        // Append a label just after the code.
+        codeAttributeComposer.appendLabel(codeAttribute.u4codeLength);
+
+        // End and update the code attribute.
+        codeAttributeComposer.endCodeFragment();
+        codeAttributeComposer.visitCodeAttribute(clazz, method, codeAttribute);
+
+        if (DEBUG)
+        {
+            method.accept(clazz, new ClassPrinter());
         }
     }
 
@@ -108,65 +162,6 @@ implements   AttributeVisitor,
 
 
     /**
-     * Appends the code of the given code attribute.
-     */
-    private void copyCode(Clazz         clazz,
-                          Method        method,
-                          CodeAttribute codeAttribute)
-    {
-        if (DEBUG)
-        {
-            System.out.println("SubroutineInliner: processing ["+clazz.getName()+"."+method.getName(clazz)+method.getDescriptor(clazz)+"]");
-        }
-
-        codeAttributeComposer.beginCodeFragment(codeAttribute.u4codeLength);
-
-        // Copy the non-subroutine instructions.
-        int offset  = 0;
-        while (offset < codeAttribute.u4codeLength)
-        {
-            Instruction instruction = InstructionFactory.create(codeAttribute.code, offset);
-            int instructionLength = instruction.length(offset);
-
-            // Is this returning subroutine?
-            if (branchTargetFinder.isSubroutine(offset) &&
-                branchTargetFinder.isSubroutineReturning(offset))
-            {
-                // Skip the subroutine.
-                if (DEBUG)
-                {
-                    System.out.println("Skipping subroutine at ["+offset+"]");
-                }
-
-                // Append a label at this offset instead.
-                codeAttributeComposer.appendLabel(offset);
-            }
-            else
-            {
-                // Copy the instruction, inlining any subroutine call recursively.
-                instruction.accept(clazz, method, codeAttribute, offset, this);
-            }
-
-            offset += instructionLength;
-        }
-
-        // Copy the exceptions. Note that exceptions with empty try blocks
-        // are automatically removed.
-        codeAttribute.exceptionsAccept(clazz, method, this);
-
-        if (DEBUG)
-        {
-            System.out.println("Appending label after code at ["+offset+"]");
-        }
-
-        // Append a label just after the code.
-        codeAttributeComposer.appendLabel(codeAttribute.u4codeLength);
-
-        codeAttributeComposer.endCodeFragment();
-    }
-
-
-    /**
      * Appends the specified subroutine.
      */
     private void inlineSubroutine(Clazz         clazz,
@@ -179,17 +174,20 @@ implements   AttributeVisitor,
 
         if (DEBUG)
         {
-            System.out.println("Inlining subroutine ["+subroutineStart+" -> "+subroutineEnd+"] at ["+subroutineInvocationOffset+"]");
+            System.out.println("  Inlining subroutine ["+subroutineStart+" -> "+subroutineEnd+"] at ["+subroutineInvocationOffset+"]");
         }
 
         // Don't go inlining exceptions that are already applicable to this
         // subroutine invocation.
-        ExceptionInfoVisitor oldSubroutineExceptionInliner =
-            subroutineExceptionInliner;
+        ExceptionInfoVisitor oldSubroutineExceptionInliner = subroutineExceptionInliner;
+        int                  oldClipStart                  = clipStart;
+        int                  oldClipEnd                    = clipEnd;
 
         subroutineExceptionInliner =
             new ExceptionExcludedOffsetFilter(subroutineInvocationOffset,
                                               subroutineExceptionInliner);
+        clipStart = subroutineStart;
+        clipEnd   = subroutineEnd;
 
         codeAttributeComposer.beginCodeFragment(codeAttribute.u4codeLength);
 
@@ -203,15 +201,11 @@ implements   AttributeVisitor,
 
         if (DEBUG)
         {
-            System.out.println("Appending label after inlined subroutine at ["+subroutineEnd+"]");
+            System.out.println("    Appending label after inlined subroutine at ["+subroutineEnd+"]");
         }
 
         // Append a label just after the code.
         codeAttributeComposer.appendLabel(subroutineEnd);
-
-        // We can again inline exceptions that are applicable to this
-        // subroutine invocation.
-        subroutineExceptionInliner = oldSubroutineExceptionInliner;
 
         // Inline the subroutine exceptions.
         codeAttribute.exceptionsAccept(clazz,
@@ -220,9 +214,13 @@ implements   AttributeVisitor,
                                        subroutineEnd,
                                        subroutineExceptionInliner);
 
-        codeAttributeComposer.endCodeFragment();
+        // We can again inline exceptions that are applicable to this
+        // subroutine invocation.
+        subroutineExceptionInliner = oldSubroutineExceptionInliner;
+        clipStart                  = oldClipStart;
+        clipEnd                    = oldClipEnd;
 
-        inlinedAny = true;
+        codeAttributeComposer.endCodeFragment();
     }
 
 
@@ -245,7 +243,7 @@ implements   AttributeVisitor,
             {
                 if (DEBUG)
                 {
-                    System.out.println("Replacing subroutine return at ["+offset+"] by a label");
+                    System.out.println("    Replacing subroutine return at ["+offset+"] by a label");
                 }
 
                 // Append a label at this offset instead of the subroutine return.
@@ -255,7 +253,7 @@ implements   AttributeVisitor,
             {
                 if (DEBUG)
                 {
-                    System.out.println("Replacing subroutine return at ["+offset+"] by a simple branch");
+                    System.out.println("    Replacing subroutine return at ["+offset+"] by a simple branch");
                 }
 
                 // Replace the instruction by a branch.
@@ -270,7 +268,7 @@ implements   AttributeVisitor,
         {
             if (DEBUG)
             {
-                System.out.println("Replacing first subroutine instruction at ["+offset+"] by a label");
+                System.out.println("    Replacing first subroutine instruction at ["+offset+"] by a label");
             }
 
             // Append a label at this offset instead of saving the subroutine
@@ -320,8 +318,6 @@ implements   AttributeVisitor,
                                           branchOffset).shrink();
 
                 codeAttributeComposer.appendInstruction(offset, replacementInstruction);
-
-                inlinedAny = true;
             }
         }
         else
@@ -336,34 +332,43 @@ implements   AttributeVisitor,
 
     public void visitExceptionInfo(Clazz clazz, Method method, CodeAttribute codeAttribute, ExceptionInfo exceptionInfo)
     {
-        int startPC   = exceptionInfo.u2startPC;
-        int endPC     = exceptionInfo.u2endPC;
+        int startPC   = Math.max(exceptionInfo.u2startPC, clipStart);
+        int endPC     = Math.min(exceptionInfo.u2endPC,   clipEnd);
         int handlerPC = exceptionInfo.u2handlerPC;
         int catchType = exceptionInfo.u2catchType;
 
         // Exclude any subroutine invocations that jump out of the try block,
         // by adding a try block before (and later on, after) each invocation.
-        int offset = startPC;
-        while (offset < endPC)
+        for (int offset = startPC; offset < endPC; offset++)
         {
-            Instruction instruction = InstructionFactory.create(codeAttribute.code, offset);
-            int instructionLength = instruction.length(offset);
-
-            // Is it a subroutine invocation?
-            if (branchTargetFinder.isSubroutineInvocation(offset) &&
-                !exceptionInfo.isApplicable(offset + ((BranchInstruction)instruction).branchOffset))
+            if (branchTargetFinder.isSubroutineInvocation(offset))
             {
-                // Append a try block that ends before the subroutine invocation.
-                codeAttributeComposer.appendException(new ExceptionInfo(startPC,
-                                                                        offset,
-                                                                        handlerPC,
-                                                                        catchType));
+                Instruction instruction = InstructionFactory.create(codeAttribute.code, offset);
+                int instructionLength = instruction.length(offset);
 
-                // The next try block will start after the subroutine invocation.
-                startPC = offset + instructionLength;
+                // Is it a subroutine invocation?
+                if (!exceptionInfo.isApplicable(offset + ((BranchInstruction)instruction).branchOffset))
+                {
+                    if (DEBUG)
+                    {
+                        System.out.println("  Appending extra exception ["+startPC+" -> "+offset+"] -> "+handlerPC);
+                    }
+
+                    // Append a try block that ends before the subroutine invocation.
+                    codeAttributeComposer.appendException(new ExceptionInfo(startPC,
+                                                                            offset,
+                                                                            handlerPC,
+                                                                            catchType));
+
+                    // The next try block will start after the subroutine invocation.
+                    startPC = offset + instructionLength;
+                }
             }
+        }
 
-            offset += instructionLength;
+        if (DEBUG)
+        {
+            System.out.println("  Appending exception ["+startPC+" -> "+endPC+"] -> "+handlerPC);
         }
 
         // Append the exception. Note that exceptions with empty try blocks
@@ -372,7 +377,5 @@ implements   AttributeVisitor,
                                                                 endPC,
                                                                 handlerPC,
                                                                 catchType));
-
-        // TODO: While inlining a subroutine, its exception handler code may have to be inlined too.
     }
 }

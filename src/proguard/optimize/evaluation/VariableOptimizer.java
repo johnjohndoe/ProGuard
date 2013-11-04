@@ -80,18 +80,13 @@ implements   AttributeVisitor
         // Analyze the liveness of the variables in the code.
         livenessAnalyzer.visitCodeAttribute(clazz, method, codeAttribute);
 
-        int startIndex = 0;
+        int startIndex =
+            (method.getAccessFlags() & ClassConstants.INTERNAL_ACC_STATIC) != 0 ||
+            reuseThis ? 0 : 1;
 
-        int parameterSize = ClassUtil.internalMethodParameterSize(method.getDescriptor(clazz));
-        if ((method.getAccessFlags() & ClassConstants.INTERNAL_ACC_STATIC) == 0)
-        {
-            parameterSize++;
-
-            if (!reuseThis)
-            {
-                startIndex = 1;
-            }
-        }
+        int parameterSize =
+            ClassUtil.internalMethodParameterSize(method.getDescriptor(clazz),
+                                                  method.getAccessFlags());
 
         int variableSize = codeAttribute.u2maxLocals;
         int codeLength   = codeAttribute.u4codeLength;

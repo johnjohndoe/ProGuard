@@ -113,15 +113,8 @@ implements   AttributeVisitor
         int newVariableIndex = 0;
         for (int oldVariableIndex = 0; oldVariableIndex < oldMaxLocals; oldVariableIndex++)
         {
-            if (oldVariableIndex >= deleted.length ||
-                !deleted[oldVariableIndex])
-            {
-                variableMap[oldVariableIndex] = newVariableIndex++;
-            }
-            else
-            {
-                variableMap[oldVariableIndex] = -1;
-            }
+            variableMap[oldVariableIndex] = deleted[oldVariableIndex] ?
+                -1 : newVariableIndex++;
         }
 
         // Set the map.

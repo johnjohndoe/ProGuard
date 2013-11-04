@@ -80,6 +80,7 @@ public class Optimizer
         MemberCounter      constantFieldCounter        = new MemberCounter();
         MemberCounter      constantMethodCounter       = new MemberCounter();
         MemberCounter      descriptorShrinkCounter     = new MemberCounter();
+        MemberCounter      initializerFixCounter       = new MemberCounter();
         MemberCounter      parameterShrinkCounter      = new MemberCounter();
         MemberCounter      variableShrinkCounter       = new MemberCounter();
         ExceptionCounter   exceptionCounter            = new ExceptionCounter();
@@ -168,6 +169,28 @@ public class Optimizer
                                        new OptimizationInfoMemberFilter(
                                        new ParameterUsageMarker())));
 
+        // Mark all methods that have side effects.
+        programClassPool.accept(new SideEffectMethodMarker());
+
+//        System.out.println("Optimizer.execute: before evaluation simplification");
+//        programClassPool.classAccept("abc/Def", new NamedMethodVisitor("abc", null, new ClassPrinter()));
+
+        // Perform partial evaluation for filling out fields, method parameters,
+        // and method return values.
+        programClassPool.classesAccept(new AllMethodVisitor(
+                                       new AllAttributeVisitor(
+                                       new PartialEvaluator(new SpecificValueFactory(), new StoringInvocationUnit(), false))));
+
+        // Simplify based on partial evaluation.
+        // Also remove unused parameters from the stack before method invocations,
+        // and make method invocations static when possible, for
+        // MethodDescriptorShrinker, MethodStaticizer.
+        programClassPool.classesAccept(new AllMethodVisitor(
+                                       new AllAttributeVisitor(
+                                       new EvaluationSimplifier(
+                                       new PartialEvaluator(new SpecificValueFactory(), new LoadingInvocationUnit(), false),
+                                       pushCounter, branchCounter, deletedCounter, addedCounter))));
+
         // Shrink the parameters in the method descriptors.
         programClassPool.classesAccept(new AllMethodVisitor(
                                        new OptimizationInfoMemberFilter(
@@ -179,32 +202,16 @@ public class Optimizer
                                        new MemberAccessFilter(0, ClassConstants.INTERNAL_ACC_STATIC,
                                        new MethodStaticizer(staticMethodCounter)))));
 
-        // Remove all unused parameters and variables from the code, for
-        // MethodDescriptorShrinker, MethodStaticizer.
+        // Fix all references to class members, for MethodDescriptorShrinker.
+        // This operation also updates the stack sizes.
+        programClassPool.classesAccept(new MemberReferenceFixer());
+
+        // Remove all unused parameters from the byte code, shifting all
+        // remaining variables, for MethodDescriptorShrinker, MethodStaticizer.
+        // This operation also updates the local variable frame sizes.
         programClassPool.classesAccept(new AllMethodVisitor(
                                        new AllAttributeVisitor(
                                        new ParameterShrinker(parameterShrinkCounter))));
-
-        // Fix invocations of methods that have become static, for
-        // MethodStaticizer.
-        programClassPool.classesAccept(new AllMethodVisitor(
-                                       new AllAttributeVisitor(
-                                       new MethodInvocationFixer())));
-
-        // Fix all references to class members, for MethodDescriptorShrinker.
-        programClassPool.classesAccept(new MemberReferenceFixer());
-
-        // Mark all methods that have side effects.
-        programClassPool.accept(new SideEffectMethodMarker());
-
-//        System.out.println("Optimizer.execute: before evaluation simplification");
-//        programClassPool.classAccept("abc/Def", new NamedMethodVisitor("abc", null, new ClassPrinter()));
-
-        // Perform partial evaluation for filling out fields, method parameters,
-        // and method return values.
-        programClassPool.classesAccept(new AllMethodVisitor(
-                                       new AllAttributeVisitor(
-                                       new PartialEvaluator(new SpecificValueFactory(), new UnusedParameterInvocationUnit(new StoringInvocationUnit()), false))));
 
         // Count the write-only fields, and the constant fields and methods.
         programClassPool.classesAccept(new MultiClassVisitor(
@@ -217,15 +224,6 @@ public class Optimizer
                                            new AllMethodVisitor(
                                            new ConstantMemberFilter(constantMethodCounter)),
                                        }));
-
-        // Simplify based on partial evaluation.
-        // Also remove unused parameters from the stack before method invocations,
-        // for MethodDescriptorShrinker, MethodStaticizer.
-        programClassPool.classesAccept(new AllMethodVisitor(
-                                       new AllAttributeVisitor(
-                                       new EvaluationSimplifier(
-                                       new PartialEvaluator(new SpecificValueFactory(), new UnusedParameterInvocationUnit(new LoadingInvocationUnit()), false),
-                                       pushCounter, branchCounter, deletedCounter, addedCounter))));
 
 //        // Specializing the class member descriptors seems to increase the
 //        // class file size, on average.
@@ -282,12 +280,12 @@ public class Optimizer
         // Inline methods that are only invoked once.
         programClassPool.classesAccept(new AllMethodVisitor(
                                        new AllAttributeVisitor(
-                                       new MethodInliner(configuration.allowAccessModification, true, inliningCounter))));
+                                       new MethodInliner(configuration.microEdition, configuration.allowAccessModification, true, inliningCounter))));
 
         // Inline short methods.
         programClassPool.classesAccept(new AllMethodVisitor(
                                        new AllAttributeVisitor(
-                                       new MethodInliner(configuration.allowAccessModification, false, inliningCounter))));
+                                       new MethodInliner(configuration.microEdition, configuration.allowAccessModification, false, inliningCounter))));
 
         // Mark all class members that can not be made private.
         programClassPool.classesAccept(new NonPrivateMemberMarker());
@@ -337,6 +335,24 @@ public class Optimizer
                                            new GotoReturnReplacer(                              codeAttributeEditor, peepholeCounter),
                                        })))));
 
+        // Tweak the descriptors of duplicate initializers.
+        DuplicateInitializerFixer duplicateInitializerFixer =
+            new DuplicateInitializerFixer(initializerFixCounter);
+
+        programClassPool.classesAccept(new AllMethodVisitor(
+                                       duplicateInitializerFixer));
+
+        if (initializerFixCounter.getCount() > 0)
+        {
+            // Fix all invocations of tweaked initializers.
+            programClassPool.classesAccept(new AllMethodVisitor(
+                                           new AllAttributeVisitor(
+                                           new DuplicateInitializerInvocationFixer())));
+
+            // Fix all references to tweaked initializers.
+            programClassPool.classesAccept(new MemberReferenceFixer());
+        }
+
         // Remove unnecessary exception handlers.
         programClassPool.classesAccept(new AllMethodVisitor(
                                        new AllAttributeVisitor(
@@ -366,8 +382,8 @@ public class Optimizer
         int writeOnlyFieldCount       = writeOnlyFieldCounter      .getCount();
         int constantFieldCount        = constantFieldCounter       .getCount();
         int constantMethodCount       = constantMethodCounter      .getCount();
-        int descriptorShrinkCount     = descriptorShrinkCounter    .getCount();
-        int parameterShrinkCount      = parameterShrinkCounter     .getCount();
+        int descriptorShrinkCount     = descriptorShrinkCounter    .getCount() - initializerFixCounter.getCount();
+        int parameterShrinkCount      = parameterShrinkCounter     .getCount() - initializerFixCounter.getCount();
         int variableShrinkCount       = variableShrinkCounter      .getCount();
         int exceptionCount            = exceptionCounter           .getCount();
         int inliningCount             = inliningCounter            .getCount();

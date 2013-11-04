@@ -491,7 +491,7 @@ implements   ClassVisitor,
             // Read the parameter annotations of the given parameter.
             int u2annotationsCount = dataInput.readUnsignedShort();
 
-            Annotation[] annotations      = new Annotation[u2annotationsCount];
+            Annotation[] annotations = new Annotation[u2annotationsCount];
 
             for (int index = 0; index < u2annotationsCount; index++)
             {
