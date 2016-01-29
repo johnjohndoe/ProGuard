@@ -1,3 +1,5 @@
+[![Bintray](https://api.bintray.com/packages/bintray/jcenter/net.sf.proguard%3Aproguard-parent/images/download.svg)](https://bintray.com/bintray/jcenter/net.sf.proguard%3Aproguard-parent/_latestVersion)
+
 ProGuard Java Optimizer and Obfuscator
 ======================================
 
