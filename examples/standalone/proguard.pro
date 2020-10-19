@@ -8,10 +8,8 @@
 -verbose
 
 # Specify the input jars, output jars, and library jars.
-# We'll filter out the Ant classes, Gradle classes, and WTK classes, keeping
-# everything else.
 
--injars  ../../lib/proguard.jar(!proguard/ant/**,!proguard/gradle/**,!proguard/wtk/**)
+-injars  ../../lib/proguard.jar
 -outjars proguard_out.jar
 
 # Before Java 9, the runtime classes were packaged in a single jar file.
@@ -19,19 +17,21 @@
 
 # As of Java 9, the runtime classes are packaged in modular jmod files.
 -libraryjars <java.home>/jmods/java.base.jmod(!**.jar;!module-info.class)
+-libraryjars <java.home>/jmods/java.sql.jmod (!**.jar;!module-info.class)
+#-libraryjars <java.home>/jmods/.....
 
 # Write out an obfuscation mapping file, for de-obfuscating any stack traces
 # later on, or for incremental obfuscation of extensions.
 
 -printmapping proguard.map
 
-# Don't print notes about reflection in injected code.
+# Don't print notes about reflection in GSON code, the Kotlin runtime, and
+# our own optionally injected code.
 
+-dontnote kotlin.**
+-dontnote kotlinx.**
+-dontnote com.google.gson.**
 -dontnote proguard.configuration.ConfigurationLogger
-
-# Don't print warnings about GSON dependencies.
-
--dontwarn com.google.gson.**
 
 # Preserve injected GSON utility classes and their members.
 

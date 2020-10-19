@@ -1,16 +1,14 @@
-You can find the ProGuard GUI jar in the `lib` directory of the ProGuard
-distribution. To run the ProGuard graphical user interface, just type:
+You can find the ProGuard GUI script in the `bin` directory of the ProGuard
+distribution. To run it, just type:
 
-`proguardgui [-nosplash]` \[*configuration\_file*\]
+  `bin/proguardgui [-nosplash]` \[*configuration\_file*\]
 
-Alternatively, the `bin` directory contains some short Linux and Windows
-scripts containing this command. The GUI will pop up in a window. With the
-`-nosplash` option, you can switch off the short opening animation. If you
-have specified a ProGuard configuration file, it will be loaded. The GUI works
-like a wizard. You can edit the configuration and execute ProGuard through a
-few tabs:
+The application will pop up a window. With the `-nosplash` option, you can
+switch off the short opening animation. If you have specified a ProGuard
+configuration file, it will be loaded. The GUI works like a wizard. You
+can edit the configuration and execute ProGuard through a few tabs:
 
-|                               |
+| Tab                           | Purpose
 |-------------------------------|--------------------------------------------------------------
 | [ProGuard](#proguard)         | Optionally load an existing configuration file.
 | [Input/Output](#inputoutput)  | Specify the program jars and library jars.
@@ -22,7 +20,7 @@ few tabs:
 
 In addition, there is a tab to execute ReTrace interactively:
 
-|                     |
+| Tab                 | Purpose
 |---------------------|-------------------------------------------------------
 | [ReTrace](#retrace) | Set up and run ReTrace, to de-obfuscate stack traces.
 
@@ -38,7 +36,7 @@ refer to the [Introduction](index.md) of this manual.
 The *ProGuard* tab presents a welcome message and one important button
 at the bottom:
 
-|                       |
+| Button                | Purpose
 |-----------------------|-----------------------------------------------------------------------
 | Load configuration... | opens a file chooser to load an existing ProGuard configuration file.
 
@@ -65,7 +63,7 @@ jars (or aars, wars, ears, zips, apks, or directories), and the library jars
 Each of these lists can be edited by means of a couple of buttons on the
 right-hand side:
 
-|                   |
+| Button            | Purpose
 |-------------------|------------------------------------------------------------------------------------------
 | Add input...      | opens a file chooser to add an input entry to the list of program jars.
 | Add output...     | opens a file chooser to add an output entry to the list of program jars.
@@ -119,7 +117,7 @@ methods in the "myapplications" package and all of its subpackages.
 The variable list at the bottom allows to define additional entries yourself.
 The list can be edited by means of a couple of buttons on the right-hand side:
 
-|           |
+| Button    | Purpose
 |-----------|--------------------------------------------------------
 | Add...    | opens a window to add a new entry to the list.
 | Edit...   | opens a window to edit the selected entry in the list.
@@ -311,7 +309,7 @@ The *Process* tab has an output console for displaying the configuration and
 the messages while processing. There are three important buttons at the
 bottom:
 
-|                       |
+| Button                | Purpose
 |-----------------------|------------------------------------------------------------------
 | View configuration    | displays the current ProGuard configuration in the console.
 | Save configuration... | opens a file chooser to save the current ProGuard configuration.
@@ -335,7 +333,7 @@ trace:
 
 There are two buttons at the bottom:
 
-|                     |
+| Button              | Purpose
 |---------------------|---------------------------------------------------------
 | Load stack trace... | opens a file chooser to load an obfuscated stack trace.
 | ReTrace!            | executes ReTrace with the current settings.

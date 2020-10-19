@@ -9,12 +9,8 @@
 
 # Specify the input jars, output jars, and library jars.
 # The input jars will be merged in a single output jar.
-# We'll filter out the Ant classes, Gradle classes, and WTK classes, keeping
-# everything else.
 
 -injars  ../../lib/proguardgui.jar
--injars  ../../lib/proguard.jar(!META-INF/**,!proguard/gradle/**,!proguard/ant/**,!proguard/wtk/**)
--injars  ../../lib/retrace.jar (!META-INF/**)
 -outjars proguardgui_out.jar
 
 # Before Java 9, the runtime classes were packaged in a single jar file.
@@ -22,7 +18,14 @@
 
 # As of Java 9, the runtime classes are packaged in modular jmod files.
 -libraryjars <java.home>/jmods/java.base.jmod   (!**.jar;!module-info.class)
+-libraryjars <java.home>/jmods/java.sql.jmod    (!**.jar;!module-info.class)
 -libraryjars <java.home>/jmods/java.desktop.jmod(!**.jar;!module-info.class)
+#-libraryjars <java.home>/jmods/.....
+
+# Write out an obfuscation mapping file, for de-obfuscating any stack traces
+# later on, or for incremental obfuscation of extensions.
+
+-printmapping proguardgui.map
 
 # If we wanted to reuse the previously obfuscated proguard_out.jar, we could
 # perform incremental obfuscation based on its mapping file, and only keep the
@@ -36,9 +39,24 @@
 #-libraryjars <java.home>/jmods/java.base.jmod(!**.jar;!module-info.class)
 #-libraryjars <java.home>/jmods/java.desktop.jmod(!**.jar;!module-info.class)
 
-# Don't print notes about reflection in injected code.
+# Don't print notes about reflection in GSON code, the Kotlin runtime, and
+# our own optionally injected code.
 
+-dontnote kotlin.**
+-dontnote kotlinx.**
+-dontnote com.google.gson.**
 -dontnote proguard.configuration.ConfigurationLogger
+
+# Preserve injected GSON utility classes and their members.
+
+-keep,allowobfuscation class proguard.optimize.gson._*
+-keepclassmembers class proguard.optimize.gson._* {
+    *;
+}
+
+# Obfuscate class strings of injected GSON utility classes.
+
+-adaptclassstrings proguard.optimize.gson.**
 
 # Allow methods with the same signature, except for the return type,
 # to get the same obfuscation name.

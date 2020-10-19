@@ -11,9 +11,11 @@ ProGuard Java Optimizer and Obfuscator
 About this repository
 ---------------------
 
-This repository contains all versions also available on [http://proguard.sourceforge.net][2].
+This repository contains all versions also available on [https://www.guardsquare.com/en/products/proguard][2].
+Please note that the ProGuard project moved to [GitHub][3] as of version 7.0.0.
 
 
 [1]: mailto:eric@graphics.cornell.edu
-[2]: http://proguard.sourceforge.net
+[2]: https://www.guardsquare.com/en/products/proguard
+[3]: https://github.com/Guardsquare/proguard
 

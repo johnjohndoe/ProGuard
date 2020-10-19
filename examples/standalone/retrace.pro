@@ -9,10 +9,8 @@
 
 # Specify the input jars, output jars, and library jars.
 # The input jars will be merged in a single output jar.
-# We'll filter out the Ant and WTK classes.
 
 -injars  ../../lib/retrace.jar
--injars  ../../lib/proguard.jar(!META-INF/MANIFEST.MF,!proguard/gui/**,!proguard/gradle/**,!proguard/ant/**,!proguard/wtk/**)
 -outjars retrace_out.jar
 
 # Before Java 9, the runtime classes were packaged in a single jar file.
@@ -20,7 +18,13 @@
 
 # As of Java 9, the runtime classes are packaged in modular jmod files.
 -libraryjars <java.home>/jmods/java.base.jmod(!**.jar;!module-info.class)
+-libraryjars <java.home>/jmods/java.sql.jmod (!**.jar;!module-info.class)
 #-libraryjars <java.home>/jmods/.....
+
+# Write out an obfuscation mapping file, for de-obfuscating any stack traces
+# later on, or for incremental obfuscation of extensions.
+
+-printmapping retrace.map
 
 # If we wanted to reuse the previously obfuscated proguard_out.jar, we could
 # perform incremental obfuscation based on its mapping file, and only keep the
@@ -29,24 +33,13 @@
 #-applymapping proguard.map
 #-outjars      retrace_out.jar(proguard/retrace/**)
 
-# Don't print notes about reflection in injected code.
+# Don't print notes about reflection in GSON code, the Kotlin runtime, and
+# our own optionally injected code.
 
+-dontnote kotlin.**
+-dontnote kotlinx.**
+-dontnote com.google.gson.**
 -dontnote proguard.configuration.ConfigurationLogger
-
-# Don't print warnings about GSON dependencies.
-
--dontwarn com.google.gson.**
-
-# Preserve injected GSON utility classes and their members.
-
--keep,allowobfuscation class proguard.optimize.gson._*
--keepclassmembers class proguard.optimize.gson._* {
-    *;
-}
-
-# Obfuscate class strings of injected GSON utility classes.
-
--adaptclassstrings proguard.optimize.gson.**
 
 # Allow methods with the same signature, except for the return type,
 # to get the same obfuscation name.

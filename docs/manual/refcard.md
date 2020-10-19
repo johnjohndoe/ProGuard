@@ -1,21 +1,21 @@
 ## Usage
 
-|            |
+| OS         | Command
 |------------|-----------------------------
 | Windows:   | `proguard` *options* ...
 | Linux/Mac: | `proguard.sh` *options* ...
 
 Typically:
 
-|            |
+| OS         | Command
 |------------|-----------------------------
 | Windows:   | `proguard @myconfig.pro`
 | Linux/Mac: | `proguard.sh @myconfig.pro`
 
 ## Options
 
-|                                                                                                                                                                          |
-|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+| Option | Meaning
+|--------|--------
 | [`@`](usage.md#at)[*filename*](usage.md#filename)                                                                                                                        | Short for '`-include` *filename*'.
 | [`-include`](usage.md#include) [*filename*](usage.md#filename)                                                                                                           | Read configuration options from the given file.
 | [`-basedirectory`](usage.md#basedirectory) [*directoryname*](usage.md#filename)                                                                                          | Specifies the base directory for subsequent relative file names.
@@ -65,6 +65,7 @@ Typically:
 | [`-keepparameternames`](usage.md#keepparameternames)                                                                                                                     | Keep the parameter names and types of methods that are kept.
 | [`-renamesourcefileattribute`](usage.md#renamesourcefileattribute) \[*string*\]                                                                                          | Put the given constant string in the `SourceFile` attributes.
 | [`-adaptclassstrings`](usage.md#adaptclassstrings) \[[*class\_filter*](usage.md#filters)\]                                                                               | Adapt string constants in the specified classes, based on the obfuscated names of any corresponding classes.
+| [`-keepkotlinmetadata`](usage.md#keepkotlinmetadata)                                                                                                                     | Keep and adapt Kotlin metadata.
 | [`-adaptresourcefilenames`](usage.md#adaptresourcefilenames) \[[*file\_filter*](usage.md#filefilters)\]                                                                  | Rename the specified resource files, based on the obfuscated names of the corresponding class files.
 | [`-adaptresourcefilecontents`](usage.md#adaptresourcefilecontents) \[[*file\_filter*](usage.md#filefilters)\]                                                            | Update the contents of the specified resource files, based on the obfuscated names of the processed classes.
 | [`-dontpreverify`](usage.md#dontpreverify)                                                                                                                               | Don't preverify the processed class files.
@@ -97,7 +98,7 @@ Notes:
 
 ## Keep Option Modifiers {: #keepoptionmodifiers}
 
-|                                                                 |
+| Modifier                                                        | Meaning
 |-----------------------------------------------------------------|---------------------------------------------------------------------------
 | [`includedescriptorclasses`](usage.md#includedescriptorclasses) | Also keep any classes in the descriptors of specified fields and methods.
 | [`includecode`](usage.md#includecode)                           | Also keep the code of the specified methods unchanged.
